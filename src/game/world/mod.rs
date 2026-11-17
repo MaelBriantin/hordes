@@ -1,5 +1,5 @@
-use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rand::{RngExt, SeedableRng};
 
 use super::body::{fits, slide, touch};
 use super::bolt::{self, Spark};
@@ -7,6 +7,7 @@ use super::build::{BASE_HP, Build, Choice, HEAL, Passive, VITALITY_HP, Weapon};
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
 use super::level::xp_to_next;
+use super::orb;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::{Facing, Map, TICKS_PER_SECOND, Vec2, tick_seconds};
 
@@ -80,6 +81,8 @@ pub struct World {
     pub kills: u32,
     /// Ticks left before Bolt can shoot again.
     bolt_cooldown: u32,
+    /// Where the first orb is on its circle, in radians.
+    orb_angle: f32,
     /// What the player is offered to pick, a level gained: the world waits meanwhile.
     pub offer: Option<Vec<Choice>>,
     /// Levels gained whose choice is still to come, the one on offer included.
@@ -118,6 +121,7 @@ impl World {
             gems: Vec::new(),
             kills: 0,
             bolt_cooldown: 0,
+            orb_angle: 0.0,
             offer: None,
             pending_levels: 0,
             ticks: 0,
@@ -159,6 +163,7 @@ impl World {
         self.relocate_stragglers();
         self.shoot();
         self.move_sparks();
+        self.turn_orbs();
         self.fell_enemies();
         self.gather_gems();
         self.hurt_player();
@@ -241,11 +246,57 @@ impl World {
         });
     }
 
-    /// Enemies out of HP fall, each leaving a gem.
+    /// Where the orbs are, if the player has them.
+    pub fn orbs(&self) -> Vec<Vec2> {
+        let level = self.player.build.weapon_level(Weapon::Orb);
+        orb::positions(self.player.position, level, self.orb_angle)
+    }
+
+    /// The orbs turn on, each hitting the enemies it touches that can be hit, and pushing them
+    /// back from the player.
+    fn turn_orbs(&mut self) {
+        for enemy in &mut self.enemies {
+            enemy.orb_ready_in = enemy.orb_ready_in.saturating_sub(1);
+        }
+        let build = &self.player.build;
+        let level = build.weapon_level(Weapon::Orb);
+        if level == 0 {
+            return;
+        }
+        self.orb_angle = (self.orb_angle + orb::turn_per_tick(level)) % std::f32::consts::TAU;
+        let damage = build.damage(orb::damage(level));
+        let rehit = build.cooldown(orb::rehit());
+        let player = self.player.position;
+        for position in self.orbs() {
+            for enemy in &mut self.enemies {
+                let stats = enemy.kind.stats();
+                if enemy.hp == 0
+                    || enemy.orb_ready_in > 0
+                    || !touch(position, orb::HALF_WIDTH, enemy.position, stats.half_width)
+                {
+                    continue;
+                }
+                enemy.hit(damage);
+                enemy.orb_ready_in = rehit;
+                let away = (enemy.position - player).normalized() * orb::KNOCKBACK;
+                enemy.position = slide(
+                    &self.map,
+                    enemy.position,
+                    away,
+                    stats.half_width,
+                    stats.flies,
+                );
+            }
+        }
+    }
+
+    /// Enemies out of HP fall, some leaving a gem.
     fn fell_enemies(&mut self) {
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
-            self.gems
-                .push(Gem::new(enemy.position, enemy.kind.stats().xp));
+            let stats = enemy.kind.stats();
+            if self.rng.random_range(0..100) < stats.drop_percent {
+                self.gems.push(Gem::new(enemy.position, stats.xp));
+            }
             self.kills += 1;
         }
         self.enemies.retain(|enemy| enemy.hp > 0);

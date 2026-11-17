@@ -44,7 +44,7 @@ impl EnemyKind {
             EnemyKind::Zombie => Stats {
                 hp: 10,
                 xp: 1,
-                drop_percent: 50,
+                drop_percent: 75,
                 speed: 2.5,
                 damage: 5,
                 half_width: 0.45,
@@ -55,7 +55,7 @@ impl EnemyKind {
             EnemyKind::Bat => Stats {
                 hp: 5,
                 xp: 1,
-                drop_percent: 50,
+                drop_percent: 75,
                 speed: 5.0,
                 damage: 3,
                 half_width: 0.35,
@@ -87,6 +87,8 @@ pub struct Enemy {
     pub hp: u32,
     /// Ticks left during which it shows white, after a hit.
     pub flash: u32,
+    /// Ticks left before an orb can hit it again.
+    pub orb_ready_in: u32,
     /// Where it is in its zigzag and wingbeat, in radians: a bat's own, drawn as it appears.
     pub phase: f32,
 }
@@ -99,6 +101,7 @@ impl Enemy {
             facing: Facing::default(),
             hp: kind.stats().hp,
             flash: 0,
+            orb_ready_in: 0,
             phase,
         }
     }

@@ -36,15 +36,15 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 | Enemy | HP | XP | Speed | Damage | Body | Moves | From |
 |---|---|---|---|---|---|---|---|
-| Zombie | 10 | 1 (1 time in 2) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player | 0:00 |
-| Bat | 5 | 1 (1 time in 2) | 5 tiles/s | 3 | 0.7 tile | In a zigzag, **flying over obstacles** | 1:00 |
+| Zombie | 10 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player | 0:00 |
+| Bat | 5 | 1 (3 times in 4) | 5 tiles/s | 3 | 0.7 tile | In a zigzag, **flying over obstacles** | 1:00 |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player | 3:00 |
 
 - Every enemy is slower than the player: they can always be outrun.
 - **Obstacles** stop zombies and abominations, which slide along them; bats fly over.
 - **Touching** the player costs them the damage of the hardest-hitting enemy touching them; then nothing hurts them for 0.5 s.
 - Enemies that overlap **push each other apart**; one touching the player stops there.
-- A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and bats 1 time in 2, abominations always.
+- A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and bats 3 times in 4, abominations always.
 
 ## Waves
 
@@ -64,10 +64,12 @@ They fire by themselves. Up to **4 weapons**, each up to **level 5**. The run st
 
 **Bolt's levels**: 2: +1 spark per shot · 3: every 1.5 s · 4: +1 spark per shot (3) · 5: 20 damage.
 
+**Orb's levels**: 2: +1 orb · 3: 12 damage · 4: +1 orb (3) · 5: 3.5 tiles away, a turn every 1.5 s. The orbs are evenly spaced on their circle.
+
 | Weapon | What it does |
 |---|---|
 | Blade *(planned)* | An arc in front of the player. |
-| Orb *(planned)* | Orbs circling the player. |
+| Orb | Orbs circling the player **2.5 tiles** away, a turn every **2 s**. An orb hits every enemy it passes through: **8 damage**, and a push of **half a tile** away from the player. An enemy an orb has hit can't be hit by an orb again for **0.5 s** (shorter with Haste). |
 | Nova *(planned)* | An aura that hurts around the player. |
 | Zone *(planned)* | A puddle under a group of enemies, hurting all that stay in it for a few seconds. |
 | Bombardment *(planned)* | Strikes falling at random around the player, each marked on the ground just before it blows. |

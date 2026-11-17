@@ -1,6 +1,7 @@
 use super::super::Obstacle;
 use super::super::build::{BASE_HP, Choice, Passive, Weapon};
 use super::super::gem::Gem;
+use super::super::orb;
 use super::*;
 
 fn assert_near(actual: f32, expected: f32) {
@@ -322,7 +323,7 @@ fn bolt_shoots_every_two_seconds() {
 }
 
 #[test]
-fn a_spark_fells_a_zombie_which_leaves_a_gem() {
+fn a_spark_fells_a_zombie() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     world
         .enemies
@@ -331,8 +332,30 @@ fn a_spark_fells_a_zombie_which_leaves_a_gem() {
     assert_eq!(world.enemies.len(), 0);
     assert_eq!(world.kills, 1);
     assert_eq!(world.sparks.len(), 0);
+}
+
+#[test]
+fn an_abomination_always_leaves_a_gem_a_zombie_three_times_in_four() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    let far = Vec2::new(150.0, 50.0);
+    world.enemies.push(enemy(EnemyKind::Abomination, far));
+    world.enemies[0].hp = 0;
+    world.fell_enemies();
     assert_eq!(world.gems.len(), 1);
-    assert_eq!(world.gems[0].value, 1);
+    assert_eq!(world.gems[0].value, 5);
+
+    world.gems.clear();
+    for _ in 0..200 {
+        world.enemies.push(enemy(EnemyKind::Zombie, far));
+        world.enemies[0].hp = 0;
+        world.fell_enemies();
+    }
+    assert!(
+        (125..=175).contains(&world.gems.len()),
+        "{}",
+        world.gems.len()
+    );
+    assert_eq!(world.kills, 201);
 }
 
 #[test]
@@ -435,4 +458,50 @@ fn enough_xp_makes_a_level_and_the_rest_carries_over() {
     world.gems.push(Gem::new(Vec2::new(100.2, 50.0), 6 + 11));
     wait(&mut world, 1);
     assert_eq!((world.player.level, world.player.xp), (4, 0));
+}
+
+/// A run with Orb at `level` (and Bolt never shooting), the player at (100, 50).
+fn with_orb(level: u8) -> World {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    for _ in 0..level {
+        world.player.build.take(Choice::Weapon(Weapon::Orb));
+    }
+    world
+}
+
+#[test]
+fn an_orb_hits_an_enemy_on_its_circle_and_pushes_it_back() {
+    let mut world = with_orb(1);
+    let next = orb::positions(world.player.position, 1, orb::turn_per_tick(1))[0];
+    world.enemies.push(enemy(EnemyKind::Abomination, next));
+    world.enemies[0].kind = EnemyKind::Abomination;
+    let before = (world.enemies[0].position - world.player.position).length();
+    wait(&mut world, 1);
+    let enemy = &world.enemies[0];
+    assert_eq!(enemy.hp, 40 - 8);
+    let after = (enemy.position - world.player.position).length();
+    assert!(after > before, "{before} then {after}");
+}
+
+#[test]
+fn an_orb_hits_the_same_enemy_only_every_half_second() {
+    let mut world = with_orb(3);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.5, 50.0)));
+    world.enemies[0].hp = 1_000;
+    for _ in 0..60 {
+        // Kept on the circle, where the orbs pass again and again.
+        world.enemies[0].position = Vec2::new(102.5, 50.0);
+        wait(&mut world, 1);
+    }
+    let hits = (1_000 - world.enemies[0].hp) / 12;
+    assert!((2..=4).contains(&hits), "{hits} hits");
+}
+
+#[test]
+fn without_orb_there_are_no_orbs() {
+    let world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    assert_eq!(world.orbs().len(), 0);
 }

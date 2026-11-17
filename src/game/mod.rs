@@ -9,6 +9,7 @@ mod facing;
 mod gem;
 mod level;
 mod map;
+mod orb;
 mod spawn;
 mod vec2;
 mod world;

@@ -26,12 +26,14 @@ pub enum SpriteId {
     /// Facing right.
     Abomination,
     Spark,
+    Orb,
     Gem,
     Tree,
     Rock,
     Grass,
     Pebble,
     IconBolt,
+    IconOrb,
     IconVitality,
     IconSwiftness,
     IconMagnet,
@@ -41,7 +43,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 21] = [
+    const ALL: [SpriteId; 23] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -51,12 +53,14 @@ impl SpriteId {
         SpriteId::BatDown,
         SpriteId::Abomination,
         SpriteId::Spark,
+        SpriteId::Orb,
         SpriteId::Gem,
         SpriteId::Tree,
         SpriteId::Rock,
         SpriteId::Grass,
         SpriteId::Pebble,
         SpriteId::IconBolt,
+        SpriteId::IconOrb,
         SpriteId::IconVitality,
         SpriteId::IconSwiftness,
         SpriteId::IconMagnet,
@@ -76,12 +80,14 @@ impl SpriteId {
             SpriteId::BatDown => "bat_down",
             SpriteId::Abomination => "abomination",
             SpriteId::Spark => "spark",
+            SpriteId::Orb => "orb",
             SpriteId::Gem => "gem",
             SpriteId::Tree => "tree",
             SpriteId::Rock => "rock",
             SpriteId::Grass => "grass",
             SpriteId::Pebble => "pebble",
             SpriteId::IconBolt => "icon_bolt",
+            SpriteId::IconOrb => "icon_orb",
             SpriteId::IconVitality => "icon_vitality",
             SpriteId::IconSwiftness => "icon_swiftness",
             SpriteId::IconMagnet => "icon_magnet",

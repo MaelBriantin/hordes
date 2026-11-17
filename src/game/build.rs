@@ -18,10 +18,11 @@ pub const VITALITY_HP: u32 = 20;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Weapon {
     Bolt,
+    Orb,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 1] = [Weapon::Bolt];
+    pub const ALL: [Weapon; 2] = [Weapon::Bolt, Weapon::Orb];
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -241,7 +242,9 @@ mod tests {
     fn with_everything_at_the_top_a_heal_is_offered() {
         let mut build = Build::new();
         for _ in 0..MAX_LEVEL {
-            build.take(Choice::Weapon(Weapon::Bolt));
+            for weapon in Weapon::ALL {
+                build.take(Choice::Weapon(weapon));
+            }
             for passive in &Passive::ALL[..4] {
                 build.take(Choice::Passive(*passive));
             }

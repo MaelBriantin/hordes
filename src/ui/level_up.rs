@@ -179,6 +179,7 @@ fn wrap(text: &str, width: usize) -> Vec<String> {
 fn icon(choice: Choice) -> SpriteId {
     match choice {
         Choice::Weapon(Weapon::Bolt) => SpriteId::IconBolt,
+        Choice::Weapon(Weapon::Orb) => SpriteId::IconOrb,
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
             Passive::Swiftness => SpriteId::IconSwiftness,
@@ -193,6 +194,7 @@ fn icon(choice: Choice) -> SpriteId {
 fn name(choice: Choice) -> &'static str {
     match choice {
         Choice::Weapon(Weapon::Bolt) => "Bolt",
+        Choice::Weapon(Weapon::Orb) => "Orb",
         Choice::Passive(passive) => match passive {
             Passive::Vitality => "Vitality",
             Passive::Swiftness => "Swiftness",
@@ -212,6 +214,12 @@ fn gain_of(choice: Choice, level: u8) -> &'static str {
             2 | 4 => "+1 spark per shot",
             3 => "Shoots every 1.5 s",
             _ => "Damage 10 → 20",
+        },
+        Choice::Weapon(Weapon::Orb) => match level {
+            1 => "An orb circling you",
+            2 | 4 => "+1 orb",
+            3 => "Damage 8 → 12",
+            _ => "Wider and faster",
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => "+20 max HP, healed",

@@ -151,6 +151,9 @@ pub fn render_map(buffer: &mut Buffer, area: Rect, world: &World, sprites: &Spri
     for spark in &world.sparks {
         canvas.paint_at(Look::plain(SpriteId::Spark), spark.position);
     }
+    for orb in world.orbs() {
+        canvas.paint_at(Look::plain(SpriteId::Orb), orb);
+    }
     canvas.draw(buffer, area);
 }
 

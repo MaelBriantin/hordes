@@ -41,6 +41,8 @@ j 205 205 215   steel
 k 230 180 60    gold
 e 170 215 240   glass
 a 235 200 120   sand
+P 150 90 230    orb
+I 215 185 255   orb's shine
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -101,12 +103,17 @@ AAAXAAAA
 .CCCCCC.
 .NN..NN.
 
-# Bolt's spark, 3 × 3, and an XP gem, 2 × 2: one tile.
+# Bolt's spark and an orb, 3 × 3, and an XP gem, 2 × 2: one tile.
 
 spark
 .y.
 yWy
 .y.
+
+orb
+.P.
+PIP
+.P.
 
 gem
 ib
@@ -145,6 +152,16 @@ icon_bolt
 ...yy...
 ..yy....
 .y......
+
+icon_orb
+..wwww..
+.w....PP
+w.....PP
+w..WW..w
+w..WW..w
+w......w
+.w....w.
+..wwww..
 
 icon_vitality
 ........
