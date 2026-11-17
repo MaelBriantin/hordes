@@ -1,0 +1,22 @@
+# Every push to main and every pull request must be formatted, free of clippy warnings
+# (pedantic, see Cargo.toml) and pass the tests.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: fmt, clippy, tests
+    # A fixed version rather than ubuntu-latest, which moves to newer Ubuntu releases on its own.
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v5
+      # The version rust-toolchain.toml names, with rustfmt and clippy: the same as on our machines.
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
