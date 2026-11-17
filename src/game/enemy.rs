@@ -22,6 +22,8 @@ pub struct Stats {
     pub xp: u32,
     /// The chance it leaves a gem when it falls, in percent.
     pub drop_percent: u32,
+    /// How big a stain it leaves when it falls.
+    pub stain: u8,
     /// In tiles per second.
     pub speed: f32,
     /// What touching the player costs them, in HP.
@@ -45,6 +47,7 @@ impl EnemyKind {
                 hp: 10,
                 xp: 1,
                 drop_percent: 75,
+                stain: 3,
                 speed: 2.5,
                 damage: 5,
                 half_width: 0.45,
@@ -56,6 +59,7 @@ impl EnemyKind {
                 hp: 5,
                 xp: 1,
                 drop_percent: 75,
+                stain: 2,
                 speed: 5.0,
                 damage: 3,
                 half_width: 0.35,
@@ -67,6 +71,7 @@ impl EnemyKind {
                 hp: 40,
                 xp: 5,
                 drop_percent: 100,
+                stain: 6,
                 speed: 2.0,
                 damage: 15,
                 half_width: 0.8,
@@ -80,6 +85,8 @@ impl EnemyKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Enemy {
+    /// Its own number in the run.
+    pub id: u32,
     pub kind: EnemyKind,
     /// The centre of its body, in tiles.
     pub position: Vec2,
@@ -87,21 +94,22 @@ pub struct Enemy {
     pub hp: u32,
     /// Ticks left during which it shows white, after a hit.
     pub flash: u32,
-    /// Ticks left before an orb can hit it again.
-    pub orb_ready_in: u32,
+    /// Ticks left before a drone can hit it again.
+    pub drone_ready_in: u32,
     /// Where it is in its zigzag and wingbeat, in radians: a bat's own, drawn as it appears.
     pub phase: f32,
 }
 
 impl Enemy {
-    pub fn new(kind: EnemyKind, position: Vec2, phase: f32) -> Self {
+    pub fn new(id: u32, kind: EnemyKind, position: Vec2, phase: f32) -> Self {
         Self {
+            id,
             kind,
             position,
             facing: Facing::default(),
             hp: kind.stats().hp,
             flash: 0,
-            orb_ready_in: 0,
+            drone_ready_in: 0,
             phase,
         }
     }

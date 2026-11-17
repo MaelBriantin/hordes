@@ -11,6 +11,7 @@ use ratatui::widgets::{Block, Clear, Padding, Paragraph};
 
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
+use super::text::centred;
 use crate::game::{Choice, MAX_LEVEL, Passive, Weapon, World};
 
 const CARD_WIDTH: u16 = 24;
@@ -146,46 +147,21 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
     centred(frame, gain_of(card.choice, card.level), Style::new(), gain);
 }
 
-/// Text centred in `area`, wrapped at its width. A line that can't sit exactly in the middle
-/// leaves its spare column on the right, as the card's number does in its border: everything on
-/// a card leans the same way.
-fn centred(frame: &mut Frame, text: &str, style: Style, area: Rect) {
-    let width = usize::from(area.width);
-    let lines: Vec<Line> = wrap(text, width)
-        .into_iter()
-        .map(|line| {
-            let left = width.saturating_sub(line.chars().count()) / 2;
-            Line::styled(format!("{}{line}", " ".repeat(left)), style)
-        })
-        .collect();
-    frame.render_widget(Paragraph::new(lines), area);
-}
-
-/// Words gathered into lines no wider than `width`; a word wider alone gets a line of its own.
-fn wrap(text: &str, width: usize) -> Vec<String> {
-    let mut lines: Vec<String> = Vec::new();
-    for word in text.split_whitespace() {
-        match lines.last_mut() {
-            Some(line) if line.chars().count() + 1 + word.chars().count() <= width => {
-                line.push(' ');
-                line.push_str(word);
-            }
-            _ => lines.push(word.to_owned()),
-        }
-    }
-    lines
-}
-
 fn icon(choice: Choice) -> SpriteId {
     match choice {
-        Choice::Weapon(Weapon::Bolt) => SpriteId::IconBolt,
-        Choice::Weapon(Weapon::Orb) => SpriteId::IconOrb,
+        Choice::Weapon(weapon) => match weapon {
+            Weapon::Machete => SpriteId::IconMachete,
+            Weapon::Pistol => SpriteId::IconPistol,
+            Weapon::MachineGun => SpriteId::IconMachineGun,
+            Weapon::Drones => SpriteId::IconDrones,
+        },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
             Passive::Swiftness => SpriteId::IconSwiftness,
             Passive::Magnet => SpriteId::IconMagnet,
             Passive::Might => SpriteId::IconMight,
             Passive::Haste => SpriteId::IconHaste,
+            Passive::Flashlight => SpriteId::IconFlashlight,
         },
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -193,31 +169,55 @@ fn icon(choice: Choice) -> SpriteId {
 
 fn name(choice: Choice) -> &'static str {
     match choice {
-        Choice::Weapon(Weapon::Bolt) => "Bolt",
-        Choice::Weapon(Weapon::Orb) => "Orb",
+        Choice::Weapon(weapon) => weapon_name(weapon),
         Choice::Passive(passive) => match passive {
             Passive::Vitality => "Vitality",
             Passive::Swiftness => "Swiftness",
             Passive::Magnet => "Magnet",
             Passive::Might => "Might",
             Passive::Haste => "Haste",
+            Passive::Flashlight => "Flashlight",
         },
         Choice::Heal => "Heal",
+    }
+}
+
+pub fn weapon_name(weapon: Weapon) -> &'static str {
+    match weapon {
+        Weapon::Machete => "Machete",
+        Weapon::Pistol => "Pistol",
+        Weapon::MachineGun => "Machine gun",
+        Weapon::Drones => "Drones",
     }
 }
 
 /// What a choice brings, taken at `level`.
 fn gain_of(choice: Choice, level: u8) -> &'static str {
     match choice {
-        Choice::Weapon(Weapon::Bolt) => match level {
-            1 => "A spark at the nearest enemy",
-            2 | 4 => "+1 spark per shot",
-            3 => "Shoots every 1.5 s",
-            _ => "Damage 10 → 20",
+        Choice::Weapon(Weapon::Machete) => match level {
+            1 => "Slashes enemies in front",
+            2 => "Reach 2.5 → 3.5",
+            3 => "A second slash, behind",
+            4 => "Wider swing",
+            _ => "A third slash, ahead",
         },
-        Choice::Weapon(Weapon::Orb) => match level {
-            1 => "An orb circling you",
-            2 | 4 => "+1 orb",
+        Choice::Weapon(Weapon::Pistol) => match level {
+            1 => "6 rounds at the nearest enemies",
+            2 => "Magazine 6 → 9",
+            3 => "Reloads in 1.5 s",
+            4 => "+1 bullet per shot",
+            _ => "Magazine 12, damage 15",
+        },
+        Choice::Weapon(Weapon::MachineGun) => match level {
+            1 => "Bursts of 20 rounds",
+            2 => "Magazine 20 → 30",
+            3 => "Damage 4 → 6",
+            4 => "Reloads in 2 s",
+            _ => "Bullets go through an enemy",
+        },
+        Choice::Weapon(Weapon::Drones) => match level {
+            1 => "A drone circling you",
+            2 | 4 => "+1 drone",
             3 => "Damage 8 → 12",
             _ => "Wider and faster",
         },
@@ -227,6 +227,7 @@ fn gain_of(choice: Choice, level: u8) -> &'static str {
             Passive::Magnet => "Gems fly in from 1 tile further",
             Passive::Might => "+10% damage",
             Passive::Haste => "−8% weapon cooldowns",
+            Passive::Flashlight => "+2 tiles of light",
         },
         Choice::Heal => "Heal 20 HP",
     }
@@ -235,15 +236,6 @@ fn gain_of(choice: Choice, level: u8) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn words_wrap_at_the_width() {
-        assert_eq!(
-            wrap("Gems fly in from 1 tile further", 18),
-            ["Gems fly in from 1", "tile further"]
-        );
-        assert_eq!(wrap("Heal 20 HP", 18), ["Heal 20 HP"]);
-    }
 
     #[test]
     fn a_card_turns_over_in_its_time() {

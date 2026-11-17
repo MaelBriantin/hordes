@@ -1,9 +1,13 @@
-//! What the terminal shows: the player's HP and XP bars and the time on top, the map around the player in a
-//! frame, the keys below it; when the run is over, a word over the map.
+//! What the terminal shows: the player's HP and XP bars and the time on top, the map around the
+//! player in a frame, the keys below it; over the map, the title screen, the pause menu, the
+//! level-up's cards or the game over.
 
 mod level_up;
+mod menu;
+mod night;
 mod pixels;
 mod sprites;
+mod text;
 
 use std::time::Duration;
 
@@ -14,11 +18,28 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph};
 
 use crate::game::{Vec2, World, xp_to_next};
+use crate::game::{Weather, weather_progress};
+pub use menu::PauseItem;
+pub use night::RainDisplay;
 pub use sprites::Sprites;
 
-const HELP: &str = "←↑↓→ / WASD / ZQSD move · Esc quit";
+const HELP: &str = "←↑↓→ / WASD / ZQSD move · P / Esc pause";
+const HELP_TITLE: &str = "Enter start · B blood · R rain · Esc quit";
+const HELP_PAUSED: &str = "↑↓ choose · Enter confirm · ←→ change · P / Esc resume";
 const HELP_OVER: &str = "R new run · Esc quit";
-const HELP_LEVEL_UP: &str = "←→ / 1 2 3 choose · Enter take · Esc quit";
+const HELP_LEVEL_UP: &str = "←→ / 1 2 3 choose · Enter take · Esc pause";
+
+/// Where the player is, outside the run itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Screen {
+    /// The game waits for the player to start.
+    Title,
+    Playing,
+    /// The run stands still, the pause menu open on its item `selected`.
+    Paused {
+        selected: usize,
+    },
+}
 /// Below this share of their HP, the player's HP bar shows in red.
 const LOW_HP_PERCENT: u32 = 30;
 /// The width of the HP and XP bars' insides, in cells.
@@ -26,6 +47,8 @@ const BAR: u32 = 12;
 const HP_COLOR: Color = Color::Rgb(80, 200, 90);
 const LOW_HP_COLOR: Color = Color::Rgb(230, 50, 50);
 const XP_COLOR: Color = Color::Rgb(70, 150, 255);
+/// The width of the weather's gauge, in cells.
+const WEATHER_GAUGE: u8 = 6;
 
 /// The screen's parts: the line on top, the map in its frame, the keys below.
 struct Areas {
@@ -49,39 +72,63 @@ pub fn view(screen: Rect) -> Vec2 {
     pixels::view(Block::bordered().inner(areas(screen).field))
 }
 
-/// A level-up as the player sees it: the card selected, and how long the cards have been shown.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct LevelUpView {
+/// What the screen needs beyond the run: the card selected on a level-up and how long the
+/// cards have been shown, and the frames drawn so far, for what moves on its own.
+#[derive(Debug, Clone, Copy)]
+pub struct ViewState {
     pub selected: usize,
     pub shown: Duration,
+    pub frame: u32,
+    /// Whether blood shows, and how the rain shows.
+    pub blood: bool,
+    pub rain: RainDisplay,
 }
 
-pub fn render(frame: &mut Frame, world: &World, sprites: &Sprites, level_up: LevelUpView) {
+pub fn render(
+    frame: &mut Frame,
+    world: &World,
+    sprites: &Sprites,
+    screen: Screen,
+    view: ViewState,
+) {
     let areas = areas(frame.area());
-    frame.render_widget(status(world), areas.top);
     let block = Block::bordered();
     let map = block.inner(areas.field);
     frame.render_widget(block, areas.field);
-    pixels::render_map(frame.buffer_mut(), map, world, sprites);
-    let help = if world.is_over() {
-        HELP_OVER
-    } else if world.offer.is_some() {
-        HELP_LEVEL_UP
+    if screen == Screen::Title {
+        menu::render_title(frame, map, sprites, view);
     } else {
-        HELP
-    };
-    frame.render_widget(Line::from(help).dark_gray(), areas.help);
-    if world.is_over() {
-        render_game_over(frame, map, world);
-    } else {
-        level_up::render(
-            frame,
+        frame.render_widget(status(world), areas.top);
+        pixels::render_map(
+            frame.buffer_mut(),
             map,
             world,
             sprites,
-            level_up.selected,
-            level_up.shown,
+            view.frame,
+            view.blood,
+            view.rain,
         );
+    }
+    let help = match screen {
+        Screen::Title => HELP_TITLE,
+        Screen::Paused { .. } => HELP_PAUSED,
+        Screen::Playing if world.is_over() => HELP_OVER,
+        Screen::Playing if world.offer.is_some() => HELP_LEVEL_UP,
+        Screen::Playing => HELP,
+    };
+    frame.render_widget(Line::from(help).dark_gray(), areas.help);
+    match screen {
+        Screen::Title => return,
+        Screen::Paused { selected } => {
+            menu::render_pause(frame, map, selected, view);
+            return;
+        }
+        Screen::Playing => {}
+    }
+    if world.is_over() {
+        render_game_over(frame, map, world);
+    } else {
+        level_up::render(frame, map, world, sprites, view.selected, view.shown);
     }
 }
 
@@ -94,7 +141,7 @@ fn status(world: &World) -> Line<'static> {
     } else {
         HP_COLOR
     };
-    Line::from(vec![
+    let mut spans = vec![
         Span::raw(" HP "),
         Span::styled(bar(hp, max_hp), hp_color),
         Span::styled(format!(" {hp}"), Style::new().add_modifier(Modifier::BOLD)),
@@ -107,8 +154,31 @@ fn status(world: &World) -> Line<'static> {
         Span::styled(bar(player.xp, xp_to_next(player.level)), XP_COLOR),
         Span::raw("   "),
         Span::raw(clock(world.seconds())),
+        Span::raw("  "),
+        Span::styled(
+            weather_name(world.weather()),
+            weather_style(world.weather()),
+        ),
+        Span::raw(" "),
+        Span::styled(
+            weather_gauge(world.weather(), world.seconds()),
+            weather_style(world.weather()),
+        ),
         Span::raw(format!("   Kills {}", world.kills)),
-    ])
+    ];
+    for (weapon, magazine, full) in world.ammo() {
+        let rounds = if magazine.reloading > 0 {
+            "reloading".to_owned()
+        } else {
+            format!("{}/{full}", magazine.rounds)
+        };
+        spans.push(Span::raw(format!("   {} ", level_up::weapon_name(weapon))));
+        spans.push(Span::styled(
+            rounds,
+            Style::new().add_modifier(Modifier::BOLD),
+        ));
+    }
+    Line::from(spans)
 }
 
 /// A share of a whole as a bar: `▕████░░░░░░░░▏`. Rounded down, so it only shows full when it
@@ -118,6 +188,49 @@ fn bar(part: u32, whole: u32) -> String {
     let filled = usize::try_from(filled).unwrap_or(0);
     let empty = usize::try_from(BAR).unwrap_or(0) - filled;
     format!("▕{}{}▏", "█".repeat(filled), "░".repeat(empty))
+}
+
+fn weather_name(weather: Weather) -> &'static str {
+    match weather {
+        Weather::Clear => "Clear",
+        Weather::Drizzle => "Drizzle",
+        Weather::Rain => "Rain",
+        Weather::Storm => "Storm",
+        Weather::Tempest => "Tempest",
+    }
+}
+
+/// The weather's colour: grey for a clear night, darkening through blues to red.
+fn weather_style(weather: Weather) -> Style {
+    let color = match weather {
+        Weather::Clear => Color::Rgb(160, 160, 170),
+        Weather::Drizzle => Color::Rgb(130, 170, 220),
+        Weather::Rain => Color::Rgb(80, 120, 230),
+        Weather::Storm => Color::Rgb(170, 90, 230),
+        Weather::Tempest => Color::Rgb(230, 50, 50),
+    };
+    Style::new().fg(color).add_modifier(Modifier::BOLD)
+}
+
+/// How far the run is to the next weather, as a short bar; full in the tempest, the last.
+fn weather_gauge(weather: Weather, seconds: u32) -> String {
+    let share = if weather.next().is_some() {
+        weather_progress(seconds)
+    } else {
+        1.0
+    };
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a share of 6 cells"
+    )]
+    let filled =
+        ((share * f32::from(WEATHER_GAUGE)).floor() as usize).min(usize::from(WEATHER_GAUGE));
+    format!(
+        "▕{}{}▏",
+        "█".repeat(filled),
+        "░".repeat(usize::from(WEATHER_GAUGE) - filled)
+    )
 }
 
 /// Seconds as minutes and seconds: `03:42`.

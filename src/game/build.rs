@@ -15,14 +15,21 @@ pub const HEAL: u32 = 20;
 /// What each level of Vitality adds to the player's HP.
 pub const VITALITY_HP: u32 = 20;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Weapon {
-    Bolt,
-    Orb,
+    Machete,
+    Pistol,
+    MachineGun,
+    Drones,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 2] = [Weapon::Bolt, Weapon::Orb];
+    pub const ALL: [Weapon; 4] = [
+        Weapon::Machete,
+        Weapon::Pistol,
+        Weapon::MachineGun,
+        Weapon::Drones,
+    ];
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,15 +44,18 @@ pub enum Passive {
     Might,
     /// −8% to weapons' cooldowns.
     Haste,
+    /// +2 tiles of light around the player.
+    Flashlight,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 5] = [
+    pub const ALL: [Passive; 6] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
         Passive::Might,
         Passive::Haste,
+        Passive::Flashlight,
     ];
 }
 
@@ -65,10 +75,19 @@ pub struct Build {
 }
 
 impl Build {
-    /// What a run starts with: Bolt.
+    /// What a run starts with: the machete.
     pub fn new() -> Self {
         Self {
-            weapons: vec![(Weapon::Bolt, 1)],
+            weapons: vec![(Weapon::Machete, 1)],
+            passives: Vec::new(),
+        }
+    }
+
+    /// No weapon at all: to watch enemies without them falling.
+    #[cfg(test)]
+    pub fn unarmed() -> Self {
+        Self {
+            weapons: Vec::new(),
             passives: Vec::new(),
         }
     }
@@ -141,6 +160,12 @@ impl Build {
         2.0 + f32::from(self.passive_level(Passive::Magnet))
     }
 
+    /// How far around the player the night is lit, in tiles: 9, and 2 more per level of
+    /// Flashlight.
+    pub fn light_radius(&self) -> f32 {
+        9.0 + 2.0 * f32::from(self.passive_level(Passive::Flashlight))
+    }
+
     /// A weapon's damage, with Might.
     pub fn damage(&self, base: u32) -> u32 {
         base * (100 + 10 * u32::from(self.passive_level(Passive::Might))) / 100
@@ -186,12 +211,13 @@ mod tests {
     }
 
     #[test]
-    fn a_run_starts_with_bolt_and_no_passive() {
+    fn a_run_starts_with_the_machete_and_no_passive() {
         let build = Build::new();
-        assert_eq!(build.weapon_level(Weapon::Bolt), 1);
+        assert_eq!(build.weapon_level(Weapon::Machete), 1);
         assert_eq!(build.max_hp(), BASE_HP);
         assert_eq!(build.next_level(Choice::Passive(Passive::Might)), 1);
-        assert_eq!(build.next_level(Choice::Weapon(Weapon::Bolt)), 2);
+        assert_eq!(build.next_level(Choice::Weapon(Weapon::Machete)), 2);
+        assert_eq!(build.next_level(Choice::Weapon(Weapon::Pistol)), 1);
     }
 
     #[test]
@@ -209,15 +235,15 @@ mod tests {
     fn nothing_at_the_top_level_is_offered() {
         let mut build = Build::new();
         for _ in 0..10 {
-            build.take(Choice::Weapon(Weapon::Bolt));
+            build.take(Choice::Weapon(Weapon::Machete));
         }
-        assert_eq!(build.weapon_level(Weapon::Bolt), MAX_LEVEL);
+        assert_eq!(build.weapon_level(Weapon::Machete), MAX_LEVEL);
         let mut rng = rng();
         for _ in 0..50 {
             assert!(
                 !build
                     .offers(&mut rng)
-                    .contains(&Choice::Weapon(Weapon::Bolt))
+                    .contains(&Choice::Weapon(Weapon::Machete))
             );
         }
     }
@@ -264,5 +290,6 @@ mod tests {
         assert!((build.magnet_radius() - 4.0).abs() < f32::EPSILON);
         assert_eq!(build.damage(10), 12);
         assert_eq!(build.cooldown(60), 50);
+        assert!((build.light_radius() - 13.0).abs() < f32::EPSILON);
     }
 }

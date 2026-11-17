@@ -2,25 +2,31 @@
 //! at a time with what the player holds down, and the ui draws what it holds.
 
 mod body;
-mod bolt;
 mod build;
+mod drones;
 mod enemy;
 mod facing;
 mod gem;
+mod guns;
 mod level;
+mod machete;
 mod map;
-mod orb;
 mod spawn;
+mod stain;
 mod vec2;
+mod weather;
 mod world;
 
 pub use build::{Choice, MAX_LEVEL, Passive, Weapon};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use level::xp_to_next;
+pub use machete::{SWING_TICKS, Swing};
 pub use map::{Map, OBSTACLE_SIZE, Obstacle};
+pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use world::{Input, World};
+pub use weather::{STRIKE_RADIUS, Weather, progress as weather_progress};
+pub use world::{Input, Lightning, World};
 
 /// How many ticks the world moves on per second.
 pub const TICKS_PER_SECOND: u16 = 30;

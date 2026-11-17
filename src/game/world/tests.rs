@@ -1,7 +1,10 @@
 use super::super::Obstacle;
-use super::super::build::{BASE_HP, Choice, Passive, Weapon};
+use super::super::build::{BASE_HP, Build, Choice, Passive, Weapon};
 use super::super::gem::Gem;
-use super::super::orb;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+use super::super::drones;
+use super::super::stain;
 use super::*;
 
 fn assert_near(actual: f32, expected: f32) {
@@ -28,14 +31,25 @@ fn by_a_rock(start: Vec2) -> World {
     on(map, start)
 }
 
-/// Bolt never shooting: to watch enemies without them falling.
+/// No weapon at all: to watch enemies without them falling.
 fn disarm(world: &mut World) {
-    world.bolt_cooldown = u32::MAX;
+    world.player.build = Build::unarmed();
 }
 
-/// One enemy at `position`, its phase 0.
+/// A run with only `weapon`, at `level`, the player at (100, 50).
+fn armed_with(weapon: Weapon, level: u8) -> World {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    for _ in 0..level {
+        world.player.build.take(Choice::Weapon(weapon));
+    }
+    world
+}
+
+/// One enemy at `position`, its phase 0, with a number of its own.
 fn enemy(kind: EnemyKind, position: Vec2) -> Enemy {
-    Enemy::new(kind, position, 0.0)
+    static NEXT_ID: AtomicU32 = AtomicU32::new(1_000);
+    Enemy::new(NEXT_ID.fetch_add(1, Ordering::Relaxed), kind, position, 0.0)
 }
 
 /// The world moved on by `ticks` ticks, the player still, no enemy appearing.
@@ -277,64 +291,6 @@ fn an_enemy_left_far_behind_appears_again_ahead() {
 }
 
 #[test]
-fn bolt_shoots_at_the_nearest_enemy_in_range() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(100.0, 44.0)));
-    wait(&mut world, 1);
-    assert_eq!(world.sparks.len(), 1);
-    let spark = world.sparks[0].position;
-    assert!(
-        spark.y < 50.0 && (spark.x - 100.0).abs() < 1e-3,
-        "{spark:?}"
-    );
-}
-
-#[test]
-fn bolt_holds_fire_with_no_enemy_in_range() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(120.0, 50.0)));
-    wait(&mut world, 1);
-    assert_eq!(world.sparks.len(), 0);
-}
-
-#[test]
-fn bolt_shoots_every_two_seconds() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
-    world.enemies[0].hp = 1_000;
-    let mut shots = 0;
-    for _ in 0..150 {
-        let before = world.sparks.len();
-        wait(&mut world, 1);
-        if world.sparks.len() > before {
-            shots += 1;
-        }
-    }
-    assert_eq!(shots, 3);
-}
-
-#[test]
-fn a_spark_fells_a_zombie() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
-    wait(&mut world, 15);
-    assert_eq!(world.enemies.len(), 0);
-    assert_eq!(world.kills, 1);
-    assert_eq!(world.sparks.len(), 0);
-}
-
-#[test]
 fn an_abomination_always_leaves_a_gem_a_zombie_three_times_in_four() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     let far = Vec2::new(150.0, 50.0);
@@ -356,17 +312,6 @@ fn an_abomination_always_leaves_a_gem_a_zombie_three_times_in_four() {
         world.gems.len()
     );
     assert_eq!(world.kills, 201);
-}
-
-#[test]
-fn an_abomination_takes_four_sparks() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Abomination, Vec2::new(108.0, 50.0)));
-    wait(&mut world, 15);
-    assert_eq!(world.enemies[0].hp, 30);
-    assert!(world.enemies[0].flash > 0);
 }
 
 #[test]
@@ -430,25 +375,6 @@ fn vitality_raises_the_hp_and_heals_as_much() {
 }
 
 #[test]
-fn bolt_at_level_two_shoots_the_two_nearest() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    world.player.build.take(Choice::Weapon(Weapon::Bolt));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(95.0, 50.0)));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
-    wait(&mut world, 1);
-    assert_eq!(world.sparks.len(), 2);
-    assert!(world.sparks.iter().any(|spark| spark.position.x > 100.0));
-    assert!(world.sparks.iter().any(|spark| spark.position.x < 100.0));
-}
-
-#[test]
 fn enough_xp_makes_a_level_and_the_rest_carries_over() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     world.gems.push(Gem::new(Vec2::new(100.2, 50.0), 7));
@@ -460,22 +386,224 @@ fn enough_xp_makes_a_level_and_the_rest_carries_over() {
     assert_eq!((world.player.level, world.player.xp), (4, 0));
 }
 
-/// A run with Orb at `level` (and Bolt never shooting), the player at (100, 50).
-fn with_orb(level: u8) -> World {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    disarm(&mut world);
-    for _ in 0..level {
-        world.player.build.take(Choice::Weapon(Weapon::Orb));
-    }
-    world
+#[test]
+fn a_run_starts_with_the_machete() {
+    let world = World::new(1);
+    assert_eq!(world.player.build.weapon_level(Weapon::Machete), 1);
+    assert_eq!(world.ammo(), []);
 }
 
 #[test]
-fn an_orb_hits_an_enemy_on_its_circle_and_pushes_it_back() {
-    let mut world = with_orb(1);
-    let next = orb::positions(world.player.position, 1, orb::turn_per_tick(1))[0];
+fn the_machete_slashes_enemies_in_front_not_behind() {
+    let mut world = armed_with(Weapon::Machete, 1);
+    world.player.facing = Facing::Right;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(98.0, 50.0)));
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 40 - 12);
+    assert_eq!(world.enemies[1].hp, 40);
+    assert!(world.swing.is_some());
+}
+
+#[test]
+fn the_machete_rests_while_no_enemy_is_near() {
+    let mut world = armed_with(Weapon::Machete, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    wait(&mut world, 1);
+    assert_eq!(world.swing, None);
+}
+
+#[test]
+fn from_level_three_the_second_slash_strikes_behind() {
+    let mut world = armed_with(Weapon::Machete, 3);
+    world.player.facing = Facing::Right;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(98.0, 50.0)));
+    wait(&mut world, 1);
+    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 12, 40));
+    wait(&mut world, 5);
+    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 12, 40));
+    wait(&mut world, 1);
+    assert_eq!(
+        (world.enemies[0].hp, world.enemies[1].hp),
+        (40 - 12, 40 - 12)
+    );
+    assert_eq!(world.swing.map(|swing| swing.facing), Some(Facing::Left));
+}
+
+#[test]
+fn at_level_five_a_swing_strikes_ahead_behind_then_ahead() {
+    let mut world = armed_with(Weapon::Machete, 5);
+    world.player.facing = Facing::Right;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(98.0, 50.0)));
+    wait(&mut world, 13);
+    assert_eq!(
+        (world.enemies[0].hp, world.enemies[1].hp),
+        (40 - 24, 40 - 12)
+    );
+    // The swing is over until the machete is ready again.
+    wait(&mut world, 20);
+    assert_eq!(
+        (world.enemies[0].hp, world.enemies[1].hp),
+        (40 - 24, 40 - 12)
+    );
+}
+
+#[test]
+fn the_pistol_shoots_the_nearest_enemy_in_range() {
+    let mut world = armed_with(Weapon::Pistol, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(100.0, 44.0)));
+    wait(&mut world, 1);
+    assert_eq!(world.bullets.len(), 1);
+    let bullet = world.bullets[0].position;
+    assert!(
+        bullet.y < 50.0 && (bullet.x - 100.0).abs() < 1e-3,
+        "{bullet:?}"
+    );
+}
+
+#[test]
+fn the_pistol_holds_fire_with_no_enemy_in_range() {
+    let mut world = armed_with(Weapon::Pistol, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(120.0, 50.0)));
+    wait(&mut world, 1);
+    assert_eq!(world.bullets.len(), 0);
+}
+
+#[test]
+fn the_pistol_empties_its_magazine_then_reloads() {
+    let mut world = armed_with(Weapon::Pistol, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(111.0, 50.0)));
+    world.enemies[0].hp = 100_000;
+    let mut shots = Vec::new();
+    for tick in 0..150 {
+        let before = world.bullets.len();
+        world.enemies[0].position = Vec2::new(111.0, 50.0);
+        wait(&mut world, 1);
+        if world.bullets.len() > before {
+            shots.push(tick);
+        }
+    }
+    // 6 rounds 0.5 s apart, a 2-second reload, then the next 6.
+    assert_eq!(&shots[..7], [0, 16, 32, 48, 64, 80, 141]);
+}
+
+#[test]
+fn a_bullet_fells_a_zombie() {
+    let mut world = armed_with(Weapon::Pistol, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
+    wait(&mut world, 15);
+    assert_eq!(world.enemies.len(), 0);
+    assert_eq!(world.kills, 1);
+    assert_eq!(world.bullets.len(), 0);
+}
+
+#[test]
+fn the_pistol_at_level_four_shoots_the_two_nearest() {
+    let mut world = armed_with(Weapon::Pistol, 4);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(95.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    wait(&mut world, 1);
+    assert_eq!(world.bullets.len(), 2);
+    assert!(world.bullets.iter().any(|bullet| bullet.position.x > 100.0));
+    assert!(world.bullets.iter().any(|bullet| bullet.position.x < 100.0));
+}
+
+#[test]
+fn the_machine_gun_fires_a_burst_of_its_magazine() {
+    let mut world = armed_with(Weapon::MachineGun, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(109.0, 50.0)));
+    world.enemies[0].hp = 100_000;
+    let mut shots = 0;
+    for _ in 0..90 {
+        let before = world.bullets.len();
+        world.enemies[0].position = Vec2::new(109.0, 50.0);
+        wait(&mut world, 1);
+        if world.bullets.len() > before {
+            shots += 1;
+        }
+    }
+    // A shot every 3 ticks: the 20 rounds in 60 ticks, then a 3-second reload.
+    assert_eq!(shots, 20);
+    assert!(world.ammo()[0].1.reloading > 0);
+}
+
+#[test]
+fn a_piercing_bullet_goes_through_one_enemy() {
+    let mut world = armed_with(Weapon::MachineGun, 5);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(104.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(106.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(108.0, 50.0)));
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+    }
+    wait(&mut world, 1);
+    let mut bullet = world.bullets.pop().unwrap();
+    let start = world
+        .enemies
+        .iter()
+        .map(|enemy| enemy.position)
+        .collect::<Vec<_>>();
+    world.bullets.clear();
+    world.player.build = Build::unarmed();
+    bullet.pierce = 1;
+    world.bullets.push(bullet);
+    for _ in 0..30 {
+        for (enemy, position) in world.enemies.iter_mut().zip(&start) {
+            enemy.position = *position;
+        }
+        wait(&mut world, 1);
+    }
+    let hit: Vec<bool> = world.enemies.iter().map(|enemy| enemy.hp < 1_000).collect();
+    assert_eq!(hit, [true, true, false]);
+}
+
+#[test]
+fn a_drone_hits_an_enemy_on_its_circle_and_pushes_it_back() {
+    let mut world = armed_with(Weapon::Drones, 1);
+    let next = drones::positions(world.player.position, 1, drones::turn_per_tick(1))[0];
     world.enemies.push(enemy(EnemyKind::Abomination, next));
-    world.enemies[0].kind = EnemyKind::Abomination;
     let before = (world.enemies[0].position - world.player.position).length();
     wait(&mut world, 1);
     let enemy = &world.enemies[0];
@@ -485,14 +613,14 @@ fn an_orb_hits_an_enemy_on_its_circle_and_pushes_it_back() {
 }
 
 #[test]
-fn an_orb_hits_the_same_enemy_only_every_half_second() {
-    let mut world = with_orb(3);
+fn a_drone_hits_the_same_enemy_only_every_half_second() {
+    let mut world = armed_with(Weapon::Drones, 3);
     world
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(102.5, 50.0)));
     world.enemies[0].hp = 1_000;
     for _ in 0..60 {
-        // Kept on the circle, where the orbs pass again and again.
+        // Kept on the circle, where the drones pass again and again.
         world.enemies[0].position = Vec2::new(102.5, 50.0);
         wait(&mut world, 1);
     }
@@ -501,7 +629,78 @@ fn an_orb_hits_the_same_enemy_only_every_half_second() {
 }
 
 #[test]
-fn without_orb_there_are_no_orbs() {
+fn without_drones_there_are_no_drones() {
     let world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    assert_eq!(world.orbs().len(), 0);
+    assert_eq!(world.drones().len(), 0);
+}
+
+#[test]
+fn a_fallen_enemy_and_a_hit_player_leave_stains_that_fade() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(150.0, 50.0)));
+    world.enemies[0].hp = 0;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(100.5, 50.0)));
+    wait(&mut world, 1);
+    let sizes: Vec<u8> = world.stains.iter().map(|stain| stain.size).collect();
+    assert_eq!(sizes, [6, 1]);
+    world.enemies.clear();
+    wait(&mut world, stain::lasts());
+    assert_eq!(world.stains.len(), 0);
+}
+
+#[test]
+fn a_clear_night_has_no_lightning() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    wait(&mut world, 30 * 110);
+    assert_eq!(world.lightning, None);
+}
+
+#[test]
+fn from_the_drizzle_lightning_strikes() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 120;
+    wait(&mut world, 30 * 13);
+    assert!(world.lightning.is_some());
+}
+
+#[test]
+fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 360;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(120.0, 50.0)));
+    world.strike(Vec2::new(111.0, 50.0), world.weather().strikes_hurt());
+    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 30, 40));
+}
+
+#[test]
+fn enemies_appearing_later_are_tougher() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 480;
+    while world.enemies.is_empty() {
+        world.update(Input::default());
+    }
+    let enemy = &world.enemies[0];
+    assert_eq!(enemy.hp, enemy.kind.stats().hp * 150 / 100);
+}
+
+#[test]
+fn the_weather_dims_the_light() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    let clear = world.light_radius();
+    world.ticks = 30 * 360;
+    assert!((clear - world.light_radius() - 2.0).abs() < 1e-4);
 }

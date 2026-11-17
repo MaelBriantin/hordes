@@ -15,6 +15,26 @@ pub enum Facing {
 }
 
 impl Facing {
+    /// The way behind.
+    pub fn opposite(self) -> Self {
+        match self {
+            Facing::Up => Facing::Down,
+            Facing::Down => Facing::Up,
+            Facing::Left => Facing::Right,
+            Facing::Right => Facing::Left,
+        }
+    }
+
+    /// The way it points, length 1.
+    pub fn way(self) -> Vec2 {
+        match self {
+            Facing::Up => Vec2::new(0.0, -1.0),
+            Facing::Down => Vec2::new(0.0, 1.0),
+            Facing::Left => Vec2::new(-1.0, 0.0),
+            Facing::Right => Vec2::new(1.0, 0.0),
+        }
+    }
+
     /// The way a character faces after moving in `direction`. Still, it keeps its way; moving
     /// its way, even in a diagonal, too, unless the other axis clearly counts more. Otherwise it
     /// turns to the axis that counts more, sideways on a tie.

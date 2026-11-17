@@ -1,14 +1,19 @@
+use std::collections::HashMap;
+
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
 
 use super::body::{fits, slide, touch};
-use super::bolt::{self, Spark};
 use super::build::{BASE_HP, Build, Choice, HEAL, Passive, VITALITY_HP, Weapon};
+use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
+use super::guns::{self, Bullet, Magazine};
 use super::level::xp_to_next;
-use super::orb;
+use super::machete::{self, Swing};
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
+use super::stain::{self, MAX_STAINS, Stain};
+use super::weather::{self, Weather};
 use super::{Facing, Map, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 #[cfg(test)]
@@ -30,6 +35,13 @@ const SPAWN_TRIES: u32 = 10;
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
 const DEFAULT_VIEW: Vec2 = Vec2::new(40.0, 12.0);
+
+/// The last strike of lightning: where it fell, and when.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Lightning {
+    pub tick: u32,
+    pub at: Vec2,
+}
 
 /// What the player asks for during a tick.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -75,14 +87,30 @@ pub struct World {
     pub map: Map,
     pub player: Player,
     pub enemies: Vec<Enemy>,
-    pub sparks: Vec<Spark>,
+    /// The number the next enemy to appear gets.
+    next_enemy_id: u32,
+    pub bullets: Vec<Bullet>,
     pub gems: Vec<Gem>,
+    /// Where blood was spilt lately, oldest first.
+    pub stains: Vec<Stain>,
     /// The enemies the player has felled.
     pub kills: u32,
-    /// Ticks left before Bolt can shoot again.
-    bolt_cooldown: u32,
-    /// Where the first orb is on its circle, in radians.
-    orb_angle: f32,
+    /// Ticks left before the machete can swing again.
+    machete_wait: u32,
+    /// The slashes of the current swing done, and still to come, and the ticks before the next.
+    slashes_done: u32,
+    slashes_left: u32,
+    slash_wait: u32,
+    /// The machete's last swing, while it shows.
+    pub swing: Option<Swing>,
+    /// Each gun's magazine, once the player has the gun.
+    pub magazines: HashMap<Weapon, Magazine>,
+    /// Where the first drone is on its circle, in radians.
+    drone_angle: f32,
+    /// The last strike of lightning, if any yet.
+    pub lightning: Option<Lightning>,
+    /// Ticks before the next strike, once the weather brings lightning.
+    next_strike_in: Option<u32>,
     /// What the player is offered to pick, a level gained: the world waits meanwhile.
     pub offer: Option<Vec<Choice>>,
     /// Levels gained whose choice is still to come, the one on offer included.
@@ -117,11 +145,20 @@ impl World {
                 build: Build::new(),
             },
             enemies: Vec::new(),
-            sparks: Vec::new(),
+            next_enemy_id: 0,
+            bullets: Vec::new(),
             gems: Vec::new(),
+            stains: Vec::new(),
             kills: 0,
-            bolt_cooldown: 0,
-            orb_angle: 0.0,
+            machete_wait: 0,
+            slashes_done: 0,
+            slashes_left: 0,
+            slash_wait: 0,
+            swing: None,
+            magazines: HashMap::new(),
+            drone_angle: 0.0,
+            lightning: None,
+            next_strike_in: None,
             offer: None,
             pending_levels: 0,
             ticks: 0,
@@ -146,6 +183,17 @@ impl World {
         self.ticks / u32::from(TICKS_PER_SECOND)
     }
 
+    /// The weather now: it worsens as the run goes on.
+    pub fn weather(&self) -> Weather {
+        Weather::at(self.seconds())
+    }
+
+    /// How far around the player the night is lit, in tiles: their light, less what the
+    /// weather takes, never under 4.
+    pub fn light_radius(&self) -> f32 {
+        (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
+    }
+
     /// Whether the player has fallen: the world no longer moves on.
     pub fn is_over(&self) -> bool {
         self.player.hp == 0
@@ -161,9 +209,11 @@ impl World {
         self.spawn();
         self.move_enemies();
         self.relocate_stragglers();
-        self.shoot();
-        self.move_sparks();
-        self.turn_orbs();
+        self.storm();
+        self.swing_machete();
+        self.fire_guns();
+        self.move_bullets();
+        self.turn_drones();
         self.fell_enemies();
         self.gather_gems();
         self.hurt_player();
@@ -196,89 +246,254 @@ impl World {
         self.offer = (self.pending_levels > 0).then(|| self.player.build.offers(&mut self.rng));
     }
 
-    /// Bolt shoots its sparks at the nearest enemies in range, once its cooldown is over.
-    fn shoot(&mut self) {
-        let build = &self.player.build;
-        let level = build.weapon_level(Weapon::Bolt);
+    /// The machete swings once it can and an enemy is in reach; the slashes of a swing follow
+    /// each other.
+    fn swing_machete(&mut self) {
+        if let Some(swing) = &mut self.swing {
+            swing.left -= 1;
+            if swing.left == 0 {
+                self.swing = None;
+            }
+        }
+        let level = self.player.build.weapon_level(Weapon::Machete);
         if level == 0 {
             return;
         }
-        if self.bolt_cooldown > 0 {
-            self.bolt_cooldown -= 1;
+        self.machete_wait = self.machete_wait.saturating_sub(1);
+        if self.slashes_left > 0 {
+            if self.slash_wait > 0 {
+                self.slash_wait -= 1;
+            } else {
+                self.slash(level);
+                self.slashes_left -= 1;
+                self.slash_wait = machete::SLASH_GAP - 1;
+            }
             return;
         }
-        let from = self.player.position;
-        let targets = bolt::targets(&self.enemies, from, bolt::sparks(level));
-        if targets.is_empty() {
+        if self.machete_wait > 0 {
             return;
         }
-        let damage = build.damage(bolt::damage(level));
-        for target in targets {
-            self.sparks.push(Spark::toward(from, target, damage));
+        let player = self.player.position;
+        let reach = machete::reach(level);
+        let near = self.enemies.iter().any(|enemy| {
+            machete::in_reach(
+                enemy.position - player,
+                enemy.kind.stats().half_width,
+                reach,
+            )
+        });
+        if !near {
+            return;
         }
-        self.bolt_cooldown = build.cooldown(bolt::cooldown(level));
+        self.slashes_done = 0;
+        self.slash(level);
+        self.slashes_left = machete::slashes(level) - 1;
+        self.slash_wait = machete::SLASH_GAP - 1;
+        self.machete_wait = self.player.build.cooldown(machete::cooldown());
     }
 
-    /// Sparks fly on, each hitting the first enemy it touches, gone once it hits or has flown
-    /// its range.
-    fn move_sparks(&mut self) {
+    /// A slash of the machete: it hits every enemy in its arc, the way the player faces for the
+    /// swing's first and third slashes, behind them for its second.
+    fn slash(&mut self, level: u8) {
+        let player = self.player.position;
+        let facing = if self.slashes_done % 2 == 1 {
+            self.player.facing.opposite()
+        } else {
+            self.player.facing
+        };
+        self.slashes_done += 1;
+        let swing = Swing {
+            facing,
+            left: machete::SWING_TICKS,
+            reach: machete::reach(level),
+            half_arc: machete::half_arc(level),
+        };
+        let ahead = swing.facing.way();
+        let damage = self.player.build.damage(machete::DAMAGE);
+        for enemy in &mut self.enemies {
+            let offset = enemy.position - player;
+            let half_width = enemy.kind.stats().half_width;
+            let hit = machete::in_arc(offset, half_width, swing.reach, ahead, swing.half_arc);
+            if hit {
+                enemy.hit(damage);
+            }
+        }
+        self.swing = Some(swing);
+    }
+
+    /// Lightning strikes now and then, as often as the weather has it, somewhere the player
+    /// sees; from the storm on, it hurts the enemies it falls among.
+    fn storm(&mut self) {
+        let weather = self.weather();
+        let Some(every) = weather.lightning_every() else {
+            self.next_strike_in = None;
+            return;
+        };
+        let wait = self.next_strike_in.get_or_insert(every);
+        if *wait > 0 {
+            *wait -= 1;
+            return;
+        }
+        // Not like clockwork: between half and one and a half times the weather's wait.
+        self.next_strike_in = Some(self.rng.random_range(every / 2..=every * 3 / 2));
+        let (view, centre) = (self.view, self.player.position);
+        let at = centre
+            + Vec2::new(
+                self.rng.random_range(-view.x..=view.x),
+                self.rng.random_range(-view.y..=view.y),
+            );
+        self.strike(at, weather.strikes_hurt());
+    }
+
+    /// A strike of lightning falls at `at`, hurting the enemies around it if `hurts`.
+    fn strike(&mut self, at: Vec2, hurts: bool) {
+        self.lightning = Some(Lightning {
+            tick: self.ticks,
+            at,
+        });
+        if !hurts {
+            return;
+        }
+        for enemy in &mut self.enemies {
+            if (enemy.position - at).length() <= weather::STRIKE_RADIUS {
+                enemy.hit(weather::STRIKE_DAMAGE);
+            }
+        }
+    }
+
+    /// Each gun the player has shoots at the nearest enemies in its range, while its magazine
+    /// holds rounds; empty, it reloads.
+    fn fire_guns(&mut self) {
+        let Self {
+            player,
+            enemies,
+            bullets,
+            magazines,
+            ..
+        } = self;
+        let build = &player.build;
+        for weapon in [Weapon::Pistol, Weapon::MachineGun] {
+            let level = build.weapon_level(weapon);
+            let Some(gun) = guns::gun(weapon, level).filter(|_| level > 0) else {
+                continue;
+            };
+            let magazine = magazines.entry(weapon).or_insert(Magazine {
+                rounds: gun.magazine,
+                ..Magazine::default()
+            });
+            if magazine.reloading > 0 {
+                magazine.reloading -= 1;
+                if magazine.reloading == 0 {
+                    magazine.rounds = gun.magazine;
+                }
+                continue;
+            }
+            if magazine.wait > 0 {
+                magazine.wait -= 1;
+                continue;
+            }
+            let targets = guns::targets(enemies, player.position, gun.bullets, gun.range);
+            if targets.is_empty() {
+                continue;
+            }
+            let damage = build.damage(gun.damage);
+            for target in targets {
+                bullets.push(Bullet::toward(player.position, target, &gun, damage));
+            }
+            magazine.rounds = magazine.rounds.saturating_sub(1);
+            magazine.wait = gun.interval;
+            if magazine.rounds == 0 {
+                // Reloaded, the gun shoots at once: the reload is its wait.
+                magazine.wait = 0;
+                magazine.reloading = build.cooldown(gun.reload).max(1);
+            }
+        }
+    }
+
+    /// Bullets fly on, hitting each enemy they touch once; gone once they have gone through as
+    /// many as they can, or flown their range.
+    fn move_bullets(&mut self) {
         let enemies = &mut self.enemies;
-        self.sparks.retain_mut(|spark| {
-            if !spark.advance() {
+        self.bullets.retain_mut(|bullet| {
+            if !bullet.advance() {
                 return false;
             }
-            let hit = enemies.iter_mut().find(|enemy| {
-                enemy.hp > 0
-                    && touch(
-                        spark.position,
-                        bolt::HALF_WIDTH,
-                        enemy.position,
-                        enemy.kind.stats().half_width,
-                    )
-            });
-            match hit {
-                Some(enemy) => {
-                    enemy.hit(spark.damage);
-                    false
+            for enemy in enemies.iter_mut() {
+                let touched = touch(
+                    bullet.position,
+                    guns::BULLET_HALF_WIDTH,
+                    enemy.position,
+                    enemy.kind.stats().half_width,
+                );
+                if enemy.hp == 0 || !touched || bullet.hit.contains(&enemy.id) {
+                    continue;
                 }
-                None => true,
+                enemy.hit(bullet.damage);
+                bullet.hit.push(enemy.id);
+                if bullet.pierce == 0 {
+                    return false;
+                }
+                bullet.pierce -= 1;
             }
+            true
         });
     }
 
-    /// Where the orbs are, if the player has them.
-    pub fn orbs(&self) -> Vec<Vec2> {
-        let level = self.player.build.weapon_level(Weapon::Orb);
-        orb::positions(self.player.position, level, self.orb_angle)
+    /// The guns the player has, each with its magazine and how many rounds it holds full.
+    pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32)> {
+        [Weapon::Pistol, Weapon::MachineGun]
+            .into_iter()
+            .filter_map(|weapon| {
+                let level = self.player.build.weapon_level(weapon);
+                let gun = guns::gun(weapon, level).filter(|_| level > 0)?;
+                let magazine = self.magazines.get(&weapon).copied().unwrap_or(Magazine {
+                    rounds: gun.magazine,
+                    ..Magazine::default()
+                });
+                Some((weapon, magazine, gun.magazine))
+            })
+            .collect()
     }
 
-    /// The orbs turn on, each hitting the enemies it touches that can be hit, and pushing them
-    /// back from the player.
-    fn turn_orbs(&mut self) {
+    /// Where the drones are, if the player has them.
+    pub fn drones(&self) -> Vec<Vec2> {
+        let level = self.player.build.weapon_level(Weapon::Drones);
+        drones::positions(self.player.position, level, self.drone_angle)
+    }
+
+    /// The drones turn on, each hitting the enemies it touches that can be hit, and pushing
+    /// them back from the player.
+    fn turn_drones(&mut self) {
         for enemy in &mut self.enemies {
-            enemy.orb_ready_in = enemy.orb_ready_in.saturating_sub(1);
+            enemy.drone_ready_in = enemy.drone_ready_in.saturating_sub(1);
         }
         let build = &self.player.build;
-        let level = build.weapon_level(Weapon::Orb);
+        let level = build.weapon_level(Weapon::Drones);
         if level == 0 {
             return;
         }
-        self.orb_angle = (self.orb_angle + orb::turn_per_tick(level)) % std::f32::consts::TAU;
-        let damage = build.damage(orb::damage(level));
-        let rehit = build.cooldown(orb::rehit());
+        self.drone_angle =
+            (self.drone_angle + drones::turn_per_tick(level)) % std::f32::consts::TAU;
+        let damage = build.damage(drones::damage(level));
+        let rehit = build.cooldown(drones::rehit());
         let player = self.player.position;
-        for position in self.orbs() {
+        for position in self.drones() {
             for enemy in &mut self.enemies {
                 let stats = enemy.kind.stats();
                 if enemy.hp == 0
-                    || enemy.orb_ready_in > 0
-                    || !touch(position, orb::HALF_WIDTH, enemy.position, stats.half_width)
+                    || enemy.drone_ready_in > 0
+                    || !touch(
+                        position,
+                        drones::HALF_WIDTH,
+                        enemy.position,
+                        stats.half_width,
+                    )
                 {
                     continue;
                 }
                 enemy.hit(damage);
-                enemy.orb_ready_in = rehit;
-                let away = (enemy.position - player).normalized() * orb::KNOCKBACK;
+                enemy.drone_ready_in = rehit;
+                let away = (enemy.position - player).normalized() * drones::KNOCKBACK;
                 enemy.position = slide(
                     &self.map,
                     enemy.position,
@@ -297,7 +512,18 @@ impl World {
             if self.rng.random_range(0..100) < stats.drop_percent {
                 self.gems.push(Gem::new(enemy.position, stats.xp));
             }
+            self.stains.push(Stain {
+                position: enemy.position,
+                tick: self.ticks,
+                size: stats.stain,
+            });
             self.kills += 1;
+        }
+        let lasts = stain::lasts();
+        let now = self.ticks;
+        self.stains.retain(|stain| now - stain.tick < lasts);
+        if self.stains.len() > MAX_STAINS {
+            self.stains.drain(..self.stains.len() - MAX_STAINS);
         }
         self.enemies.retain(|enemy| enemy.hp > 0);
         if self.gems.len() > MAX_GEMS {
@@ -345,7 +571,10 @@ impl World {
             let kind = spawn::pick_kind(&mut self.rng, seconds);
             if let Some(position) = self.free_edge_point(kind, None) {
                 let phase = spawn::phase(&mut self.rng);
-                self.enemies.push(Enemy::new(kind, position, phase));
+                let mut enemy = Enemy::new(self.next_enemy_id, kind, position, phase);
+                enemy.hp = enemy.hp * self.weather().hp_percent() / 100;
+                self.enemies.push(enemy);
+                self.next_enemy_id += 1;
             }
         }
     }
@@ -364,6 +593,7 @@ impl World {
     fn move_enemies(&mut self) {
         let pushes = self.separations();
         let target = self.player.position;
+        let weather = self.weather();
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
             let stats = enemy.kind.stats();
@@ -373,7 +603,8 @@ impl World {
                 enemy.heading(target)
             };
             enemy.facing = enemy.facing.after(heading);
-            let step = (heading * (stats.speed * tick_seconds()) + push).clamp_length(MAX_STEP);
+            let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0;
+            let step = (heading * (speed * tick_seconds()) + push).clamp_length(MAX_STEP);
             enemy.position = slide(
                 &self.map,
                 enemy.position,
@@ -450,6 +681,11 @@ impl World {
         if let Some(damage) = hit {
             player.hp = player.hp.saturating_sub(damage);
             player.invincible = u32::from(TICKS_PER_SECOND) / 2;
+            self.stains.push(Stain {
+                position: player.position,
+                tick: self.ticks,
+                size: 1,
+            });
         }
     }
 }

@@ -28,8 +28,8 @@ V 150 80 190    bat
 E 230 40 40     red eyes
 A 160 190 140   abomination skin
 X 70 40 60      stitches
-y 255 210 70    spark
-W 255 250 225   spark's heart
+y 255 210 70    yellow
+W 255 250 225   white: a bullet
 b 70 150 255    gem
 i 175 220 255   gem's shine
 r 220 45 65     heart, potion
@@ -41,8 +41,10 @@ j 205 205 215   steel
 k 230 180 60    gold
 e 170 215 240   glass
 a 235 200 120   sand
-P 150 90 230    orb
-I 215 185 255   orb's shine
+n 90 95 105     dark metal
+t 255 60 60     red light
+q 45 45 52      black metal
+Q 140 20 25     dark blood
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -103,17 +105,16 @@ AAAXAAAA
 .CCCCCC.
 .NN..NN.
 
-# Bolt's spark and an orb, 3 × 3, and an XP gem, 2 × 2: one tile.
+# A bullet, a pixel; a drone, 5 × 4, its rotors at the corners; an XP gem, 2 × 2: one tile.
 
-spark
-.y.
-yWy
-.y.
+bullet
+W
 
-orb
-.P.
-PIP
-.P.
+drone
+j...j
+.nnn.
+.ntn.
+j...j
 
 gem
 ib
@@ -141,27 +142,47 @@ v
 pebble
 p
 
-# Level-up cards, 8 × 8: Bolt, then the passives, then the heal.
+# Level-up cards, 8 × 8: the weapons, then the passives, then the heal.
 
-icon_bolt
-.....yy.
-....yy..
-...yW...
-..yyyyy.
-....Wy..
-...yy...
-..yy....
-.y......
+icon_machete
+.......j
+......jj
+.....jjj
+....jjj.
+...jjj..
+..jjj...
+.uu.....
+uu......
 
-icon_orb
-..wwww..
-.w....PP
-w.....PP
-w..WW..w
-w..WW..w
-w......w
-.w....w.
-..wwww..
+icon_pistol
+........
+.jjjjjjj
+.jjjjjjj
+.nnnn...
+.nn.n...
+.nn.....
+.nn.....
+........
+
+icon_machine_gun
+........
+...qq...
+qqqqqnjj
+qqqqnn..
+q.qqq...
+..q.q...
+........
+........
+
+icon_drones
+jj....jj
+jj....jj
+..nnnn..
+..ntnn..
+..nnnn..
+jj....jj
+jj....jj
+........
 
 icon_vitality
 ........
@@ -194,14 +215,14 @@ icon_magnet
 ........
 
 icon_might
-......jj
-.....jjj
-....jjj.
-...jjj..
-.kjjj...
-..kk....
-.u.k....
-u.......
+..nnnn..
+.n....n.
+.n....n.
+..nnnn..
+.nnnnnn.
+nnjnnnnn
+nnnnnnnn
+.nnnnnn.
 
 icon_haste
 ........
@@ -213,6 +234,16 @@ icon_haste
 .uuuuuu.
 ........
 
+icon_flashlight
+........
+......yy
+....jyyy
+nnnnjyyy
+nnnnjyyy
+....jyyy
+......yy
+........
+
 icon_heal
 ...uu...
 ...ee...
@@ -222,3 +253,14 @@ icon_heal
 .errrre.
 ..eeee..
 ........
+
+# The game's name on the title screen, 35 × 7, drawn twice as big.
+
+title
+R...R..RRR..RRRR..RRRR..RRRRR..RRRR
+R...R.R...R.R...R.R...R.R.....R....
+R...R.R...R.R...R.R...R.R.....R....
+RRRRR.R...R.RRRR..R...R.RRRR...RRR.
+Q...Q.Q...Q.Q.Q...Q...Q.Q.........Q
+Q...Q.Q...Q.Q..Q..Q...Q.Q.........Q
+Q...Q..QQQ..Q...Q.QQQQ..QQQQQ.QQQQ.

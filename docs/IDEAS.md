@@ -12,6 +12,11 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Parasites**: an enemy (the abomination?) that bursts into a swarm of small parasites when it falls.
 - **Treasure carrier**: a chest on legs that runs about the map and **flees** the player instead of chasing them. Felled, it drops XP and/or a free upgrade. Rough tuning: rare (one at a time, every 2–3 minutes), a little slower than the player (5 tiles/s), gone if not caught within 20–30 s, an arrow on the edge of the screen while it is out of sight.
 
+## Level-ups
+
+- **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
+- **Rare drones**: other kinds of drones, found on rare cards. Missile drones, for one: circling the player like the drones, each fires a missile in turn, so salvos streak across the screen.
+
 ## Building
 
 - **Materials** to pick up on the map (dropped by enemies, or gathered from trees and rocks), and **barricades** the player places with a key. A barricade blocks like a rock: zombies slide around it, bats fly over, the abomination could break it.
