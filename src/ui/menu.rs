@@ -6,11 +6,11 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Clear, Padding, Paragraph};
 
-use super::ViewState;
 use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
+use super::{RainDisplay, ViewState};
 
 const SELECTED: Color = Color::Rgb(240, 200, 60);
 
@@ -20,34 +20,50 @@ pub enum PauseItem {
     Resume,
     /// Blood shown or not.
     Blood,
-    /// How much it rains.
+    /// How the rain shows.
     Rain,
+    /// The language the game speaks.
+    Language,
     NewRun,
     Quit,
 }
 
 impl PauseItem {
-    pub const ALL: [PauseItem; 5] = [
+    pub const ALL: [PauseItem; 6] = [
         PauseItem::Resume,
         PauseItem::Blood,
         PauseItem::Rain,
+        PauseItem::Language,
         PauseItem::NewRun,
         PauseItem::Quit,
     ];
 
     fn label(self, view: ViewState) -> String {
         match self {
-            PauseItem::Resume => "Resume".to_owned(),
-            PauseItem::Blood => format!("Blood: {}", on_off(view.blood)),
-            PauseItem::Rain => format!("Rain: {}", view.rain.name()),
-            PauseItem::NewRun => "New run".to_owned(),
-            PauseItem::Quit => "Quit".to_owned(),
+            PauseItem::Resume => fl!("pause-resume"),
+            PauseItem::Blood => fl!("pause-blood", value = on_off(view.blood)),
+            PauseItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
+            PauseItem::Language => fl!("pause-language", value = view.language),
+            PauseItem::NewRun => fl!("pause-new-run"),
+            PauseItem::Quit => fl!("pause-quit"),
         }
     }
 }
 
-fn on_off(on: bool) -> &'static str {
-    if on { "on" } else { "off" }
+fn on_off(on: bool) -> String {
+    if on {
+        fl!("setting-on")
+    } else {
+        fl!("setting-off")
+    }
+}
+
+fn rain_name(rain: RainDisplay) -> String {
+    match rain {
+        RainDisplay::Full => fl!("rain-full"),
+        RainDisplay::Reduced => fl!("rain-reduced"),
+        RainDisplay::Off => fl!("rain-off"),
+    }
 }
 
 /// A box of `width` × `height` in the middle of `map`, cleared, framed.
@@ -97,7 +113,7 @@ pub fn render_title(frame: &mut Frame, area: Rect, sprites: &Sprites, view: View
     pixels::render_sprite_scaled(frame.buffer_mut(), name, sprites, SpriteId::Title, scale);
     centred(
         frame,
-        "Survive the night.",
+        &fl!("title-tagline"),
         Style::new().fg(Color::Gray),
         line,
     );
@@ -105,17 +121,18 @@ pub fn render_title(frame: &mut Frame, area: Rect, sprites: &Sprites, view: View
     if frames % 30 < 20 {
         centred(
             frame,
-            "Press Enter to start",
+            &fl!("title-start"),
             Style::new().add_modifier(Modifier::BOLD),
             start,
         );
     }
     centred(
         frame,
-        &format!(
-            "Blood: {} (B) · Rain: {} (R)",
-            on_off(view.blood),
-            view.rain.name()
+        &fl!(
+            "title-options",
+            blood = on_off(view.blood),
+            rain = rain_name(view.rain),
+            language = view.language
         ),
         Style::new().fg(Color::DarkGray),
         option,
@@ -125,7 +142,7 @@ pub fn render_title(frame: &mut Frame, area: Rect, sprites: &Sprites, view: View
 /// The pause menu, `selected` its highlighted item, the settings as `view` holds them.
 pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize, view: ViewState) {
     let height = u16::try_from(PauseItem::ALL.len()).unwrap_or(3) + 4;
-    let inside = boxed(frame, map, 24, height, "Paused");
+    let inside = boxed(frame, map, 28, height, &fl!("pause-title"));
     let lines: Vec<Line> = PauseItem::ALL
         .iter()
         .enumerate()

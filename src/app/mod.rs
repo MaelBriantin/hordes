@@ -38,11 +38,14 @@ pub struct App {
 impl App {
     /// A new run on a map drawn at random.
     pub fn new(sprites: Sprites) -> Self {
+        let settings = Settings::load();
+        // The language first, so every text from here on is in it.
+        crate::i18n::use_language(settings.language.id());
         Self {
             world: World::new(rand::random()),
             sprites,
             screen: Screen::Title,
-            settings: Settings::load(),
+            settings,
             selected: 0,
             dealt_at: None,
             frames: 0,
@@ -76,6 +79,7 @@ impl App {
                 frame: self.frames,
                 blood: self.settings.blood,
                 rain: self.settings.rain,
+                language: self.settings.language.name(),
             };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
@@ -127,6 +131,7 @@ impl App {
             KeyCode::Enter | KeyCode::Char(' ') => self.screen = Screen::Playing,
             KeyCode::Char('b' | 'B') => self.toggle_blood(),
             KeyCode::Char('r' | 'R') => self.change_rain(RainDisplay::next),
+            KeyCode::Char('l' | 'L') => self.change_language(),
             KeyCode::Esc => self.should_quit = true,
             _ => {}
         }
@@ -141,6 +146,13 @@ impl App {
     /// Changes how much it rains, and keeps the choice for the next runs.
     fn change_rain(&mut self, change: fn(RainDisplay) -> RainDisplay) {
         self.settings.rain = change(self.settings.rain);
+        self.keep_settings();
+    }
+
+    /// Speaks the other language, and keeps the choice for the next runs.
+    fn change_language(&mut self) {
+        self.settings.language = self.settings.language.next();
+        crate::i18n::use_language(self.settings.language.id());
         self.keep_settings();
     }
 
@@ -167,6 +179,7 @@ impl App {
                 PauseItem::Resume => self.screen = Screen::Playing,
                 PauseItem::Blood => self.toggle_blood(),
                 PauseItem::Rain => self.change_rain(RainDisplay::next),
+                PauseItem::Language => self.change_language(),
                 PauseItem::NewRun => self.new_run(),
                 PauseItem::Quit => self.should_quit = true,
             },
@@ -182,6 +195,11 @@ impl App {
             }
             KeyCode::Right | KeyCode::Char('d') if PauseItem::ALL[selected] == PauseItem::Rain => {
                 self.change_rain(RainDisplay::next);
+            }
+            KeyCode::Left | KeyCode::Right | KeyCode::Char('q' | 'a' | 'd')
+                if PauseItem::ALL[selected] == PauseItem::Language =>
+            {
+                self.change_language();
             }
             KeyCode::Esc | KeyCode::Char('p' | 'P') => self.screen = Screen::Playing,
             _ => {}

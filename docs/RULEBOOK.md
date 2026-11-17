@@ -6,9 +6,10 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
 - **Start**: the game opens on its title screen, the run standing still; Enter starts it.
-- **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), show blood or not, set the rain, start a new run or quit. ↑↓ choose, Enter confirms, ←→ change a setting.
+- **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), show blood or not, set the rain, change the language, start a new run or quit. ↑↓ choose, Enter confirms, ←→ change a setting.
 - **Blood**: on or off, with B on the title screen or from the pause menu.
 - **Rain**: how it shows (full, reduced to half its drops, or off), with R on the title screen or from the pause menu. The weather itself is the same whatever the choice.
+- **Language**: English or French, with L on the title screen or from the pause menu. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).
 - **Quit**: from the pause menu; Esc on the title screen or the game over; Ctrl+C at any time.
 - **The camera** keeps the player in the middle of the screen.

@@ -1,3 +1,7 @@
+// First, so `fl!` is there for every other module.
+#[macro_use]
+mod i18n;
+
 mod app;
 mod game;
 mod ui;

@@ -23,12 +23,6 @@ pub use menu::PauseItem;
 pub use night::RainDisplay;
 pub use sprites::Sprites;
 
-const HELP: &str = "←↑↓→ / WASD / ZQSD move · P / Esc pause";
-const HELP_TITLE: &str = "Enter start · B blood · R rain · Esc quit";
-const HELP_PAUSED: &str = "↑↓ choose · Enter confirm · ←→ change · P / Esc resume";
-const HELP_OVER: &str = "R new run · Esc quit";
-const HELP_LEVEL_UP: &str = "←→ / 1 2 3 choose · Enter take · Esc pause";
-
 /// Where the player is, outside the run itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
@@ -82,6 +76,8 @@ pub struct ViewState {
     /// Whether blood shows, and how the rain shows.
     pub blood: bool,
     pub rain: RainDisplay,
+    /// The language the game speaks, by its own name: `Français`.
+    pub language: &'static str,
 }
 
 pub fn render(
@@ -110,11 +106,11 @@ pub fn render(
         );
     }
     let help = match screen {
-        Screen::Title => HELP_TITLE,
-        Screen::Paused { .. } => HELP_PAUSED,
-        Screen::Playing if world.is_over() => HELP_OVER,
-        Screen::Playing if world.offer.is_some() => HELP_LEVEL_UP,
-        Screen::Playing => HELP,
+        Screen::Title => fl!("help-title"),
+        Screen::Paused { .. } => fl!("help-paused"),
+        Screen::Playing if world.is_over() => fl!("help-over"),
+        Screen::Playing if world.offer.is_some() => fl!("help-level-up"),
+        Screen::Playing => fl!("help-run"),
     };
     frame.render_widget(Line::from(help).dark_gray(), areas.help);
     match screen {
@@ -142,10 +138,10 @@ fn status(world: &World) -> Line<'static> {
         HP_COLOR
     };
     let mut spans = vec![
-        Span::raw(" HP "),
+        Span::raw(format!(" {} ", fl!("status-hp"))),
         Span::styled(bar(hp, max_hp), hp_color),
         Span::styled(format!(" {hp}"), Style::new().add_modifier(Modifier::BOLD)),
-        Span::raw("   Lv "),
+        Span::raw(format!("   {} ", fl!("status-level"))),
         Span::styled(
             player.level.to_string(),
             Style::new().add_modifier(Modifier::BOLD),
@@ -164,11 +160,11 @@ fn status(world: &World) -> Line<'static> {
             weather_gauge(world.weather(), world.seconds()),
             weather_style(world.weather()),
         ),
-        Span::raw(format!("   Kills {}", world.kills)),
+        Span::raw(format!("   {}", fl!("status-kills", count = world.kills))),
     ];
     for (weapon, magazine, full) in world.ammo() {
         let rounds = if magazine.reloading > 0 {
-            "reloading".to_owned()
+            fl!("status-reloading")
         } else {
             format!("{}/{full}", magazine.rounds)
         };
@@ -190,13 +186,13 @@ fn bar(part: u32, whole: u32) -> String {
     format!("▕{}{}▏", "█".repeat(filled), "░".repeat(empty))
 }
 
-fn weather_name(weather: Weather) -> &'static str {
+fn weather_name(weather: Weather) -> String {
     match weather {
-        Weather::Clear => "Clear",
-        Weather::Drizzle => "Drizzle",
-        Weather::Rain => "Rain",
-        Weather::Storm => "Storm",
-        Weather::Tempest => "Tempest",
+        Weather::Clear => fl!("weather-clear"),
+        Weather::Drizzle => fl!("weather-drizzle"),
+        Weather::Rain => fl!("weather-rain"),
+        Weather::Storm => fl!("weather-storm"),
+        Weather::Tempest => fl!("weather-tempest"),
     }
 }
 
@@ -240,18 +236,19 @@ fn clock(seconds: u32) -> String {
 
 fn render_game_over(frame: &mut Frame, map: Rect, world: &World) {
     let lines = vec![
-        Line::from("Game over".bold().red()),
+        Line::from(fl!("over-title").bold().red()),
         Line::from(""),
-        Line::from(format!("You survived {}", clock(world.seconds()))),
-        Line::from(format!(
-            "Level {} · {} kills",
-            world.player.level, world.kills
+        Line::from(fl!("over-survived", time = clock(world.seconds()))),
+        Line::from(fl!(
+            "over-score",
+            level = world.player.level,
+            kills = world.kills
         )),
     ];
     let [row] = Layout::vertical([Constraint::Length(6)])
         .flex(Flex::Center)
         .areas(map);
-    let [area] = Layout::horizontal([Constraint::Length(28)])
+    let [area] = Layout::horizontal([Constraint::Length(32)])
         .flex(Flex::Center)
         .areas(row);
     frame.render_widget(Clear, area);

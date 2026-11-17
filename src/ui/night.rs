@@ -60,7 +60,8 @@ impl RainDisplay {
         self.next().next()
     }
 
-    pub fn name(self) -> &'static str {
+    /// Its name in the settings file.
+    pub fn id(self) -> &'static str {
         match self {
             RainDisplay::Full => "full",
             RainDisplay::Reduced => "reduced",

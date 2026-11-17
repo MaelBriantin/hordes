@@ -1,6 +1,6 @@
 //! The player's settings, kept between runs in `settings.txt` in the game's data folder
 //! (`~/Library/Application Support/hordes` on macOS, `~/.local/share/hordes` on Linux), or in
-//! `HORDES_DATA_DIR` when it is set. One setting per line: `blood = off`, `rain = reduced`.
+//! `HORDES_DATA_DIR` when it is set. One setting per line: `language = fr`, `blood = off`.
 
 use std::fs;
 use std::io;
@@ -12,8 +12,58 @@ use crate::ui::RainDisplay;
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
 const FILE: &str = "settings.txt";
 
+/// A language the game's texts come in: a folder of `i18n/`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Language {
+    English,
+    French,
+}
+
+impl Language {
+    /// Its folder in `i18n/`, and its name in the settings file.
+    pub fn id(self) -> &'static str {
+        match self {
+            Language::English => "en",
+            Language::French => "fr",
+        }
+    }
+
+    /// Its name in its own language, so a player finds it whatever language is on.
+    pub fn name(self) -> &'static str {
+        match self {
+            Language::English => "English",
+            Language::French => "Français",
+        }
+    }
+
+    /// The other one, round and round.
+    pub fn next(self) -> Self {
+        match self {
+            Language::English => Language::French,
+            Language::French => Language::English,
+        }
+    }
+
+    /// The system's language, if the game speaks it: from `LC_ALL`, `LC_MESSAGES` or `LANG`
+    /// (`fr_FR.UTF-8`); English otherwise.
+    fn of_system() -> Self {
+        let speaks_french = ["LC_ALL", "LC_MESSAGES", "LANG"]
+            .iter()
+            .filter_map(|name| std::env::var(name).ok())
+            .find(|value| !value.is_empty())
+            .is_some_and(|value| value.starts_with("fr"));
+        if speaks_french {
+            Language::French
+        } else {
+            Language::English
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Settings {
+    /// The language the game speaks: the system's at first.
+    pub language: Language,
     /// Whether blood shows: stains where enemies fall and the player is hit.
     pub blood: bool,
     /// How the rain shows during a run.
@@ -23,6 +73,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            language: Language::of_system(),
             blood: true,
             rain: RainDisplay::Full,
         }
@@ -54,6 +105,8 @@ impl Settings {
                 continue;
             };
             match (key.trim(), value.trim()) {
+                ("language", "en") => settings.language = Language::English,
+                ("language", "fr") => settings.language = Language::French,
                 ("blood", "on") => settings.blood = true,
                 ("blood", "off") => settings.blood = false,
                 ("rain", "full" | "heavy") => settings.rain = RainDisplay::Full,
@@ -67,9 +120,10 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "blood = {}\nrain = {}\n",
+            "language = {}\nblood = {}\nrain = {}\n",
+            self.language.id(),
             if self.blood { "on" } else { "off" },
-            self.rain.name()
+            self.rain.id()
         )
     }
 }
@@ -89,6 +143,7 @@ mod tests {
     #[test]
     fn settings_read_back_what_they_wrote() {
         let settings = Settings {
+            language: Language::French,
             blood: false,
             rain: RainDisplay::Reduced,
         };

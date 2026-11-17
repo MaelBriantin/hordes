@@ -1,0 +1,6 @@
+# Where the game's texts live, for the `fl!` macro (see src/i18n.rs).
+fallback_language = "en"
+
+[fluent]
+# One folder per language, each with one file named after the crate: `i18n/en/hordes.ftl`.
+assets_dir = "i18n"

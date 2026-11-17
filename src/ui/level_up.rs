@@ -52,9 +52,12 @@ pub fn render(
     let block = Block::bordered()
         .padding(Padding::new(GAP, GAP, 1, 1))
         .title(
-            Line::from(format!(" Level {} ", world.player.level))
-                .bold()
-                .centered(),
+            Line::from(format!(
+                " {} ",
+                fl!("level-up-title", level = world.player.level)
+            ))
+            .bold()
+            .centered(),
         );
     let inside = block.inner(area);
     frame.render_widget(block, area);
@@ -133,18 +136,21 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
         Constraint::Fill(1),
     ])
     .areas(inside);
-    centred(frame, name(card.choice), Style::new().bold(), title);
+    centred(frame, &name(card.choice), Style::new().bold(), title);
     let (tag_text, tag_style) = match card.level {
         0 => (String::new(), Style::new()),
-        1 => ("NEW".to_owned(), Style::new().fg(NEW).bold()),
-        level => (format!("Lv {level}/{MAX_LEVEL}"), Style::new()),
+        1 => (fl!("card-new"), Style::new().fg(NEW).bold()),
+        level => (
+            fl!("card-level", level = level, max = MAX_LEVEL),
+            Style::new(),
+        ),
     };
     centred(frame, &tag_text, tag_style, tag);
     let [picture] = Layout::horizontal([Constraint::Length(PICTURE.0)])
         .flex(Flex::Center)
         .areas(picture);
     pixels::render_sprite(frame.buffer_mut(), picture, sprites, icon(card.choice));
-    centred(frame, gain_of(card.choice, card.level), Style::new(), gain);
+    centred(frame, &gain_of(card.choice, card.level), Style::new(), gain);
 }
 
 fn icon(choice: Choice) -> SpriteId {
@@ -167,69 +173,69 @@ fn icon(choice: Choice) -> SpriteId {
     }
 }
 
-fn name(choice: Choice) -> &'static str {
+fn name(choice: Choice) -> String {
     match choice {
         Choice::Weapon(weapon) => weapon_name(weapon),
         Choice::Passive(passive) => match passive {
-            Passive::Vitality => "Vitality",
-            Passive::Swiftness => "Swiftness",
-            Passive::Magnet => "Magnet",
-            Passive::Might => "Might",
-            Passive::Haste => "Haste",
-            Passive::Flashlight => "Flashlight",
+            Passive::Vitality => fl!("passive-vitality"),
+            Passive::Swiftness => fl!("passive-swiftness"),
+            Passive::Magnet => fl!("passive-magnet"),
+            Passive::Might => fl!("passive-might"),
+            Passive::Haste => fl!("passive-haste"),
+            Passive::Flashlight => fl!("passive-flashlight"),
         },
-        Choice::Heal => "Heal",
+        Choice::Heal => fl!("heal"),
     }
 }
 
-pub fn weapon_name(weapon: Weapon) -> &'static str {
+pub fn weapon_name(weapon: Weapon) -> String {
     match weapon {
-        Weapon::Machete => "Machete",
-        Weapon::Pistol => "Pistol",
-        Weapon::MachineGun => "Machine gun",
-        Weapon::Drones => "Drones",
+        Weapon::Machete => fl!("weapon-machete"),
+        Weapon::Pistol => fl!("weapon-pistol"),
+        Weapon::MachineGun => fl!("weapon-machine-gun"),
+        Weapon::Drones => fl!("weapon-drones"),
     }
 }
 
 /// What a choice brings, taken at `level`.
-fn gain_of(choice: Choice, level: u8) -> &'static str {
+fn gain_of(choice: Choice, level: u8) -> String {
     match choice {
         Choice::Weapon(Weapon::Machete) => match level {
-            1 => "Slashes enemies in front",
-            2 => "Reach 2.5 → 3.5",
-            3 => "A second slash, behind",
-            4 => "Wider swing",
-            _ => "A third slash, ahead",
+            1 => fl!("gain-machete-1"),
+            2 => fl!("gain-machete-2"),
+            3 => fl!("gain-machete-3"),
+            4 => fl!("gain-machete-4"),
+            _ => fl!("gain-machete-5"),
         },
         Choice::Weapon(Weapon::Pistol) => match level {
-            1 => "6 rounds at the nearest enemies",
-            2 => "Magazine 6 → 9",
-            3 => "Reloads in 1.5 s",
-            4 => "+1 bullet per shot",
-            _ => "Magazine 12, damage 15",
+            1 => fl!("gain-pistol-1"),
+            2 => fl!("gain-pistol-2"),
+            3 => fl!("gain-pistol-3"),
+            4 => fl!("gain-pistol-4"),
+            _ => fl!("gain-pistol-5"),
         },
         Choice::Weapon(Weapon::MachineGun) => match level {
-            1 => "Bursts of 20 rounds",
-            2 => "Magazine 20 → 30",
-            3 => "Damage 4 → 6",
-            4 => "Reloads in 2 s",
-            _ => "Bullets go through an enemy",
+            1 => fl!("gain-machine-gun-1"),
+            2 => fl!("gain-machine-gun-2"),
+            3 => fl!("gain-machine-gun-3"),
+            4 => fl!("gain-machine-gun-4"),
+            _ => fl!("gain-machine-gun-5"),
         },
         Choice::Weapon(Weapon::Drones) => match level {
-            1 => "A drone circling you",
-            2 | 4 => "+1 drone",
-            3 => "Damage 8 → 12",
-            _ => "Wider and faster",
+            1 => fl!("gain-drones-1"),
+            2 | 4 => fl!("gain-drones-more"),
+            3 => fl!("gain-drones-3"),
+            _ => fl!("gain-drones-5"),
         },
         Choice::Passive(passive) => match passive {
-            Passive::Vitality => "+20 max HP, healed",
-            Passive::Swiftness => "+8% speed",
-            Passive::Magnet => "Gems fly in from 1 tile further",
-            Passive::Might => "+10% damage",
-            Passive::Haste => "−8% weapon cooldowns",
-            Passive::Flashlight => "+2 tiles of light",
+            Passive::Vitality => fl!("gain-vitality"),
+            Passive::Swiftness => fl!("gain-swiftness"),
+            Passive::Magnet => fl!("gain-magnet"),
+            Passive::Might => fl!("gain-might"),
+            Passive::Haste => fl!("gain-haste"),
+            Passive::Flashlight => fl!("gain-flashlight"),
         },
-        Choice::Heal => "Heal 20 HP",
+        Choice::Heal => fl!("gain-heal"),
     }
 }
 
