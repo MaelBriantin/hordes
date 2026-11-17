@@ -1,0 +1,12 @@
+[package]
+name = "hordes"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand = "0.10.3"
+ratatui = "0.30.2"
+thiserror = "2.0.21"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }

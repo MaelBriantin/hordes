@@ -1,0 +1,207 @@
+# hordes: every sprite of the game, in pixels.
+#
+# A sprite is a line with its name, then its rows of pixels, all as wide, then a blank line.
+# Each pixel is a key of the palette, `.` for nothing. Two pixels make one cell of the
+# terminal, one above the other: a pixel shows about square. A tile is 2 × 2 pixels.
+# Lines starting with `#` are comments. A test checks that the game finds every sprite it
+# needs here, and that every key is in the palette.
+
+palette
+R 210 40 40     headband
+H 120 72 40     hair
+F 240 196 150   skin
+T 40 55 120     tunic
+B 70 50 40      boots
+L 60 140 60     leaves
+l 100 180 80    leaves in the light
+d 35 95 45      leaves in the shade
+K 100 65 35     trunk
+g 170 170 165   rock in the light
+G 120 120 118   rock
+D 78 78 82      rock in the shade
+v 45 80 45      grass
+p 85 85 85      pebble
+Z 110 170 90    zombie skin
+C 110 100 120   torn clothes
+N 60 55 65      zombie legs
+V 150 80 190    bat
+E 230 40 40     red eyes
+A 160 190 140   abomination skin
+X 70 40 60      stitches
+y 255 210 70    spark
+W 255 250 225   spark's heart
+b 70 150 255    gem
+i 175 220 255   gem's shine
+r 220 45 65     heart, potion
+o 255 150 160   heart's shine
+u 150 100 60    leather, wood
+w 190 190 205   speed lines
+m 210 50 50     magnet
+j 205 205 215   steel
+k 230 180 60    gold
+e 170 215 240   glass
+a 235 200 120   sand
+
+# The hero, 4 × 4: facing down, up, and right (mirrored for left).
+
+hero_front
+.RR.
+.FF.
+FTTF
+.BB.
+
+hero_back
+.RR.
+.HH.
+FTTF
+.BB.
+
+hero_side
+RRR.
+.HF.
+.TF.
+.BB.
+
+# Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
+
+zombie_side
+.ZZ.
+.CZZ
+.CC.
+.NN.
+
+zombie_front
+.ZZ.
+ZCCZ
+.CC.
+.NN.
+
+# The bat, 4 × 4: its wings up, then down.
+
+bat_up
+V..V
+VEEV
+.VV.
+....
+
+bat_down
+....
+VEEV
+V..V
+....
+
+# The abomination, 8 × 7: facing right.
+
+abomination
+..AAAA..
+..EAAE..
+.AAAAAA.
+AAAAXAAA
+AAAXAAAA
+.CCCCCC.
+.NN..NN.
+
+# Bolt's spark, 3 × 3, and an XP gem, 2 × 2: one tile.
+
+spark
+.y.
+yWy
+.y.
+
+gem
+ib
+bb
+
+# Obstacles, 4 × 4: each covers 2 × 2 tiles.
+
+tree
+.lL.
+lLLd
+LLdd
+.KK.
+
+rock
+.gG.
+gGGD
+GGDD
+.DD.
+
+# The ground, a pixel each.
+
+grass
+v
+
+pebble
+p
+
+# Level-up cards, 8 × 8: Bolt, then the passives, then the heal.
+
+icon_bolt
+.....yy.
+....yy..
+...yW...
+..yyyyy.
+....Wy..
+...yy...
+..yy....
+.y......
+
+icon_vitality
+........
+.rr..rr.
+roorrrrr
+rorrrrrr
+.rrrrrr.
+..rrrr..
+...rr...
+........
+
+icon_swiftness
+........
+WW..WW..
+.WW..WW.
+..WW..WW
+.WW..WW.
+WW..WW..
+........
+........
+
+icon_magnet
+........
+.jj..jj.
+.mm..mm.
+.mm..mm.
+.mm..mm.
+.mmmmmm.
+..mmmm..
+........
+
+icon_might
+......jj
+.....jjj
+....jjj.
+...jjj..
+.kjjj...
+..kk....
+.u.k....
+u.......
+
+icon_haste
+........
+.uuuuuu.
+..eaae..
+...ae...
+...ea...
+..eaae..
+.uuuuuu.
+........
+
+icon_heal
+...uu...
+...ee...
+..e..e..
+.errrre.
+.erorre.
+.errrre.
+..eeee..
+........

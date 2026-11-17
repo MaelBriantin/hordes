@@ -1,0 +1,5 @@
+# The Rust version the game is built with, here and in the CI. Raised on purpose, in a pull request
+# of its own: a new release's lints then never break a build by surprise.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]
