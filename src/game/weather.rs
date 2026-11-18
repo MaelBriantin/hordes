@@ -1,4 +1,4 @@
-//! The weather: it worsens as the run goes on, stage by stage, every 2 minutes, as the
+//! The weather: the sun sets at the start of a run; then the night's weather worsens as the run goes on, stage by stage, every 2 minutes, as the
 //! difficulty does. Rain hides the horde, lightning shows it all, and from the storm on, strikes
 //! of lightning hurt the enemies they fall among.
 
@@ -6,6 +6,9 @@ use super::TICKS_PER_SECOND;
 
 /// How long a stage of weather lasts, in seconds.
 const STAGE_SECONDS: u32 = 120;
+/// How long the sun takes to set, at the start of the dusk, in seconds; the night falls over the
+/// rest of it.
+const SUNSET_SECONDS: u32 = 60;
 /// What a strike of lightning takes from each enemy near where it falls, in HP, from the storm.
 pub const STRIKE_DAMAGE: u32 = 30;
 /// How near where it falls a strike hurts enemies, in tiles.
@@ -13,6 +16,7 @@ pub const STRIKE_RADIUS: f32 = 2.5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Weather {
+    Dusk,
     Clear,
     Drizzle,
     Rain,
@@ -24,10 +28,11 @@ impl Weather {
     /// The weather `seconds` into a run.
     pub fn at(seconds: u32) -> Self {
         match seconds / STAGE_SECONDS {
-            0 => Weather::Clear,
-            1 => Weather::Drizzle,
-            2 => Weather::Rain,
-            3 => Weather::Storm,
+            0 => Weather::Dusk,
+            1 => Weather::Clear,
+            2 => Weather::Drizzle,
+            3 => Weather::Rain,
+            4 => Weather::Storm,
             _ => Weather::Tempest,
         }
     }
@@ -35,6 +40,7 @@ impl Weather {
     /// The weather after this one; none after the tempest.
     pub fn next(self) -> Option<Self> {
         match self {
+            Weather::Dusk => Some(Weather::Clear),
             Weather::Clear => Some(Weather::Drizzle),
             Weather::Drizzle => Some(Weather::Rain),
             Weather::Rain => Some(Weather::Storm),
@@ -43,10 +49,10 @@ impl Weather {
         }
     }
 
-    /// The ticks between two strikes of lightning, on average; none on a clear night.
+    /// The ticks between two strikes of lightning, on average; none at dusk or on a clear night.
     pub fn lightning_every(self) -> Option<u32> {
         let seconds = match self {
-            Weather::Clear => return None,
+            Weather::Dusk | Weather::Clear => return None,
             Weather::Drizzle => 8,
             Weather::Rain => 5,
             Weather::Storm => 3,
@@ -63,7 +69,7 @@ impl Weather {
     /// How much less far the player's light reaches, in tiles.
     pub fn light_loss(self) -> f32 {
         match self {
-            Weather::Clear | Weather::Drizzle => 0.0,
+            Weather::Dusk | Weather::Clear | Weather::Drizzle => 0.0,
             Weather::Rain => 1.0,
             Weather::Storm => 2.0,
             Weather::Tempest => 3.0,
@@ -73,7 +79,7 @@ impl Weather {
     /// The HP of the enemies appearing, against their own, in percent.
     pub fn hp_percent(self) -> u32 {
         match self {
-            Weather::Clear | Weather::Drizzle => 100,
+            Weather::Dusk | Weather::Clear | Weather::Drizzle => 100,
             Weather::Rain => 110,
             Weather::Storm => 125,
             Weather::Tempest => 150,
@@ -84,6 +90,16 @@ impl Weather {
     pub fn speed_percent(self) -> u16 {
         if self == Weather::Tempest { 110 } else { 100 }
     }
+}
+
+/// How much daylight is left `ticks` into a run, from 1 (the setting sun) to 0 (the night):
+/// all of it for the first half of the dusk, then less and less over the second.
+pub fn daylight(ticks: u32) -> f32 {
+    let sunset = SUNSET_SECONDS * u32::from(TICKS_PER_SECOND);
+    let nightfall = (STAGE_SECONDS - SUNSET_SECONDS) * u32::from(TICKS_PER_SECOND);
+    let fallen = ticks.saturating_sub(sunset).min(nightfall);
+    let share = |n: u32| f32::from(u16::try_from(n).unwrap_or(u16::MAX));
+    1.0 - share(fallen) / share(nightfall)
 }
 
 /// How far `seconds` into a run is through its stage of weather, from 0 to 1.
@@ -98,11 +114,14 @@ mod tests {
 
     #[test]
     fn the_weather_worsens_every_two_minutes() {
-        let stages: Vec<Weather> = [0, 119, 120, 240, 360, 480, 3_000].map(Weather::at).into();
+        let stages: Vec<Weather> = [0, 119, 120, 240, 360, 480, 600, 3_000]
+            .map(Weather::at)
+            .into();
         assert_eq!(
             stages,
             [
-                Weather::Clear,
+                Weather::Dusk,
+                Weather::Dusk,
                 Weather::Clear,
                 Weather::Drizzle,
                 Weather::Rain,
@@ -118,6 +137,16 @@ mod tests {
         assert_eq!(Weather::Clear.lightning_every(), None);
         assert!(!Weather::Rain.strikes_hurt());
         assert!(Weather::Storm.strikes_hurt());
+    }
+
+    #[test]
+    fn the_sun_sets_then_the_night_falls() {
+        let second = u32::from(TICKS_PER_SECOND);
+        assert!((daylight(0) - 1.0).abs() < 1e-4);
+        assert!((daylight(60 * second) - 1.0).abs() < 1e-4);
+        assert!((daylight(90 * second) - 0.5).abs() < 1e-4);
+        assert!(daylight(120 * second) < f32::EPSILON);
+        assert!(daylight(3_000 * second) < f32::EPSILON);
     }
 
     #[test]

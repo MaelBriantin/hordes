@@ -39,14 +39,15 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 Every run is played for its score, arcade style.
 
 - Every enemy felled is worth **points**: zombie **10**, bat **15**, abomination **100**.
-- Times the **weather's multiplier**: ×1 on a clear night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
+- Times the **weather's multiplier**: ×1 at dusk and on a clear night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows the score and the multiplier of the moment (the weather's times the combo's). While the run is ahead of the best one kept, its score gleams.
 - **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in a box under its tagline, the best run in gold; the settings are on its last line.
 
 ## The night
 
-- Runs take place at night. Everything is dimmer and bluer.
+- Runs start at **dusk**: for the first minute, the setting sun lights the whole map, warm; over the next minute, the night falls, dimmer and bluer, until only the lights below show anything.
+- Then runs take place at night. Everything is dimmer and bluer.
 - The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (a tenth of their brightness).
 - **Gems, bullets and the machete's swings glow**: they show in the dark.
 - **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
@@ -54,15 +55,16 @@ Every run is played for its score, arcade style.
 
 ## Weather
 
-The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does. The status line shows it, with a gauge to the next stage. The rain thickens over the last quarter of a stage, into the next one's.
+The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does, after the dusk (see The night). The status line shows it, with a gauge to the next stage. The rain thickens over the last quarter of a stage, into the next one's.
 
 | From | Weather | Rain | Lightning | Light | Enemies appearing |
 |---|---|---|---|---|---|
-| 0:00 | Clear | none | none | — | — |
-| 2:00 | Drizzle | 4 drops per 1000 pixels | every 8 s | — | — |
-| 4:00 | Rain | 8 | every 5 s | −1 tile | +10% HP |
-| 6:00 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
-| 8:00 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
+| 0:00 | Dusk | none | none | — | — |
+| 2:00 | Clear | none | none | — | — |
+| 4:00 | Drizzle | 4 drops per 1000 pixels | every 8 s | — | — |
+| 6:00 | Rain | 8 | every 5 s | −1 tile | +10% HP |
+| 8:00 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
+| 10:00 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
 - From the storm on, a strike takes **30 HP** from every enemy within **2.5 tiles** of where it falls (a ring shows it). It never hurts the player.

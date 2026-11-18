@@ -43,6 +43,7 @@ status-level = Lv
 status-kills = Kills { $count }
 status-reloading = reloading
 
+weather-dusk = Dusk
 weather-clear = Clear
 weather-drizzle = Drizzle
 weather-rain = Rain

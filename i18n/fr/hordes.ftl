@@ -43,6 +43,7 @@ status-level = Niv
 status-kills = Tués { $count }
 status-reloading = recharge
 
+weather-dusk = Crépuscule
 weather-clear = Nuit claire
 weather-drizzle = Bruine
 weather-rain = Pluie

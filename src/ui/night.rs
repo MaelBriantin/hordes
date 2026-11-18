@@ -31,8 +31,8 @@ const TITLE_RAIN: Rain = Rain {
     drop: Color::Rgb(150, 170, 205),
     tail: Color::Rgb(70, 80, 110),
 };
-/// The drops per thousand pixels of each weather, from the clear night to the tempest.
-const RAIN_BY_WEATHER: [f32; 5] = [0.0, 4.0, 8.0, 14.0, 20.0];
+/// The drops per thousand pixels of each weather, from the dusk to the tempest.
+const RAIN_BY_WEATHER: [f32; 6] = [0.0, 0.0, 4.0, 8.0, 14.0, 20.0];
 /// The share of a stage of weather, at its end, over which the rain turns into the next one's.
 const RAIN_TURN: f32 = 0.25;
 
@@ -162,6 +162,8 @@ const DARK: f32 = 0.1;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
 const SATURATION: f32 = 0.7;
 const TINT: (f32, f32, f32) = (0.85, 0.9, 1.05);
+/// The warm light the setting sun casts over everything.
+const SUNSET_TINT: (f32, f32, f32) = (1.1, 0.88, 0.72);
 
 /// A strike of lightning as it shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -358,7 +360,10 @@ impl Light {
 
 /// The night over what the canvas holds: its colours dimmed and cooled, lit only by the
 /// `lights` (the brightest of them where several meet), or all over as brightly as `flash`.
-pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32) {
+/// While `daylight` is left (from 0 to 1), the setting sun lights it all, warm, as much.
+pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
+    let ambient = DARK + (1.0 - DARK) * daylight;
+    let look = Dusk::of(daylight);
     let (left, top) = canvas.origin;
     let width = canvas.width;
     for (index, pixel) in (0..).zip(canvas.pixels.iter_mut()) {
@@ -373,8 +378,8 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32) {
                 ((light.radius + light.fade - distance) / light.fade.max(0.1)).clamp(0.0, 1.0)
             })
             .fold(0.0, f32::max);
-        let level = (DARK + (1.0 - DARK) * lit).max(flash);
-        *pixel = Some(night_colour((red, green, blue), level));
+        let level = (ambient + (1.0 - ambient) * lit).max(flash);
+        *pixel = Some(look.colour((red, green, blue), level));
     }
 }
 
@@ -415,25 +420,46 @@ fn tiles_apart((dx, dy): (i32, i32)) -> f32 {
     clamp(dx).hypot(clamp(dy)) / 2.0
 }
 
-/// A colour at night: less of its colour, a little bluer, at `level` of its brightness.
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "clamped between 0 and 255 first"
-)]
-fn night_colour((red, green, blue): (u8, u8, u8), level: f32) -> Color {
-    let (red, green, blue) = (f32::from(red), f32::from(green), f32::from(blue));
-    let grey = (red + green + blue) / 3.0;
-    let channel = |value: f32, tint: f32| {
-        ((grey + (value - grey) * SATURATION) * tint * level)
-            .round()
-            .clamp(0.0, 255.0) as u8
-    };
-    Color::Rgb(
-        channel(red, TINT.0),
-        channel(green, TINT.1),
-        channel(blue, TINT.2),
-    )
+/// How colours look as the sun sets into the night.
+struct Dusk {
+    saturation: f32,
+    tint: (f32, f32, f32),
+}
+
+impl Dusk {
+    /// The look with `daylight` left: the setting sun's at 1, the night's at 0.
+    fn of(daylight: f32) -> Self {
+        let mix = |night: f32, sun: f32| night + (sun - night) * daylight;
+        Dusk {
+            saturation: mix(SATURATION, 1.0),
+            tint: (
+                mix(TINT.0, SUNSET_TINT.0),
+                mix(TINT.1, SUNSET_TINT.1),
+                mix(TINT.2, SUNSET_TINT.2),
+            ),
+        }
+    }
+
+    /// A colour in this look: less of its colour, tinted, at `level` of its brightness.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "clamped between 0 and 255 first"
+    )]
+    fn colour(&self, (red, green, blue): (u8, u8, u8), level: f32) -> Color {
+        let (red, green, blue) = (f32::from(red), f32::from(green), f32::from(blue));
+        let grey = (red + green + blue) / 3.0;
+        let channel = |value: f32, tint: f32| {
+            ((grey + (value - grey) * self.saturation) * tint * level)
+                .round()
+                .clamp(0.0, 255.0) as u8
+        };
+        Color::Rgb(
+            channel(red, self.tint.0),
+            channel(green, self.tint.1),
+            channel(blue, self.tint.2),
+        )
+    }
 }
 
 /// A number scrambled from another, always the same: the night's luck, without a generator.
@@ -458,11 +484,20 @@ mod tests {
 
     #[test]
     fn the_dark_dims_and_cools_a_colour() {
+        let night = Dusk::of(0.0);
         assert_eq!(
-            night_colour((200, 200, 200), 1.0),
+            night.colour((200, 200, 200), 1.0),
             Color::Rgb(170, 180, 210)
         );
-        assert_eq!(night_colour((200, 200, 200), 0.0), Color::Rgb(0, 0, 0));
+        assert_eq!(night.colour((200, 200, 200), 0.0), Color::Rgb(0, 0, 0));
+    }
+
+    #[test]
+    fn the_setting_sun_warms_a_colour() {
+        assert_eq!(
+            Dusk::of(1.0).colour((200, 200, 200), 1.0),
+            Color::Rgb(220, 176, 144)
+        );
     }
 
     #[test]

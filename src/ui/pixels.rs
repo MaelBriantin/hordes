@@ -9,7 +9,7 @@ use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
     Feature, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, World,
-    campfire_light, weather_progress,
+    campfire_light, daylight, weather_progress,
 };
 
 /// Pixels per tile, each way.
@@ -257,7 +257,12 @@ pub fn render_map(
     let strike = night::run_strike(world.lightning, world.ticks());
     let mut lights = vec![night::Light::torch(centre, world.light_radius())];
     lights.extend(canvas.paint_healing(world, frame));
-    night::light(&mut canvas, &lights, night::flash(strike));
+    night::light(
+        &mut canvas,
+        &lights,
+        night::flash(strike),
+        daylight(world.ticks()),
+    );
     for gem in &world.gems {
         canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
     }
@@ -315,7 +320,12 @@ pub fn render_death_scene(
         .and_then(|every| night::strike_every(frame, every));
     let mut lights = vec![night::Light::torch(centre, DEATH_LIGHT)];
     lights.extend(canvas.paint_healing(world, frame));
-    night::light(&mut canvas, &lights, night::flash(strike));
+    night::light(
+        &mut canvas,
+        &lights,
+        night::flash(strike),
+        daylight(world.ticks()),
+    );
     night::dim(&mut canvas, DEATH_DIM);
     if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
         night::paint_rain(&mut canvas, frame, rain);

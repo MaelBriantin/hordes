@@ -20,7 +20,7 @@ pub fn points(kind: EnemyKind) -> u64 {
 /// The weather's multiplier, in tenths: ×1 on a clear night up to ×5 in the tempest.
 pub fn weather_tenths(weather: Weather) -> u64 {
     match weather {
-        Weather::Clear => 10,
+        Weather::Dusk | Weather::Clear => 10,
         Weather::Drizzle => 15,
         Weather::Rain => 20,
         Weather::Storm => 30,

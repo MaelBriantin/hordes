@@ -30,7 +30,7 @@ pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use weather::{STRIKE_RADIUS, Weather, progress as weather_progress};
+pub use weather::{STRIKE_RADIUS, Weather, daylight, progress as weather_progress};
 pub use world::{Input, Lightning, World};
 
 /// How many ticks the world moves on per second.

@@ -10,6 +10,7 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- Runs start at dusk: the setting sun lights the whole map for a minute, then the night falls over the next one. The weather worsens from there, 2 minutes later than before.
 - Red herbs on the ground, which give back 20 HP to a hurt player walking over them.
 - Campfires, which heal 3 HP a second to a player staying by them: their light shrinks as they give, until they die out.
 - Herbs and campfires are rare: the map holds about one herb for 33 chunks, one campfire for 100. Only the torch, a strike of lightning or a campfire's own light shows them.

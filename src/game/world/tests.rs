@@ -670,7 +670,7 @@ fn a_clear_night_has_no_lightning() {
 fn from_the_drizzle_lightning_strikes() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 120;
+    world.ticks = 30 * 240;
     wait(&mut world, 30 * 13);
     assert!(world.lightning.is_some());
 }
@@ -679,7 +679,7 @@ fn from_the_drizzle_lightning_strikes() {
 fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 360;
+    world.ticks = 30 * 480;
     world
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
@@ -694,7 +694,7 @@ fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
 fn enemies_appearing_later_are_tougher() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 480;
+    world.ticks = 30 * 600;
     while world.enemies.is_empty() {
         world.update(Input::default());
     }
@@ -706,7 +706,7 @@ fn enemies_appearing_later_are_tougher() {
 fn the_weather_dims_the_light() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     let clear = world.light_radius();
-    world.ticks = 30 * 360;
+    world.ticks = 30 * 480;
     assert!((clear - world.light_radius() - 2.0).abs() < 1e-4);
 }
 
@@ -730,7 +730,7 @@ fn kills_score_their_points_and_build_a_combo_that_closes() {
 fn the_weather_multiplies_the_score() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 480;
+    world.ticks = 30 * 600;
     world
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(150.0, 50.0)));

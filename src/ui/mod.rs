@@ -234,6 +234,7 @@ fn bar(part: u32, whole: u32) -> String {
 
 fn weather_name(weather: Weather) -> String {
     match weather {
+        Weather::Dusk => fl!("weather-dusk"),
         Weather::Clear => fl!("weather-clear"),
         Weather::Drizzle => fl!("weather-drizzle"),
         Weather::Rain => fl!("weather-rain"),
@@ -242,9 +243,10 @@ fn weather_name(weather: Weather) -> String {
     }
 }
 
-/// The weather's colour: grey for a clear night, darkening through blues to red.
+/// The weather's colour: orange at dusk, grey for a clear night, darkening through blues to red.
 fn weather_style(weather: Weather) -> Style {
     let color = match weather {
+        Weather::Dusk => Color::Rgb(240, 150, 70),
         Weather::Clear => Color::Rgb(160, 160, 170),
         Weather::Drizzle => Color::Rgb(130, 170, 220),
         Weather::Rain => Color::Rgb(80, 120, 230),
