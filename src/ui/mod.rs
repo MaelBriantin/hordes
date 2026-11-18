@@ -28,6 +28,7 @@ use crate::game::{Weather, weather_progress};
 pub use debug::DebugAction;
 pub use menu::PauseItem;
 pub use night::{BloodLook, RainDisplay};
+pub use pixels::Outline;
 pub use sprites::Sprites;
 
 /// Where the player is, outside the run itself.
@@ -121,6 +122,8 @@ pub struct ViewState {
     /// How blood shows, and how the rain shows.
     pub blood: BloodLook,
     pub rain: RainDisplay,
+    /// The line around the player.
+    pub outline: Outline,
     /// The language the game speaks, by its own name: `Français`.
     pub language: &'static str,
     /// The leaderboard's place of the run just over, if it made it.
@@ -152,15 +155,7 @@ pub fn render(
         menu::render_death(frame, map, sprites, view, world, leaderboard, name);
     } else {
         render_status(frame, areas.top, world, leaderboard, view.frame);
-        pixels::render_map(
-            frame.buffer_mut(),
-            map,
-            world,
-            sprites,
-            view.frame,
-            view.blood,
-            view.rain,
-        );
+        pixels::render_map(frame.buffer_mut(), map, world, sprites, view);
         horde::shift(frame.buffer_mut(), map, horde::shake(world));
         render_hurt(frame.buffer_mut(), map, world);
         if let Some(healing) = world.compass() {

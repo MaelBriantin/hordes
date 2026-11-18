@@ -27,7 +27,7 @@ The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfon
 | `←` `↑` `↓` `→` / `WASD` / `ZQSD` | Move (the last key pressed wins) |
 | `Enter` | Start, take a card, confirm |
 | `P` / `Esc` | Pause: resume, settings, new run, quit |
-| `B` `R` `L` | On the title screen: blood, rain, language |
+| `B` `R` `O` `L` | On the title screen: blood, rain, the player's outline, language |
 | `R` | After a death: a new run |
 | `Ctrl` `C` | Quit at once |
 

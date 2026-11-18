@@ -1,10 +1,13 @@
 //! The map in pixels: a tile is 2 × 2 pixels, a cell holds 2 pixels one above the other. The
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
+use std::collections::HashSet;
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
+use super::ViewState;
 use super::level_up;
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
@@ -22,6 +25,55 @@ const FLICKER: u32 = 6;
 const COMPASS: Color = Color::Rgb(220, 45, 65);
 const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
 const COMPASS_PULSE: u32 = 10;
+/// The line around the player, to see them at once in the crowd: a setting, off at first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outline {
+    Off,
+    White,
+    Yellow,
+    Red,
+}
+
+impl Outline {
+    /// Every choice, in the order the settings go through them.
+    const ALL: [Outline; 4] = [Outline::Off, Outline::White, Outline::Yellow, Outline::Red];
+
+    /// The next choice, round and round.
+    pub fn next(self) -> Self {
+        self.step(1)
+    }
+
+    /// The choice before, round and round.
+    pub fn previous(self) -> Self {
+        self.step(Self::ALL.len() - 1)
+    }
+
+    fn step(self, by: usize) -> Self {
+        let index = Self::ALL.iter().position(|look| *look == self).unwrap_or(0);
+        Self::ALL[(index + by) % Self::ALL.len()]
+    }
+
+    /// Its name in the settings file.
+    pub fn id(self) -> &'static str {
+        match self {
+            Outline::Off => "off",
+            Outline::White => "white",
+            Outline::Yellow => "yellow",
+            Outline::Red => "red",
+        }
+    }
+
+    /// The colour of the line; none when off.
+    fn colour(self) -> Option<Color> {
+        match self {
+            Outline::Off => None,
+            Outline::White => Some(Color::Rgb(240, 240, 245)),
+            Outline::Yellow => Some(Color::Rgb(255, 225, 90)),
+            Outline::Red => Some(Color::Rgb(235, 45, 45)),
+        }
+    }
+}
+
 /// The gear over the top left of the map: the share of the light its veil leaves, the room
 /// between two icons and around them, in pixels; the levels and rounds under the icons.
 const VEIL: f32 = 0.55;
@@ -81,6 +133,28 @@ impl<'a> Canvas<'a> {
     pub fn set(&mut self, pixel: (i32, i32), color: Color) {
         if let Some(index) = self.index(pixel) {
             self.pixels[index] = Some(color);
+        }
+    }
+
+    /// A line of pixels in `colour` around a sprite as `paint_at` would place it, over what is
+    /// there: the player, seen at once in the crowd.
+    fn outline(&mut self, look: Look, position: Vec2, colour: Color) {
+        let centre = pixel(position);
+        let sprite = self.sprites.get(look.sprite);
+        let (left, top) = (
+            centre.0 - sprite.width() / 2,
+            centre.1 - sprite.height() / 2,
+        );
+        let body: HashSet<(i32, i32)> = sprite
+            .pixels(look.mirrored)
+            .map(|(x, y, _)| (x, y))
+            .collect();
+        for &(x, y) in &body {
+            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                if !body.contains(&(x + dx, y + dy)) {
+                    self.set((left + x + dx, top + y + dy), colour);
+                }
+            }
         }
     }
 
@@ -295,16 +369,16 @@ impl<'a> Canvas<'a> {
 }
 
 /// The map around the player, the player in the middle of `area`, at night: lit around the
-/// player and by lightning, under the `rain`, `frame` frames in; blood stains as `blood` says.
+/// player and by lightning, under the rain, blood stains and the player's outline as `view`
+/// says, `view.frame` frames in.
 pub fn render_map(
     buffer: &mut Buffer,
     area: Rect,
     world: &World,
     sprites: &Sprites,
-    frame: u32,
-    blood: night::BloodLook,
-    rain: night::RainDisplay,
+    view: ViewState,
 ) {
+    let (frame, blood) = (view.frame, view.blood);
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
@@ -348,6 +422,9 @@ pub fn render_map(
         night::flash(strike),
         daylight(world.ticks()),
     );
+    if let Some(colour) = view.outline.colour() {
+        canvas.outline(sprites::hero(player.facing), player.position, colour);
+    }
     for gem in &world.gems {
         canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
     }
@@ -361,7 +438,7 @@ pub fn render_map(
     if let Some(rain) = night::run_rain(
         weather,
         weather_progress(world.seconds()),
-        rain,
+        view.rain,
         daylight(world.ticks()),
     ) {
         night::paint_rain(&mut canvas, frame, rain);

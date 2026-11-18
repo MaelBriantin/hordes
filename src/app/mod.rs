@@ -20,7 +20,7 @@ use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
 use crate::game::{Entry, Leaderboard, TICKS_PER_SECOND, World};
-use crate::ui::{self, BloodLook, PauseItem, RainDisplay, Screen, Sprites, ViewState};
+use crate::ui::{self, BloodLook, Outline, PauseItem, RainDisplay, Screen, Sprites, ViewState};
 use keys::Keys;
 use settings::Settings;
 
@@ -94,6 +94,7 @@ impl App {
                 frame: self.frames,
                 blood: self.settings.blood,
                 rain: self.settings.rain,
+                outline: self.settings.outline,
                 language: self.settings.language.name(),
                 highlight: self.highlight,
             };
@@ -163,6 +164,7 @@ impl App {
             KeyCode::Enter | KeyCode::Char(' ') => self.screen = Screen::Playing,
             KeyCode::Char('b' | 'B') => self.change_blood(BloodLook::next),
             KeyCode::Char('r' | 'R') => self.change_rain(RainDisplay::next),
+            KeyCode::Char('o' | 'O') => self.change_outline(Outline::next),
             KeyCode::Char('l' | 'L') => self.change_language(),
             KeyCode::Esc => self.should_quit = true,
             _ => {}
@@ -172,6 +174,12 @@ impl App {
     /// Changes how blood shows, and keeps the choice for the next runs.
     fn change_blood(&mut self, change: fn(BloodLook) -> BloodLook) {
         self.settings.blood = change(self.settings.blood);
+        self.keep_settings();
+    }
+
+    /// Changes the line around the player, and keeps the choice for the next runs.
+    fn change_outline(&mut self, change: fn(Outline) -> Outline) {
+        self.settings.outline = change(self.settings.outline);
         self.keep_settings();
     }
 
@@ -211,6 +219,7 @@ impl App {
                 PauseItem::Resume => self.screen = Screen::Playing,
                 PauseItem::Blood => self.change_blood(BloodLook::next),
                 PauseItem::Rain => self.change_rain(RainDisplay::next),
+                PauseItem::Outline => self.change_outline(Outline::next),
                 PauseItem::Language => self.change_language(),
                 PauseItem::NewRun => self.new_run(),
                 PauseItem::Quit => self.should_quit = true,
@@ -230,6 +239,16 @@ impl App {
             }
             KeyCode::Right | KeyCode::Char('d') if PauseItem::ALL[selected] == PauseItem::Rain => {
                 self.change_rain(RainDisplay::next);
+            }
+            KeyCode::Left | KeyCode::Char('q' | 'a')
+                if PauseItem::ALL[selected] == PauseItem::Outline =>
+            {
+                self.change_outline(Outline::previous);
+            }
+            KeyCode::Right | KeyCode::Char('d')
+                if PauseItem::ALL[selected] == PauseItem::Outline =>
+            {
+                self.change_outline(Outline::next);
             }
             KeyCode::Left | KeyCode::Right | KeyCode::Char('q' | 'a' | 'd')
                 if PauseItem::ALL[selected] == PauseItem::Language =>

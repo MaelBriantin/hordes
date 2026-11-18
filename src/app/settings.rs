@@ -6,7 +6,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use crate::ui::{BloodLook, RainDisplay};
+use crate::ui::{BloodLook, Outline, RainDisplay};
 
 /// Where the settings go instead of the data folder, if set: for tests.
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
@@ -68,6 +68,8 @@ pub struct Settings {
     pub blood: BloodLook,
     /// How the rain shows during a run.
     pub rain: RainDisplay,
+    /// The line around the player.
+    pub outline: Outline,
 }
 
 impl Default for Settings {
@@ -76,6 +78,7 @@ impl Default for Settings {
             language: Language::of_system(),
             blood: BloodLook::Red,
             rain: RainDisplay::Full,
+            outline: Outline::Off,
         }
     }
 }
@@ -116,6 +119,10 @@ impl Settings {
                 ("rain", "full" | "heavy") => settings.rain = RainDisplay::Full,
                 ("rain", "reduced" | "light") => settings.rain = RainDisplay::Reduced,
                 ("rain", "off") => settings.rain = RainDisplay::Off,
+                ("outline", "off") => settings.outline = Outline::Off,
+                ("outline", "white") => settings.outline = Outline::White,
+                ("outline", "yellow") => settings.outline = Outline::Yellow,
+                ("outline", "red") => settings.outline = Outline::Red,
                 _ => {}
             }
         }
@@ -124,10 +131,11 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\n",
+            "language = {}\nblood = {}\nrain = {}\noutline = {}\n",
             self.language.id(),
             self.blood.id(),
-            self.rain.id()
+            self.rain.id(),
+            self.outline.id()
         )
     }
 }
@@ -159,6 +167,7 @@ mod tests {
             language: Language::French,
             blood: BloodLook::Mayo,
             rain: RainDisplay::Reduced,
+            outline: Outline::Yellow,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);
         assert_eq!(

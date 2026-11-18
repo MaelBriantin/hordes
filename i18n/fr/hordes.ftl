@@ -3,7 +3,7 @@
 
 ## Touches, sur la dernière ligne de l'écran
 
-help-title = Entrée jouer · B sang · R pluie · L langue · Échap quitter
+help-title = Entrée jouer · B sang · R pluie · O contour · L langue · Échap quitter
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
 help-over = R nouvelle partie · Échap quitter
 help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
@@ -12,7 +12,7 @@ help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
 
 title-tagline = Survis à la nuit.
 title-start = Appuie sur Entrée pour jouer
-title-options = Sang : { $blood } (B) · Pluie : { $rain } (R) · { $language } (L)
+title-options = Sang : { $blood } (B) · Pluie : { $rain } (R) · Contour : { $outline } (O) · { $language } (L)
 
 ## Réglages
 
@@ -25,12 +25,18 @@ rain-full = forte
 rain-reduced = réduite
 rain-off = aucune
 
+outline-off = aucun
+outline-white = blanc
+outline-yellow = jaune
+outline-red = rouge
+
 ## Menu pause
 
 pause-title = Pause
 pause-resume = Reprendre
 pause-blood = Sang : { $value }
 pause-rain = Pluie : { $value }
+pause-outline = Contour : { $value }
 pause-language = Langue : { $value }
 pause-new-run = Nouvelle partie
 pause-quit = Quitter

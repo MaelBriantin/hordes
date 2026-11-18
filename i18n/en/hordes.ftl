@@ -3,7 +3,7 @@
 
 ## Keys, on the last line of the screen
 
-help-title = Enter start · B blood · R rain · L language · Esc quit
+help-title = Enter start · B blood · R rain · O outline · L language · Esc quit
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
 help-over = R new run · Esc quit
 help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
@@ -12,7 +12,7 @@ help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
 
 title-tagline = Survive the night.
 title-start = Press Enter to start
-title-options = Blood: { $blood } (B) · Rain: { $rain } (R) · { $language } (L)
+title-options = Blood: { $blood } (B) · Rain: { $rain } (R) · Outline: { $outline } (O) · { $language } (L)
 
 ## Settings
 
@@ -25,12 +25,18 @@ rain-full = full
 rain-reduced = reduced
 rain-off = off
 
+outline-off = off
+outline-white = white
+outline-yellow = yellow
+outline-red = red
+
 ## Pause menu
 
 pause-title = Paused
 pause-resume = Resume
 pause-blood = Blood: { $value }
 pause-rain = Rain: { $value }
+pause-outline = Outline: { $value }
 pause-language = Language: { $value }
 pause-new-run = New run
 pause-quit = Quit

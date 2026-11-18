@@ -12,7 +12,7 @@ use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{Blank, BloodLook, DARK_GREY, GREY, RainDisplay, ViewState};
+use super::{Blank, BloodLook, DARK_GREY, GREY, Outline, RainDisplay, ViewState};
 use crate::game::{DAWN_SECONDS, Entry, Leaderboard, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
@@ -36,6 +36,8 @@ pub enum PauseItem {
     Blood,
     /// How the rain shows.
     Rain,
+    /// The line around the player.
+    Outline,
     /// The language the game speaks.
     Language,
     NewRun,
@@ -43,10 +45,11 @@ pub enum PauseItem {
 }
 
 impl PauseItem {
-    pub const ALL: [PauseItem; 6] = [
+    pub const ALL: [PauseItem; 7] = [
         PauseItem::Resume,
         PauseItem::Blood,
         PauseItem::Rain,
+        PauseItem::Outline,
         PauseItem::Language,
         PauseItem::NewRun,
         PauseItem::Quit,
@@ -57,6 +60,7 @@ impl PauseItem {
             PauseItem::Resume => fl!("pause-resume"),
             PauseItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
             PauseItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
+            PauseItem::Outline => fl!("pause-outline", value = outline_name(view.outline)),
             PauseItem::Language => fl!("pause-language", value = view.language),
             PauseItem::NewRun => fl!("pause-new-run"),
             PauseItem::Quit => fl!("pause-quit"),
@@ -71,6 +75,15 @@ fn blood_name(blood: BloodLook) -> String {
         BloodLook::Mayo => fl!("blood-mayo"),
         BloodLook::Pesto => fl!("blood-pesto"),
         BloodLook::Off => fl!("setting-off"),
+    }
+}
+
+fn outline_name(outline: Outline) -> String {
+    match outline {
+        Outline::Off => fl!("outline-off"),
+        Outline::White => fl!("outline-white"),
+        Outline::Yellow => fl!("outline-yellow"),
+        Outline::Red => fl!("outline-red"),
     }
 }
 
@@ -168,6 +181,7 @@ pub fn render_title(
             "title-options",
             blood = blood_name(view.blood),
             rain = rain_name(view.rain),
+            outline = outline_name(view.outline),
             language = view.language
         ),
         Style::new().fg(DARK_GREY),

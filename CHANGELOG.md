@@ -10,6 +10,7 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- An outline around the player, to see them at once in the crowd: off, white, yellow or red, with O on the title screen or from the pause menu.
 - A blow to the player spurts blood (as the settings say) and flushes the edges of the screen red for a moment.
 - The title screen and the pause menu show the game's version.
 
