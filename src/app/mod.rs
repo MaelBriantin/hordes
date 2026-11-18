@@ -111,6 +111,7 @@ impl App {
                 skip_dusk: self.settings.skip_dusk,
                 gear: self.settings.gear,
                 mini_bars: self.settings.mini_bars,
+                ground: self.settings.ground,
                 weather_news: self.settings.weather_news,
                 language: self.settings.language.name(),
                 highlight: self.highlight,
@@ -346,6 +347,10 @@ impl App {
                 self.keep_settings();
             }
             OptionItem::Gear => self.switch_gear(),
+            OptionItem::Ground => {
+                self.settings.ground = !self.settings.ground;
+                self.keep_settings();
+            }
             OptionItem::MiniBars => {
                 self.settings.mini_bars = !self.settings.mini_bars;
                 self.keep_settings();

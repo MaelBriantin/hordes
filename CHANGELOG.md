@@ -17,9 +17,11 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A new weapon, the shotgun: a double shot, each a fan of pellets, close by.
 - An arrow bouncing over the player's head, to see them at once in the crowd: always, in a colour of the Arrow setting, or for 2 s on E.
 - Small HP and battery bars over the player's head: a setting, off at first.
+- A coloured ground, dark grass speckled with earth: an experimental setting, off at first. It redraws most of the screen at every step: best turned on in a modern, fast terminal (Ghostty, kitty, WezTerm…), rather than over SSH or tmux.
 - The hero of before, in a red headband, can be played again: Hero, in the options.
 
 ### Changed
+- The options start otherwise: the gear hidden, the announcements big, with no pause.
 - The arrow takes the place of the line around the player: the Outline setting is the Arrow setting now, its colour kept.
 - The gems take the cards' colours: silver for a point, blue, then gold for the most; the XP bar turns a bluish silver, the energy cells and the battery's gauge green.
 - The hero is a survivor now, with very dark brown hair, a leather jacket and jeans.

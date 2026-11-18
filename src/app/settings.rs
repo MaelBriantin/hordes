@@ -62,6 +62,7 @@ impl Language {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools, reason = "settings, each on its own")]
 pub struct Settings {
     /// The language the game speaks: the system's at first.
     pub language: Language,
@@ -80,6 +81,8 @@ pub struct Settings {
     pub gear: bool,
     /// Whether the player's HP and battery show in small bars over their head.
     pub mini_bars: bool,
+    /// Whether the ground is coloured, grass speckled with earth: an experiment, off at first.
+    pub ground: bool,
     /// How a new weather is told.
     pub weather_news: WeatherNews,
 }
@@ -94,9 +97,10 @@ impl Default for Settings {
             skin: Skin::Survivor,
             mode: Mode::Standard,
             skip_dusk: false,
-            gear: true,
+            gear: false,
             mini_bars: false,
-            weather_news: WeatherNews::Paused,
+            ground: false,
+            weather_news: WeatherNews::Big,
         }
     }
 }
@@ -152,6 +156,8 @@ impl Settings {
                 ("gear", "hidden") => settings.gear = false,
                 ("mini_bars", "shown") => settings.mini_bars = true,
                 ("mini_bars", "hidden") => settings.mini_bars = false,
+                ("ground", "coloured") => settings.ground = true,
+                ("ground", "plain") => settings.ground = false,
                 ("announcements", "paused") => settings.weather_news = WeatherNews::Paused,
                 ("announcements", "big") => settings.weather_news = WeatherNews::Big,
                 // `quiet`, the setting of before there were three.
@@ -166,7 +172,7 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\nmini_bars = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
@@ -176,6 +182,7 @@ impl Settings {
             if self.skip_dusk { "skipped" } else { "played" },
             if self.gear { "shown" } else { "hidden" },
             if self.mini_bars { "shown" } else { "hidden" },
+            if self.ground { "coloured" } else { "plain" },
             self.weather_news.id()
         )
     }
@@ -214,6 +221,7 @@ mod tests {
             skip_dusk: true,
             gear: false,
             mini_bars: true,
+            ground: true,
             weather_news: WeatherNews::Big,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);

@@ -14,9 +14,10 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
   - **Blood**: red, ketchup, mayo, pesto or off.
   - **Rain**: how it shows (full, reduced to half its drops, or off). The weather itself is the same whatever the choice.
   - **Arrow**: a small arrow over the player's head, bouncing, to see them at once in the crowd: off, white, yellow or red. Whatever the setting, **E** shows the arrow for **2 s** (white, if off): the player found again in the crowd.
-  - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). The opening is always told big, with a pause.
-  - **Gear**: shown or hidden over the top left of the map (I in a run does the same). The opening and the hordes are always told in big letters.
+  - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). Big, no pause, at first. The opening is always told big, with a pause.
+  - **Gear**: shown or hidden over the top left of the map (I in a run does the same); hidden at first. The opening and the hordes are always told in big letters.
   - **Bars over the hero**: shown or hidden: the player's HP over their battery, in two small bars over their head (over the arrow, when it shows).
+  - **Coloured ground** (experimental): off or on: on, the bare ground is dark grass speckled with earth, lit as the rest, rather than the screen's dark. Off at first: it redraws most of the screen at every step, for a modern, fast terminal (Ghostty, kitty, WezTerm…).
   - **Dusk**: played or skipped: skipped, a run opens on the night, the torch lit.
   - **Language**: English or French. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).

@@ -79,6 +79,8 @@ pub enum OptionItem {
     Gear,
     /// Whether the player's HP and battery show in small bars over their head.
     MiniBars,
+    /// Whether the ground is coloured: an experiment.
+    Ground,
     /// The language the game speaks.
     Language,
     /// Back where the menu was opened from.
@@ -88,7 +90,7 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 11] = [
+    const ALL: [OptionItem; 12] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
@@ -97,6 +99,7 @@ impl OptionItem {
         OptionItem::Dusk,
         OptionItem::Gear,
         OptionItem::MiniBars,
+        OptionItem::Ground,
         OptionItem::Language,
         OptionItem::Back,
         OptionItem::Quit,
@@ -154,6 +157,14 @@ impl OptionItem {
                     fl!("mini-bars-shown")
                 } else {
                     fl!("mini-bars-hidden")
+                }
+            ),
+            OptionItem::Ground => fl!(
+                "option-ground",
+                value = if view.ground {
+                    fl!("ground-coloured")
+                } else {
+                    fl!("ground-plain")
                 }
             ),
             OptionItem::Language => fl!("pause-language", value = view.language),

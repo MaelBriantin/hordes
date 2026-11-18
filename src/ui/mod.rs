@@ -167,6 +167,8 @@ pub struct ViewState {
     pub pinged: bool,
     /// Whether the player's HP and battery show in small bars over their head.
     pub mini_bars: bool,
+    /// Whether the ground is coloured: grass speckled with earth, rather than the screen's dark.
+    pub ground: bool,
     /// How the hero looks.
     pub skin: Skin,
     /// The mode the next run is played in, and whether it skips the dusk.

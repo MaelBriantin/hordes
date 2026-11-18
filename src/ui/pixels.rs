@@ -49,6 +49,10 @@ const FLICKER: u32 = 6;
 const COMPASS: Color = Color::Rgb(220, 45, 65);
 const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
 const COMPASS_PULSE: u32 = 10;
+/// The ground: dark grass, and the earth showing through it, out of 256 pixels.
+const GRASS: Color = Color::Rgb(32, 46, 28);
+const EARTH: Color = Color::Rgb(44, 38, 28);
+const EARTH_SHARE: u32 = 90;
 /// The arrow over the player's head, pointing down at them, as wide as they are; the pixels
 /// between it and their head, and the ticks it spends up, then down, bouncing.
 const ARROW: [&str; 2] = ["####", ".##."];
@@ -611,9 +615,22 @@ impl<'a> Canvas<'a> {
         );
     }
 
+    /// The bare ground under everything: grass, speckled with earth.
+    fn paint_ground(&mut self) {
+        let (left, top) = self.origin;
+        let width = self.width;
+        for (index, pixel) in (0..).zip(self.pixels.iter_mut()) {
+            *pixel = Some(ground((left + index % width, top + index / width)));
+        }
+    }
+
     /// The ground: grass and pebbles scattered on it, always the same, so it is seen to move
-    /// under the player. And the obstacles standing on it.
-    fn paint_map(&mut self, world: &World) {
+    /// under the player, on the screen's dark or, if `coloured`, on grass speckled with earth.
+    /// And the obstacles standing on it.
+    fn paint_map(&mut self, world: &World, coloured: bool) {
+        if coloured {
+            self.paint_ground();
+        }
         let (columns, rows) = self.tiles();
         for y in rows {
             for x in columns.clone() {
@@ -674,7 +691,7 @@ pub fn render_map(
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
-    canvas.paint_map(world);
+    canvas.paint_map(world, view.ground);
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
 
     // The player and the enemies, the lowest on the map last: in front of those above them.
@@ -788,7 +805,7 @@ pub fn render_death_scene(
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
-    canvas.paint_map(world);
+    canvas.paint_map(world, view.ground);
     let pool = Stain {
         position: player.position,
         tick: world.ticks(),
@@ -979,6 +996,17 @@ pub fn pixel(point: Vec2) -> (i32, i32) {
 }
 
 /// What lies on a tile of open ground, if anything: scattered, always the same.
+/// The ground's colour at a pixel of the map: grass, speckled with earth, the same pixels always.
+fn ground((x, y): (i32, i32)) -> Color {
+    let hash =
+        x.cast_unsigned().wrapping_mul(2_654_435_761) ^ y.cast_unsigned().wrapping_mul(40_503);
+    if hash.wrapping_mul(2_246_822_519) >> 24 < EARTH_SHARE {
+        EARTH
+    } else {
+        GRASS
+    }
+}
+
 fn decor((x, y): (i32, i32)) -> Option<SpriteId> {
     let hash =
         x.cast_unsigned().wrapping_mul(73_856_093) ^ y.cast_unsigned().wrapping_mul(19_349_663);
