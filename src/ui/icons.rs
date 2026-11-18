@@ -6,10 +6,10 @@ use crate::game::Weather;
 
 /// `nf-md-heart`: the HP.
 pub const HP: &str = "\u{F02D1}";
-/// `nf-md-arrow_up_bold`: the level.
-pub const LEVEL: &str = "\u{F0737}";
 /// `nf-md-timer`: the time survived.
 pub const TIME: &str = "\u{F13AB}";
+/// `nf-md-weather_sunset_up`: the dawn, at the end of the weathers.
+pub const DAWN: &str = "\u{F059C}";
 /// `nf-md-trophy`: the score.
 pub const SCORE: &str = "\u{F0538}";
 

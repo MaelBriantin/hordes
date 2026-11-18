@@ -48,7 +48,7 @@ announce-dusk = Tiens jusqu'à l'aube
 announce-night = La nuit est tombée
 announce-worse = Le temps se gâte
 announce-last = L'aube dans deux minutes
-weather-clear = Nuit claire
+weather-clear = Nuit
 weather-drizzle = Bruine
 weather-rain = Pluie
 weather-storm = Orage
@@ -68,6 +68,8 @@ over-score = Niveau { $level } · { $kills } tués
 
 level-up-title = Niveau { $level }
 card-new = NOUVEAU
+card-rare = RARE
+card-legendary = LÉGENDAIRE
 card-level = Niv { $level }/{ $max }
 
 weapon-machete = Machette
@@ -82,6 +84,8 @@ passive-might = Force
 passive-haste = Cadence
 passive-compass = Boussole
 passive-flashlight = Lampe torche
+passive-wisdom = Savoir
+legendary-illumination = Illumination
 heal = Soin
 
 gain-machete-1 = Tranche les ennemis devant toi
@@ -103,14 +107,16 @@ gain-drones-1 = Un drone tourne autour de toi
 gain-drones-more = +1 drone
 gain-drones-3 = Dégâts 8 → 12
 gain-drones-5 = Plus large et plus rapide
-gain-vitality = +20 PV max, soignés
-gain-swiftness = +8 % de vitesse
-gain-magnet = Les gemmes viennent de plus loin
-gain-might = +10 % de dégâts
-gain-haste = Armes 8 % plus rapides
+gain-vitality = +20 PV max, soignés (total { $total })
+gain-swiftness = +8 % de vitesse (total +{ $total } %)
+gain-magnet = Les gemmes viennent de 1 case plus loin (total { $total })
+gain-might = +10 % de dégâts (total +{ $total } %)
+gain-haste = Armes 8 % plus rapides (total −{ $total } %)
 gain-compass = Indique le soin le plus proche
-gain-compass-more = Trouve le soin 50 cases plus loin
-gain-flashlight = +2 cases de lumière
+gain-compass-more = Trouve le soin 50 cases plus loin (total { $total })
+gain-flashlight = +2 cases de lumière (total { $total })
+gain-wisdom = +10 % d'XP des gemmes (total +{ $total } %)
+gain-illumination = +1 XP chaque seconde
 gain-heal = Soigne 20 PV
 
 ## Score

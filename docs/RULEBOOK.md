@@ -21,7 +21,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 - The world moves on **30 times per second**.
 - **Announcements**: the run opens on the dusk, told in big letters over the map, with the goal under it (hold out until dawn); each new weather (see Weather) and each horde (see Hordes) is told the same way, a line under it: the night has fallen, the weather worsens, dawn in two minutes. The world stands still for the **2 s** it shows: the clock, the weather and the enemies wait.
-- **Victory**: the **dawn**, at **11:00**, after the tempest's two minutes. Over its last minute, the sun rises little by little, the rain thins out to nothing, and lightning no longer strikes. At 11:00, the dawn's word shows over the run, which goes on for **4 s**: the enemies flee the player, the risen sun at their back, and burn one by one, flashing white, worth nothing; none comes, nothing hurts the player. Then the run stops: the screen shows the player standing in the light of the risen sun, a line under the word (congratulations, you survived; this time), the rain over, the score with a **dawn bonus of 50%** of it, and the leaderboard, where a sun marks the runs that saw the dawn.
+- **Victory**: the **dawn**, at **10:30**, after the tempest's two minutes. Over its last minute, the sun rises little by little, the rain thins out to nothing, and lightning no longer strikes. At 10:30, the dawn's word shows over the run, which goes on for **4 s**: the enemies flee the player, the risen sun at their back, and burn one by one, flashing white, worth nothing; none comes, nothing hurts the player. Then the run stops: the screen shows the player standing in the light of the risen sun, a line under the word (congratulations, you survived; this time), the rain over, the score with a **dawn bonus of 50%** of it, and the leaderboard, where a sun marks the runs that saw the dawn.
 - **Death**: at 0 HP, the screen shows where the player fell, in the dark but for their torch, a pool of blood (if shown) where they lay, under the storm: the score, the time survived, the level and the kills, and the leaderboard. A run that makes the leaderboard asks for its three letters right there. R starts a new run on a new map.
 
 ## The map
@@ -39,8 +39,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 ## Hordes
 
-- A **horde** comes in the middle of each stage of weather, once the night has fallen: at **2:00**, then every **2 minutes** (4:00, 6:00…). It brings **30** enemies, and **15** more for each horde before it.
-- It is **announced 3 s before**: told in big letters (see The run), then three red arrows on the edge it comes from, and the map shaking twice.
+- A **horde** comes in the middle of each stage of weather, once the night has fallen: at **1:30**, then every **2 minutes** (3:30, 5:30…). It brings **30** enemies, and **15** more for each horde before it.
+- It is **announced 3 s before**: told in big letters (see The run), then three red arrows on the edge it comes from.
 - Until the storm, it comes as a dense **pack** out of one side (a band 16 tiles wide, 5 deep, just beyond the screen); from the storm on, as a **ring** out of every side, announced on every edge.
 - Its enemies: zombies; a bat in ten from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
 - **Wiped out** to the last, a horde **doubles** the points its kills were worth: the bonus shows in gold on top of the map.
@@ -51,34 +51,34 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 Every run is played for its score, arcade style.
 
 - Every enemy felled is worth **points**: zombie **10**, bat **15**, abomination **100**.
-- Times the **weather's multiplier**: ×1 at dusk and on a clear night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
+- Times the **weather's multiplier**: ×1 at dusk and in the night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows the score and the multiplier of the moment (the weather's times the combo's). While the run is ahead of the best one kept, its score gleams.
 - **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in a box under its tagline, the best run in gold; the settings are on its last line.
 
 ## The night
 
-- Runs start at **dusk**, for a minute: for its first 30 s, the setting sun lights the whole map, warm; over the next 30 s, the night falls, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
+- Runs start at **dusk**, for half a minute, just enough to look around: for its first 24 s, the setting sun lights the whole map, warm, less and less, down to half its light; then the night falls all of a sudden, in **6 s**, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
-- **Gems, bullets and the machete's swings glow**: they show in the dark.
+- The player carries a **light**, a torch, out at dusk: it lights up once the night has fallen and been told, flickering twice before it holds. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
+- **Gems, bullets and the machete's swings glow**: they show in the dark. A gem casts a small blue glow on the ground around it, two tiles or so, and lights what passes by it, an enemy, out of the dark.
 - **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
 - **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**. A hit player also spurts a few drops every way, for a third of a second.
 - **A blow** to the player flushes the edges of the screen red for half a second, whatever the blood setting.
 
 ## Weather
 
-The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does, after the minute of dusk (see The night). The status line shows it, with a gauge to the next stage. The rain thickens over the last quarter of a stage, into the next one's.
+The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does, after the half minute of dusk (see The night). The status line shows every weather's icon in a row, and the dawn's last, the weather now in its colour with its name after the row, those gone put out in grey, those to come barely there; the next one comes out of the dark as the stage goes. The rain thickens over the last quarter of a stage, into the next one's.
 
 | From | Weather | Rain | Lightning | Light | Enemies appearing |
 |---|---|---|---|---|---|
 | 0:00 | Dusk | none | none | — | — |
-| 1:00 | Clear night | none | none | — | — |
-| 3:00 | Drizzle | 4 drops per 1000 pixels | every 8 s | — | — |
-| 5:00 | Rain | 8 | every 5 s | −1 tile | +10% HP |
-| 7:00 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
-| 9:00 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
-| 11:00 | Dawn | — | — | — | the run is won (see The run) |
+| 0:30 | Night | none | none | — | — |
+| 2:30 | Drizzle | 4 drops per 1000 pixels | none | — | — |
+| 4:30 | Rain | 8 | none | −1 tile | +10% HP |
+| 6:30 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
+| 8:30 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
+| 10:30 | Dawn | — | — | — | the run is won (see The run) |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
 - From the storm on, a strike takes **30 HP** from every enemy within **2.5 tiles** of where it falls (a ring shows it). It never hurts the player.
@@ -115,7 +115,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | Weather | Enemies a second | Zombie / bat / abomination, by weight |
 |---|---|---|
 | Dusk | 1 | 10 / 0 / 0 |
-| Clear night | 2 | 9 / 1 / 0 |
+| Night | 2 | 9 / 1 / 0 |
 | Drizzle | 4 | 8 / 1 / 1 |
 | Rain | 6 | 7 / 2 / 1 |
 | Storm | 8 | 6 / 2 / 2 |
@@ -180,11 +180,22 @@ Up to **4 passives**, each up to **level 5**.
 | Haste | −8% to every weapon's cooldown, the drones' repair included |
 | Flashlight | +2 tiles of light around the player (9 at first) |
 | Compass | A red arrow on the edge of the screen, white on a pulsing red cell, points to the nearest healing (a herb, a burning campfire), while it is off screen: within 150 tiles, 50 more per level |
+| Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
+
+## Legendaries
+
+- A level-up offers a **legendary** **5%** of the time, while one is left to find: on a **golden card**, in place of its last choice. Each level-up without one raises the chance by a point (6%, 7%…), back to 5% once one is offered.
+- A legendary has **one level**, and takes no room among the passives; once found, it is never offered again. It shows in the gear with a golden bar.
+
+| Legendary | What it does |
+|---|---|
+| Illumination | **+1 XP every second**, of itself |
 
 ## Experience
 
 - Fallen enemies may leave an XP gem (see Enemies). A gem covers one tile. A gem within **2 tiles** (more with Magnet) flies to the player (12 tiles/s) and keeps on until picked up.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked: a new weapon or passive (while there is room), or the next level of one owned. At dusk, Flashlight is never offered: there is still light enough. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: pistol, machete, Vitality, Swiftness, Magnet, Flashlight, the heal. Rare: machine gun, drones, Might, Haste, Compass, Wisdom. A weapon or a passive keeps its rarity at every level.
+- **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, Flashlight is never offered: there is still light enough. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Choosing**: ←/→ (or Q/A and D) then Enter (or Space), or 1, 2, 3 straight away.

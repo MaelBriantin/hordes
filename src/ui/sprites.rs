@@ -50,12 +50,14 @@ pub enum SpriteId {
     IconHaste,
     IconFlashlight,
     IconCompass,
+    IconWisdom,
+    IconIllumination,
     IconHeal,
     Title,
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 34] = [
+    const ALL: [SpriteId; 36] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -88,6 +90,8 @@ impl SpriteId {
         SpriteId::IconHaste,
         SpriteId::IconFlashlight,
         SpriteId::IconCompass,
+        SpriteId::IconWisdom,
+        SpriteId::IconIllumination,
         SpriteId::IconHeal,
         SpriteId::Title,
     ];
@@ -126,6 +130,8 @@ impl SpriteId {
             SpriteId::IconHaste => "icon_haste",
             SpriteId::IconFlashlight => "icon_flashlight",
             SpriteId::IconCompass => "icon_compass",
+            SpriteId::IconWisdom => "icon_wisdom",
+            SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
             SpriteId::Title => "title",
         }

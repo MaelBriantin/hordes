@@ -1,6 +1,6 @@
 use super::super::Obstacle;
 use super::super::announce::News;
-use super::super::build::{BASE_HP, Build, Choice, Passive, Weapon};
+use super::super::build::{BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::gem::Gem;
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -655,6 +655,9 @@ fn without_drones_there_are_no_drones() {
 fn a_fallen_enemy_and_a_hit_player_leave_stains_that_fade() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
+    // In the night, past the dusk: no news to stand still for while the stains fade.
+    world.ticks = 30 * 40;
+    world.next_horde = u32::MAX;
     world
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(150.0, 50.0)));
@@ -679,10 +682,14 @@ fn a_clear_night_has_no_lightning() {
 }
 
 #[test]
-fn from_the_drizzle_lightning_strikes() {
+fn lightning_strikes_from_the_storm_on_and_not_in_the_rain() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 240;
+    world.next_horde = u32::MAX;
+    world.ticks = 30 * 300;
+    wait(&mut world, 30 * 13);
+    assert!(world.lightning.is_none());
+    world.ticks = 30 * 420;
     wait(&mut world, 30 * 13);
     assert!(world.lightning.is_some());
 }
@@ -808,10 +815,10 @@ fn a_horde_is_announced_then_comes_out_of_its_side() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
     world.set_view(Vec2::new(30.0, 12.0));
-    world.ticks = 30 * 117 - 1;
+    world.ticks = 30 * 87 - 1;
     wait(&mut world, 1);
     let warning = world.horde_warning.expect("announced 3 seconds before");
-    assert_eq!(warning.arrives_at, 30 * 120);
+    assert_eq!(warning.arrives_at, 30 * 90);
     assert!(warning.side.is_some());
     assert_eq!(
         world.announcement.map(|told| told.news),
@@ -895,7 +902,7 @@ fn a_run_opens_on_the_dusk_and_stands_still_while_it_is_told() {
 fn a_new_weather_is_announced() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    world.ticks = 30 * 60 - 1;
+    world.ticks = 30 * 30 - 1;
     wait(&mut world, 1);
     assert_eq!(
         world.announcement.map(|told| told.news),
@@ -912,7 +919,7 @@ fn the_run_is_won_at_dawn_with_a_bonus() {
     world
         .enemies
         .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
-    world.ticks = 30 * 660 - 1;
+    world.ticks = 30 * 630 - 1;
     wait(&mut world, 1);
     assert!(world.daybreak() && !world.is_over());
     // The daybreak: the enemies flee, then burn; then the run is won.
@@ -935,4 +942,37 @@ fn the_debug_console_skips_to_the_next_weather() {
         world.announcement.map(|told| told.news),
         Some(News::Weather(Weather::Clear))
     );
+}
+
+#[test]
+fn illumination_gives_a_point_of_xp_a_second() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world
+        .player
+        .build
+        .take(Choice::Legendary(Legendary::Illumination));
+    wait(&mut world, 30 * 2);
+    assert_eq!(world.player.xp, 2);
+}
+
+#[test]
+fn the_torch_lights_up_once_the_night_has_fallen_and_been_told() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    assert!(!world.torch_lit());
+    world.ticks = 30 * 30 - 1;
+    wait(&mut world, 1);
+    // The night told: the world stands still, the torch out.
+    assert!(world.announcement.is_some() && !world.torch_lit());
+    wait(&mut world, 30 * 2);
+    let flickers: Vec<bool> = (0..25)
+        .map(|_| {
+            wait(&mut world, 1);
+            world.torch_lit()
+        })
+        .collect();
+    assert!(flickers.contains(&false) && flickers.contains(&true));
+    assert!(world.torch_lit());
 }

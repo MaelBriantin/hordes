@@ -1,5 +1,5 @@
 //! A horde as the screen tells it, once announced in big letters (see the announcements): arrows
-//! on the edge it comes from (every edge for a ring) and the map shaking; wiped out, a banner in
+//! on the edge it comes from (every edge for a ring); wiped out, a banner in
 //! gold with its bonus.
 
 use ratatui::Frame;
@@ -32,43 +32,6 @@ pub fn render(frame: &mut Frame, map: Rect, world: &World) {
         && world.ticks().saturating_sub(at) < ticks_shown
     {
         banner(frame, map, &fl!("horde-cleared", points = bonus), GOLD);
-    }
-}
-
-/// How far the map shakes, in columns, while a horde is announced: twice, right then left.
-pub fn shake(world: &World) -> i16 {
-    let Some(warning) = world.horde_warning else {
-        return 0;
-    };
-    let left = warning.arrives_at.saturating_sub(world.ticks());
-    match left {
-        80..=85 | 44..=49 => 1,
-        74..=79 | 38..=43 => -1,
-        _ => 0,
-    }
-}
-
-/// Moves what the map shows by `by` columns, right or left: the column that comes in stays as
-/// it was, the one that goes is lost.
-pub fn shift(buffer: &mut Buffer, map: Rect, by: i16) {
-    if by == 0 {
-        return;
-    }
-    for y in map.top()..map.bottom() {
-        let row: Vec<_> = (map.left()..map.right())
-            .map(|x| buffer[(x, y)].clone())
-            .collect();
-        for (offset, cell) in row.into_iter().enumerate() {
-            let Ok(offset) = i32::try_from(offset) else {
-                continue;
-            };
-            let x = i32::from(map.left()) + offset + i32::from(by);
-            if let Ok(x) = u16::try_from(x)
-                && (map.left()..map.right()).contains(&x)
-            {
-                buffer[(x, y)] = cell;
-            }
-        }
     }
 }
 
@@ -107,20 +70,5 @@ fn arrows(buffer: &mut Buffer, map: Rect, side: Facing) {
     };
     for (x, y) in cells {
         buffer.set_string(x, y, arrow, style);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_shift_moves_the_map_a_column_and_keeps_the_rest() {
-        let map = Rect::new(0, 0, 4, 1);
-        let mut buffer = Buffer::empty(map);
-        buffer.set_string(0, 0, "abcd", Style::new());
-        shift(&mut buffer, map, 1);
-        let row: String = (0..4).map(|x| buffer[(x, 0)].symbol().to_owned()).collect();
-        assert_eq!(row, "aabc");
     }
 }

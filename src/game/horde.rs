@@ -12,7 +12,7 @@ use super::{Facing, TICKS_PER_SECOND, Vec2};
 
 /// The seconds into the run the first horde comes at: in the middle of the first night, once it
 /// has fallen.
-const FIRST_SECONDS: u32 = 120;
+const FIRST_SECONDS: u32 = 90;
 /// The seconds between two hordes: one in the middle of each stage of weather.
 const EVERY_SECONDS: u32 = 120;
 /// The seconds a horde is announced before it comes.
@@ -138,9 +138,9 @@ mod tests {
     #[test]
     fn the_next_horde_is_due_in_the_middle_of_a_stage() {
         let second = u32::from(TICKS_PER_SECOND);
-        assert_eq!(due_after(0), 120 * second);
-        assert_eq!(due_after(120 * second), 240 * second);
-        assert_eq!(due_after(359 * second), 360 * second);
+        assert_eq!(due_after(0), 90 * second);
+        assert_eq!(due_after(90 * second), 210 * second);
+        assert_eq!(due_after(329 * second), 330 * second);
     }
 
     #[test]

@@ -10,9 +10,24 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- A new passive, Wisdom: +10% XP from the gems per level.
+- Legendaries, on golden cards that come now and then, more and more likely the longer without one: Illumination, the first, gives an XP point every second.
+- Rare cards, in a blue frame, a time in four: the machine gun, the drones, Might, Haste, Compass and Wisdom.
 - An outline around the player, to see them at once in the crowd: off, white, yellow or red, with O on the title screen or from the pause menu.
 - A blow to the player spurts blood (as the settings say) and flushes the edges of the screen red for a moment.
 - The title screen and the pause menu show the game's version.
+
+### Changed
+- The XP gems cast a small blue glow around them in the dark, and light the enemies passing by: they light the way rather than glow alone.
+- The menus, their titles and the cards' names are in capitals.
+- The dusk lasts half a minute, just enough to look around, dimming little by little, and the night falls all of a sudden, in its last 6 seconds. The rest of the run comes 30 seconds sooner: the hordes at 1:30, 3:30…, the dawn at 10:30.
+- Lightning waits for the storm: the drizzle and the rain only rain.
+- The clear night is the night, plainly. The torch is out at dusk: it lights up once the night has been told, flickering on.
+- The level shows in the middle of the XP bar, without an icon before it.
+- The HP and XP bars stand in relief, their top lighter.
+- The weather shows as a row of every weather's icon, the dawn's last, the one now lit, the next one coming out of the dark as the stage goes, rather than as a gauge.
+- The selected card stands out bright in its own colour, the others dimmer: a rare one stays blue, a legendary one gold.
+- A passive's card shows the total it brings the player to, not only what it adds.
 
 ## v0.3.0 · November 18, 2026
 Hold out until dawn.

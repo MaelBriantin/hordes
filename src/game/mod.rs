@@ -23,7 +23,7 @@ mod weather;
 mod world;
 
 pub use announce::News;
-pub use build::{Choice, MAX_LEVEL, Passive, Weapon};
+pub use build::{Choice, Legendary, MAX_LEVEL, Passive, Rarity, Weapon};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use heal::light as campfire_light;

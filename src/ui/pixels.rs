@@ -16,6 +16,8 @@ use crate::game::{
     Vec2, World, campfire_light, daylight, weather_progress,
 };
 
+/// How far off the canvas a gem still lights it, in pixels: its halo's reach.
+const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.
 const TILE_PIXELS: i32 = 2;
 /// The frames a campfire's flame keeps one look before the other.
@@ -82,6 +84,7 @@ const GEAR_LEVEL: Color = Color::Rgb(235, 235, 240);
 const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
 const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
+const GEAR_LEGENDARY: Color = Color::Rgb(255, 200, 60);
 /// The colour of a broken drone, repairing.
 const BROKEN: Color = Color::Rgb(75, 75, 82);
 /// The colour of a machete's swing, then as it fades.
@@ -117,6 +120,12 @@ impl<'a> Canvas<'a> {
         let (x, y) = (x - self.origin.0, y - self.origin.1);
         let inside = (0..self.width).contains(&x) && (0..self.height).contains(&y);
         inside.then(|| usize::try_from(y * self.width + x).ok())?
+    }
+
+    /// Whether a pixel of the map is on the canvas, or within `margin` pixels of it.
+    fn near(&self, (x, y): (i32, i32), margin: i32) -> bool {
+        let (x, y) = (x - self.origin.0, y - self.origin.1);
+        (-margin..self.width + margin).contains(&x) && (-margin..self.height + margin).contains(&y)
     }
 
     /// The tiles the canvas shows, even partly, as two ranges: across, then down.
@@ -189,7 +198,15 @@ impl<'a> Canvas<'a> {
             .passives()
             .iter()
             .map(|&(passive, level)| (level_up::icon(Choice::Passive(passive)), level, None));
-        let gear: Vec<_> = weapons.chain(passives).collect();
+        // A legendary has one level: its bar full, in gold.
+        let legendaries = build.legendaries().iter().map(|&legendary| {
+            (
+                level_up::icon(Choice::Legendary(legendary)),
+                MAX_LEVEL,
+                Some((1, 1, GEAR_LEGENDARY)),
+            )
+        });
+        let gear: Vec<_> = weapons.chain(passives).chain(legendaries).collect();
         if gear.is_empty() {
             return;
         }
@@ -414,8 +431,18 @@ pub fn render_map(
 
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
-    let mut lights = vec![night::Light::torch(centre, world.light_radius())];
+    let mut lights = Vec::new();
+    if world.torch_lit() {
+        lights.push(night::Light::torch(centre, world.light_radius()));
+    }
     lights.extend(canvas.paint_healing(world, frame));
+    let gems: Vec<(i32, i32)> = world
+        .gems
+        .iter()
+        .map(|gem| pixel(gem.position))
+        .filter(|&at| canvas.near(at, GEM_HALO_MARGIN))
+        .collect();
+    lights.extend(gems.iter().copied().map(night::Light::gem));
     night::light(
         &mut canvas,
         &lights,
@@ -425,6 +452,8 @@ pub fn render_map(
     if let Some(colour) = view.outline.colour() {
         canvas.outline(sprites::hero(player.facing), player.position, colour);
     }
+    // Each gem on screen glows blue around it, then shows over its glow.
+    night::paint_glows(&mut canvas, &gems);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
     }

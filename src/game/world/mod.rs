@@ -5,7 +5,7 @@ use rand::{RngExt, SeedableRng};
 
 use super::announce::{Announcement, News};
 use super::body::{fits, slide, touch};
-use super::build::{BASE_HP, Build, Choice, HEAL, Passive, VITALITY_HP, Weapon};
+use super::build::{BASE_HP, Build, Choice, HEAL, Legendary, Passive, VITALITY_HP, Weapon};
 use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
@@ -41,6 +41,11 @@ const MAX_ENEMIES_WITH_HORDE: usize = 600;
 /// The size of a cell of the grid enemies are sorted in to push each other apart, in tiles:
 /// more than the widest two bodies, so that only neighbouring cells can overlap.
 const SEPARATION_CELL: f32 = 2.0;
+/// When the torch, lighting up as the night has fallen, is out still, in ticks since: it
+/// flickers twice, then holds.
+const TORCH_FLICKER_OFF: [std::ops::Range<u32>; 3] = [0..2, 5..11, 14..20];
+/// The chance, in percent, that a level-up offers a legendary, at first and after one.
+const LEGENDARY_PERCENT: u32 = 5;
 /// The ticks an enemy flashes white before it burns at daybreak.
 const BURN_FLASH: u32 = 6;
 /// The most gems lying around at once: past it, the oldest go.
@@ -157,6 +162,10 @@ pub struct World {
     pub offer: Option<Vec<Choice>>,
     /// Levels gained whose choice is still to come, the one on offer included.
     pending_levels: u32,
+    /// XP gathered short of a whole point, in hundredths: Wisdom gives tenths.
+    xp_hundredths: u32,
+    /// The level-ups dealt since the last legendary offered.
+    without_legendary: u32,
     ticks: u32,
     rng: StdRng,
     /// Enemies owed: grows with the rate they appear at, one appears per whole unit.
@@ -222,6 +231,8 @@ impl World {
             next_strike_in: None,
             offer: None,
             pending_levels: 0,
+            xp_hundredths: 0,
+            without_legendary: 0,
             ticks: 0,
             rng,
             spawn_debt: 0.0,
@@ -253,6 +264,16 @@ impl World {
     /// weather takes, never under 4.
     pub fn light_radius(&self) -> f32 {
         (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
+    }
+
+    /// Whether the player's torch is lit: not at dusk, nor while the night is told; then it
+    /// flickers on, and stays lit.
+    pub fn torch_lit(&self) -> bool {
+        let night = weather::starts_at(Weather::Clear) * u32::from(TICKS_PER_SECOND);
+        let Some(since) = self.ticks.checked_sub(night) else {
+            return false;
+        };
+        !TORCH_FLICKER_OFF.iter().any(|off| off.contains(&since))
     }
 
     /// Whether the player has fallen: the world no longer moves on.
@@ -308,11 +329,11 @@ impl World {
         self.turn_drones();
         self.fell_enemies();
         self.gather_gems();
+        self.illuminate();
         self.heal_player();
         self.hurt_player();
         if self.pending_levels > 0 && !self.is_over() {
-            let dusk = self.weather() == Weather::Dusk;
-            self.offer = Some(self.player.build.offers(&mut self.rng, dusk));
+            self.offer = Some(self.deal());
         }
     }
 
@@ -337,9 +358,24 @@ impl World {
             _ => player.build.take(choice),
         }
         self.pending_levels -= 1;
+        self.offer = (self.pending_levels > 0).then(|| self.deal());
+    }
+
+    /// The cards of a level-up. The longer without a legendary, the likelier one: a point of
+    /// percent more for each level-up without, from the first chance on.
+    fn deal(&mut self) -> Vec<Choice> {
         let dusk = self.weather() == Weather::Dusk;
-        self.offer =
-            (self.pending_levels > 0).then(|| self.player.build.offers(&mut self.rng, dusk));
+        let percent = LEGENDARY_PERCENT + self.without_legendary;
+        let offer = self.player.build.offers(&mut self.rng, dusk, percent);
+        if offer
+            .iter()
+            .any(|choice| matches!(choice, Choice::Legendary(_)))
+        {
+            self.without_legendary = 0;
+        } else {
+            self.without_legendary += 1;
+        }
+        offer
     }
 
     /// The machete swings once it can and an enemy is in reach; the slashes of a swing follow
@@ -710,17 +746,36 @@ impl World {
 
     /// Gems near the player fly to them; those they reach give their XP.
     fn gather_gems(&mut self) {
-        let player = &mut self.player;
+        let player = &self.player;
         let magnet = player.build.magnet_radius();
-        let mut levels = 0;
+        let position = player.position;
+        let mut gathered = 0;
         self.gems.retain_mut(|gem| {
-            let picked = gem.update(player.position, magnet);
+            let picked = gem.update(position, magnet);
             if picked {
-                levels += player.gain(gem.value);
+                gathered += gem.value;
             }
             !picked
         });
-        self.pending_levels += levels;
+        self.give_xp(gathered * self.player.build.xp_percent());
+    }
+
+    /// Illumination gives XP of itself, a point a second.
+    fn illuminate(&mut self) {
+        if self.player.build.has(Legendary::Illumination)
+            && self.ticks.is_multiple_of(u32::from(TICKS_PER_SECOND))
+        {
+            self.give_xp(100);
+        }
+    }
+
+    /// XP for the player, in hundredths of a point: the whole points now, the rest kept for the
+    /// next.
+    fn give_xp(&mut self, hundredths: u32) {
+        self.xp_hundredths += hundredths;
+        let whole = self.xp_hundredths / 100;
+        self.xp_hundredths %= 100;
+        self.pending_levels += self.player.gain(whole);
     }
 
     fn move_player(&mut self, input: Input) {

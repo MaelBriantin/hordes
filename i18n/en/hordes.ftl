@@ -48,7 +48,7 @@ announce-dusk = Hold out until dawn
 announce-night = The night has fallen
 announce-worse = The weather worsens
 announce-last = Dawn in two minutes
-weather-clear = Clear night
+weather-clear = Night
 weather-drizzle = Drizzle
 weather-rain = Rain
 weather-storm = Storm
@@ -68,6 +68,8 @@ over-score = Level { $level } · { $kills } kills
 
 level-up-title = Level { $level }
 card-new = NEW
+card-rare = RARE
+card-legendary = LEGENDARY
 card-level = Lv { $level }/{ $max }
 
 weapon-machete = Machete
@@ -82,6 +84,8 @@ passive-might = Might
 passive-haste = Haste
 passive-compass = Compass
 passive-flashlight = Flashlight
+passive-wisdom = Wisdom
+legendary-illumination = Illumination
 heal = Heal
 
 gain-machete-1 = Slashes enemies in front
@@ -103,14 +107,16 @@ gain-drones-1 = A drone circling you
 gain-drones-more = +1 drone
 gain-drones-3 = Damage 8 → 12
 gain-drones-5 = Wider and faster
-gain-vitality = +20 max HP, healed
-gain-swiftness = +8% speed
-gain-magnet = Gems fly in from 1 tile further
-gain-might = +10% damage
-gain-haste = −8% weapon cooldowns
+gain-vitality = +20 max HP, healed (total { $total })
+gain-swiftness = +8% speed (total +{ $total }%)
+gain-magnet = Gems fly in from 1 tile further (total { $total })
+gain-might = +10% damage (total +{ $total }%)
+gain-haste = −8% weapon cooldowns (total −{ $total }%)
 gain-compass = Points to the nearest healing
-gain-compass-more = Finds healing 50 tiles further
-gain-flashlight = +2 tiles of light
+gain-compass-more = Finds healing 50 tiles further (total { $total })
+gain-flashlight = +2 tiles of light (total { $total })
+gain-wisdom = +10% XP from gems (total +{ $total }%)
+gain-illumination = +1 XP every second
 gain-heal = Heal 20 HP
 
 ## Score

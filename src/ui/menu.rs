@@ -170,7 +170,7 @@ pub fn render_title(
     if frames % 30 < 20 {
         centred(
             frame,
-            &fl!("title-start"),
+            &fl!("title-start").to_uppercase(),
             Style::new().add_modifier(Modifier::BOLD),
             start,
         );
@@ -201,18 +201,25 @@ fn version() -> String {
 /// The pause menu, `selected` its highlighted item, the settings as `view` holds them.
 pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize, view: ViewState) {
     let height = u16::try_from(PauseItem::ALL.len()).unwrap_or(3) + 4;
-    let inside = boxed(frame, map, 28, height, &fl!("pause-title"), &version());
+    let inside = boxed(
+        frame,
+        map,
+        28,
+        height,
+        &fl!("pause-title").to_uppercase(),
+        &version(),
+    );
     let lines: Vec<Line> = PauseItem::ALL
         .iter()
         .enumerate()
         .map(|(index, item)| {
             if index == selected {
                 Line::styled(
-                    format!("▶ {}", item.label(view)),
+                    format!("▶ {}", item.label(view).to_uppercase()),
                     Style::new().fg(SELECTED).add_modifier(Modifier::BOLD),
                 )
             } else {
-                Line::from(format!("  {}", item.label(view)))
+                Line::from(format!("  {}", item.label(view).to_uppercase()))
             }
         })
         .collect();

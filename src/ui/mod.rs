@@ -52,6 +52,24 @@ pub enum Screen {
         selected: usize,
     },
 }
+/// How bright a bar's empty part is, against its full part.
+const BAR_EMPTY: f32 = 0.22;
+/// Every weather, in their order, for the row of their icons.
+const WEATHERS: [Weather; 6] = [
+    Weather::Dusk,
+    Weather::Clear,
+    Weather::Drizzle,
+    Weather::Rain,
+    Weather::Storm,
+    Weather::Tempest,
+];
+/// The icons of the row: those gone, put out, in grey; those to come, and the next one by the
+/// end of the weather now, at a share of their colour.
+const WEATHER_GONE: Color = Color::Rgb(50, 50, 58);
+const WEATHER_AHEAD: f32 = 0.18;
+const WEATHER_NEXT: f32 = 0.8;
+/// The dawn's icon, at the end of the row: the rising sun's gold.
+const DAWN_COLOR: Color = Color::Rgb(255, 210, 90);
 /// Below this share of their HP, the player's HP bar blinks.
 const LOW_HP_PERCENT: u32 = 30;
 /// The frames the low HP bar stays lit, then dimmed, as it blinks.
@@ -63,8 +81,6 @@ const HP_COLOR: Color = Color::Rgb(220, 45, 65);
 const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
 const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
-/// The width of the weather's gauge, in cells.
-const WEATHER_GAUGE: u8 = 6;
 /// How long the edges of the map flush red after a blow, in ticks; how deep, in cells; how red
 /// at most, and in which red.
 const HURT_TICKS: u32 = 15;
@@ -98,9 +114,11 @@ struct Areas {
 }
 
 fn areas(screen: Rect) -> Areas {
-    let [top, field, help] = Layout::vertical([
+    // A row left empty at the bottom: the keys or the XP bar don't sit on the screen's edge.
+    let [top, field, help, _] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Fill(1),
+        Constraint::Length(1),
         Constraint::Length(1),
     ])
     .areas(screen);
@@ -156,7 +174,6 @@ pub fn render(
     } else {
         render_status(frame, areas.top, world, leaderboard, view.frame);
         pixels::render_map(frame.buffer_mut(), map, world, sprites, view);
-        horde::shift(frame.buffer_mut(), map, horde::shake(world));
         render_hurt(frame.buffer_mut(), map, world);
         if let Some(healing) = world.compass() {
             pixels::render_compass(
@@ -276,38 +293,42 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
         HP_COLOR
     };
     let weather = world.weather();
-    Line::from(vec![
-        Span::styled(format!(" {} ", icons::HP), bold.fg(HP_COLOR)),
-        Span::styled(bar(hp, max_hp), hp_color),
-        Span::styled(format!(" {hp}"), bold),
-        Span::styled(
-            format!("   {} ", icons::weather(weather)),
-            weather_style(weather),
-        ),
-        Span::styled(weather_name(weather), weather_style(weather)),
-        Span::raw(" "),
-        Span::styled(
-            weather_gauge(weather, world.seconds()),
-            weather_style(weather),
-        ),
-    ])
+    let mut spans = vec![Span::styled(format!(" {} ", icons::HP), bold.fg(HP_COLOR))];
+    spans.extend(embossed(&bar(hp, max_hp), hp_color));
+    spans.push(Span::styled(format!(" {hp}   "), bold));
+    spans.extend(weather_track(weather, weather_progress(world.seconds())));
+    spans.push(Span::styled(
+        format!(" {}", weather_name(weather)),
+        weather_style(weather),
+    ));
+    Line::from(spans)
 }
 
 /// The player's level and their XP, in a bar as wide as `width` leaves.
 fn experience(world: &World, width: u16) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
     let player = &world.player;
-    let mut spans = vec![
-        Span::styled(format!(" {} ", icons::LEVEL), bold.fg(XP_COLOR)),
-        Span::styled(format!("{} ", player.level), bold),
-    ];
+    let mut spans = vec![Span::raw(" ")];
     let taken: usize = spans.iter().map(Span::width).sum();
     // The bar's two ends take a cell each, and a cell is left after it.
     let cells = usize::from(width).saturating_sub(taken + 3);
-    spans.push(Span::styled(
-        bar_of(player.xp, xp_to_next(player.level), cells),
+    let mut bar = embossed(
+        &bar_of(player.xp, xp_to_next(player.level), cells),
         XP_COLOR,
-    ));
+    );
+    // The level in the middle of the bar, in white on whatever part of it is there.
+    let level = format!(" {} ", player.level);
+    let start = bar.len().saturating_sub(level.len()) / 2;
+    for (offset, digit) in level.chars().enumerate() {
+        if let Some(cell) = bar.get_mut(start + offset) {
+            let ground = cell.style.bg.unwrap_or(XP_COLOR);
+            *cell = Span::styled(
+                digit.to_string(),
+                bold.fg(Color::Rgb(245, 245, 250)).bg(ground),
+            );
+        }
+    }
+    spans.extend(bar);
     Line::from(spans)
 }
 
@@ -379,25 +400,88 @@ fn weather_colour(weather: Weather) -> Color {
     }
 }
 
-/// How far the run is to the next weather, as a short bar; full in the tempest, the last.
-fn weather_gauge(weather: Weather, seconds: u32) -> String {
-    let share = if weather.next().is_some() {
-        weather_progress(seconds)
+/// Every weather's icon in a row, from the dusk to the tempest: the weather now in its colour,
+/// those gone dimmed, those to come barely there, but the next one, coming out of the dark as
+/// the run goes `progress` through the weather now.
+fn weather_track(now: Weather, progress: f32) -> Vec<Span<'static>> {
+    let next = now.next();
+    let mut spans = Vec::new();
+    for weather in WEATHERS {
+        let colour = weather_colour(weather);
+        let shown = if weather == now {
+            colour
+        } else if Some(weather) == next {
+            faded(
+                colour,
+                WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress,
+            )
+        } else if weather < now {
+            WEATHER_GONE
+        } else {
+            faded(colour, WEATHER_AHEAD)
+        };
+        let style = Style::new().fg(shown);
+        let style = if weather == now {
+            style.add_modifier(Modifier::BOLD)
+        } else {
+            style
+        };
+        if !spans.is_empty() {
+            spans.push(Span::raw(" "));
+        }
+        spans.push(Span::styled(icons::weather(weather), style));
+    }
+    // The dawn last, coming out of the dark through the tempest.
+    let dawn = if now == Weather::Tempest {
+        WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress
     } else {
-        1.0
+        WEATHER_AHEAD
     };
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        reason = "a share of 6 cells"
-    )]
-    let filled =
-        ((share * f32::from(WEATHER_GAUGE)).floor() as usize).min(usize::from(WEATHER_GAUGE));
-    format!(
-        "▕{}{}▏",
-        "█".repeat(filled),
-        "░".repeat(usize::from(WEATHER_GAUGE) - filled)
-    )
+    spans.push(Span::raw(" "));
+    spans.push(Span::styled(
+        icons::DAWN,
+        Style::new().fg(faded(DAWN_COLOR, dawn)),
+    ));
+    spans
+}
+
+/// A colour at a share of its brightness, towards the screen's dark ground.
+fn faded(color: Color, share: f32) -> Color {
+    match color {
+        Color::Rgb(red, green, blue) => Color::Rgb(
+            night::scale_channel(red, share),
+            night::scale_channel(green, share),
+            night::scale_channel(blue, share),
+        ),
+        other => other,
+    }
+}
+
+/// A bar in its colour, in relief: the top half of each full cell lighter, as lit from above;
+/// its empty part flat, in a dark shade of the colour, as tall as the full one.
+fn embossed(bar: &str, color: Color) -> Vec<Span<'static>> {
+    let empty = faded(color, BAR_EMPTY);
+    bar.chars()
+        .map(|cell| match cell {
+            // The lit top as the cell's ground, the bar's colour as a lower half block over it:
+            // a terminal that draws its half blocks a little short shows no line of the bar's
+            // colour above the light.
+            '█' => Span::styled("▄", Style::new().fg(color).bg(lighter(color))),
+            '░' => Span::styled(" ", Style::new().bg(empty)),
+            _ => Span::styled(cell.to_string(), color),
+        })
+        .collect()
+}
+
+/// A colour a third of the way to white: the lit top of a bar.
+fn lighter(color: Color) -> Color {
+    match color {
+        Color::Rgb(red, green, blue) => {
+            let lit = |value: u8| value + (u8::MAX - value) / 3;
+            Color::Rgb(lit(red), lit(green), lit(blue))
+        }
+        other => other,
+    }
 }
 
 /// A multiplier given in tenths: `×2.4`.

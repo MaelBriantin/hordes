@@ -201,6 +201,15 @@ const BOLT_GLOW: Color = Color::Rgb(170, 180, 255);
 const IMPACT_STEPS: u8 = 32;
 /// How far the player's light fades into the night, past its full reach, in tiles.
 const LIGHT_FADE: f32 = 6.0;
+/// An XP gem's glow: its blue, how strong at the gem, how far it reaches, in pixels; and the
+/// screen's ground it shows on where nothing is drawn.
+const GEM_GLOW: (u8, u8, u8) = (60, 130, 255);
+const GEM_GLOW_STRENGTH: f32 = 0.3;
+/// The light of a gem on what is drawn around it: full within this many tiles, fading over
+/// that many more.
+const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
+const GEM_GLOW_REACH: i32 = 4;
+const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
 /// How much of its brightness a thing keeps in the dark.
 const DARK: f32 = 0.14;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
@@ -400,6 +409,31 @@ impl Light {
             fade: radius,
         }
     }
+
+    /// An XP gem: what passes by it, an enemy, is lit out of the dark, a tile and a half or so
+    /// around it.
+    pub fn gem(centre: (i32, i32)) -> Self {
+        Self {
+            centre,
+            radius: GEM_LIGHT.0,
+            fade: GEM_LIGHT.1,
+        }
+    }
+
+    /// How lit it leaves a pixel `(dx, dy)` pixels from its centre, from 0 to 1.
+    fn on(&self, (dx, dy): (i32, i32)) -> f32 {
+        let distance = tiles_apart((dx, dy));
+        ((self.radius + self.fade - distance) / self.fade.max(0.1)).clamp(0.0, 1.0)
+    }
+
+    /// How far it reaches, in pixels: two a tile.
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "a reach of a few dozen pixels"
+    )]
+    fn reach(&self) -> i32 {
+        ((self.radius + self.fade) * 2.0).ceil() as i32
+    }
 }
 
 /// The night over what the canvas holds: its colours dimmed and cooled, lit only by the
@@ -409,21 +443,64 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
     let ambient = DARK + (1.0 - DARK) * daylight;
     let look = Dusk::of(daylight);
     let (left, top) = canvas.origin;
-    let width = canvas.width;
-    for (index, pixel) in (0..).zip(canvas.pixels.iter_mut()) {
+    let (width, height) = (canvas.width, canvas.height);
+    // Each light over the pixels it reaches only: the brightest where they meet.
+    let mut lit = vec![0.0_f32; canvas.pixels.len()];
+    for light in lights {
+        let reach = light.reach();
+        let (cx, cy) = (light.centre.0 - left, light.centre.1 - top);
+        for y in (cy - reach).max(0)..(cy + reach + 1).min(height) {
+            for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
+                let on = light.on((x - cx, y - cy));
+                let Ok(index) = usize::try_from(y * width + x) else {
+                    continue;
+                };
+                lit[index] = lit[index].max(on);
+            }
+        }
+    }
+    for (pixel, on) in canvas.pixels.iter_mut().zip(lit) {
         let Some(Color::Rgb(red, green, blue)) = *pixel else {
             continue;
         };
-        let (x, y) = (left + index % width, top + index / width);
-        let lit = lights
-            .iter()
-            .map(|light| {
-                let distance = tiles_apart((x - light.centre.0, y - light.centre.1));
-                ((light.radius + light.fade - distance) / light.fade.max(0.1)).clamp(0.0, 1.0)
-            })
-            .fold(0.0, f32::max);
-        let level = (ambient + (1.0 - ambient) * lit).max(flash);
+        let level = (ambient + (1.0 - ambient) * on).max(flash);
         *pixel = Some(look.colour((red, green, blue), level));
+    }
+}
+
+/// A blue glow around each gem at `centres`, added to what is there, the bare ground included:
+/// strongest at the gem, fading out over `GEM_GLOW_REACH` pixels.
+pub fn paint_glows(canvas: &mut Canvas, centres: &[(i32, i32)]) {
+    let (left, top) = canvas.origin;
+    let (width, height) = (canvas.width, canvas.height);
+    let reach = GEM_GLOW_REACH;
+    for &(gx, gy) in centres {
+        let (cx, cy) = (gx - left, gy - top);
+        for y in (cy - reach).max(0)..(cy + reach + 1).min(height) {
+            for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
+                let distance = f32::from(i16::try_from(x - cx).unwrap_or(i16::MAX))
+                    .hypot(f32::from(i16::try_from(y - cy).unwrap_or(i16::MAX)));
+                let strength = GEM_GLOW_STRENGTH
+                    * (1.0 - distance / (f32::from(i16::try_from(reach).unwrap_or(1)) + 1.0))
+                        .max(0.0);
+                if strength <= 0.0 {
+                    continue;
+                }
+                let Ok(index) = usize::try_from(y * width + x) else {
+                    continue;
+                };
+                let (red, green, blue) = match canvas.pixels[index] {
+                    Some(Color::Rgb(red, green, blue)) => (red, green, blue),
+                    _ => SCREEN_GROUND,
+                };
+                let add = |value: u8, glow: u8| value.saturating_add(scale_channel(glow, strength));
+                canvas.pixels[index] = Some(Color::Rgb(
+                    add(red, GEM_GLOW.0),
+                    add(green, GEM_GLOW.1),
+                    add(blue, GEM_GLOW.2),
+                ));
+            }
+        }
     }
 }
 
