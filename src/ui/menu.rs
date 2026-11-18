@@ -4,7 +4,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, Padding, Paragraph};
+use ratatui::widgets::{Block, Padding, Paragraph};
 
 use super::clock;
 use super::font;
@@ -12,7 +12,7 @@ use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{BloodLook, RainDisplay, ViewState};
+use super::{Blank, BloodLook, DARK_GREY, GREY, RainDisplay, ViewState};
 use crate::game::{Entry, Leaderboard, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
@@ -86,7 +86,7 @@ fn boxed(frame: &mut Frame, map: Rect, width: u16, height: u16, title: &str) -> 
     let [area] = Layout::horizontal([Constraint::Length(width)])
         .flex(Flex::Center)
         .areas(row);
-    frame.render_widget(Clear, area);
+    frame.render_widget(Blank, area);
     let block = Block::bordered().padding(Padding::new(2, 2, 1, 1));
     let block = if title.is_empty() {
         block
@@ -144,12 +144,7 @@ pub fn render_title(
         render_board(frame, board, &leaderboard.entries()[..shown], frames);
     }
     pixels::render_sprite_scaled(frame.buffer_mut(), name, sprites, SpriteId::Title, scale);
-    centred(
-        frame,
-        &fl!("title-tagline"),
-        Style::new().fg(Color::Gray),
-        line,
-    );
+    centred(frame, &fl!("title-tagline"), Style::new().fg(GREY), line);
     // Blinking, as on an arcade cabinet: shown two thirds of each second.
     if frames % 30 < 20 {
         centred(
@@ -167,7 +162,7 @@ pub fn render_title(
             rain = rain_name(view.rain),
             language = view.language
         ),
-        Style::new().fg(Color::DarkGray),
+        Style::new().fg(DARK_GREY),
         option,
     );
 }
@@ -272,7 +267,7 @@ pub fn render_death(
         ),
     ]
     .join(" · ");
-    label(frame, &line, Style::new().fg(Color::Gray), summary);
+    label(frame, &line, Style::new().fg(GREY), summary);
     match name {
         Some((letters, cursor)) => {
             let place = highlight.unwrap_or(0);
@@ -307,9 +302,9 @@ fn render_death_board(
     let [boxed_board] = Layout::horizontal([Constraint::Length(BOARD_WIDTH)])
         .flex(Flex::Center)
         .areas(boxed_board);
-    frame.render_widget(Clear, boxed_board);
+    frame.render_widget(Blank, boxed_board);
     let block = Block::bordered()
-        .border_style(Style::new().fg(Color::DarkGray))
+        .border_style(Style::new().fg(DARK_GREY))
         .title(Line::from(format!(" {} ", fl!("leaderboard-title"))).centered());
     let rows = block.inner(boxed_board);
     frame.render_widget(block, boxed_board);
@@ -336,7 +331,7 @@ fn label(frame: &mut Frame, text: &str, style: Style, area: Rect) {
     let [ground] = Layout::horizontal([Constraint::Length(width)])
         .flex(Flex::Center)
         .areas(area);
-    frame.render_widget(Clear, ground);
+    frame.render_widget(Blank, ground);
     centred_as_is(frame, text, style, ground);
 }
 
@@ -385,7 +380,7 @@ fn render_name_prompt(
     let [ground] = Layout::horizontal([Constraint::Length(width + 2)])
         .flex(Flex::Center)
         .areas(area);
-    frame.render_widget(Clear, ground);
+    frame.render_widget(Blank, ground);
     spans.insert(0, Span::raw(" "));
     frame.render_widget(Paragraph::new(Line::from(spans)), ground);
 }
@@ -395,9 +390,9 @@ fn render_board(frame: &mut Frame, area: Rect, runs: &[Entry], frames: u32) {
     let [area] = Layout::horizontal([Constraint::Length(BOARD_WIDTH)])
         .flex(Flex::Center)
         .areas(area);
-    frame.render_widget(Clear, area);
+    frame.render_widget(Blank, area);
     let block = Block::bordered()
-        .border_style(Style::new().fg(Color::DarkGray))
+        .border_style(Style::new().fg(DARK_GREY))
         .title(Line::from(format!(" {} ", fl!("leaderboard-title"))).centered());
     let inside = block.inner(area);
     frame.render_widget(block, area);

@@ -19,6 +19,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
 
 ### Changed
+- The game draws its own dark background and text, whatever the terminal's theme: a light one no longer washes it out.
 - A drone breaks on its blow, and repairs in 2 seconds: drones were too strong.
 - Blood comes red, as ketchup, mayo or pesto, or not at all: B on the title screen, or the pause menu.
 - The HP bar is red, and blinks when HP run low.

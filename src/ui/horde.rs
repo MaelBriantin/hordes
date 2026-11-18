@@ -6,8 +6,8 @@ use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::Clear;
 
+use super::Blank;
 use super::text::centred_as_is;
 use crate::game::{Facing, TICKS_PER_SECOND, World};
 
@@ -88,7 +88,7 @@ fn banner(frame: &mut Frame, map: Rect, words: &str, color: Color) {
     let [ground] = Layout::horizontal([Constraint::Length(width)])
         .flex(Flex::Center)
         .areas(row);
-    frame.render_widget(Clear, ground);
+    frame.render_widget(Blank, ground);
     centred_as_is(
         frame,
         words,

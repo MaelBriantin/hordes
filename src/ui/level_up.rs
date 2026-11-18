@@ -7,11 +7,12 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Clear, Padding, Paragraph};
+use ratatui::widgets::{Block, Padding, Paragraph};
 
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
+use super::{Blank, DARK_GREY};
 use crate::game::{Choice, MAX_LEVEL, Passive, Weapon, World};
 
 const CARD_WIDTH: u16 = 24;
@@ -48,7 +49,7 @@ pub fn render(
     let [area] = Layout::horizontal([Constraint::Length(width)])
         .flex(Flex::Center)
         .areas(row);
-    frame.render_widget(Clear, area);
+    frame.render_widget(Blank, area);
     let block = Block::bordered()
         .padding(Padding::new(GAP, GAP, 1, 1))
         .title(
@@ -103,7 +104,7 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
         let [area] = Layout::horizontal([Constraint::Length(width)])
             .flex(Flex::Center)
             .areas(slot);
-        let color = if face_up { Color::DarkGray } else { BACK };
+        let color = if face_up { DARK_GREY } else { BACK };
         let fill = if face_up { " " } else { "░" };
         let rows = vec![Line::from(fill.repeat(usize::from(width))); usize::from(CARD_HEIGHT)];
         frame.render_widget(
@@ -118,7 +119,7 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
     let border = if card.selected {
         Style::new().fg(SELECTED).add_modifier(Modifier::BOLD)
     } else {
-        Style::new().fg(Color::DarkGray)
+        Style::new().fg(DARK_GREY)
     };
     let block = Block::bordered()
         .border_style(border)

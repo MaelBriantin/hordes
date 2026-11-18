@@ -14,10 +14,11 @@ mod text;
 use std::time::Duration;
 
 use ratatui::Frame;
+use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Block;
+use ratatui::widgets::{Block, Clear, Widget};
 
 use crate::game::{Leaderboard, Vec2, World, xp_to_next};
 use crate::game::{Weather, weather_progress};
@@ -55,6 +56,25 @@ const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The width of the weather's gauge, in cells.
 const WEATHER_GAUGE: u8 = 6;
+
+/// The game's own background and text, whatever the terminal's theme: a light one would wash
+/// the night out.
+const SCREEN: Style = Style::new()
+    .fg(Color::Rgb(225, 225, 230))
+    .bg(Color::Rgb(12, 12, 18));
+/// Greys for what is said aside, and for frames.
+pub const GREY: Color = Color::Rgb(165, 165, 172);
+pub const DARK_GREY: Color = Color::Rgb(105, 105, 115);
+
+/// Empties an area in the game's own colours: under a box or a banner, or the whole screen.
+pub struct Blank;
+
+impl Widget for Blank {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        Clear.render(area, buffer);
+        buffer.set_style(area, SCREEN);
+    }
+}
 
 /// The screen's parts: the line on top, the map in its frame, the keys below.
 struct Areas {
@@ -102,6 +122,7 @@ pub fn render(
     screen: Screen,
     view: ViewState,
 ) {
+    frame.render_widget(Blank, frame.area());
     let areas = areas(frame.area());
     let block = Block::bordered();
     let map = block.inner(areas.field);
@@ -146,7 +167,7 @@ pub fn render(
         Screen::Playing if world.offer.is_some() => fl!("help-level-up"),
         Screen::Playing => fl!("help-run"),
     };
-    frame.render_widget(Line::from(help).dark_gray(), areas.help);
+    frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help);
     match screen {
         Screen::Title | Screen::NameEntry { .. } => return,
         Screen::Paused { selected } => {
