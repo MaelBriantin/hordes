@@ -3,6 +3,7 @@
 //! level-up's cards or the game over.
 
 mod announce;
+mod debug;
 mod font;
 mod horde;
 mod icons;
@@ -24,6 +25,7 @@ use ratatui::widgets::{Block, Clear, Widget};
 
 use crate::game::{Leaderboard, Vec2, World, xp_to_next};
 use crate::game::{Weather, weather_progress};
+pub use debug::DebugAction;
 pub use menu::PauseItem;
 pub use night::{BloodLook, RainDisplay};
 pub use sprites::Sprites;
@@ -43,6 +45,10 @@ pub enum Screen {
     NameEntry {
         letters: [u8; 3],
         cursor: usize,
+    },
+    /// The run stands still, the debug console open on its action `selected`: debug builds only.
+    Debug {
+        selected: usize,
     },
 }
 /// Below this share of their HP, the player's HP bar blinks.
@@ -129,7 +135,7 @@ pub fn render(
     let map = block.inner(areas.field);
     frame.render_widget(block, areas.field);
     // The run over, the death screen, but for the pause menu over the run.
-    let dead = world.is_over() && !matches!(screen, Screen::Paused { .. });
+    let dead = world.is_over() && !matches!(screen, Screen::Paused { .. } | Screen::Debug { .. });
     if screen == Screen::Title {
         menu::render_title(frame, map, sprites, view, leaderboard);
     } else if dead {
@@ -167,7 +173,7 @@ pub fn render(
         Screen::NameEntry { .. } => Some(fl!("help-name")),
         Screen::Playing if world.is_over() => Some(fl!("help-over")),
         Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
-        Screen::Playing => None,
+        Screen::Playing | Screen::Debug { .. } => None,
     };
     match help {
         Some(help) => frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help),
@@ -177,6 +183,10 @@ pub fn render(
         Screen::Title | Screen::NameEntry { .. } => return,
         Screen::Paused { selected } => {
             menu::render_pause(frame, map, selected, view);
+            return;
+        }
+        Screen::Debug { selected } => {
+            debug::render(frame, map, selected, world.unhurt);
             return;
         }
         Screen::Playing => {}

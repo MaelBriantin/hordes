@@ -49,6 +49,8 @@ Set `HORDES_DATA_DIR` to keep the settings and the leaderboard somewhere else, t
 HORDES_DATA_DIR=/tmp/hordes cargo run
 ```
 
+In a debug build (`cargo run`), Tab opens a debug console during a run: the next weather, a horde, the dawn, a level-up, a full heal, or nothing hurting the player.
+
 ## Licence
 
 All rights reserved. You're free to play the game.

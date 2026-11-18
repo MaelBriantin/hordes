@@ -924,3 +924,15 @@ fn the_run_is_won_at_dawn_with_a_bonus() {
     wait(&mut world, 1);
     assert_eq!(world.ticks(), won_at);
 }
+
+#[test]
+fn the_debug_console_skips_to_the_next_weather() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.debug_next_weather();
+    wait(&mut world, 1);
+    assert_eq!(
+        world.announcement.map(|told| told.news),
+        Some(News::Weather(Weather::Clear))
+    );
+}

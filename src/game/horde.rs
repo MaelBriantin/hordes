@@ -47,6 +47,17 @@ pub fn first() -> u32 {
     FIRST_SECONDS * u32::from(TICKS_PER_SECOND)
 }
 
+/// The tick the first horde due after `ticks` comes at, by the clock: one in the middle of each
+/// stage of weather.
+pub fn due_after(ticks: u32) -> u32 {
+    let passed = ticks.saturating_sub(first()) / every() + 1;
+    if ticks < first() {
+        first()
+    } else {
+        first() + passed * every()
+    }
+}
+
 /// The ticks between two hordes.
 pub fn every() -> u32 {
     EVERY_SECONDS * u32::from(TICKS_PER_SECOND)
@@ -123,6 +134,14 @@ mod tests {
     use rand::rngs::StdRng;
 
     use super::*;
+
+    #[test]
+    fn the_next_horde_is_due_in_the_middle_of_a_stage() {
+        let second = u32::from(TICKS_PER_SECOND);
+        assert_eq!(due_after(0), 120 * second);
+        assert_eq!(due_after(120 * second), 240 * second);
+        assert_eq!(due_after(359 * second), 360 * second);
+    }
 
     #[test]
     fn hordes_grow_one_after_the_other() {

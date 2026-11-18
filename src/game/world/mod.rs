@@ -141,6 +141,8 @@ pub struct World {
     pub announcement: Option<Announcement>,
     /// What reaching the dawn added to the score, once the run has: the run is won, and over.
     pub dawn_bonus: Option<u64>,
+    /// Nothing hurts the player: a debug tool.
+    pub unhurt: bool,
     /// The herbs picked, by tile.
     picked: HashSet<(i32, i32)>,
     /// The HP each campfire has given, by tile.
@@ -210,6 +212,7 @@ impl World {
             horde_cleared: None,
             announcement: None,
             dawn_bonus: None,
+            unhurt: false,
             picked: HashSet::new(),
             burnt: HashMap::new(),
             by_the_fire: 0,
@@ -657,6 +660,48 @@ impl World {
         }
     }
 
+    /// A debug tool: the run jumps to just before the next weather, which is then told; in the
+    /// tempest, to the sunrise.
+    pub fn debug_next_weather(&mut self) {
+        self.ticks = match self.weather().next() {
+            Some(next) => weather::starts_at(next) * u32::from(TICKS_PER_SECOND) - 1,
+            None => self.ticks.max(weather::sunrise()),
+        };
+        self.after_a_jump();
+    }
+
+    /// After a debug jump in time: no horde owed from the time skipped, the next one in the
+    /// middle of its stage.
+    fn after_a_jump(&mut self) {
+        self.horde_warning = None;
+        self.next_horde = horde::due_after(self.ticks + horde::warning());
+    }
+
+    /// A debug tool: the next horde is announced at once.
+    pub fn debug_horde(&mut self) {
+        if self.horde_warning.is_none() {
+            self.next_horde = self.ticks + horde::warning();
+        }
+    }
+
+    /// A debug tool: the run jumps to 10 seconds before the dawn.
+    pub fn debug_dawn(&mut self) {
+        let before = weather::dawn() - 10 * u32::from(TICKS_PER_SECOND);
+        self.ticks = self.ticks.max(before);
+        self.after_a_jump();
+    }
+
+    /// A debug tool: the player gets the XP left to their next level, and its cards.
+    pub fn debug_level_up(&mut self) {
+        let missing = xp_to_next(self.player.level).saturating_sub(self.player.xp);
+        self.pending_levels += self.player.gain(missing);
+    }
+
+    /// A debug tool: the player's HP all back.
+    pub fn debug_heal(&mut self) {
+        self.player.hp = self.player.max_hp();
+    }
+
     /// Gems near the player fly to them; those they reach give their XP.
     fn gather_gems(&mut self) {
         let player = &mut self.player;
@@ -965,7 +1010,7 @@ impl World {
     /// The player loses the HP of the hardest-hitting enemy touching them, then nothing hurts
     /// them for half a second.
     fn hurt_player(&mut self) {
-        if self.daybreak() {
+        if self.unhurt || self.daybreak() {
             return;
         }
         let player = &mut self.player;

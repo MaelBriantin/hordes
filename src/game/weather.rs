@@ -103,6 +103,18 @@ impl Weather {
     }
 }
 
+/// The seconds into the run a weather starts at.
+pub fn starts_at(weather: Weather) -> u32 {
+    match weather {
+        Weather::Dusk => 0,
+        Weather::Clear => DUSK_SECONDS,
+        Weather::Drizzle => DUSK_SECONDS + STAGE_SECONDS,
+        Weather::Rain => DUSK_SECONDS + 2 * STAGE_SECONDS,
+        Weather::Storm => DUSK_SECONDS + 3 * STAGE_SECONDS,
+        Weather::Tempest => DUSK_SECONDS + 4 * STAGE_SECONDS,
+    }
+}
+
 /// The tick the sun has risen at.
 pub fn dawn() -> u32 {
     DAWN_SECONDS * u32::from(TICKS_PER_SECOND)

@@ -1,6 +1,7 @@
 //! The terminal side of the game: the loop and the keys. It moves the world on one tick at a time
 //! with the keys held down, and has the ui draw it.
 
+mod debug;
 mod keys;
 mod scores;
 mod settings;
@@ -148,6 +149,9 @@ impl App {
                 Screen::NameEntry { letters, cursor } => {
                     self.on_name_entry(key.code, letters, cursor);
                 }
+                Screen::Debug { selected } => {
+                    self.screen = debug::handle_key(&mut self.world, key.code, selected);
+                }
             }
         }
         // Held keys are followed in menus too: still held after them, they keep moving.
@@ -250,6 +254,10 @@ impl App {
         }
         if matches!(code, KeyCode::Esc | KeyCode::Char('p' | 'P')) {
             self.screen = Screen::Paused { selected: 0 };
+            return;
+        }
+        if debug::opens(code) {
+            self.screen = Screen::Debug { selected: 0 };
             return;
         }
         self.choose(code);
