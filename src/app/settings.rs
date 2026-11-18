@@ -7,7 +7,7 @@ use std::io;
 use std::path::PathBuf;
 
 use crate::game::{Mode, WeatherNews};
-use crate::ui::{BloodLook, Outline, RainDisplay, Skin};
+use crate::ui::{Arrow, BloodLook, RainDisplay, Skin};
 
 /// Where the settings go instead of the data folder, if set: for tests.
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
@@ -69,8 +69,8 @@ pub struct Settings {
     pub blood: BloodLook,
     /// How the rain shows during a run.
     pub rain: RainDisplay,
-    /// The line around the player.
-    pub outline: Outline,
+    /// The arrow over the player, in its colour.
+    pub arrow: Arrow,
     /// How the hero looks.
     pub skin: Skin,
     /// The mode runs are played in, and whether they skip the dusk.
@@ -78,6 +78,8 @@ pub struct Settings {
     pub skip_dusk: bool,
     /// Whether the gear shows over the top left of the map.
     pub gear: bool,
+    /// Whether the player's HP and battery show in small bars over their head.
+    pub mini_bars: bool,
     /// How a new weather is told.
     pub weather_news: WeatherNews,
 }
@@ -88,11 +90,12 @@ impl Default for Settings {
             language: Language::of_system(),
             blood: BloodLook::Red,
             rain: RainDisplay::Full,
-            outline: Outline::Off,
+            arrow: Arrow::Off,
             skin: Skin::Survivor,
             mode: Mode::Standard,
             skip_dusk: false,
             gear: true,
+            mini_bars: false,
             weather_news: WeatherNews::Paused,
         }
     }
@@ -134,10 +137,11 @@ impl Settings {
                 ("rain", "full" | "heavy") => settings.rain = RainDisplay::Full,
                 ("rain", "reduced" | "light") => settings.rain = RainDisplay::Reduced,
                 ("rain", "off") => settings.rain = RainDisplay::Off,
-                ("outline", "off") => settings.outline = Outline::Off,
-                ("outline", "white") => settings.outline = Outline::White,
-                ("outline", "yellow") => settings.outline = Outline::Yellow,
-                ("outline", "red") => settings.outline = Outline::Red,
+                // `outline`, the line around the player before there was the arrow.
+                ("arrow" | "outline", "off") => settings.arrow = Arrow::Off,
+                ("arrow" | "outline", "white") => settings.arrow = Arrow::White,
+                ("arrow" | "outline", "yellow") => settings.arrow = Arrow::Yellow,
+                ("arrow" | "outline", "red") => settings.arrow = Arrow::Red,
                 ("skin", "survivor") => settings.skin = Skin::Survivor,
                 ("skin", "classic") => settings.skin = Skin::Classic,
                 ("mode", "standard") => settings.mode = Mode::Standard,
@@ -146,6 +150,8 @@ impl Settings {
                 ("dusk", "skipped") => settings.skip_dusk = true,
                 ("gear", "shown") => settings.gear = true,
                 ("gear", "hidden") => settings.gear = false,
+                ("mini_bars", "shown") => settings.mini_bars = true,
+                ("mini_bars", "hidden") => settings.mini_bars = false,
                 ("announcements", "paused") => settings.weather_news = WeatherNews::Paused,
                 ("announcements", "big") => settings.weather_news = WeatherNews::Big,
                 // `quiet`, the setting of before there were three.
@@ -160,15 +166,16 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\noutline = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\nmini_bars = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
-            self.outline.id(),
+            self.arrow.id(),
             self.skin.id(),
             self.mode.id(),
             if self.skip_dusk { "skipped" } else { "played" },
             if self.gear { "shown" } else { "hidden" },
+            if self.mini_bars { "shown" } else { "hidden" },
             self.weather_news.id()
         )
     }
@@ -201,11 +208,12 @@ mod tests {
             language: Language::French,
             blood: BloodLook::Mayo,
             rain: RainDisplay::Reduced,
-            outline: Outline::Yellow,
+            arrow: Arrow::Yellow,
             skin: Skin::Classic,
             mode: Mode::Arcade,
             skip_dusk: true,
             gear: false,
+            mini_bars: true,
             weather_news: WeatherNews::Big,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);

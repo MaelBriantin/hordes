@@ -21,7 +21,7 @@ use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
 use crate::game::{Entry, Leaderboard, Mode, TICKS_PER_SECOND, WeatherNews, World};
 use crate::ui::{
-    self, BloodLook, OptionItem, Outline, PauseItem, RainDisplay, Screen, Sprites, ViewState,
+    self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
 };
 use keys::Keys;
 use settings::Settings;
@@ -44,6 +44,8 @@ pub struct App {
     dealt_at: Option<Instant>,
     /// The frames drawn so far.
     frames: u32,
+    /// The run's tick the player was last pinged at: an arrow over their head a moment.
+    pinged_at: Option<u32>,
     keys: Keys,
     should_quit: bool,
 }
@@ -66,6 +68,7 @@ impl App {
             selected: 0,
             dealt_at: None,
             frames: 0,
+            pinged_at: None,
             keys: Keys::new(false),
             should_quit: false,
         }
@@ -99,11 +102,15 @@ impl App {
                 frame: self.frames,
                 blood: self.settings.blood,
                 rain: self.settings.rain,
-                outline: self.settings.outline,
+                arrow: self.settings.arrow,
+                pinged: self
+                    .pinged_at
+                    .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
                 skin: self.settings.skin,
                 mode: self.settings.mode,
                 skip_dusk: self.settings.skip_dusk,
                 gear: self.settings.gear,
+                mini_bars: self.settings.mini_bars,
                 weather_news: self.settings.weather_news,
                 language: self.settings.language.name(),
                 highlight: self.highlight,
@@ -208,8 +215,8 @@ impl App {
     }
 
     /// Changes the line around the player, and keeps the choice for the next runs.
-    fn change_outline(&mut self, change: fn(Outline) -> Outline) {
-        self.settings.outline = change(self.settings.outline);
+    fn change_arrow(&mut self, change: fn(Arrow) -> Arrow) {
+        self.settings.arrow = change(self.settings.arrow);
         self.keep_settings();
     }
 
@@ -326,8 +333,8 @@ impl App {
             OptionItem::Blood => self.change_blood(BloodLook::previous),
             OptionItem::Rain if forward => self.change_rain(RainDisplay::next),
             OptionItem::Rain => self.change_rain(RainDisplay::previous),
-            OptionItem::Outline if forward => self.change_outline(Outline::next),
-            OptionItem::Outline => self.change_outline(Outline::previous),
+            OptionItem::Arrow if forward => self.change_arrow(Arrow::next),
+            OptionItem::Arrow => self.change_arrow(Arrow::previous),
             OptionItem::Announcements if forward => self.change_weather_news(WeatherNews::next),
             OptionItem::Announcements => self.change_weather_news(WeatherNews::previous),
             OptionItem::Dusk => {
@@ -339,6 +346,10 @@ impl App {
                 self.keep_settings();
             }
             OptionItem::Gear => self.switch_gear(),
+            OptionItem::MiniBars => {
+                self.settings.mini_bars = !self.settings.mini_bars;
+                self.keep_settings();
+            }
             OptionItem::Language => self.change_language(),
             OptionItem::Back | OptionItem::Quit => {}
         }
@@ -369,6 +380,10 @@ impl App {
         }
         if matches!(code, KeyCode::Char('i' | 'I')) {
             self.switch_gear();
+            return;
+        }
+        if matches!(code, KeyCode::Char('e' | 'E')) {
+            self.pinged_at = Some(self.world.ticks());
             return;
         }
         // Space or F switches the torch, but for the cards of a level-up, where Space takes one.
@@ -438,6 +453,7 @@ impl App {
         self.world.weather_news = self.settings.weather_news;
         self.selected = 0;
         self.dealt_at = None;
+        self.pinged_at = None;
         self.screen = Screen::Playing;
     }
 
@@ -471,6 +487,9 @@ impl App {
         }
     }
 }
+
+/// How long the arrow shows over the player once pinged, in ticks: 2 s.
+const PING_TICKS: u32 = 2 * TICKS_PER_SECOND as u32;
 
 /// What the app asks of terminals with kitty's keyboard protocol (Ghostty, kitty, WezTerm…):
 /// every key as a code, with whether it is pressed, held down (repeated) or released.

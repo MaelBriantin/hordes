@@ -1,8 +1,6 @@
 //! The map in pixels: a tile is 2 × 2 pixels, a cell holds 2 pixels one above the other. The
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
-use std::collections::HashSet;
-
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
@@ -51,18 +49,28 @@ const FLICKER: u32 = 6;
 const COMPASS: Color = Color::Rgb(220, 45, 65);
 const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
 const COMPASS_PULSE: u32 = 10;
-/// The line around the player, to see them at once in the crowd: a setting, off at first.
+/// The arrow over the player's head, pointing down at them, as wide as they are; the pixels
+/// between it and their head, and the ticks it spends up, then down, bouncing.
+const ARROW: [&str; 2] = ["####", ".##."];
+const ARROW_GAP: i32 = 2;
+const ARROW_BOUNCE: u32 = 15;
+/// The small HP and battery bars over the player's head: their width, the pixels between them
+/// and the head, or the arrow when it shows.
+const MINI_BAR: i32 = 6;
+const MINI_BAR_GAP: i32 = 1;
+/// The arrow over the player's head, to see them at once in the crowd, in its colour: a setting,
+/// off at first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Outline {
+pub enum Arrow {
     Off,
     White,
     Yellow,
     Red,
 }
 
-impl Outline {
+impl Arrow {
     /// Every choice, in the order the settings go through them.
-    const ALL: [Outline; 4] = [Outline::Off, Outline::White, Outline::Yellow, Outline::Red];
+    const ALL: [Arrow; 4] = [Arrow::Off, Arrow::White, Arrow::Yellow, Arrow::Red];
 
     /// The next choice, round and round.
     pub fn next(self) -> Self {
@@ -82,20 +90,19 @@ impl Outline {
     /// Its name in the settings file.
     pub fn id(self) -> &'static str {
         match self {
-            Outline::Off => "off",
-            Outline::White => "white",
-            Outline::Yellow => "yellow",
-            Outline::Red => "red",
+            Arrow::Off => "off",
+            Arrow::White => "white",
+            Arrow::Yellow => "yellow",
+            Arrow::Red => "red",
         }
     }
 
-    /// The colour of the line; none when off.
-    fn colour(self) -> Option<Color> {
+    /// The arrow's colour: white when off, for the arrow of a ping.
+    fn colour(self) -> Color {
         match self {
-            Outline::Off => None,
-            Outline::White => Some(Color::Rgb(240, 240, 245)),
-            Outline::Yellow => Some(Color::Rgb(255, 225, 90)),
-            Outline::Red => Some(Color::Rgb(235, 45, 45)),
+            Arrow::Off | Arrow::White => Color::Rgb(240, 240, 245),
+            Arrow::Yellow => Color::Rgb(255, 225, 90),
+            Arrow::Red => Color::Rgb(235, 45, 45),
         }
     }
 }
@@ -199,23 +206,70 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// A line of pixels in `colour` around a sprite as `paint_at` would place it, over what is
-    /// there: the player, seen at once in the crowd.
-    fn outline(&mut self, look: Look, position: Vec2, colour: Color) {
+    /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
+    /// moment once pinged; and their HP and battery in small bars over it all, if they show.
+    fn mark(&mut self, world: &World, view: ViewState) {
+        let player = &world.player;
+        let look = sprites::hero(player.facing, view.skin);
+        let arrow = view.arrow != Arrow::Off || view.pinged;
+        if arrow {
+            self.arrow(look, player.position, world.ticks(), view.arrow.colour());
+        }
+        if view.mini_bars {
+            self.mini_bars(world, look, arrow);
+        }
+    }
+
+    /// The player's HP over their battery, in two small bars over the head of their sprite as
+    /// `paint_at` would place it; over the arrow if it shows, out of its way.
+    fn mini_bars(&mut self, world: &World, look: Look, over_arrow: bool) {
+        let player = &world.player;
+        let centre = pixel(player.position);
+        let head = centre.1 - self.sprites.get(look.sprite).height() / 2;
+        let arrow = if over_arrow {
+            ARROW_GAP + i32::try_from(ARROW.len()).unwrap_or(0) + 1
+        } else {
+            0
+        };
+        let battery = head - MINI_BAR_GAP - 1 - arrow;
+        let hp = f32::from(u16::try_from(player.hp).unwrap_or(u16::MAX))
+            / f32::from(u16::try_from(player.max_hp().max(1)).unwrap_or(u16::MAX));
+        let left = centre.0 - MINI_BAR / 2;
+        for (row, share, colour) in [
+            (battery - 1, hp, super::HP_COLOR),
+            (battery, world.battery, super::torch_colour(world)),
+        ] {
+            #[allow(
+                clippy::cast_possible_truncation,
+                reason = "a share of a few pixels, clamped"
+            )]
+            let full = (share.clamp(0.0, 1.0) * f32::from(u8::try_from(MINI_BAR).unwrap_or(0)))
+                .round() as i32;
+            for x in 0..MINI_BAR {
+                let shade = if x < full {
+                    colour
+                } else {
+                    super::faded(colour, super::BAR_EMPTY)
+                };
+                self.set((left + x, row), shade);
+            }
+        }
+    }
+
+    /// An arrow over the head of a sprite as `paint_at` would place it, pointing down at it,
+    /// bouncing a pixel up and down, `now` the run's tick, in `colour`.
+    fn arrow(&mut self, look: Look, position: Vec2, now: u32, colour: Color) {
         let centre = pixel(position);
         let sprite = self.sprites.get(look.sprite);
-        let (left, top) = (
-            centre.0 - sprite.width() / 2,
-            centre.1 - sprite.height() / 2,
-        );
-        let body: HashSet<(i32, i32)> = sprite
-            .pixels(look.mirrored)
-            .map(|(x, y, _)| (x, y))
-            .collect();
-        for &(x, y) in &body {
-            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                if !body.contains(&(x + dx, y + dy)) {
-                    self.set((left + x + dx, top + y + dy), colour);
+        let width = i32::try_from(ARROW[0].len()).unwrap_or(0);
+        let height = i32::try_from(ARROW.len()).unwrap_or(0);
+        let up = i32::from((now / ARROW_BOUNCE).is_multiple_of(2));
+        let left = centre.0 - width / 2;
+        let top = centre.1 - sprite.height() / 2 - ARROW_GAP - height - up;
+        for (y, row) in (0..).zip(ARROW) {
+            for (x, key) in (0..).zip(row.chars()) {
+                if key == '#' {
+                    self.set((left + x, top + y), colour);
                 }
             }
         }
@@ -607,7 +661,7 @@ impl<'a> Canvas<'a> {
 }
 
 /// The map around the player, the player in the middle of `area`, at night: lit around the
-/// player and by lightning, under the rain, blood stains and the player's outline as `view`
+/// player and by lightning, under the rain, blood stains and the arrow over the player as `view`
 /// says, `view.frame` frames in.
 pub fn render_map(
     buffer: &mut Buffer,
@@ -678,13 +732,7 @@ pub fn render_map(
     if let Some(healed_at) = world.healed_at {
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
-    if let Some(colour) = view.outline.colour() {
-        canvas.outline(
-            sprites::hero(player.facing, view.skin),
-            player.position,
-            colour,
-        );
-    }
+    canvas.mark(world, view);
     canvas.paint_shadow_eyes(world);
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);

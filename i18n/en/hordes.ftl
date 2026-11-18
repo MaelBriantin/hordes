@@ -33,10 +33,10 @@ announcements-paused = big, with a pause
 announcements-big = big, no pause
 announcements-banner = banner
 
-outline-off = off
-outline-white = white
-outline-yellow = yellow
-outline-red = red
+arrow-off = off
+arrow-white = white
+arrow-yellow = yellow
+arrow-red = red
 
 ## Pause menu
 
@@ -44,7 +44,7 @@ pause-title = Paused
 pause-resume = Resume
 pause-blood = Blood: { $value }
 pause-rain = Rain: { $value }
-pause-outline = Outline: { $value }
+option-arrow = Arrow: { $value }
 pause-announcements = Announcements: { $value }
 options-title = Options
 option-dusk = Dusk: { $value }
@@ -54,6 +54,9 @@ skin-survivor = survivor
 skin-classic = classic
 gear-shown = shown
 gear-hidden = hidden
+option-mini-bars = Bars over the hero: { $value }
+mini-bars-shown = shown
+mini-bars-hidden = hidden
 option-back = Back
 pause-language = Language: { $value }
 pause-new-run = New run
@@ -188,5 +191,6 @@ keys-move = Arrows / WASD / ZQSD   move
 keys-torch = Space / F              torch on or off
 keys-cards = ← → / 1 2 3 · Enter    take a card
 keys-gear = I                      show or hide the gear
+keys-ping = E                      an arrow over the hero, 2 s
 keys-pause = P / Esc                pause
 keys-keys = ?                      these keys

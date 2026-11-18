@@ -28,7 +28,7 @@ use crate::game::{Mode, Weather, WeatherNews};
 pub use debug::DebugAction;
 pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
-pub use pixels::Outline;
+pub use pixels::Arrow;
 pub use sprites::{Skin, Sprites};
 
 /// Where the player is, outside the run itself.
@@ -151,6 +151,10 @@ pub fn view(screen: Rect) -> Vec2 {
 /// What the screen needs beyond the run: the card selected on a level-up and how long the
 /// cards have been shown, and the frames drawn so far, for what moves on its own.
 #[derive(Debug, Clone, Copy)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "settings and states of the screen, each on its own"
+)]
 pub struct ViewState {
     pub selected: usize,
     pub shown: Duration,
@@ -158,8 +162,11 @@ pub struct ViewState {
     /// How blood shows, and how the rain shows.
     pub blood: BloodLook,
     pub rain: RainDisplay,
-    /// The line around the player.
-    pub outline: Outline,
+    /// The arrow over the player, always, in its colour; or a moment, once pinged.
+    pub arrow: Arrow,
+    pub pinged: bool,
+    /// Whether the player's HP and battery show in small bars over their head.
+    pub mini_bars: bool,
     /// How the hero looks.
     pub skin: Skin,
     /// The mode the next run is played in, and whether it skips the dusk.
@@ -337,6 +344,18 @@ fn render_status(
     frame.render_widget(run(world, leaderboard, frames).right_aligned(), area);
 }
 
+/// The battery's colour: green while the torch is on, grey-blue while it is out and charging,
+/// red when nearly empty.
+fn torch_colour(world: &World) -> Color {
+    if world.battery < BATTERY_LOW {
+        HP_COLOR
+    } else if world.torch_on().unwrap_or(false) {
+        TORCH_COLOR
+    } else {
+        CHARGING_COLOR
+    }
+}
+
 /// The player's HP and the weather, as gauges.
 fn survival(world: &World, frames: u32) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
@@ -359,13 +378,7 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
     // of itself as the night falls): green while it is on, grey-blue while it is out and
     // charging, red when nearly empty.
     let on = world.torch_on().unwrap_or(false);
-    let colour = if world.battery < BATTERY_LOW {
-        HP_COLOR
-    } else if on {
-        TORCH_COLOR
-    } else {
-        CHARGING_COLOR
-    };
+    let colour = torch_colour(world);
     let icon = if on {
         icons::TORCH_ON
     } else {

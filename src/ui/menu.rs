@@ -12,7 +12,7 @@ use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{Blank, BloodLook, DARK_GREY, GREY, Outline, RainDisplay, Skin, ViewState};
+use super::{Arrow, Blank, BloodLook, DARK_GREY, GREY, RainDisplay, Skin, ViewState};
 use crate::game::{Entry, Leaderboard, Mode, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
@@ -67,8 +67,8 @@ pub enum OptionItem {
     Blood,
     /// How the rain shows.
     Rain,
-    /// The line around the player.
-    Outline,
+    /// The arrow over the player, in its colour.
+    Arrow,
     /// How the hero looks.
     Skin,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
@@ -77,6 +77,8 @@ pub enum OptionItem {
     Dusk,
     /// Whether the gear shows over the top left of the map.
     Gear,
+    /// Whether the player's HP and battery show in small bars over their head.
+    MiniBars,
     /// The language the game speaks.
     Language,
     /// Back where the menu was opened from.
@@ -86,14 +88,15 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 10] = [
+    const ALL: [OptionItem; 11] = [
         OptionItem::Blood,
         OptionItem::Rain,
-        OptionItem::Outline,
+        OptionItem::Arrow,
         OptionItem::Skin,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
+        OptionItem::MiniBars,
         OptionItem::Language,
         OptionItem::Back,
         OptionItem::Quit,
@@ -113,7 +116,7 @@ impl OptionItem {
         match self {
             OptionItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
             OptionItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
-            OptionItem::Outline => fl!("pause-outline", value = outline_name(view.outline)),
+            OptionItem::Arrow => fl!("option-arrow", value = arrow_name(view.arrow)),
             OptionItem::Skin => fl!(
                 "option-skin",
                 value = match view.skin {
@@ -145,6 +148,14 @@ impl OptionItem {
                     fl!("gear-hidden")
                 }
             ),
+            OptionItem::MiniBars => fl!(
+                "option-mini-bars",
+                value = if view.mini_bars {
+                    fl!("mini-bars-shown")
+                } else {
+                    fl!("mini-bars-hidden")
+                }
+            ),
             OptionItem::Language => fl!("pause-language", value = view.language),
             OptionItem::Back => fl!("option-back"),
             OptionItem::Quit => fl!("pause-quit"),
@@ -162,12 +173,12 @@ fn blood_name(blood: BloodLook) -> String {
     }
 }
 
-fn outline_name(outline: Outline) -> String {
-    match outline {
-        Outline::Off => fl!("outline-off"),
-        Outline::White => fl!("outline-white"),
-        Outline::Yellow => fl!("outline-yellow"),
-        Outline::Red => fl!("outline-red"),
+fn arrow_name(arrow: Arrow) -> String {
+    match arrow {
+        Arrow::Off => fl!("arrow-off"),
+        Arrow::White => fl!("arrow-white"),
+        Arrow::Yellow => fl!("arrow-yellow"),
+        Arrow::Red => fl!("arrow-red"),
     }
 }
 
@@ -291,6 +302,7 @@ pub fn render_keys(frame: &mut Frame, map: Rect) {
         fl!("keys-torch"),
         fl!("keys-cards"),
         fl!("keys-gear"),
+        fl!("keys-ping"),
         fl!("keys-pause"),
         fl!("keys-keys"),
     ];

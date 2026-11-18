@@ -33,10 +33,10 @@ announcements-paused = gros, avec pause
 announcements-big = gros, sans pause
 announcements-banner = bandeau
 
-outline-off = aucun
-outline-white = blanc
-outline-yellow = jaune
-outline-red = rouge
+arrow-off = aucune
+arrow-white = blanche
+arrow-yellow = jaune
+arrow-red = rouge
 
 ## Menu pause
 
@@ -44,7 +44,7 @@ pause-title = Pause
 pause-resume = Reprendre
 pause-blood = Sang : { $value }
 pause-rain = Pluie : { $value }
-pause-outline = Contour : { $value }
+option-arrow = Flèche : { $value }
 pause-announcements = Annonces : { $value }
 options-title = Options
 option-dusk = Crépuscule : { $value }
@@ -54,6 +54,9 @@ skin-survivor = survivant
 skin-classic = classique
 gear-shown = affiché
 gear-hidden = masqué
+option-mini-bars = Barres sur le héros : { $value }
+mini-bars-shown = affichées
+mini-bars-hidden = masquées
 option-back = Retour
 pause-language = Langue : { $value }
 pause-new-run = Nouvelle partie
@@ -188,5 +191,6 @@ keys-move = Flèches / ZQSD / WASD  bouger
 keys-torch = Espace / F             lampe
 keys-cards = ← → / 1 2 3 · Entrée   prendre une carte
 keys-gear = I                      afficher l'équipement
+keys-ping = E                      une flèche sur le héros, 2 s
 keys-pause = P / Échap              pause
 keys-keys = ?                      ces commandes
