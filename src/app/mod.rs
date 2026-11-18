@@ -2,6 +2,7 @@
 //! with the keys held down, and has the ui draw it.
 
 mod keys;
+mod scores;
 mod settings;
 
 use std::io;
@@ -15,7 +16,7 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
-use crate::game::{TICKS_PER_SECOND, World};
+use crate::game::{Entry, Leaderboard, TICKS_PER_SECOND, World};
 use crate::ui::{self, PauseItem, RainDisplay, Screen, Sprites, ViewState};
 use keys::Keys;
 use settings::Settings;
@@ -25,6 +26,13 @@ pub struct App {
     sprites: Sprites,
     screen: Screen,
     settings: Settings,
+    leaderboard: Leaderboard,
+    /// Whether the run over has been weighed against the leaderboard.
+    scored: bool,
+    /// The run's place on the leaderboard, if it made it.
+    highlight: Option<usize>,
+    /// The letters typed last, offered again for the next high score.
+    last_name: [u8; 3],
     /// The card selected when a level-up is on offer.
     selected: usize,
     /// When the cards on offer were dealt.
@@ -46,6 +54,10 @@ impl App {
             sprites,
             screen: Screen::Title,
             settings,
+            leaderboard: scores::load(),
+            scored: false,
+            highlight: None,
+            last_name: *b"AAA",
             selected: 0,
             dealt_at: None,
             frames: 0,
@@ -80,10 +92,18 @@ impl App {
                 blood: self.settings.blood,
                 rain: self.settings.rain,
                 language: self.settings.language.name(),
+                highlight: self.highlight,
             };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
-                ui::render(frame, &self.world, &self.sprites, self.screen, view);
+                ui::render(
+                    frame,
+                    &self.world,
+                    &self.sprites,
+                    &self.leaderboard,
+                    self.screen,
+                    view,
+                );
             })?;
             while event::poll(next_tick.saturating_duration_since(Instant::now()))? {
                 if let Event::Key(key) = event::read()? {
@@ -94,6 +114,9 @@ impl App {
             // The run stands still on the title screen and in the pause menu.
             if self.screen == Screen::Playing {
                 self.world.update(self.keys.input(now));
+            }
+            if self.world.is_over() && !self.scored {
+                self.weigh_score();
             }
             if self.world.offer.is_some() && self.dealt_at.is_none() {
                 self.dealt_at = Some(now);
@@ -120,6 +143,9 @@ impl App {
                 Screen::Title => self.on_title(key.code),
                 Screen::Paused { selected } => self.on_pause(key.code, selected),
                 Screen::Playing => self.on_run(key.code),
+                Screen::NameEntry { letters, cursor } => {
+                    self.on_name_entry(key.code, letters, cursor);
+                }
             }
         }
         // Held keys are followed in menus too: still held after them, they keep moving.
@@ -224,8 +250,60 @@ impl App {
         self.choose(code);
     }
 
+    /// The run is over: if its score makes the leaderboard, three letters to type in.
+    fn weigh_score(&mut self) {
+        self.scored = true;
+        if self.leaderboard.qualifies(self.world.score) {
+            self.screen = Screen::NameEntry {
+                letters: self.last_name,
+                cursor: 0,
+            };
+        }
+    }
+
+    /// Typing a name in, arcade style: ↑↓ turn the letter, ←→ move, a letter key types it and
+    /// moves on, Enter keeps the run on the leaderboard, Esc leaves it off.
+    fn on_name_entry(&mut self, code: KeyCode, mut letters: [u8; 3], mut cursor: usize) {
+        let turn = |letter: u8, by: i16| {
+            let index = (i16::from(letter) - i16::from(b'A') + by).rem_euclid(26);
+            b'A' + u8::try_from(index).unwrap_or(0)
+        };
+        match code {
+            KeyCode::Up => letters[cursor] = turn(letters[cursor], 1),
+            KeyCode::Down => letters[cursor] = turn(letters[cursor], -1),
+            KeyCode::Left | KeyCode::Backspace => cursor = cursor.saturating_sub(1),
+            KeyCode::Right => cursor = (cursor + 1).min(2),
+            KeyCode::Char(c) if c.is_ascii_alphabetic() => {
+                letters[cursor] = u8::try_from(c.to_ascii_uppercase()).unwrap_or(b'A');
+                cursor = (cursor + 1).min(2);
+            }
+            KeyCode::Enter => {
+                self.last_name = letters;
+                let entry = Entry {
+                    name: String::from_utf8_lossy(&letters).into_owned(),
+                    score: self.world.score,
+                    seconds: self.world.seconds(),
+                    level: self.world.player.level,
+                };
+                self.highlight = self.leaderboard.insert(entry);
+                // Not kept, the run still shows on the leaderboard this session.
+                let _ = scores::save(&self.leaderboard);
+                self.screen = Screen::Playing;
+                return;
+            }
+            KeyCode::Esc => {
+                self.screen = Screen::Playing;
+                return;
+            }
+            _ => {}
+        }
+        self.screen = Screen::NameEntry { letters, cursor };
+    }
+
     /// A new run on a new map, started at once.
     fn new_run(&mut self) {
+        self.scored = false;
+        self.highlight = None;
         self.world = World::new(rand::random());
         self.selected = 0;
         self.dealt_at = None;

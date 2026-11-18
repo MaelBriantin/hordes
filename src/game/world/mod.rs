@@ -11,6 +11,7 @@ use super::gem::Gem;
 use super::guns::{self, Bullet, Magazine};
 use super::level::xp_to_next;
 use super::machete::{self, Swing};
+use super::score;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::stain::{self, MAX_STAINS, Stain};
 use super::weather::{self, Weather};
@@ -95,6 +96,11 @@ pub struct World {
     pub stains: Vec<Stain>,
     /// The enemies the player has felled.
     pub kills: u32,
+    pub score: u64,
+    /// The kills in a row, each within the combo's window of the one before; 0 once it closes.
+    pub combo: u32,
+    /// The tick of the last kill.
+    last_kill: u32,
     /// Ticks left before the machete can swing again.
     machete_wait: u32,
     /// The slashes of the current swing done, and still to come, and the ticks before the next.
@@ -150,6 +156,9 @@ impl World {
             gems: Vec::new(),
             stains: Vec::new(),
             kills: 0,
+            score: 0,
+            combo: 0,
+            last_kill: 0,
             machete_wait: 0,
             slashes_done: 0,
             slashes_left: 0,
@@ -505,9 +514,22 @@ impl World {
         }
     }
 
-    /// Enemies out of HP fall, some leaving a gem.
+    /// The score's multiplier now, in tenths: the weather's times the combo's.
+    pub fn multiplier_tenths(&self) -> u64 {
+        score::weather_tenths(self.weather()) * score::combo_tenths(self.combo) / 10
+    }
+
+    /// Enemies out of HP fall, each worth its points, some leaving a gem. The combo closes when
+    /// no enemy has fallen for a while.
     fn fell_enemies(&mut self) {
+        if self.ticks - self.last_kill > score::combo_window() {
+            self.combo = 0;
+        }
+        let weather = self.weather();
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
+            self.score += score::worth(enemy.kind, weather, self.combo);
+            self.combo += 1;
+            self.last_kill = self.ticks;
             let stats = enemy.kind.stats();
             if self.rng.random_range(0..100) < stats.drop_percent {
                 self.gems.push(Gem::new(enemy.position, stats.xp));

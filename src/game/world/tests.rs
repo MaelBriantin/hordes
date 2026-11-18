@@ -4,6 +4,7 @@ use super::super::gem::Gem;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
+use super::super::score;
 use super::super::stain;
 use super::*;
 
@@ -703,4 +704,34 @@ fn the_weather_dims_the_light() {
     let clear = world.light_radius();
     world.ticks = 30 * 360;
     assert!((clear - world.light_radius() - 2.0).abs() < 1e-4);
+}
+
+#[test]
+fn kills_score_their_points_and_build_a_combo_that_closes() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    let far = Vec2::new(150.0, 50.0);
+    for _ in 0..3 {
+        world.enemies.push(enemy(EnemyKind::Zombie, far));
+        world.enemies[0].hp = 0;
+        wait(&mut world, 1);
+    }
+    // 10, then 11 and 12: the combo adds a tenth per kill.
+    assert_eq!((world.score, world.combo), (33, 3));
+    wait(&mut world, score::combo_window() + 1);
+    assert_eq!(world.combo, 0);
+}
+
+#[test]
+fn the_weather_multiplies_the_score() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 480;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(150.0, 50.0)));
+    world.enemies[0].hp = 0;
+    wait(&mut world, 1);
+    assert_eq!(world.score, 500);
+    assert_eq!(world.multiplier_tenths(), 55);
 }

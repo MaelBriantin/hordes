@@ -2,6 +2,7 @@
 //! player in a frame, the keys below it; over the map, the title screen, the pause menu, the
 //! level-up's cards or the game over.
 
+mod font;
 mod level_up;
 mod menu;
 mod night;
@@ -12,12 +13,12 @@ mod text;
 use std::time::Duration;
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, Paragraph};
+use ratatui::widgets::Block;
 
-use crate::game::{Vec2, World, xp_to_next};
+use crate::game::{Leaderboard, Vec2, World, xp_to_next};
 use crate::game::{Weather, weather_progress};
 pub use menu::PauseItem;
 pub use night::RainDisplay;
@@ -33,6 +34,12 @@ pub enum Screen {
     Paused {
         selected: usize,
     },
+    /// The run is over with one of the best scores: three letters to type in, arcade style, the
+    /// one at `cursor` being changed.
+    NameEntry {
+        letters: [u8; 3],
+        cursor: usize,
+    },
 }
 /// Below this share of their HP, the player's HP bar shows in red.
 const LOW_HP_PERCENT: u32 = 30;
@@ -41,6 +48,7 @@ const BAR: u32 = 12;
 const HP_COLOR: Color = Color::Rgb(80, 200, 90);
 const LOW_HP_COLOR: Color = Color::Rgb(230, 50, 50);
 const XP_COLOR: Color = Color::Rgb(70, 150, 255);
+const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The width of the weather's gauge, in cells.
 const WEATHER_GAUGE: u8 = 6;
 
@@ -78,12 +86,15 @@ pub struct ViewState {
     pub rain: RainDisplay,
     /// The language the game speaks, by its own name: `Français`.
     pub language: &'static str,
+    /// The leaderboard's place of the run just over, if it made it.
+    pub highlight: Option<usize>,
 }
 
 pub fn render(
     frame: &mut Frame,
     world: &World,
     sprites: &Sprites,
+    leaderboard: &Leaderboard,
     screen: Screen,
     view: ViewState,
 ) {
@@ -91,8 +102,16 @@ pub fn render(
     let block = Block::bordered();
     let map = block.inner(areas.field);
     frame.render_widget(block, areas.field);
+    // The run over, the death screen, but for the pause menu over the run.
+    let dead = world.is_over() && !matches!(screen, Screen::Paused { .. });
     if screen == Screen::Title {
-        menu::render_title(frame, map, sprites, view);
+        menu::render_title(frame, map, sprites, view, leaderboard);
+    } else if dead {
+        let name = match screen {
+            Screen::NameEntry { letters, cursor } => Some((letters, cursor)),
+            _ => None,
+        };
+        menu::render_death(frame, map, sprites, view, world, leaderboard, name);
     } else {
         frame.render_widget(status(world), areas.top);
         pixels::render_map(
@@ -108,22 +127,21 @@ pub fn render(
     let help = match screen {
         Screen::Title => fl!("help-title"),
         Screen::Paused { .. } => fl!("help-paused"),
+        Screen::NameEntry { .. } => fl!("help-name"),
         Screen::Playing if world.is_over() => fl!("help-over"),
         Screen::Playing if world.offer.is_some() => fl!("help-level-up"),
         Screen::Playing => fl!("help-run"),
     };
     frame.render_widget(Line::from(help).dark_gray(), areas.help);
     match screen {
-        Screen::Title => return,
+        Screen::Title | Screen::NameEntry { .. } => return,
         Screen::Paused { selected } => {
             menu::render_pause(frame, map, selected, view);
             return;
         }
         Screen::Playing => {}
     }
-    if world.is_over() {
-        render_game_over(frame, map, world);
-    } else {
+    if !dead {
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
     }
 }
@@ -160,7 +178,13 @@ fn status(world: &World) -> Line<'static> {
             weather_gauge(world.weather(), world.seconds()),
             weather_style(world.weather()),
         ),
-        Span::raw(format!("   {}", fl!("status-kills", count = world.kills))),
+        Span::raw("   "),
+        Span::styled(
+            fl!("status-score", score = world.score),
+            Style::new().add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(" "),
+        Span::styled(multiplier(world.multiplier_tenths()), SCORE_COLOR),
     ];
     for (weapon, magazine, full) in world.ammo() {
         let rounds = if magazine.reloading > 0 {
@@ -229,33 +253,15 @@ fn weather_gauge(weather: Weather, seconds: u32) -> String {
     )
 }
 
-/// Seconds as minutes and seconds: `03:42`.
-fn clock(seconds: u32) -> String {
-    format!("{:02}:{:02}", seconds / 60, seconds % 60)
+/// A multiplier given in tenths: `×2.4`.
+fn multiplier(tenths: u64) -> String {
+    let (whole, tenth) = (tenths / 10, tenths % 10);
+    fl!("multiplier", whole = whole, tenth = tenth)
 }
 
-fn render_game_over(frame: &mut Frame, map: Rect, world: &World) {
-    let lines = vec![
-        Line::from(fl!("over-title").bold().red()),
-        Line::from(""),
-        Line::from(fl!("over-survived", time = clock(world.seconds()))),
-        Line::from(fl!(
-            "over-score",
-            level = world.player.level,
-            kills = world.kills
-        )),
-    ];
-    let [row] = Layout::vertical([Constraint::Length(6)])
-        .flex(Flex::Center)
-        .areas(map);
-    let [area] = Layout::horizontal([Constraint::Length(32)])
-        .flex(Flex::Center)
-        .areas(row);
-    frame.render_widget(Clear, area);
-    frame.render_widget(
-        Paragraph::new(lines).centered().block(Block::bordered()),
-        area,
-    );
+/// Seconds as minutes and seconds: `03:42`.
+pub fn clock(seconds: u32) -> String {
+    format!("{:02}:{:02}", seconds / 60, seconds % 60)
 }
 
 #[cfg(test)]

@@ -119,9 +119,16 @@ pub struct Strike {
 /// The title screen's strike of lightning under way at `frame`, if any: one per cycle, at a
 /// moment of its own.
 pub fn title_strike(frame: u32) -> Option<Strike> {
-    let cycle = frame / LIGHTNING_CYCLE;
-    let at = noise(cycle) % (LIGHTNING_CYCLE - AFTERGLOW);
-    let since = (frame % LIGHTNING_CYCLE).checked_sub(at)?;
+    strike_every(frame, LIGHTNING_CYCLE)
+}
+
+/// The strike of lightning under way at `frame`, if any, for lightning once every `cycle`
+/// frames, at a moment of each cycle's own.
+pub fn strike_every(frame: u32, cycle: u32) -> Option<Strike> {
+    let cycle_length = cycle.max(AFTERGLOW + 1);
+    let cycle = frame / cycle_length;
+    let at = noise(cycle) % (cycle_length - AFTERGLOW);
+    let since = (frame % cycle_length).checked_sub(at)?;
     (since < AFTERGLOW).then_some(Strike {
         since,
         seed: cycle,
@@ -164,6 +171,25 @@ pub fn render_storm(buffer: &mut Buffer, area: Rect, sprites: &Sprites, frame: u
         paint_bolt(&mut canvas, strike);
     }
     canvas.draw(buffer, area);
+}
+
+/// Everything the canvas holds, `share` as bright.
+pub fn dim(canvas: &mut Canvas, share: f32) {
+    for pixel in &mut canvas.pixels {
+        if let Some(Color::Rgb(red, green, blue)) = *pixel {
+            let channel = |value: u8| scale_channel(value, share);
+            *pixel = Some(Color::Rgb(channel(red), channel(green), channel(blue)));
+        }
+    }
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "clamped between 0 and 255 first"
+)]
+fn scale_channel(value: u8, share: f32) -> u8 {
+    (f32::from(value) * share).round().clamp(0.0, 255.0) as u8
 }
 
 /// Rain over the canvas, `frame` frames in: each drop with its own column, start and speed,

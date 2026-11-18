@@ -1,5 +1,5 @@
 //! The level-up: the choices on offer as cards over the map, dealt face down then turned over
-//! one after the other, each with its picture; the selected one framed in gold.
+//! one after the other, each with its picture; the selected one framed in red.
 
 use std::time::Duration;
 
@@ -20,7 +20,7 @@ const CARD_HEIGHT: u16 = 13;
 const GAP: u16 = 2;
 /// The picture's size, in cells: 8 × 8 pixels.
 const PICTURE: (u16, u16) = (8, 4);
-const SELECTED: Color = Color::Rgb(240, 200, 60);
+const SELECTED: Color = Color::Rgb(230, 55, 55);
 const NEW: Color = Color::Rgb(80, 200, 90);
 const BACK: Color = Color::Rgb(70, 80, 120);
 /// How long a card takes to turn over.

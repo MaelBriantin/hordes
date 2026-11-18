@@ -8,7 +8,8 @@ use ratatui::style::{Color, Style};
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Swing, Vec2, World, weather_progress,
+    OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, World,
+    weather_progress,
 };
 
 /// Pixels per tile, each way.
@@ -233,6 +234,59 @@ pub fn render_map(
     }
     canvas.draw(buffer, area);
 }
+
+/// Where the player fell, for the death screen: the map around them in the dark, lit only by
+/// their fallen torch, the horde still about, dimmed for the words over it; a pool of blood
+/// where they lay, if `blood`; the weather they fell in, `frame` frames in, its rain shown as
+/// `rain` says.
+pub fn render_death_scene(
+    buffer: &mut Buffer,
+    area: Rect,
+    world: &World,
+    sprites: &Sprites,
+    frame: u32,
+    blood: bool,
+    rain: night::RainDisplay,
+) {
+    let player = &world.player;
+    let centre = pixel(player.position);
+    let mut canvas = Canvas::new(sprites, area, centre);
+    canvas.paint_map(world);
+    if blood {
+        night::paint_stains(&mut canvas, &world.stains, world.ticks());
+        let pool = Stain {
+            position: player.position,
+            tick: world.ticks(),
+            size: DEATH_POOL,
+        };
+        night::paint_stains(&mut canvas, &[pool], world.ticks());
+    }
+    let mut enemies: Vec<_> = world.enemies.iter().collect();
+    enemies.sort_by(|a, b| a.position.y.total_cmp(&b.position.y));
+    for enemy in enemies {
+        canvas.paint_at(sprites::enemy(enemy), enemy.position);
+    }
+    let weather = world.weather();
+    let strike = weather
+        .lightning_every()
+        .and_then(|every| night::strike_every(frame, every));
+    night::light(&mut canvas, centre, DEATH_LIGHT, night::flash(strike));
+    night::dim(&mut canvas, DEATH_DIM);
+    if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
+        night::paint_rain(&mut canvas, frame, rain);
+    }
+    if let Some(strike) = strike {
+        night::paint_bolt(&mut canvas, strike);
+    }
+    canvas.draw(buffer, area);
+}
+
+/// How far the fallen torch lights the death screen, in tiles.
+const DEATH_LIGHT: f32 = 6.0;
+/// How big the pool of blood where the player fell.
+const DEATH_POOL: u8 = 10;
+/// How bright the death screen's scene is, behind its words.
+const DEATH_DIM: f32 = 0.55;
 
 /// A sprite alone, in the middle of `area`: a picture on a card.
 pub fn render_sprite(buffer: &mut Buffer, area: Rect, sprites: &Sprites, sprite: SpriteId) {

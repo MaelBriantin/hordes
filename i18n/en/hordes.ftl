@@ -48,7 +48,8 @@ weather-tempest = Tempest
 
 ## Game over
 
-over-title = Game over
+death-title = DEAD
+death-again = Press R for a new run
 over-survived = You survived { $time }
 over-score = Level { $level } · { $kills } kills
 
@@ -97,3 +98,14 @@ gain-might = +10% damage
 gain-haste = −8% weapon cooldowns
 gain-flashlight = +2 tiles of light
 gain-heal = Heal 20 HP
+
+## Score
+
+status-score = Score { $score }
+multiplier = ×{ $whole }.{ $tenth }
+over-points = { $score } points
+leaderboard-title = Best scores
+name-title = New high score!
+name-place = Number { $place } on the leaderboard!
+name-prompt = Your name:
+help-name = ←→ move · ↑↓ or a letter · Enter confirm · Esc skip

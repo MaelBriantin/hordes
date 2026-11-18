@@ -19,7 +19,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 - The world moves on **30 times per second**.
 - **Victory**: survive **10 minutes**. *(planned)*
-- **Game over**: at 0 HP. Shows the time survived, the level and the kills; R starts a new run on a new map.
+- **Death**: at 0 HP, the screen shows where the player fell, in the dark but for their torch, a pool of blood (if shown) where they lay, under the storm: the score, the time survived, the level and the kills, and the leaderboard. A run that makes the leaderboard asks for its three letters right there. R starts a new run on a new map.
 
 ## The map
 
@@ -27,6 +27,16 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - Each run draws a new map from a **seed**, chunk by chunk (32 × 32 tiles) as the player nears them: the same place always looks the same.
 - **Obstacles** block the way: trees and rocks, each covering **2 × 2 tiles**. They come in clumps of up to **8**: groves (70% of clumps) and heaps of rocks (30%). Together they cover **8%** of each chunk.
 - The player starts with no obstacle within **8 tiles**.
+
+## Score
+
+Every run is played for its score, arcade style.
+
+- Every enemy felled is worth **points**: zombie **10**, bat **15**, abomination **100**.
+- Times the **weather's multiplier**: ×1 on a clear night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
+- Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
+- The status line shows the score and the multiplier of the moment (the weather's times the combo's).
+- **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in a box under its tagline, the best run in gold; the settings are on its last line.
 
 ## The night
 

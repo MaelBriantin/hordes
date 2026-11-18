@@ -48,7 +48,8 @@ weather-tempest = Tempête
 
 ## Fin de partie
 
-over-title = Partie terminée
+death-title = MORT
+death-again = Appuie sur R pour rejouer
 over-survived = Tu as survécu { $time }
 over-score = Niveau { $level } · { $kills } tués
 
@@ -97,3 +98,14 @@ gain-might = +10 % de dégâts
 gain-haste = Armes 8 % plus rapides
 gain-flashlight = +2 cases de lumière
 gain-heal = Soigne 20 PV
+
+## Score
+
+status-score = Score { $score }
+multiplier = ×{ $whole },{ $tenth }
+over-points = { $score } points
+leaderboard-title = Meilleurs scores
+name-title = Nouveau record !
+name-place = { $place }ᵉ du classement !
+name-prompt = Ton nom :
+help-name = ←→ bouger · ↑↓ ou une lettre · Entrée valider · Échap passer
