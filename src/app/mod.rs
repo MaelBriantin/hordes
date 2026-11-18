@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{
-    self, Event, KeyCode, KeyEvent, KeyModifiers, KeyboardEnhancementFlags,
-    PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    self, DisableFocusChange, EnableFocusChange, Event, KeyCode, KeyEvent, KeyModifiers,
+    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
 };
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
@@ -74,8 +74,11 @@ impl App {
         if reports_release {
             execute!(io::stdout(), PushKeyboardEnhancementFlags(KEY_REPORTING))?;
         }
+        // Told when the terminal loses the focus: the keys let go then never come.
+        execute!(io::stdout(), EnableFocusChange)?;
         self.keys = Keys::new(reports_release);
         let result = self.game_loop(terminal);
+        execute!(io::stdout(), DisableFocusChange)?;
         if reports_release {
             execute!(io::stdout(), PopKeyboardEnhancementFlags)?;
         }
@@ -110,8 +113,11 @@ impl App {
                 );
             })?;
             while event::poll(next_tick.saturating_duration_since(Instant::now()))? {
-                if let Event::Key(key) = event::read()? {
-                    self.handle_key(key, Instant::now());
+                match event::read()? {
+                    Event::Key(key) => self.handle_key(key, Instant::now()),
+                    // Away from the game, a key let go goes elsewhere: none is held any more.
+                    Event::FocusLost => self.keys.release_all(),
+                    _ => {}
                 }
             }
             let now = Instant::now();

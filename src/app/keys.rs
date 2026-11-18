@@ -83,6 +83,11 @@ impl Keys {
         }
     }
 
+    /// Lets every key go: the terminal lost the focus, and won't say when they are released.
+    pub fn release_all(&mut self) {
+        self.held = [Hold::Released; 4];
+    }
+
     /// Where the keys held down at `now` ask to go: the way pressed last, if any is held.
     pub fn input(&self, now: Instant) -> Input {
         let way = [Way::Up, Way::Down, Way::Left, Way::Right]
@@ -208,5 +213,14 @@ mod tests {
         keys.handle(key(KeyCode::Char('s'), KeyEventKind::Press), now);
         keys.handle(key(KeyCode::Char('d'), KeyEventKind::Press), now);
         assert_eq!(direction(&keys, now), (0.0, 1.0));
+    }
+
+    #[test]
+    fn losing_the_focus_lets_every_key_go() {
+        let mut keys = Keys::new(true);
+        let start = Instant::now();
+        keys.handle(key(KeyCode::Char('d'), KeyEventKind::Press), start);
+        keys.release_all();
+        assert_eq!(direction(&keys, start), (0.0, 0.0));
     }
 }
