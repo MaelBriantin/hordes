@@ -8,12 +8,14 @@ use ratatui::style::{Color, Style};
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, World,
-    weather_progress,
+    Feature, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, World,
+    campfire_light, weather_progress,
 };
 
 /// Pixels per tile, each way.
 const TILE_PIXELS: i32 = 2;
+/// The frames a campfire's flame keeps one look before the other.
+const FLICKER: u32 = 6;
 /// The colour of an enemy just hit.
 const FLASH: Color = Color::Rgb(255, 255, 255);
 /// The colour of a machete's swing, then as it fades.
@@ -103,6 +105,53 @@ impl<'a> Canvas<'a> {
                 }
             }
         }
+    }
+
+    /// The healing on the ground the canvas shows, as the night will see it: the campfires gone
+    /// out, which the night darkens like the rest. The lights of those still burning.
+    fn paint_healing(&mut self, world: &World) -> Vec<night::Light> {
+        let mut lights = Vec::new();
+        for (tile, feature) in self.healing(world) {
+            if feature != Feature::Campfire {
+                continue;
+            }
+            let left = world.campfire_left(tile);
+            if left == 0 {
+                self.paint_at(Look::plain(SpriteId::Ashes), Vec2::middle_of(tile));
+            } else {
+                let centre = pixel(Vec2::middle_of(tile));
+                lights.push(night::Light::fire(centre, campfire_light(left)));
+            }
+        }
+        lights
+    }
+
+    /// What glows on the ground, painted after the night: the herbs not yet picked, and the
+    /// campfires still burning, their flame flickering.
+    fn paint_glowing_healing(&mut self, world: &World, frame: u32) {
+        let burning = if (frame / FLICKER).is_multiple_of(2) {
+            SpriteId::Campfire1
+        } else {
+            SpriteId::Campfire2
+        };
+        for (tile, feature) in self.healing(world) {
+            let sprite = match feature {
+                Feature::Herb => SpriteId::Herb,
+                Feature::Campfire if world.campfire_left(tile) > 0 => burning,
+                Feature::Campfire => continue,
+            };
+            self.paint_at(Look::plain(sprite), Vec2::middle_of(tile));
+        }
+    }
+
+    /// The healing on the ground within the canvas, and a little around it: a sprite may stick
+    /// out of its tile.
+    fn healing(&self, world: &World) -> Vec<((i32, i32), Feature)> {
+        let (columns, rows) = self.tiles();
+        world.features_in(
+            (columns.start - 2, rows.start - 2),
+            (columns.end + 1, rows.end + 1),
+        )
     }
 
     /// A sprite centred on a point of the map.
@@ -207,12 +256,10 @@ pub fn render_map(
 
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
-    night::light(
-        &mut canvas,
-        centre,
-        world.light_radius(),
-        night::flash(strike),
-    );
+    let mut lights = vec![night::Light::torch(centre, world.light_radius())];
+    lights.extend(canvas.paint_healing(world));
+    night::light(&mut canvas, &lights, night::flash(strike));
+    canvas.paint_glowing_healing(world, frame);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
     }
@@ -270,7 +317,10 @@ pub fn render_death_scene(
     let strike = weather
         .lightning_every()
         .and_then(|every| night::strike_every(frame, every));
-    night::light(&mut canvas, centre, DEATH_LIGHT, night::flash(strike));
+    let mut lights = vec![night::Light::torch(centre, DEATH_LIGHT)];
+    lights.extend(canvas.paint_healing(world));
+    night::light(&mut canvas, &lights, night::flash(strike));
+    canvas.paint_glowing_healing(world, frame);
     night::dim(&mut canvas, DEATH_DIM);
     if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
         night::paint_rain(&mut canvas, frame, rain);

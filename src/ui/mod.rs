@@ -41,12 +41,15 @@ pub enum Screen {
         cursor: usize,
     },
 }
-/// Below this share of their HP, the player's HP bar shows in red.
+/// Below this share of their HP, the player's HP bar blinks.
 const LOW_HP_PERCENT: u32 = 30;
+/// The frames the low HP bar stays lit, then dimmed, as it blinks.
+const LOW_HP_BLINK: u32 = 8;
 /// The width of the HP and XP bars' insides, in cells.
 const BAR: u32 = 12;
-const HP_COLOR: Color = Color::Rgb(80, 200, 90);
-const LOW_HP_COLOR: Color = Color::Rgb(230, 50, 50);
+/// The HP bar's red, the herbs': and dimmed, as it blinks.
+const HP_COLOR: Color = Color::Rgb(220, 45, 65);
+const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
 const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The width of the weather's gauge, in cells.
@@ -113,7 +116,7 @@ pub fn render(
         };
         menu::render_death(frame, map, sprites, view, world, leaderboard, name);
     } else {
-        frame.render_widget(status(world), areas.top);
+        frame.render_widget(status(world, leaderboard, view.frame), areas.top);
         pixels::render_map(
             frame.buffer_mut(),
             map,
@@ -147,11 +150,12 @@ pub fn render(
 }
 
 /// The player's HP, their level and XP, the time survived and the kills.
-fn status(world: &World) -> Line<'static> {
+fn status(world: &World, leaderboard: &Leaderboard, frame: u32) -> Line<'static> {
     let player = &world.player;
     let (hp, max_hp) = (player.hp, player.max_hp());
-    let hp_color = if hp * 100 < max_hp * LOW_HP_PERCENT {
-        LOW_HP_COLOR
+    let low = hp * 100 < max_hp * LOW_HP_PERCENT;
+    let hp_color = if low && (frame / LOW_HP_BLINK).is_multiple_of(2) {
+        HP_DIMMED
     } else {
         HP_COLOR
     };
@@ -179,13 +183,22 @@ fn status(world: &World) -> Line<'static> {
             weather_style(world.weather()),
         ),
         Span::raw("   "),
-        Span::styled(
-            fl!("status-score", score = world.score),
+    ];
+    // Ahead of the best run kept: the score gleams, as a new high score does.
+    let score = fl!("status-score", score = world.score);
+    let best = leaderboard.entries().first().map(|entry| entry.score);
+    if best.is_some_and(|best| world.score > best) {
+        spans.extend(text::shimmer(&score, frame));
+    } else {
+        spans.push(Span::styled(
+            score,
             Style::new().add_modifier(Modifier::BOLD),
-        ),
+        ));
+    }
+    spans.extend([
         Span::raw(" "),
         Span::styled(multiplier(world.multiplier_tenths()), SCORE_COLOR),
-    ];
+    ]);
     for (weapon, magazine, full) in world.ammo() {
         let rounds = if magazine.reloading > 0 {
             fl!("status-reloading")

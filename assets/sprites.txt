@@ -45,6 +45,9 @@ n 90 95 105     dark metal
 t 255 60 60     red light
 q 45 45 52      black metal
 Q 140 20 25     dark blood
+f 245 130 40    flame
+Y 255 225 100   flame's heart
+s 90 90 95      ashes
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -133,6 +136,32 @@ rock
 gGGD
 GGDD
 .DD.
+
+# Healing on the ground: a red herb, 3 × 3; a campfire, 4 × 4, its flame flickering between
+# two looks; and the logs left once it is out.
+
+herb
+.o.
+rrr
+.r.
+
+campfire_1
+.f..
+.fY.
+fYYf
+KuuK
+
+campfire_2
+..f.
+.Yf.
+fYYf
+KuuK
+
+ashes
+....
+....
+.ss.
+KuuK
 
 # The ground, a pixel each.
 

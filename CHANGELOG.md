@@ -9,6 +9,16 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- Red herbs on the ground, which give back 20 HP to a hurt player walking over them.
+- Campfires, which heal 3 HP a second to a player staying by them: their light shrinks as they give, until they die out.
+- Herbs and campfires are rare: the map holds about one herb for 8 chunks, one campfire for 25.
+- `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
+
+### Changed
+- The HP bar is red, and blinks when HP run low.
+- The score gleams in the status line while the run is ahead of the best one.
+
 ## v0.1.0 · November 18, 2026
 Survive the night.
 

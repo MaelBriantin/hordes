@@ -32,6 +32,10 @@ pub enum SpriteId {
     Rock,
     Grass,
     Pebble,
+    Herb,
+    Campfire1,
+    Campfire2,
+    Ashes,
     IconMachete,
     IconPistol,
     IconMachineGun,
@@ -47,7 +51,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 27] = [
+    const ALL: [SpriteId; 31] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -63,6 +67,10 @@ impl SpriteId {
         SpriteId::Rock,
         SpriteId::Grass,
         SpriteId::Pebble,
+        SpriteId::Herb,
+        SpriteId::Campfire1,
+        SpriteId::Campfire2,
+        SpriteId::Ashes,
         SpriteId::IconMachete,
         SpriteId::IconPistol,
         SpriteId::IconMachineGun,
@@ -94,6 +102,10 @@ impl SpriteId {
             SpriteId::Rock => "rock",
             SpriteId::Grass => "grass",
             SpriteId::Pebble => "pebble",
+            SpriteId::Herb => "herb",
+            SpriteId::Campfire1 => "campfire_1",
+            SpriteId::Campfire2 => "campfire_2",
+            SpriteId::Ashes => "ashes",
             SpriteId::IconMachete => "icon_machete",
             SpriteId::IconPistol => "icon_pistol",
             SpriteId::IconMachineGun => "icon_machine_gun",

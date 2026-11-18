@@ -43,6 +43,15 @@ impl Vec2 {
         Self::new(-self.y, self.x)
     }
 
+    /// The middle of a tile.
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "tiles stay far within what an f32 holds exactly"
+    )]
+    pub fn middle_of((x, y): (i32, i32)) -> Self {
+        Self::new(x as f32 + 0.5, y as f32 + 0.5)
+    }
+
     /// The tile this point is on.
     #[allow(
         clippy::cast_possible_truncation,

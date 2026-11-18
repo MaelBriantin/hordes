@@ -1,7 +1,8 @@
 //! The map: endless, its obstacles drawn chunk by chunk the first time something looks there.
 //! Each chunk's obstacles come from the run's seed and the chunk's place alone, so a chunk is
 //! the same whenever it is drawn. Obstacles stand on a grid of their own, each covering 2 × 2
-//! tiles, gathered in clumps: groves and heaps of rocks.
+//! tiles, gathered in clumps: groves and heaps of rocks. On the free ground, now and then a herb,
+//! and more rarely still a campfire in a clearing.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -23,6 +24,23 @@ const MAX_CLUMPS: u32 = 40;
 const GROVE_CHANCE: f64 = 0.7;
 /// No obstacle this close to where the player starts, in tiles.
 const CLEAR_RADIUS: i32 = 8;
+/// The chance a chunk holds a herb, and a campfire, in percent: about one chunk in 8, and one
+/// in 25.
+const HERB_PERCENT: u32 = 12;
+const CAMPFIRE_PERCENT: u32 = 4;
+/// How many tiles around a campfire are free of obstacles, each way: its clearing.
+const CLEARING: i32 = 2;
+/// How many spots a chunk tries for its herb and its campfire.
+const FEATURE_TRIES: u32 = 40;
+
+/// What lies on the ground, besides obstacles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Feature {
+    /// Heals when picked up.
+    Herb,
+    /// Heals while the player stays by it, until it dies out.
+    Campfire,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Obstacle {
@@ -30,8 +48,12 @@ pub enum Obstacle {
     Rock,
 }
 
-/// A chunk's places, row by row.
-type Chunk = Vec<Option<Obstacle>>;
+/// A chunk: its obstacle grid's places, row by row, and what lies on its free ground, by tile.
+#[derive(Debug, Default)]
+struct Chunk {
+    obstacles: Vec<Option<Obstacle>>,
+    features: Vec<((i32, i32), Feature)>,
+}
 
 #[derive(Debug)]
 pub struct Map {
@@ -69,7 +91,41 @@ impl Map {
         let mut chunks = self.chunks.borrow_mut();
         chunks
             .entry(chunk)
-            .or_insert_with(|| self.draw_chunk(chunk))[index]
+            .or_insert_with(|| self.draw_chunk(chunk))
+            .obstacles[index]
+    }
+
+    /// What lies on the ground between two tiles (both included), by tile.
+    pub fn features_in(&self, from: (i32, i32), to: (i32, i32)) -> Vec<((i32, i32), Feature)> {
+        let chunk_of = |tile: (i32, i32)| locate(tile).0;
+        let (first, last) = (chunk_of(from), chunk_of(to));
+        let mut chunks = self.chunks.borrow_mut();
+        let mut found = Vec::new();
+        for cy in first.1..=last.1 {
+            for cx in first.0..=last.0 {
+                let chunk = chunks
+                    .entry((cx, cy))
+                    .or_insert_with(|| self.draw_chunk((cx, cy)));
+                found.extend(chunk.features.iter().copied().filter(|((x, y), _)| {
+                    (from.0..=to.0).contains(x) && (from.1..=to.1).contains(y)
+                }));
+            }
+        }
+        found
+    }
+
+    /// Lays something on the ground of a tile.
+    #[cfg(test)]
+    pub fn put_feature(&mut self, tile: (i32, i32), feature: Feature) {
+        let (chunk, _) = locate(tile);
+        let seed = self.seed;
+        let start = self.start;
+        self.chunks
+            .get_mut()
+            .entry(chunk)
+            .or_insert_with(|| draw_chunk(seed, start, chunk))
+            .features
+            .push((tile, feature));
     }
 
     /// Whether nothing can stand on a tile: an obstacle covers it.
@@ -86,7 +142,8 @@ impl Map {
         let start = self.start;
         chunks
             .entry(chunk)
-            .or_insert_with(|| draw_chunk(seed, start, chunk))[index] = Some(kind);
+            .or_insert_with(|| draw_chunk(seed, start, chunk))
+            .obstacles[index] = Some(kind);
     }
 
     fn draw_chunk(&self, chunk: (i32, i32)) -> Chunk {
@@ -116,7 +173,10 @@ fn locate(tile: (i32, i32)) -> ((i32, i32), usize) {
 fn draw_chunk(seed: Option<u64>, start: (i32, i32), chunk: (i32, i32)) -> Chunk {
     let mut places = vec![None; usize::try_from(CHUNK_SIZE * CHUNK_SIZE).unwrap_or(0)];
     let Some(seed) = seed else {
-        return places;
+        return Chunk {
+            obstacles: places,
+            features: Vec::new(),
+        };
     };
     let mut rng = chunk_luck(seed, chunk);
     let wanted = CHUNK_SIZE * CHUNK_SIZE * COVER_PERCENT / 100;
@@ -148,7 +208,45 @@ fn draw_chunk(seed: Option<u64>, start: (i32, i32), chunk: (i32, i32)) -> Chunk 
             );
         }
     }
-    places
+    // Drawn after the obstacles, from the same luck: the obstacles stay as they were.
+    let mut features = Vec::new();
+    let herb = if rng.random_range(0..100) < HERB_PERCENT {
+        free_spot(&mut rng, &places, chunk, 0)
+    } else {
+        None
+    };
+    features.extend(herb.map(|tile| (tile, Feature::Herb)));
+    if rng.random_range(0..100) < CAMPFIRE_PERCENT {
+        let fire = free_spot(&mut rng, &places, chunk, CLEARING).filter(|tile| Some(*tile) != herb);
+        features.extend(fire.map(|tile| (tile, Feature::Campfire)));
+    }
+    Chunk {
+        obstacles: places,
+        features,
+    }
+}
+
+/// A tile of the chunk with no obstacle within `clearing` tiles, if one turns up in a few tries.
+/// Only the chunk's own obstacles count: a clearing on its edge may touch the next chunk's.
+fn free_spot(
+    rng: &mut StdRng,
+    places: &[Option<Obstacle>],
+    chunk: (i32, i32),
+    clearing: i32,
+) -> Option<(i32, i32)> {
+    let tiles = CHUNK_SIZE * OBSTACLE_SIZE;
+    let blocked = |(x, y): (i32, i32)| {
+        let inside = (0..tiles).contains(&x) && (0..tiles).contains(&y);
+        let index = (y / OBSTACLE_SIZE) * CHUNK_SIZE + x / OBSTACLE_SIZE;
+        inside && places[usize::try_from(index).unwrap_or(0)].is_some()
+    };
+    (0..FEATURE_TRIES)
+        .map(|_| (rng.random_range(0..tiles), rng.random_range(0..tiles)))
+        .find(|(x, y)| {
+            (-clearing..=clearing)
+                .all(|dy| (-clearing..=clearing).all(|dx| !blocked((x + dx, y + dy))))
+        })
+        .map(|(x, y)| (chunk.0 * tiles + x, chunk.1 * tiles + y))
 }
 
 /// The luck of a chunk: the run's seed and the chunk's place, each in its own bytes.
@@ -214,6 +312,27 @@ mod tests {
             let wanted = CHUNK_SIZE * CHUNK_SIZE * COVER_PERCENT / 100;
             assert!(count >= wanted && count < wanted + 8, "{count} obstacles");
         }
+    }
+
+    #[test]
+    fn herbs_and_campfires_are_rare_and_on_free_ground() {
+        let map = Map::new(3, START);
+        let tiles = CHUNK_SIZE * OBSTACLE_SIZE;
+        let (mut herbs, mut fires) = (0, 0);
+        for chunk in 0..200 {
+            let from = (chunk * tiles, 16 * tiles);
+            for ((x, y), feature) in map.features_in(from, (from.0 + tiles - 1, from.1 + tiles - 1))
+            {
+                assert!(!map.blocks((x, y)), "{feature:?} on an obstacle");
+                match feature {
+                    Feature::Herb => herbs += 1,
+                    Feature::Campfire => fires += 1,
+                }
+            }
+        }
+        // About one chunk in 8 for a herb, one in 25 for a campfire.
+        assert!((12..=40).contains(&herbs), "{herbs} herbs in 200 chunks");
+        assert!((2..=16).contains(&fires), "{fires} campfires in 200 chunks");
     }
 
     #[test]

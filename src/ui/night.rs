@@ -269,9 +269,38 @@ pub fn paint_impact(canvas: &mut Canvas, strike: Strike, radius: f32) {
     }
 }
 
-/// The night over what the canvas holds: its colours dimmed and cooled, fully lit only within
-/// `radius` tiles of `centre` (the player's pixel), or all over as brightly as `flash`.
-pub fn light(canvas: &mut Canvas, centre: (i32, i32), radius: f32, flash: f32) {
+/// Something that lights the night: fully within `radius` tiles of its `centre` pixel, fading
+/// into the dark over `fade` tiles more.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Light {
+    pub centre: (i32, i32),
+    pub radius: f32,
+    pub fade: f32,
+}
+
+impl Light {
+    /// The player's torch, lighting `radius` tiles around them.
+    pub fn torch(centre: (i32, i32), radius: f32) -> Self {
+        Self {
+            centre,
+            radius,
+            fade: LIGHT_FADE,
+        }
+    }
+
+    /// A campfire, lighting `radius` tiles around it: it fades as far as it lights.
+    pub fn fire(centre: (i32, i32), radius: f32) -> Self {
+        Self {
+            centre,
+            radius,
+            fade: radius,
+        }
+    }
+}
+
+/// The night over what the canvas holds: its colours dimmed and cooled, lit only by the
+/// `lights` (the brightest of them where several meet), or all over as brightly as `flash`.
+pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32) {
     let (left, top) = canvas.origin;
     let width = canvas.width;
     for (index, pixel) in (0..).zip(canvas.pixels.iter_mut()) {
@@ -279,8 +308,13 @@ pub fn light(canvas: &mut Canvas, centre: (i32, i32), radius: f32, flash: f32) {
             continue;
         };
         let (x, y) = (left + index % width, top + index / width);
-        let distance = tiles_apart((x - centre.0, y - centre.1));
-        let lit = ((radius + LIGHT_FADE - distance) / LIGHT_FADE).clamp(0.0, 1.0);
+        let lit = lights
+            .iter()
+            .map(|light| {
+                let distance = tiles_apart((x - light.centre.0, y - light.centre.1));
+                ((light.radius + light.fade - distance) / light.fade.max(0.1)).clamp(0.0, 1.0)
+            })
+            .fold(0.0, f32::max);
         let level = (DARK + (1.0 - DARK) * lit).max(flash);
         *pixel = Some(night_colour((red, green, blue), level));
     }

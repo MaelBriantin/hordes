@@ -27,6 +27,12 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - Each run draws a new map from a **seed**, chunk by chunk (32 × 32 tiles) as the player nears them: the same place always looks the same.
 - **Obstacles** block the way: trees and rocks, each covering **2 × 2 tiles**. They come in clumps of up to **8**: groves (70% of clumps) and heaps of rocks (30%). Together they cover **8%** of each chunk.
 - The player starts with no obstacle within **8 tiles**.
+- Healing is **rare**: about one chunk in 8 holds a **herb** on its free ground, one in 25 a **campfire** in a clearing (no obstacle of the chunk within 2 tiles). The same place always holds the same.
+
+## Healing
+
+- **Herbs**: a hurt player walking over a herb (within 0.9 tile of its middle) picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs glow red in the dark.
+- **Campfires**: a hurt player within **2 tiles** of a burning campfire gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
 
 ## Score
 
@@ -35,7 +41,7 @@ Every run is played for its score, arcade style.
 - Every enemy felled is worth **points**: zombie **10**, bat **15**, abomination **100**.
 - Times the **weather's multiplier**: ×1 on a clear night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
-- The status line shows the score and the multiplier of the moment (the weather's times the combo's).
+- The status line shows the score and the multiplier of the moment (the weather's times the combo's). While the run is ahead of the best one kept, its score gleams.
 - **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in a box under its tagline, the best run in gold; the settings are on its last line.
 
 ## The night
@@ -68,7 +74,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 |---|---|
 | Speed | 6 tiles/s (+8% per level of Swiftness) |
 | Body | 0.9 × 0.9 tile, smaller than the sprite (2 × 2 tiles): brushing past an obstacle is forgiven |
-| HP | 100 (+20 per level of Vitality) |
+| HP | 100 (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
 
 ## Enemies

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
@@ -9,8 +9,10 @@ use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
 use super::guns::{self, Bullet, Magazine};
+use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_REACH, HERB_HP, HERB_REACH};
 use super::level::xp_to_next;
 use super::machete::{self, Swing};
+use super::map::Feature;
 use super::score;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::stain::{self, MAX_STAINS, Stain};
@@ -115,6 +117,12 @@ pub struct World {
     drone_angle: f32,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
+    /// The herbs picked, by tile.
+    picked: HashSet<(i32, i32)>,
+    /// The HP each campfire has given, by tile.
+    burnt: HashMap<(i32, i32), u32>,
+    /// Ticks spent by a campfire towards its next HP.
+    by_the_fire: u32,
     /// Ticks before the next strike, once the weather brings lightning.
     next_strike_in: Option<u32>,
     /// What the player is offered to pick, a level gained: the world waits meanwhile.
@@ -167,6 +175,9 @@ impl World {
             magazines: HashMap::new(),
             drone_angle: 0.0,
             lightning: None,
+            picked: HashSet::new(),
+            burnt: HashMap::new(),
+            by_the_fire: 0,
             next_strike_in: None,
             offer: None,
             pending_levels: 0,
@@ -225,6 +236,7 @@ impl World {
         self.turn_drones();
         self.fell_enemies();
         self.gather_gems();
+        self.heal_player();
         self.hurt_player();
         if self.pending_levels > 0 && !self.is_over() {
             self.offer = Some(self.player.build.offers(&mut self.rng));
@@ -676,6 +688,56 @@ impl World {
             if let Some(point) = self.free_edge_point(enemy.kind, Some(facing)) {
                 self.enemies[index].position = point;
             }
+        }
+    }
+
+    /// What lies on the ground between two tiles, by tile, as it is now: the herbs not yet
+    /// picked, and every campfire, burning or out.
+    pub fn features_in(&self, from: (i32, i32), to: (i32, i32)) -> Vec<((i32, i32), Feature)> {
+        let mut features = self.map.features_in(from, to);
+        features.retain(|(tile, feature)| *feature != Feature::Herb || !self.picked.contains(tile));
+        features
+    }
+
+    /// The HP a campfire still has to give: none once it is out.
+    pub fn campfire_left(&self, tile: (i32, i32)) -> u32 {
+        CAMPFIRE_HP - self.burnt.get(&tile).copied().unwrap_or(0).min(CAMPFIRE_HP)
+    }
+
+    /// A hurt player picks up the herbs they walk over, and is healed by a burning campfire they
+    /// stay by, which gives of itself as it does.
+    fn heal_player(&mut self) {
+        let player = self.player.position;
+        let (x, y) = player.tile();
+        let around = 3;
+        let mut fire = None;
+        for (tile, feature) in self.features_in((x - around, y - around), (x + around, y + around))
+        {
+            let middle = Vec2::middle_of(tile);
+            let apart = (middle - player).length();
+            let hurt = self.player.hp < self.player.max_hp();
+            match feature {
+                Feature::Herb if hurt && apart <= HERB_REACH => {
+                    self.player.hp = (self.player.hp + HERB_HP).min(self.player.max_hp());
+                    self.picked.insert(tile);
+                }
+                Feature::Campfire
+                    if hurt && apart <= CAMPFIRE_REACH && self.campfire_left(tile) > 0 =>
+                {
+                    fire = Some(tile);
+                }
+                _ => {}
+            }
+        }
+        let Some(tile) = fire else {
+            self.by_the_fire = 0;
+            return;
+        };
+        self.by_the_fire += 1;
+        if self.by_the_fire >= heal::ticks_per_hp() {
+            self.by_the_fire = 0;
+            self.player.hp += 1;
+            *self.burnt.entry(tile).or_insert(0) += 1;
         }
     }
 

@@ -4,6 +4,8 @@ use super::super::gem::Gem;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
+use super::super::heal::{CAMPFIRE_HP, HERB_HP};
+use super::super::map::Feature;
 use super::super::score;
 use super::super::stain;
 use super::*;
@@ -734,4 +736,40 @@ fn the_weather_multiplies_the_score() {
     wait(&mut world, 1);
     assert_eq!(world.score, 500);
     assert_eq!(world.multiplier_tenths(), 55);
+}
+
+#[test]
+fn a_hurt_player_picks_up_a_herb_and_heals() {
+    let mut map = Map::empty();
+    map.put_feature((100, 50), Feature::Herb);
+    let mut world = on(map, Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.player.hp = 50;
+    wait(&mut world, 1);
+    assert_eq!(world.player.hp, 50 + HERB_HP);
+    assert_eq!(world.features_in((99, 49), (101, 51)), []);
+}
+
+#[test]
+fn a_player_in_full_health_leaves_the_herb_for_later() {
+    let mut map = Map::empty();
+    map.put_feature((100, 50), Feature::Herb);
+    let mut world = on(map, Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    wait(&mut world, 1);
+    assert_eq!(world.features_in((99, 49), (101, 51)).len(), 1);
+}
+
+#[test]
+fn a_campfire_heals_three_hp_a_second_until_it_dies_out() {
+    let mut map = Map::empty();
+    map.put_feature((101, 50), Feature::Campfire);
+    let mut world = on(map, Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.player.hp = 10;
+    wait(&mut world, 30);
+    assert_eq!(world.player.hp, 13);
+    wait(&mut world, 30 * 20);
+    assert_eq!(world.player.hp, 10 + CAMPFIRE_HP);
+    assert_eq!(world.campfire_left((101, 50)), 0);
 }
