@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.3.0 · November 18, 2026
+Hold out until dawn.
+
 ### New
 - The dawn: hold out until 11:00, the sun rising over the last minute as the rain stops, and the enemies flee the risen sun and burn; the run is won, with a bonus of half its score. A sun marks those runs on the leaderboard.
 - Each new weather and each horde is told in big letters over the map, the world standing still for 2 seconds; the run opens on the dusk, told the same way.
