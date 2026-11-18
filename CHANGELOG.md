@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.5.0 · November 18, 2026
+Light is a choice.
+
 ### New
 - Two modes, chosen on the title screen: standard, from dusk to dawn, with no score; arcade, endless, the weather going up to the tempest and back down, again and again, 7% harder a minute, for the score and its leaderboard. The pause menu leads back to the title screen.
 - The dusk can be skipped (C on the title screen): the run opens on the night.
