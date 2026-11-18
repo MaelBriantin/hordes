@@ -23,6 +23,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Over the top left of the map, on a dark veil, the weapons and passives picked show as the icons of their cards, each with its level in pixels under it; the guns show their rounds there too, filling back as they reload.
 - The XP bar runs along the bottom of the screen during a run, the level at its start.
 - The game draws its own dark background and text, whatever the terminal's theme: a light one no longer washes it out.
+- The night is a little less dark beyond the torch: 14% of the light, rather than 10%.
 - A drone breaks on its blow, and repairs in 2 seconds: drones were too strong.
 - Blood comes red, as ketchup, mayo or pesto, or not at all: B on the title screen, or the pause menu.
 - The HP bar is red, and blinks when HP run low.

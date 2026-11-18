@@ -57,7 +57,7 @@ Every run is played for its score, arcade style.
 
 - Runs start at **dusk**: for the first minute, the setting sun lights the whole map, warm; over the next minute, the night falls, dimmer and bluer, until only the lights below show anything.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (a tenth of their brightness).
+- The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
 - **Gems, bullets and the machete's swings glow**: they show in the dark.
 - **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
 - **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**.

@@ -158,7 +158,7 @@ const IMPACT_STEPS: u8 = 32;
 /// How far the player's light fades into the night, past its full reach, in tiles.
 const LIGHT_FADE: f32 = 6.0;
 /// How much of its brightness a thing keeps in the dark.
-const DARK: f32 = 0.1;
+const DARK: f32 = 0.14;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
 const SATURATION: f32 = 0.7;
 const TINT: (f32, f32, f32) = (0.85, 0.9, 1.05);
