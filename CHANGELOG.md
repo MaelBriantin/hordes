@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The title screen and the pause menu show the game's version.
+
 ## v0.3.0 · November 18, 2026
 Hold out until dawn.
 

@@ -11,6 +11,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Rain**: how it shows (full, reduced to half its drops, or off), with R on the title screen or from the pause menu. The weather itself is the same whatever the choice.
 - **Language**: English or French, with L on the title screen or from the pause menu. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).
+- The title screen and the pause menu show the game's version.
 - **Quit**: from the pause menu; Esc on the title screen or the game over; Ctrl+C at any time.
 - **The camera** keeps the player in the middle of the screen.
 - **Held keys**: with kitty's keyboard protocol (Ghostty, kitty, WezTerm, iTerm2…), a key holds exactly as long as it is held down. Elsewhere, the terminal only repeats presses: a key counts as held 0.5 s after a press and 0.15 s after each repeat, and holding two keys at once may not work.

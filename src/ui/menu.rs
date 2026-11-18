@@ -82,8 +82,9 @@ fn rain_name(rain: RainDisplay) -> String {
     }
 }
 
-/// A box of `width` × `height` in the middle of `map`, cleared, framed.
-fn boxed(frame: &mut Frame, map: Rect, width: u16, height: u16, title: &str) -> Rect {
+/// A box of `width` × `height` in the middle of `map`, cleared, framed, `footer` dim on its
+/// bottom border, on the right.
+fn boxed(frame: &mut Frame, map: Rect, width: u16, height: u16, title: &str, footer: &str) -> Rect {
     let [row] = Layout::vertical([Constraint::Length(height)])
         .flex(Flex::Center)
         .areas(map);
@@ -97,6 +98,9 @@ fn boxed(frame: &mut Frame, map: Rect, width: u16, height: u16, title: &str) -> 
     } else {
         block.title(Line::from(format!(" {title} ")).centered())
     };
+    let block = block.title_bottom(
+        Line::styled(format!(" {footer} "), Style::new().fg(DARK_GREY)).right_aligned(),
+    );
     let inside = block.inner(area);
     frame.render_widget(block, area);
     inside
@@ -130,7 +134,7 @@ pub fn render_title(
     } else {
         u16::try_from(shown).unwrap_or(0) + 2
     };
-    let [_, name, _, line, _, start, _, board, _, option, _] = Layout::vertical([
+    let [_, name, _, line, _, start, _, board, _, option, last] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(name_rows),
         Constraint::Length(2),
@@ -169,12 +173,21 @@ pub fn render_title(
         Style::new().fg(DARK_GREY),
         option,
     );
+    frame.render_widget(
+        Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
+        last,
+    );
+}
+
+/// The game's version, as the title screen and the pause menu show it: `v0.3.0`.
+fn version() -> String {
+    format!("v{}", env!("CARGO_PKG_VERSION"))
 }
 
 /// The pause menu, `selected` its highlighted item, the settings as `view` holds them.
 pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize, view: ViewState) {
     let height = u16::try_from(PauseItem::ALL.len()).unwrap_or(3) + 4;
-    let inside = boxed(frame, map, 28, height, &fl!("pause-title"));
+    let inside = boxed(frame, map, 28, height, &fl!("pause-title"), &version());
     let lines: Vec<Line> = PauseItem::ALL
         .iter()
         .enumerate()
