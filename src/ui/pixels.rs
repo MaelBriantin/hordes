@@ -21,8 +21,8 @@ const FLICKER: u32 = 6;
 const COMPASS: Color = Color::Rgb(220, 45, 65);
 const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
 const COMPASS_PULSE: u32 = 10;
-/// The colour of an enemy just hit.
-const FLASH: Color = Color::Rgb(255, 255, 255);
+/// The colour of a broken drone, repairing.
+const BROKEN: Color = Color::Rgb(75, 75, 82);
 /// The colour of a machete's swing, then as it fades.
 const SLASH: Color = Color::Rgb(235, 235, 245);
 const SLASH_FADING: Color = Color::Rgb(130, 130, 145);
@@ -80,7 +80,7 @@ impl<'a> Canvas<'a> {
         let sprite = self.sprites.get(look.sprite);
         for (x, y, color) in sprite.pixels(look.mirrored) {
             if let Some(index) = self.index((left + x, top + y)) {
-                self.pixels[index] = Some(if look.flashing { FLASH } else { color });
+                self.pixels[index] = Some(look.tint.unwrap_or(color));
             }
         }
     }
@@ -245,8 +245,12 @@ pub fn render_map(
     for (position, look) in figures {
         canvas.paint_at(look, position);
     }
-    for drone in world.drones() {
-        canvas.paint_at(Look::plain(SpriteId::Drone), drone);
+    for (drone, broken) in world.drones() {
+        let look = Look {
+            tint: broken.then_some(BROKEN),
+            ..Look::plain(SpriteId::Drone)
+        };
+        canvas.paint_at(look, drone);
     }
 
     // The night falls on all of that; what glows is painted after it, untouched.

@@ -1,5 +1,5 @@
-//! Drones: drones circling the player, hurting the enemies they pass through and pushing them
-//! back. An enemy a drone has hit can't be hit by a drone again for a while.
+//! Drones: drones circling the player, each hurting the first enemy it runs into and pushing it
+//! back; the blow breaks the drone, which keeps circling, harmless, until it has repaired.
 
 use std::f32::consts::TAU;
 
@@ -36,9 +36,9 @@ pub fn turn_per_tick(level: u8) -> f32 {
     TAU / seconds_per_turn * tick_seconds()
 }
 
-/// The ticks before a drone can hit the same enemy again: half a second.
-pub fn rehit() -> u32 {
-    u32::from(TICKS_PER_SECOND) / 2
+/// The ticks a broken drone takes to repair, before Haste: 2 seconds.
+pub fn repair() -> u32 {
+    2 * u32::from(TICKS_PER_SECOND)
 }
 
 /// Where the drones are at a level, around `centre`, the first at `angle`, the others evenly

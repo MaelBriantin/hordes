@@ -129,7 +129,7 @@ A gun shoots at the **nearest enemies within its range**, a bullet per enemy, wh
 
 ### Drones
 
-Drones circling the player **2.5 tiles** away, a turn every **2 s**. A drone hits every enemy it passes through: **8 damage**, and a push of **half a tile** away from the player. An enemy a drone has hit can't be hit by a drone again for **0.5 s**.
+Drones circling the player **2.5 tiles** away, a turn every **2 s**. A drone hits the first enemy it runs into: **8 damage**, and a push of **half a tile** away from the player. The blow **breaks** it: it keeps circling, grey and harmless, and repairs in **2 s** (less with Haste).
 
 **Levels**: 2: +1 drone · 3: 12 damage · 4: +1 drone (3) · 5: 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
 
@@ -152,7 +152,7 @@ Up to **4 passives**, each up to **level 5**.
 | Swiftness | +8% speed |
 | Magnet | Gems fly in from 1 tile further (2 tiles at first) |
 | Might | +10% damage of every weapon |
-| Haste | −8% to every weapon's cooldown |
+| Haste | −8% to every weapon's cooldown, the drones' repair included |
 | Flashlight | +2 tiles of light around the player (9 at first) |
 | Compass | A red arrow on the edge of the screen, white on a pulsing red cell, points to the nearest healing (a herb, a burning campfire), while it is off screen: within 150 tiles, 50 more per level |
 

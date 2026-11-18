@@ -115,6 +115,8 @@ pub struct World {
     pub magazines: HashMap<Weapon, Magazine>,
     /// Where the first drone is on its circle, in radians.
     drone_angle: f32,
+    /// Ticks left before each drone, broken by a blow, works again; 0 for one that works.
+    drone_repairs: Vec<u32>,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
     /// The herbs picked, by tile.
@@ -174,6 +176,7 @@ impl World {
             swing: None,
             magazines: HashMap::new(),
             drone_angle: 0.0,
+            drone_repairs: Vec::new(),
             lightning: None,
             picked: HashSet::new(),
             burnt: HashMap::new(),
@@ -476,18 +479,22 @@ impl World {
             .collect()
     }
 
-    /// Where the drones are, if the player has them.
-    pub fn drones(&self) -> Vec<Vec2> {
+    /// Where the drones are, if the player has them, and whether each is broken.
+    pub fn drones(&self) -> Vec<(Vec2, bool)> {
         let level = self.player.build.weapon_level(Weapon::Drones);
         drones::positions(self.player.position, level, self.drone_angle)
+            .into_iter()
+            .enumerate()
+            .map(|(index, position)| {
+                let broken = self.drone_repairs.get(index).is_some_and(|left| *left > 0);
+                (position, broken)
+            })
+            .collect()
     }
 
-    /// The drones turn on, each hitting the enemies it touches that can be hit, and pushing
-    /// them back from the player.
+    /// The drones turn on; each that works hits the first enemy it runs into, pushes it back
+    /// from the player, and breaks. A broken drone repairs with time.
     fn turn_drones(&mut self) {
-        for enemy in &mut self.enemies {
-            enemy.drone_ready_in = enemy.drone_ready_in.saturating_sub(1);
-        }
         let build = &self.player.build;
         let level = build.weapon_level(Weapon::Drones);
         if level == 0 {
@@ -496,33 +503,38 @@ impl World {
         self.drone_angle =
             (self.drone_angle + drones::turn_per_tick(level)) % std::f32::consts::TAU;
         let damage = build.damage(drones::damage(level));
-        let rehit = build.cooldown(drones::rehit());
+        let repair = build.cooldown(drones::repair());
         let player = self.player.position;
-        for position in self.drones() {
-            for enemy in &mut self.enemies {
-                let stats = enemy.kind.stats();
-                if enemy.hp == 0
-                    || enemy.drone_ready_in > 0
-                    || !touch(
+        let drones = self.drones();
+        self.drone_repairs.resize(drones.len(), 0);
+        for (index, (position, broken)) in drones.into_iter().enumerate() {
+            if broken {
+                self.drone_repairs[index] -= 1;
+                continue;
+            }
+            let hit = self.enemies.iter_mut().find(|enemy| {
+                enemy.hp > 0
+                    && touch(
                         position,
                         drones::HALF_WIDTH,
                         enemy.position,
-                        stats.half_width,
+                        enemy.kind.stats().half_width,
                     )
-                {
-                    continue;
-                }
-                enemy.hit(damage);
-                enemy.drone_ready_in = rehit;
-                let away = (enemy.position - player).normalized() * drones::KNOCKBACK;
-                enemy.position = slide(
-                    &self.map,
-                    enemy.position,
-                    away,
-                    stats.half_width,
-                    stats.flies,
-                );
-            }
+            });
+            let Some(enemy) = hit else {
+                continue;
+            };
+            let stats = enemy.kind.stats();
+            enemy.hit(damage);
+            let away = (enemy.position - player).normalized() * drones::KNOCKBACK;
+            enemy.position = slide(
+                &self.map,
+                enemy.position,
+                away,
+                stats.half_width,
+                stats.flies,
+            );
+            self.drone_repairs[index] = repair.max(1);
         }
     }
 

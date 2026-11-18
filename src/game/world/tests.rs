@@ -616,19 +616,21 @@ fn a_drone_hits_an_enemy_on_its_circle_and_pushes_it_back() {
 }
 
 #[test]
-fn a_drone_hits_the_same_enemy_only_every_half_second() {
-    let mut world = armed_with(Weapon::Drones, 3);
-    world
-        .enemies
-        .push(enemy(EnemyKind::Abomination, Vec2::new(102.5, 50.0)));
+fn a_drone_breaks_on_its_blow_and_repairs_in_two_seconds() {
+    let mut world = armed_with(Weapon::Drones, 1);
+    let next = drones::positions(world.player.position, 1, drones::turn_per_tick(1))[0];
+    world.enemies.push(enemy(EnemyKind::Abomination, next));
     world.enemies[0].hp = 1_000;
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 8);
+    assert!(world.drones()[0].1, "broken");
+    // Broken, it passes through the enemy, harmless.
     for _ in 0..60 {
-        // Kept on the circle, where the drones pass again and again.
-        world.enemies[0].position = Vec2::new(102.5, 50.0);
+        world.enemies[0].position = world.drones()[0].0;
         wait(&mut world, 1);
     }
-    let hits = (1_000 - world.enemies[0].hp) / 12;
-    assert!((2..=4).contains(&hits), "{hits} hits");
+    assert_eq!(world.enemies[0].hp, 1_000 - 8);
+    assert!(!world.drones()[0].1, "repaired");
 }
 
 #[test]

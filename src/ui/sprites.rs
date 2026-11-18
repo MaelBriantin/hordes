@@ -159,8 +159,8 @@ pub struct Sprites(Vec<Sprite>);
 pub struct Look {
     pub sprite: SpriteId,
     pub mirrored: bool,
-    /// Every pixel in white: an enemy just hit.
-    pub flashing: bool,
+    /// Every pixel in one colour: white for an enemy just hit, grey for a broken drone.
+    pub tint: Option<Color>,
 }
 
 impl Look {
@@ -168,7 +168,7 @@ impl Look {
         Self {
             sprite,
             mirrored: false,
-            flashing: false,
+            tint: None,
         }
     }
 
@@ -191,6 +191,9 @@ pub fn hero(facing: Facing) -> Look {
     }
 }
 
+/// The colour of an enemy just hit.
+const FLASH: Color = Color::Rgb(255, 255, 255);
+
 /// An enemy as it shows: turned the way it faces, a bat's wings up or down, white when just hit.
 pub fn enemy(enemy: &Enemy) -> Look {
     let look = match enemy.kind {
@@ -204,7 +207,7 @@ pub fn enemy(enemy: &Enemy) -> Look {
         EnemyKind::Abomination => Look::sideways(SpriteId::Abomination, enemy.facing),
     };
     Look {
-        flashing: enemy.flash > 0,
+        tint: (enemy.flash > 0).then_some(FLASH),
         ..look
     }
 }
