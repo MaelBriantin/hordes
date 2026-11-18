@@ -1,6 +1,8 @@
 //! The firearms: the pistol and the machine gun. A gun shoots at the nearest enemies in its range
 //! while its magazine holds rounds, then reloads it. Its reserve of rounds is endless.
 
+use rand::{Rng, RngExt};
+
 use super::build::Weapon;
 use super::enemy::Enemy;
 use super::{TICKS_PER_SECOND, Vec2, tick_seconds};
@@ -23,6 +25,10 @@ pub struct Gun {
     pub damage: u32,
     /// The bullets of a shot, each at a different enemy.
     pub bullets: usize,
+    /// The pellets each bullet bursts into, fanned out over `spread` radians: 1 but for the
+    /// shotgun.
+    pub pellets: u16,
+    pub spread: f32,
     /// How many enemies a bullet goes through before stopping at the next.
     pub pierce: u32,
     /// In tiles per second.
@@ -33,6 +39,9 @@ pub struct Gun {
 
 /// The ticks the machine gun waits between two shots: a shot every 5 ticks, a sixth of a second.
 const MACHINE_GUN_INTERVAL: u32 = 4;
+
+/// How much faster or slower than its gun a pellet may fly, as a share of the gun's speed.
+const PELLET_PACE: f32 = 0.2;
 
 /// Tenths of a second, in ticks.
 fn tenths(count: u32) -> u32 {
@@ -53,6 +62,8 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             reload: if level >= 3 { tenths(15) } else { tenths(20) },
             damage: if level >= 5 { 15 } else { 10 },
             bullets: if level >= 4 { 2 } else { 1 },
+            pellets: 1,
+            spread: 0.0,
             pierce: 0,
             speed: 20.0,
             range: 12.0,
@@ -64,9 +75,25 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             reload: if level >= 4 { tenths(20) } else { tenths(30) },
             damage: if level >= 3 { 5 } else { 3 },
             bullets: 1,
+            pellets: 1,
+            spread: 0.0,
             pierce: u32::from(level >= 5),
             speed: 22.0,
             range: 10.0,
+        }),
+        Weapon::Shotgun => Some(Gun {
+            weapon,
+            // A double shot, then the reload.
+            magazine: 2,
+            interval: tenths(3),
+            reload: if level >= 4 { tenths(15) } else { tenths(25) },
+            damage: if level >= 3 { 8 } else { 6 },
+            bullets: 1,
+            pellets: if level >= 2 { 7 } else { 5 },
+            spread: if level >= 5 { 60.0_f32 } else { 40.0 }.to_radians(),
+            pierce: u32::from(level >= 5),
+            speed: 18.0,
+            range: 6.0,
         }),
         Weapon::Machete | Weapon::Drones => None,
     }
@@ -97,6 +124,8 @@ pub struct Bullet {
     pub hit: Vec<u32>,
     /// The gun it left: a pistol's slug and a machine gun's tracer don't look alike.
     pub weapon: Weapon,
+    /// A shotgun's pellets come in two looks, every other one.
+    pub other: bool,
 }
 
 impl Bullet {
@@ -111,7 +140,37 @@ impl Bullet {
             pierce: gun.pierce,
             hit: Vec::new(),
             weapon: gun.weapon,
+            other: false,
         }
+    }
+
+    /// The pellets of a shot of `gun` leaving `from` towards `target`, scattered at random over
+    /// the gun's spread, each a little faster or slower than the gun's speed: a spray, not a
+    /// wave. A single bullet, straight at the target, for a gun that doesn't spread.
+    pub fn burst(
+        from: Vec2,
+        target: Vec2,
+        gun: &Gun,
+        damage: u32,
+        rng: &mut impl Rng,
+    ) -> Vec<Self> {
+        if gun.pellets <= 1 {
+            return vec![Self::toward(from, target, gun, damage)];
+        }
+        let way = (target - from).normalized();
+        let middle = way.y.atan2(way.x);
+        let half = gun.spread / 2.0;
+        (0..gun.pellets)
+            .map(|index| {
+                let angle = middle + rng.random_range(-half..=half);
+                let aim = from + Vec2::new(angle.cos(), angle.sin());
+                let mut pellet = Self::toward(from, aim, gun, damage);
+                pellet.velocity =
+                    pellet.velocity * rng.random_range(1.0 - PELLET_PACE..=1.0 + PELLET_PACE);
+                pellet.other = index % 2 == 1;
+                pellet
+            })
+            .collect()
     }
 
     /// The way it flies, length 1.
@@ -164,5 +223,26 @@ mod tests {
     #[test]
     fn the_machete_is_no_gun() {
         assert_eq!(gun(Weapon::Machete, 1), None);
+    }
+
+    #[test]
+    fn a_shotgun_sprays_its_pellets_within_its_fan() {
+        use rand::SeedableRng;
+        let gun = gun(Weapon::Shotgun, 1).unwrap();
+        let mut rng = rand::rngs::StdRng::seed_from_u64(1);
+        let pellets = Bullet::burst(Vec2::ZERO, Vec2::new(5.0, 0.0), &gun, 6, &mut rng);
+        assert_eq!(pellets.len(), 5);
+        // Each within 20° of the target's way, each at a pace of its own.
+        let most = 20.0_f32.to_radians().sin() + 1e-4;
+        assert!(pellets.iter().all(|pellet| pellet.way().y.abs() <= most));
+        let paces: Vec<f32> = pellets
+            .iter()
+            .map(|pellet| pellet.velocity.length())
+            .collect();
+        assert!(
+            paces
+                .windows(2)
+                .any(|pair| (pair[0] - pair[1]).abs() > 1e-4)
+        );
     }
 }

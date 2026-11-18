@@ -56,7 +56,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - Until the storm, it comes as a dense **pack** out of one side (a band 16 tiles wide, 5 deep, just beyond the screen); from the storm on, as a **ring** out of every side, announced on every edge.
 - Its enemies: zombies; a Shadow in ten from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
 - While some of a horde still stands, a count shows on the top of the map, white on red: how many are left.
-- **Wiped out** to the last, a horde **doubles** the points its kills were worth: it is told in big gold letters, the bonus under them, the run going on.
+- **Wiped out** to the last, a horde brings **a level**, 2 s on (once told), its cards rarer (**60%** of rare ones); in arcade, it **doubles** the points its kills were worth too. It is told in big gold letters, what it brought under them, the run going on.
 - Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
 
 ## Score
@@ -167,6 +167,12 @@ A gun shoots at the **nearest enemies within its range**, a bullet per enemy, wh
 | 3 | a 1.5-second reload | 5 damage |
 | 4 | 2 bullets a shot, at the 2 nearest | a 2-second reload |
 | 5 | 12 rounds, 15 damage | bullets pierce 1 enemy |
+
+### Shotgun
+
+A gun (see Guns: its rounds, its reload, it holds its fire in the dark) firing a **double shot**: two shots **0.3 s** apart, then a **2.5-second** reload. Each shot sprays **5 pellets** at random over a fan of **40°**, towards the nearest enemy within **6 tiles**, **6 damage** each, at 18 tiles/s give or take 20%. A pellet shows as a small pixel, gold or red, as the shells.
+
+**Levels**: 2: 7 pellets · 3: 8 damage · 4: a 1.5-second reload · 5: the pellets pierce 1 enemy, the fan spreads over 60°.
 
 ### Drones
 

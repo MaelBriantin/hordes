@@ -22,10 +22,12 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 ## Weapons
 
-- **Shotgun**: a gun that fires a spread of pellets at once, wide and short-ranged: it clears what is close.
 - **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
 
 ## Level-ups
+
+- **Evolutions**: a weapon at level 5 may later be offered a legendary card that transforms it. Drones → Swarm: the drones fire bullets in a spiral around the player. Shotgun → Dragon's breath: the pellets set the enemies they hit on fire (needs fire). Pistol → Akimbo: two pistols, two targets a shot, twice the rounds. Machine gun → Gatling: twice the rate, a 60-round magazine. Machete → Whirlwind: the swing turns all the way round the player.
+- **Rare upgrades of common passives**: a rare Vitality that regenerates HP over time, and so on.
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
 - **Rare drones**: other kinds of drones, found on rare cards. Missile drones, for one: circling the player like the drones, each fires a missile in turn, so salvos streak across the screen.

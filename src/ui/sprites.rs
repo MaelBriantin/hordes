@@ -46,6 +46,7 @@ pub enum SpriteId {
     IconPistol,
     IconMachineGun,
     IconDrones,
+    IconShotgun,
     IconVitality,
     IconSwiftness,
     IconMagnet,
@@ -62,7 +63,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 40] = [
+    const ALL: [SpriteId; 41] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -90,6 +91,7 @@ impl SpriteId {
         SpriteId::IconPistol,
         SpriteId::IconMachineGun,
         SpriteId::IconDrones,
+        SpriteId::IconShotgun,
         SpriteId::IconVitality,
         SpriteId::IconSwiftness,
         SpriteId::IconMagnet,
@@ -134,6 +136,7 @@ impl SpriteId {
             SpriteId::IconPistol => "icon_pistol",
             SpriteId::IconMachineGun => "icon_machine_gun",
             SpriteId::IconDrones => "icon_drones",
+            SpriteId::IconShotgun => "icon_shotgun",
             SpriteId::IconVitality => "icon_vitality",
             SpriteId::IconSwiftness => "icon_swiftness",
             SpriteId::IconMagnet => "icon_magnet",

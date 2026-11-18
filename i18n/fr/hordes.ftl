@@ -90,6 +90,7 @@ card-level = Niv { $level }/{ $max }
 weapon-machete = Machette
 weapon-pistol = Pistolet
 weapon-machine-gun = Mitrailleuse
+weapon-shotgun = Fusil à pompe
 weapon-drones = Drones
 
 passive-vitality = Vitalité
@@ -120,6 +121,11 @@ gain-machine-gun-2 = Chargeur 20 → 30
 gain-machine-gun-3 = Dégâts 3 → 5
 gain-machine-gun-4 = Recharge en 2 s
 gain-machine-gun-5 = Les balles traversent un ennemi
+gain-shotgun-1 = Une gerbe de 5 plombs, de près
+gain-shotgun-2 = 7 plombs par tir
+gain-shotgun-3 = Dégâts 6 → 8
+gain-shotgun-4 = Recharge en 1,5 s
+gain-shotgun-5 = Les plombs traversent un ennemi, gerbe plus large
 gain-drones-1 = Un drone tourne autour de toi
 gain-drones-more = +1 drone
 gain-drones-3 = Dégâts 8 → 12
@@ -155,7 +161,8 @@ horde-coming = Elle arrive !
 horde-everywhere = Ils arrivent de partout !
 horde-left = HORDE · { $left }
 horde-cleared = HORDE ABATTUE
-horde-cleared-points = +{ $points } points
+horde-cleared-points = +{ $points } points · +1 niveau
+horde-cleared-level = +1 niveau
 
 ## Keys
 

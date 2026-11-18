@@ -5,7 +5,9 @@ use rand::{RngExt, SeedableRng};
 
 use super::announce::{Announcement, News, WeatherNews};
 use super::body::{fits, slide, touch};
-use super::build::{BASE_HP, Build, Choice, HEAL, Legendary, Passive, VITALITY_HP, Weapon};
+use super::build::{
+    BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
+};
 use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
@@ -70,6 +72,10 @@ const LURE_REACH: f32 = 20.0;
 const WANDER_PACE: f32 = 0.5;
 /// When the torch, lighting up, is out still, in ticks since: it flickers twice, then holds.
 const TORCH_FLICKER_OFF: [std::ops::Range<u32>; 3] = [0..2, 5..11, 14..20];
+/// The seconds a horde wiped out waits before its level comes, for the news to be read first;
+/// and the chance, in percent, of a rare card on that level.
+const HORDE_LEVEL_DELAY: u32 = 2;
+const HORDE_RARE_PERCENT: u32 = 60;
 /// The chance, in percent, that a level-up offers a legendary, at first and after one.
 const LEGENDARY_PERCENT: u32 = 5;
 /// The ticks an enemy flashes white before it burns at daybreak.
@@ -78,6 +84,8 @@ const BURN_FLASH: u32 = 6;
 /// falls, in tiles.
 const CELL_PERCENT: u32 = 15;
 const CELL_OFFSET: f32 = 0.6;
+/// The weapons that are guns, in the order they show.
+const GUNS: [Weapon; 3] = [Weapon::Pistol, Weapon::MachineGun, Weapon::Shotgun];
 /// The most gems lying around at once: past it, the oldest go.
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
@@ -173,7 +181,7 @@ pub struct World {
     hordes_come: u32,
     /// The hordes come and not yet wiped out, by number.
     tallies: HashMap<u32, Tally>,
-    /// The last horde wiped out: when, and the bonus it was worth.
+    /// The last horde wiped out: when, and the points it was worth (none in a standard run).
     pub horde_cleared: Option<(u32, u64)>,
     /// The news the world stands still for, while it shows.
     pub announcement: Option<Announcement>,
@@ -210,6 +218,10 @@ pub struct World {
     xp_hundredths: u32,
     /// The level-ups dealt since the last legendary offered.
     without_legendary: u32,
+    /// The ticks the levels of hordes wiped out are due at, and the levels they brought still to
+    /// deal, their cards rarer.
+    horde_levels_due: Vec<u32>,
+    rare_levels: u32,
     ticks: u32,
     rng: StdRng,
     /// Enemies owed: grows with the rate they appear at, one appears per whole unit.
@@ -298,6 +310,8 @@ impl World {
             pending_levels: 0,
             xp_hundredths: 0,
             without_legendary: 0,
+            horde_levels_due: Vec::new(),
+            rare_levels: 0,
             ticks: 0,
             rng,
             spawn_debt: 0.0,
@@ -500,6 +514,7 @@ impl World {
         self.turn_drones();
         self.fell_enemies();
         self.gather_gems();
+        self.give_horde_levels();
         self.illuminate();
         self.heal_player();
         self.hurt_player();
@@ -537,7 +552,14 @@ impl World {
     fn deal(&mut self) -> Vec<Choice> {
         let dusk = self.weather() == Weather::Dusk;
         let percent = LEGENDARY_PERCENT + self.without_legendary;
-        let offer = self.player.build.offers(&mut self.rng, dusk, percent);
+        // A level a horde brought deals rarer cards.
+        let rare = if self.rare_levels > 0 {
+            self.rare_levels -= 1;
+            HORDE_RARE_PERCENT
+        } else {
+            RARE_PERCENT
+        };
+        let offer = self.player.build.offers(&mut self.rng, dusk, rare, percent);
         if offer
             .iter()
             .any(|choice| matches!(choice, Choice::Legendary(_)))
@@ -677,10 +699,11 @@ impl World {
             enemies,
             bullets,
             magazines,
+            rng,
             ..
         } = self;
         let build = &player.build;
-        for weapon in [Weapon::Pistol, Weapon::MachineGun] {
+        for weapon in GUNS {
             let level = build.weapon_level(weapon);
             let Some(gun) = guns::gun(weapon, level).filter(|_| level > 0) else {
                 continue;
@@ -709,7 +732,7 @@ impl World {
             }
             let damage = build.damage(gun.damage);
             for target in targets {
-                bullets.push(Bullet::toward(player.position, target, &gun, damage));
+                bullets.extend(Bullet::burst(player.position, target, &gun, damage, rng));
             }
             magazine.rounds = magazine.rounds.saturating_sub(1);
             magazine.wait = gun.interval;
@@ -753,8 +776,7 @@ impl World {
     /// The guns the player has, each with its magazine, how many rounds it holds full, and the
     /// ticks a whole reload takes.
     pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32, u32)> {
-        [Weapon::Pistol, Weapon::MachineGun]
-            .into_iter()
+        GUNS.into_iter()
             .filter_map(|weapon| {
                 let level = self.player.build.weapon_level(weapon);
                 let gun = guns::gun(weapon, level).filter(|_| level > 0)?;
@@ -848,6 +870,7 @@ impl World {
         if self.ticks - self.last_kill > score::combo_window() {
             self.combo = 0;
         }
+        let mut wiped_out = 0;
         let weather = self.weather();
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
             // Worth the combo as it stood before this kill.
@@ -856,16 +879,23 @@ impl World {
             self.combo += 1;
             self.last_kill = self.ticks;
             let stats = enemy.kind.stats();
-            // A horde wiped out to the last doubles what its kills were worth.
+            // A horde wiped out to the last brings a level; in arcade, it doubles what its kills
+            // were worth too.
             if let Some(number) = enemy.horde
                 && let Some(tally) = self.tallies.get_mut(&number)
             {
                 tally.points += worth;
                 tally.left -= 1;
                 if tally.left == 0 {
-                    self.score += tally.points;
-                    self.horde_cleared = Some((self.ticks, tally.points));
+                    let bonus = if self.mode == Mode::Arcade {
+                        tally.points
+                    } else {
+                        0
+                    };
+                    self.score += bonus;
+                    self.horde_cleared = Some((self.ticks, bonus));
                     self.tallies.remove(&number);
+                    wiped_out += 1;
                 }
             }
             let drop = (stats.drop_percent + self.player.build.drop_bonus()).min(100);
@@ -889,6 +919,11 @@ impl World {
         self.stains.retain(|stain| now - stain.tick < lasts);
         if self.stains.len() > MAX_STAINS {
             self.stains.drain(..self.stains.len() - MAX_STAINS);
+        }
+        // Its level comes once the horde wiped out has been told.
+        for _ in 0..wiped_out {
+            self.horde_levels_due
+                .push(self.ticks + HORDE_LEVEL_DELAY * u32::from(TICKS_PER_SECOND));
         }
         self.enemies.retain(|enemy| enemy.hp > 0);
         if self.gems.len() > MAX_GEMS {
@@ -963,6 +998,22 @@ impl World {
         });
         let charge = f32::from(u16::try_from(charge).unwrap_or(u16::MAX)) / 100.0;
         self.battery = (self.battery + charge).min(1.0);
+    }
+
+    /// The levels hordes wiped out have brought, once due: each its cards, rarer.
+    fn give_horde_levels(&mut self) {
+        let now = self.ticks;
+        let due = self
+            .horde_levels_due
+            .iter()
+            .filter(|at| **at <= now)
+            .count();
+        self.horde_levels_due.retain(|at| *at > now);
+        for _ in 0..due {
+            let missing = xp_to_next(self.player.level).saturating_sub(self.player.xp);
+            self.pending_levels += self.player.gain(missing);
+            self.rare_levels += 1;
+        }
     }
 
     /// Illumination gives XP of itself, a point a second.

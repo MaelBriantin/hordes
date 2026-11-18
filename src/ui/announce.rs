@@ -44,7 +44,12 @@ pub fn render(frame: &mut Frame, map: Rect, world: &World, sprites: &Sprites) {
         } else if let Some((at, bonus)) = world.horde_cleared
             && world.ticks().saturating_sub(at) < CLEARED_SECONDS * u32::from(TICKS_PER_SECOND)
         {
-            let line = fl!("horde-cleared-points", points = bonus);
+            // A level, and in arcade the points too.
+            let line = if bonus > 0 {
+                fl!("horde-cleared-points", points = bonus)
+            } else {
+                fl!("horde-cleared-level")
+            };
             tell(
                 frame,
                 map,

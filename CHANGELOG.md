@@ -9,6 +9,12 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- A new weapon, the shotgun: a double shot, each a fan of pellets, close by.
+
+### Changed
+- A horde wiped out brings a level, once told, its cards rarer; in arcade, it doubles its points too.
+
 ## v0.5.0 · November 18, 2026
 Light is a choice.
 

@@ -90,6 +90,7 @@ card-level = Lv { $level }/{ $max }
 weapon-machete = Machete
 weapon-pistol = Pistol
 weapon-machine-gun = Machine gun
+weapon-shotgun = Shotgun
 weapon-drones = Drones
 
 passive-vitality = Vitality
@@ -120,6 +121,11 @@ gain-machine-gun-2 = Magazine 20 → 30
 gain-machine-gun-3 = Damage 3 → 5
 gain-machine-gun-4 = Reloads in 2 s
 gain-machine-gun-5 = Bullets go through an enemy
+gain-shotgun-1 = A fan of 5 pellets, close by
+gain-shotgun-2 = 7 pellets a shot
+gain-shotgun-3 = Damage 6 → 8
+gain-shotgun-4 = Reload in 1.5 s
+gain-shotgun-5 = Pellets pierce one enemy, a wider fan
 gain-drones-1 = A drone circling you
 gain-drones-more = +1 drone
 gain-drones-3 = Damage 8 → 12
@@ -155,7 +161,8 @@ horde-coming = It is coming!
 horde-everywhere = They come from everywhere!
 horde-left = HORDE · { $left }
 horde-cleared = HORDE WIPED OUT
-horde-cleared-points = +{ $points } points
+horde-cleared-points = +{ $points } points · +1 level
+horde-cleared-level = +1 level
 
 ## Keys
 

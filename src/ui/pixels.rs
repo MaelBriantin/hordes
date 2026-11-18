@@ -98,6 +98,8 @@ const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
 const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
 const GEAR_LEGENDARY: Color = Color::Rgb(255, 200, 60);
+/// A shotgun's pellets, every other one: the gold and the red of its shells.
+const PELLETS: (Color, Color) = (Color::Rgb(240, 190, 60), Color::Rgb(220, 50, 50));
 /// A machine gun's tracer, from its head to the end of its trail.
 const TRACER: [Color; 3] = [
     Color::Rgb(255, 225, 160),
@@ -191,6 +193,11 @@ impl<'a> Canvas<'a> {
     fn paint_bullet(&mut self, bullet: &Bullet) {
         if bullet.weapon == Weapon::Pistol {
             self.paint_at(Look::plain(SpriteId::Bullet), bullet.position);
+            return;
+        }
+        if bullet.weapon == Weapon::Shotgun {
+            let colour = if bullet.other { PELLETS.1 } else { PELLETS.0 };
+            self.set(pixel(bullet.position), colour);
             return;
         }
         let way = bullet.way();

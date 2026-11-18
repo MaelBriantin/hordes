@@ -845,10 +845,8 @@ fn from_the_storm_on_a_horde_comes_from_every_side() {
     assert_eq!(world.horde_warning.map(|warning| warning.side), Some(None));
 }
 
-#[test]
-fn a_horde_wiped_out_doubles_its_kills() {
-    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
-    disarm(&mut world);
+/// A horde come on the right of the player, every one of its enemies falling at once.
+fn wipe_out_a_horde(world: &mut World) -> usize {
     world.set_view(Vec2::new(30.0, 12.0));
     world.bring_horde(Warning {
         arrives_at: 0,
@@ -856,14 +854,37 @@ fn a_horde_wiped_out_doubles_its_kills() {
         number: 0,
     });
     let count = world.enemies.len();
-    assert!(count > 0);
     for enemy in &mut world.enemies {
         enemy.hp = 0;
     }
     world.fell_enemies();
+    count
+}
+
+#[test]
+fn a_horde_wiped_out_brings_a_level() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    let count = wipe_out_a_horde(&mut world);
+    assert!(count > 0);
+    assert_eq!(world.horde_cleared.map(|(_, bonus)| bonus), Some(0));
+    // Once told, two seconds on.
+    assert_eq!(world.player.level, 1);
+    wait(&mut world, 30 * 2);
+    assert_eq!(world.player.level, 2);
+}
+
+#[test]
+fn in_arcade_a_horde_wiped_out_doubles_its_kills_too() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.mode = Mode::Arcade;
+    let count = wipe_out_a_horde(&mut world);
     let (_, bonus) = world.horde_cleared.expect("wiped out");
     assert_eq!(world.score, 2 * bonus);
     assert!(bonus >= 10 * u64::try_from(count).unwrap());
+    wait(&mut world, 30 * 2);
+    assert_eq!(world.player.level, 2);
 }
 
 #[test]

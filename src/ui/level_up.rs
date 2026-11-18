@@ -209,6 +209,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Pistol => SpriteId::IconPistol,
             Weapon::MachineGun => SpriteId::IconMachineGun,
             Weapon::Drones => SpriteId::IconDrones,
+            Weapon::Shotgun => SpriteId::IconShotgun,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -253,6 +254,7 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Pistol => fl!("weapon-pistol"),
         Weapon::MachineGun => fl!("weapon-machine-gun"),
         Weapon::Drones => fl!("weapon-drones"),
+        Weapon::Shotgun => fl!("weapon-shotgun"),
     }
 }
 
@@ -285,6 +287,13 @@ fn gain_of(choice: Choice, level: u8) -> String {
             2 | 4 => fl!("gain-drones-more"),
             3 => fl!("gain-drones-3"),
             _ => fl!("gain-drones-5"),
+        },
+        Choice::Weapon(Weapon::Shotgun) => match level {
+            1 => fl!("gain-shotgun-1"),
+            2 => fl!("gain-shotgun-2"),
+            3 => fl!("gain-shotgun-3"),
+            4 => fl!("gain-shotgun-4"),
+            _ => fl!("gain-shotgun-5"),
         },
         // A passive's gain, and the total it brings the player to at that level.
         Choice::Passive(passive) => {
