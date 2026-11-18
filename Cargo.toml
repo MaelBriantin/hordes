@@ -2,8 +2,11 @@
 name = "hordes"
 version = "0.1.0"
 edition = "2024"
+description = "Survive the night: a survivor-like in the terminal, in pixel art."
+repository = "https://github.com/MaelBriantin/hordes"
 
 [dependencies]
+axoupdater = { version = "0.10.3", features = ["blocking"] }
 dirs = "7.0.0"
 i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = "0.10.1"
@@ -14,3 +17,8 @@ thiserror = "2.0.21"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
