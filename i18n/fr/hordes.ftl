@@ -87,10 +87,12 @@ card-rare = RARE
 card-legendary = LÉGENDAIRE
 card-level = Niv { $level }/{ $max }
 
+weapon-crowbar = Pied-de-biche
 weapon-machete = Machette
 weapon-pistol = Pistolet
 weapon-machine-gun = Mitrailleuse
 weapon-shotgun = Fusil à pompe
+weapon-molotov = Molotov
 weapon-drones = Drones
 
 passive-vitality = Vitalité
@@ -107,6 +109,11 @@ passive-wisdom = Savoir
 legendary-illumination = Illumination
 heal = Soin
 
+gain-crowbar-1 = Un coup lourd qui repousse
+gain-crowbar-2 = Arc plus large
+gain-crowbar-3 = Dégâts 18 → 24
+gain-crowbar-4 = Un revers derrière toi
+gain-crowbar-5 = Étourdit ce qu'il frappe
 gain-machete-1 = Tranche les ennemis devant toi
 gain-machete-2 = Portée 2,5 → 3,5
 gain-machete-3 = Un deuxième coup, derrière
@@ -127,6 +134,11 @@ gain-shotgun-2 = 7 plombs par tir
 gain-shotgun-3 = Dégâts 6 → 8
 gain-shotgun-4 = Recharge en 1,5 s
 gain-shotgun-5 = Les plombs traversent un ennemi, gerbe plus large
+gain-molotov-1 = Une bouteille de feu, toutes les 3 s
+gain-molotov-2 = Flaques plus larges
+gain-molotov-3 = 2 bouteilles par lancer
+gain-molotov-4 = Les flaques brûlent 5 s
+gain-molotov-5 = Un lancer toutes les 2 s
 gain-drones-1 = Un drone tourne autour de toi
 gain-drones-more = +1 drone
 gain-drones-3 = Dégâts 8 → 12

@@ -15,9 +15,10 @@ use super::guns::{self, Bullet, Magazine};
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
 use super::horde::{self, Tally, Warning};
 use super::level::xp_to_next;
-use super::machete::{self, Swing};
+use super::machete::{self, Melee, Swing};
 use super::map::Feature;
 use super::mode::Mode;
+use super::molotov::{self, Bottle, Puddle};
 use super::score;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::stain::{self, MAX_STAINS, Stain};
@@ -78,6 +79,8 @@ const HORDE_LEVEL_DELAY: u32 = 2;
 const HORDE_RARE_PERCENT: u32 = 60;
 /// The chance, in percent, that a level-up offers a legendary, at first and after one.
 const LEGENDARY_PERCENT: u32 = 5;
+/// How near the player the debug console sets enemies on fire, in tiles.
+const DEBUG_FIRE_REACH: f32 = 8.0;
 /// The ticks an enemy flashes white before it burns at daybreak.
 const BURN_FLASH: u32 = 6;
 /// What an energy cell gives the torch's battery, in percent; how far beside a Shadow's gem it
@@ -86,6 +89,16 @@ const CELL_PERCENT: u32 = 15;
 const CELL_OFFSET: f32 = 0.6;
 /// The weapons that are guns, in the order they show.
 const GUNS: [Weapon; 3] = [Weapon::Pistol, Weapon::MachineGun, Weapon::Shotgun];
+/// A melee weapon's swing as it goes: the ticks before it can swing again; the slashes of the
+/// swing done, still to come, and the ticks before the next.
+#[derive(Debug, Clone, Copy, Default)]
+struct Swinging {
+    wait: u32,
+    done: u32,
+    left: u32,
+    gap: u32,
+}
+
 /// The most gems lying around at once: past it, the oldest go.
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
@@ -158,13 +171,9 @@ pub struct World {
     pub combo: u32,
     /// The tick of the last kill.
     last_kill: u32,
-    /// Ticks left before the machete can swing again.
-    machete_wait: u32,
-    /// The slashes of the current swing done, and still to come, and the ticks before the next.
-    slashes_done: u32,
-    slashes_left: u32,
-    slash_wait: u32,
-    /// The machete's last swing, while it shows.
+    /// Each melee weapon's swing as it goes, once the player has the weapon.
+    melee: HashMap<Weapon, Swinging>,
+    /// The last slash of a melee weapon, while it shows.
     pub swing: Option<Swing>,
     /// Each gun's magazine, once the player has the gun.
     pub magazines: HashMap<Weapon, Magazine>,
@@ -172,6 +181,11 @@ pub struct World {
     drone_angle: f32,
     /// Ticks left before each drone, broken by a blow, works again; 0 for one that works.
     drone_repairs: Vec<u32>,
+    /// The Molotov's bottles in the air, its puddles of fire on the ground, and the ticks before
+    /// its next throw.
+    pub bottles: Vec<Bottle>,
+    pub puddles: Vec<Puddle>,
+    molotov_wait: u32,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
     /// The horde on its way, once announced.
@@ -283,15 +297,15 @@ impl World {
             score: 0,
             combo: 0,
             last_kill: 0,
-            machete_wait: 0,
-            slashes_done: 0,
-            slashes_left: 0,
-            slash_wait: 0,
+            melee: HashMap::new(),
             swing: None,
             magazines: HashMap::new(),
             drone_angle: 0.0,
             drone_repairs: Vec::new(),
             lightning: None,
+            bottles: Vec::new(),
+            puddles: Vec::new(),
+            molotov_wait: 0,
             horde_warning: None,
             next_horde: horde::first(Mode::Standard),
             hordes_come: 0,
@@ -536,10 +550,14 @@ impl World {
         self.spawn();
         self.hordes();
         self.move_enemies();
+        for enemy in &mut self.enemies {
+            enemy.scorch();
+        }
         self.burn_enemies();
         self.relocate_stragglers();
         self.storm();
-        self.swing_machete();
+        self.swing_melee();
+        self.throw_molotovs();
         self.fire_guns();
         self.move_bullets();
         self.turn_drones();
@@ -603,76 +621,163 @@ impl World {
         offer
     }
 
-    /// The machete swings once it can and an enemy is in reach; the slashes of a swing follow
-    /// each other.
-    fn swing_machete(&mut self) {
+    /// The Molotov: bottles fly on and burst into puddles; puddles burn on, setting every enemy
+    /// in them on fire; once it can, and an enemy is near, bottles are thrown again. Not in the
+    /// dark: nothing to aim at.
+    fn throw_molotovs(&mut self) {
+        let mut landed = Vec::new();
+        self.bottles.retain_mut(|bottle| {
+            bottle.left = bottle.left.saturating_sub(1);
+            if bottle.left == 0 {
+                landed.push(Puddle {
+                    centre: bottle.to,
+                    radius: bottle.radius,
+                    left: bottle.lasts,
+                });
+            }
+            bottle.left > 0
+        });
+        self.puddles.extend(landed);
+        for puddle in &mut self.puddles {
+            puddle.left = puddle.left.saturating_sub(1);
+            for enemy in &mut self.enemies {
+                if (enemy.position - puddle.centre).length() <= puddle.radius {
+                    enemy.ignite();
+                }
+            }
+        }
+        self.puddles.retain(|puddle| puddle.left > 0);
+        let level = self.player.build.weapon_level(Weapon::Molotov);
+        if level == 0 {
+            return;
+        }
+        self.molotov_wait = self.molotov_wait.saturating_sub(1);
+        let dark = self.torch_on().is_some() && !self.torch_lit();
+        if self.molotov_wait > 0 || dark {
+            return;
+        }
+        let player = self.player.position;
+        let mut near: Vec<Vec2> = self
+            .enemies
+            .iter()
+            .map(|enemy| enemy.position)
+            .filter(|at| (*at - player).length() <= molotov::RANGE)
+            .collect();
+        if near.is_empty() {
+            return;
+        }
+        let throw = molotov::at(level);
+        for _ in 0..throw.bottles.min(near.len()) {
+            let to = near.swap_remove(self.rng.random_range(0..near.len()));
+            self.bottles.push(Bottle {
+                from: player,
+                to,
+                left: molotov::FLIGHT_TICKS,
+                radius: throw.radius,
+                lasts: throw.lasts,
+            });
+        }
+        self.molotov_wait = self.player.build.cooldown(throw.every);
+    }
+
+    /// The melee weapons swing once they can and an enemy is in reach; the slashes of a swing
+    /// follow each other, ahead then behind in turn.
+    fn swing_melee(&mut self) {
         if let Some(swing) = &mut self.swing {
             swing.left -= 1;
             if swing.left == 0 {
                 self.swing = None;
             }
         }
-        let level = self.player.build.weapon_level(Weapon::Machete);
-        if level == 0 {
-            return;
+        for weapon in [Weapon::Crowbar, Weapon::Machete] {
+            let level = self.player.build.weapon_level(weapon);
+            let Some(stats) = machete::melee(weapon, level).filter(|_| level > 0) else {
+                continue;
+            };
+            let mut swinging = self.melee.get(&weapon).copied().unwrap_or_default();
+            self.swing_once(weapon, stats, &mut swinging);
+            self.melee.insert(weapon, swinging);
         }
-        self.machete_wait = self.machete_wait.saturating_sub(1);
-        if self.slashes_left > 0 {
-            if self.slash_wait > 0 {
-                self.slash_wait -= 1;
+    }
+
+    /// One melee weapon on by a tick: its next slash, or a new swing.
+    fn swing_once(&mut self, weapon: Weapon, stats: Melee, swinging: &mut Swinging) {
+        swinging.wait = swinging.wait.saturating_sub(1);
+        if swinging.left > 0 {
+            if swinging.gap > 0 {
+                swinging.gap -= 1;
             } else {
-                self.slash(level);
-                self.slashes_left -= 1;
-                self.slash_wait = machete::SLASH_GAP - 1;
+                self.slash(weapon, stats, swinging);
+                swinging.left -= 1;
+                swinging.gap = machete::SLASH_GAP - 1;
             }
             return;
         }
-        if self.machete_wait > 0 {
+        if swinging.wait > 0 {
             return;
         }
         let player = self.player.position;
-        let reach = machete::reach(level);
         let near = self.enemies.iter().any(|enemy| {
             machete::in_reach(
                 enemy.position - player,
                 enemy.kind.stats().half_width,
-                reach,
+                stats.reach,
             )
         });
         if !near {
             return;
         }
-        self.slashes_done = 0;
-        self.slash(level);
-        self.slashes_left = machete::slashes(level) - 1;
-        self.slash_wait = machete::SLASH_GAP - 1;
-        self.machete_wait = self.player.build.cooldown(machete::cooldown());
+        swinging.done = 0;
+        self.slash(weapon, stats, swinging);
+        swinging.left = stats.slashes - 1;
+        swinging.gap = machete::SLASH_GAP - 1;
+        swinging.wait = self.player.build.cooldown(stats.cooldown);
     }
 
-    /// A slash of the machete: it hits every enemy in its arc, the way the player faces for the
-    /// swing's first and third slashes, behind them for its second.
-    fn slash(&mut self, level: u8) {
+    /// A slash: it hits every enemy in its arc, the way the player faces for a swing's first and
+    /// third slashes, behind them for its second; pushing them back, stunning them, as the
+    /// weapon does.
+    fn slash(&mut self, weapon: Weapon, stats: Melee, swinging: &mut Swinging) {
         let player = self.player.position;
-        let facing = if self.slashes_done % 2 == 1 {
+        let facing = if swinging.done % 2 == 1 {
             self.player.facing.opposite()
         } else {
             self.player.facing
         };
-        self.slashes_done += 1;
+        swinging.done += 1;
         let swing = Swing {
+            weapon,
             facing,
             left: machete::SWING_TICKS,
-            reach: machete::reach(level),
-            half_arc: machete::half_arc(level),
+            reach: stats.reach,
+            half_arc: stats.half_arc,
         };
         let ahead = swing.facing.way();
-        let damage = self.player.build.damage(machete::DAMAGE);
+        let damage = self.player.build.damage(stats.damage);
         for enemy in &mut self.enemies {
             let offset = enemy.position - player;
-            let half_width = enemy.kind.stats().half_width;
-            let hit = machete::in_arc(offset, half_width, swing.reach, ahead, swing.half_arc);
-            if hit {
-                enemy.hit(damage);
+            let enemy_stats = enemy.kind.stats();
+            let hit = machete::in_arc(
+                offset,
+                enemy_stats.half_width,
+                swing.reach,
+                ahead,
+                swing.half_arc,
+            );
+            if !hit {
+                continue;
+            }
+            enemy.hit(damage);
+            enemy.stunned = enemy.stunned.max(stats.stun);
+            if stats.knockback > 0.0 {
+                let away = offset.normalized() * stats.knockback;
+                enemy.position = slide(
+                    &self.map,
+                    enemy.position,
+                    away,
+                    enemy_stats.half_width,
+                    enemy_stats.flies,
+                );
             }
         }
         self.swing = Some(swing);
@@ -943,6 +1048,7 @@ impl World {
                 position: enemy.position,
                 tick: self.ticks,
                 size: stats.stain,
+                ash: enemy.burning > 0,
             });
             self.kills += 1;
         }
@@ -998,6 +1104,16 @@ impl World {
     pub fn debug_level_up(&mut self) {
         let missing = xp_to_next(self.player.level).saturating_sub(self.player.xp);
         self.pending_levels += self.player.gain(missing);
+    }
+
+    /// A debug tool: the enemies within a few tiles of the player catch fire.
+    pub fn debug_fire(&mut self) {
+        let player = self.player.position;
+        for enemy in &mut self.enemies {
+            if (enemy.position - player).length() <= DEBUG_FIRE_REACH {
+                enemy.ignite();
+            }
+        }
     }
 
     /// A debug tool: a burning campfire a few tiles to the player's right.
@@ -1242,7 +1358,10 @@ impl World {
                         .length()
                         .total_cmp(&(*b - enemy.position).length())
                 });
-            let (heading, pace) = if flee {
+            let (heading, pace) = if enemy.stunned > 0 {
+                enemy.stunned -= 1;
+                (Vec2::ZERO, 0.0)
+            } else if flee {
                 ((enemy.position - target).normalized(), 1.0)
             } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)
             {
@@ -1498,6 +1617,7 @@ impl World {
                 position: player.position,
                 tick: self.ticks,
                 size: 1,
+                ash: false,
             });
         }
     }

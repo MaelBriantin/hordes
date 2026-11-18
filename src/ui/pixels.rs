@@ -109,12 +109,28 @@ const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
 const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
 const GEAR_LEGENDARY: Color = Color::Rgb(255, 200, 60);
+/// A Molotov's puddle: how far it lights against its own radius; a bottle: how high its arc
+/// rises, in tiles, and its green.
+const PUDDLE_LIGHT: f32 = 1.5;
+const BOTTLE_ARC: f32 = 1.5;
+const BOTTLE: Color = Color::Rgb(70, 160, 80);
+/// An enemy on fire: how far its flames light, in tiles; where they flicker, from the middle of
+/// the top of its sprite, in pixels; their colours.
+const BURNING_LIGHT: f32 = 1.0;
+const FLAMES: [(i32, i32); 4] = [(0, -1), (-1, 0), (1, -1), (0, -2)];
+const FLAME_COLOURS: [Color; 3] = [
+    Color::Rgb(255, 210, 80),
+    Color::Rgb(245, 130, 40),
+    Color::Rgb(220, 60, 30),
+];
 /// A heal around the player: how long its crosses rise, in ticks; where they start from the
 /// player's middle, in pixels; their green, then darker.
 const HEAL_TICKS: u32 = 18;
 const HEAL_CROSSES: [(i32, i32); 3] = [(-5, 1), (5, -1), (0, -5)];
 const HEAL_BRIGHT: Color = Color::Rgb(110, 235, 120);
 const HEAL_DIM: Color = Color::Rgb(50, 140, 60);
+/// The crowbar's blow, iron grey, then as it fades.
+const CROWBAR_BLOW: (Color, Color) = (Color::Rgb(160, 165, 180), Color::Rgb(90, 92, 105));
 /// A shotgun's pellets, every other one: the gold and the red of its shells.
 const PELLETS: (Color, Color) = (Color::Rgb(240, 190, 60), Color::Rgb(220, 50, 50));
 /// A machine gun's tracer, from its head to the end of its trail.
@@ -260,6 +276,65 @@ impl<'a> Canvas<'a> {
             .collect()
     }
 
+    /// The Molotov's puddles of fire, flames flickering over them, and its bottles in the air,
+    /// arcing to where they burst.
+    fn paint_molotovs(&mut self, world: &World, frame: u32) {
+        for puddle in &world.puddles {
+            let (cx, cy) = pixel(puddle.centre);
+            #[allow(clippy::cast_possible_truncation, reason = "a puddle of a few tiles")]
+            let reach = (puddle.radius * 2.0).ceil() as i32;
+            for dy in -reach..=reach {
+                for dx in -reach..=reach {
+                    let distance = f32::from(i16::try_from(dx).unwrap_or(0))
+                        .hypot(f32::from(i16::try_from(dy).unwrap_or(0)));
+                    if distance > puddle.radius * 2.0 {
+                        continue;
+                    }
+                    // Each pixel its own flicker: some flames lit, others not, each frame.
+                    let luck = (cx + dx).cast_unsigned().wrapping_mul(73_856_093)
+                        ^ (cy + dy).cast_unsigned().wrapping_mul(19_349_663)
+                        ^ (frame / 3).wrapping_mul(83_492_791);
+                    if luck.is_multiple_of(3) {
+                        continue;
+                    }
+                    let shade = usize::try_from(luck % 3).unwrap_or(0);
+                    self.set((cx + dx, cy + dy), FLAME_COLOURS[shade]);
+                }
+            }
+        }
+        for bottle in &world.bottles {
+            let progress = bottle.progress();
+            let along = bottle.from + (bottle.to - bottle.from) * progress;
+            // An arc: up, then down to where it bursts.
+            let lift = 4.0 * progress * (1.0 - progress) * BOTTLE_ARC;
+            let (x, y) = pixel(along - Vec2::new(0.0, lift));
+            self.set((x, y), BOTTLE);
+            self.set(
+                (x, y - 1),
+                FLAME_COLOURS[usize::try_from(frame % 2).unwrap_or(0)],
+            );
+        }
+    }
+
+    /// Flames over each enemy on fire: a few pixels above its head, flickering.
+    fn paint_flames(&mut self, world: &World, frame: u32) {
+        for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
+            let look = sprites::enemy(enemy);
+            let height = self.sprites.get(look.sprite).height();
+            let (x, y) = pixel(enemy.position);
+            let top = y - height / 2;
+            // Its own flicker, never quite the same as a neighbour's.
+            let luck = (frame / 3).wrapping_add(enemy.id.wrapping_mul(7));
+            for (index, &(dx, dy)) in (0_u32..).zip(FLAMES.iter()) {
+                if index > 0 && (luck >> index) & 1 == 0 {
+                    continue;
+                }
+                let shade = usize::try_from((index + luck) % 3).unwrap_or(0);
+                self.set((x + dx, top + dy), FLAME_COLOURS[shade]);
+            }
+        }
+    }
+
     /// At night, the Shadows' eyes, shining red in the dark.
     fn paint_shadow_eyes(&mut self, world: &World) {
         if world.torch_on().is_none() {
@@ -401,7 +476,13 @@ impl<'a> Canvas<'a> {
     fn paint_swing(&mut self, swing: &Swing, centre: Vec2) {
         let shown = SWING_TICKS - swing.left;
         let sweeping = shown < SWING_TICKS / 2;
-        let color = if sweeping { SLASH } else { SLASH_FADING };
+        // The crowbar's blow, iron grey; the machete's slash, a blade's white.
+        let (bright, fading) = if swing.weapon == Weapon::Crowbar {
+            CROWBAR_BLOW
+        } else {
+            (SLASH, SLASH_FADING)
+        };
+        let color = if sweeping { bright } else { fading };
         let reach = if sweeping {
             f32::from(u8::try_from(shown + 1).unwrap_or(1))
                 / f32::from(u8::try_from(SWING_TICKS / 2).unwrap_or(1))
@@ -576,6 +657,21 @@ pub fn render_map(
         lights.push(night::Light::torch(centre, world.light_radius()));
     }
     lights.extend(canvas.paint_healing(world, frame));
+    // A puddle of fire lights around it, warm and swaying.
+    lights.extend(
+        world
+            .puddles
+            .iter()
+            .map(|puddle| night::Light::fire(pixel(puddle.centre), puddle.radius * PUDDLE_LIGHT)),
+    );
+    // An enemy on fire lights a little around it, warm.
+    lights.extend(
+        world
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.burning > 0)
+            .map(|enemy| night::Light::fire(pixel(enemy.position), BURNING_LIGHT)),
+    );
     let glows = canvas.glows(world);
     lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
@@ -586,6 +682,8 @@ pub fn render_map(
         canvas.outline(sprites::hero(player.facing), player.position, colour);
     }
     canvas.paint_shadow_eyes(world);
+    canvas.paint_flames(world, frame);
+    canvas.paint_molotovs(world, frame);
     // Each gem and cell on screen glows its colour around it, then shows over its glow.
     night::paint_glows(&mut canvas, &glows);
     for gem in &world.gems {
@@ -644,6 +742,7 @@ pub fn render_death_scene(
         position: player.position,
         tick: world.ticks(),
         size: DEATH_POOL,
+        ash: false,
     };
     let dawn = world.survived();
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);

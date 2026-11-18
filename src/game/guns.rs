@@ -95,7 +95,7 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             speed: 18.0,
             range: 6.0,
         }),
-        Weapon::Machete | Weapon::Drones => None,
+        Weapon::Crowbar | Weapon::Machete | Weapon::Drones | Weapon::Molotov => None,
     }
 }
 

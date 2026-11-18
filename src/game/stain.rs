@@ -13,6 +13,8 @@ pub struct Stain {
     pub tick: u32,
     /// How big it is: 1 for a scratch, 6 for an abomination.
     pub size: u8,
+    /// Ash rather than blood: what an enemy burnt to death leaves.
+    pub ash: bool,
 }
 
 /// How long a stain lasts, in ticks: 30 seconds.

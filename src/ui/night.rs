@@ -210,6 +210,8 @@ const GEM_GLOW_STRENGTH: f32 = 0.3;
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
 const GEM_GLOW_REACH: i32 = 4;
 const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
+/// What an enemy burnt to death leaves: ash, two greys.
+const ASH: [Color; 2] = [Color::Rgb(60, 58, 56), Color::Rgb(95, 92, 88)];
 /// A fire's light, against the torch's white: orange.
 const FIRE_TINT: (f32, f32, f32) = (1.3, 0.95, 0.55);
 /// How much of its brightness a thing keeps in the dark.
@@ -535,10 +537,12 @@ pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
 /// Blood stains on the canvas in their `look`, fading as they age, `now` the run's tick: a few
 /// pixels each, fewer as time goes, scattered the same way for as long as the stain lasts.
 pub fn paint_stains(canvas: &mut Canvas, stains: &[Stain], now: u32, look: BloodLook) {
-    let Some(colours) = look.colours() else {
-        return;
-    };
+    let blood = look.colours();
     for stain in stains {
+        // Ash shows whatever the blood: it isn't blood.
+        let Some(colours) = (if stain.ash { Some(ASH) } else { blood }) else {
+            continue;
+        };
         let lasts = stain_lasts().max(1);
         let age = now.saturating_sub(stain.tick).min(lasts);
         let count = u32::from(stain.size) * 4 * (lasts - age) / lasts;

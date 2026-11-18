@@ -143,7 +143,13 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 
 ## Weapons
 
-They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **machete**; the others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
+They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **crowbar**; the others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
+
+### Crowbar
+
+The weapon every run starts with: a heavy blow in an arc before the player, once an enemy is within **2.5 tiles**, every **1.5 s** (less with Haste): **18 damage** to every enemy in the arc (90°), each pushed back **a tile**. Its blow shows iron grey.
+
+**Levels**: 2: a wider arc (120°) · 3: 24 damage · 4: a backhand behind the player after the blow · 5: the enemies hit stand stunned half a second.
 
 ### Machete
 
@@ -181,12 +187,21 @@ Drones circling the player **2.5 tiles** away, a turn every **2 s**. A drone hit
 
 **Levels**: 2: +1 drone · 3: 12 damage · 4: +1 drone (3) · 5: 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
 
+### Molotov
+
+Every **3 s** (less with Haste), a bottle thrown at an enemy at random within **7 tiles**: it flies **0.4 s** in an arc, then bursts into a **puddle of fire**, **1.5 tiles** around, burning **3 s**. Every enemy in the puddle catches fire (see Fire), and burns on once out of it. The puddle flickers with flames and lights around it, warm. In the dark, the torch out, no bottle is thrown: nothing to aim at.
+
+**Levels**: 2: puddles 2 tiles around · 3: 2 bottles a throw, each at an enemy of its own · 4: puddles burn 5 s · 5: a throw every 2 s.
+
+### Fire
+
+What sets enemies on fire (the Molotov; the shotgun's Dragon's breath to come): an enemy on fire **burns 3 s**, losing **1 HP every half second** (6 HP in all); set on fire again, it burns anew, never longer. Flames flicker over its head, and it lights a tile around it, warm. Burnt to death, it leaves **ash**, grey, rather than blood (whatever the blood setting).
+
 ### To come
 
 | Weapon | What it does |
 |---|---|
 | Gas *(planned)* | A toxic cloud around the player. |
-| Molotov *(planned)* | A puddle of fire under a group of enemies, hurting all that stay in it for a few seconds. |
 | Airstrike *(planned)* | Strikes falling at random around the player, each marked on the ground just before it blows. |
 | Explosive rounds *(planned)* | Felled enemies blow up, hurting their neighbours: chain reactions. |
 

@@ -205,11 +205,13 @@ fn dimmed(color: Color) -> Color {
 pub fn icon(choice: Choice) -> SpriteId {
     match choice {
         Choice::Weapon(weapon) => match weapon {
+            Weapon::Crowbar => SpriteId::IconCrowbar,
             Weapon::Machete => SpriteId::IconMachete,
             Weapon::Pistol => SpriteId::IconPistol,
             Weapon::MachineGun => SpriteId::IconMachineGun,
             Weapon::Drones => SpriteId::IconDrones,
             Weapon::Shotgun => SpriteId::IconShotgun,
+            Weapon::Molotov => SpriteId::IconMolotov,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -252,17 +254,26 @@ fn name(choice: Choice) -> String {
 
 pub fn weapon_name(weapon: Weapon) -> String {
     match weapon {
+        Weapon::Crowbar => fl!("weapon-crowbar"),
         Weapon::Machete => fl!("weapon-machete"),
         Weapon::Pistol => fl!("weapon-pistol"),
         Weapon::MachineGun => fl!("weapon-machine-gun"),
         Weapon::Drones => fl!("weapon-drones"),
         Weapon::Shotgun => fl!("weapon-shotgun"),
+        Weapon::Molotov => fl!("weapon-molotov"),
     }
 }
 
 /// What a choice brings, taken at `level`.
 fn gain_of(choice: Choice, level: u8) -> String {
     match choice {
+        Choice::Weapon(Weapon::Crowbar) => match level {
+            1 => fl!("gain-crowbar-1"),
+            2 => fl!("gain-crowbar-2"),
+            3 => fl!("gain-crowbar-3"),
+            4 => fl!("gain-crowbar-4"),
+            _ => fl!("gain-crowbar-5"),
+        },
         Choice::Weapon(Weapon::Machete) => match level {
             1 => fl!("gain-machete-1"),
             2 => fl!("gain-machete-2"),
@@ -296,6 +307,13 @@ fn gain_of(choice: Choice, level: u8) -> String {
             3 => fl!("gain-shotgun-3"),
             4 => fl!("gain-shotgun-4"),
             _ => fl!("gain-shotgun-5"),
+        },
+        Choice::Weapon(Weapon::Molotov) => match level {
+            1 => fl!("gain-molotov-1"),
+            2 => fl!("gain-molotov-2"),
+            3 => fl!("gain-molotov-3"),
+            4 => fl!("gain-molotov-4"),
+            _ => fl!("gain-molotov-5"),
         },
         // A passive's gain, and the total it brings the player to at that level.
         Choice::Passive(passive) => {

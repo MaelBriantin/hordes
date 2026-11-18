@@ -1,9 +1,12 @@
-//! The machete, the weapon every run starts with: a swing in an arc before the player, hitting
-//! every enemy in it. It swings once an enemy is within its reach, whichever way; from level 3,
-//! a swing is a slash ahead then one behind, and at level 5 one ahead again.
+//! The melee weapons: a swing in an arc before the player, hitting every enemy in it, once an
+//! enemy is within its reach, whichever way. The machete, quick: from level 3, a swing is a slash
+//! ahead then one behind, and at level 5 one ahead again. The crowbar, the weapon every run
+//! starts with: slower and heavier, pushing the enemies it hits back, a backhand behind from
+//! level 4, stunning them at level 5.
 
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 
+use super::build::Weapon;
 use super::{Facing, TICKS_PER_SECOND, Vec2};
 
 /// What a slash takes from each enemy it hits, in HP.
@@ -13,9 +16,54 @@ pub const SWING_TICKS: u32 = 6;
 /// The ticks between two slashes of a swing: 0.2 seconds.
 pub const SLASH_GAP: u32 = 6;
 
+/// A melee weapon at a level: how it swings.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Melee {
+    /// The ticks between two swings, before Haste.
+    pub cooldown: u32,
+    /// What a slash takes from each enemy it hits, before Might.
+    pub damage: u32,
+    /// How far a slash reaches from the player's centre, in tiles; half its arc, in radians.
+    pub reach: f32,
+    pub half_arc: f32,
+    /// The slashes of a swing, ahead and behind in turn.
+    pub slashes: u32,
+    /// How far an enemy hit is pushed back, in tiles; how long it stands stunned, in ticks.
+    pub knockback: f32,
+    pub stun: u32,
+}
+
+/// A melee weapon at a level; none for a weapon that isn't one.
+pub fn melee(weapon: Weapon, level: u8) -> Option<Melee> {
+    let second = u32::from(TICKS_PER_SECOND);
+    match weapon {
+        Weapon::Machete => Some(Melee {
+            cooldown: cooldown(),
+            damage: DAMAGE,
+            reach: reach(level),
+            half_arc: half_arc(level),
+            slashes: slashes(level),
+            knockback: 0.0,
+            stun: 0,
+        }),
+        Weapon::Crowbar => Some(Melee {
+            cooldown: second * 3 / 2,
+            damage: if level >= 3 { 24 } else { 18 },
+            reach: 2.5,
+            half_arc: if level >= 2 { FRAC_PI_3 } else { FRAC_PI_4 },
+            slashes: if level >= 4 { 2 } else { 1 },
+            knockback: 1.0,
+            stun: if level >= 5 { second / 2 } else { 0 },
+        }),
+        _ => None,
+    }
+}
+
 /// A slash on screen.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Swing {
+    /// The weapon it is of.
+    pub weapon: Weapon,
     /// The way it swings: the way the player faced, or behind them.
     pub facing: Facing,
     /// Ticks left showing it.
@@ -130,5 +178,15 @@ mod tests {
     #[test]
     fn swings_hold_more_slashes_with_the_levels() {
         assert_eq!([1, 2, 3, 4, 5].map(slashes), [1, 1, 2, 2, 3]);
+    }
+
+    #[test]
+    fn the_crowbar_hits_heavy_and_slow() {
+        let crowbar = melee(Weapon::Crowbar, 1).unwrap();
+        let machete = melee(Weapon::Machete, 1).unwrap();
+        assert!(crowbar.damage > machete.damage && crowbar.cooldown > machete.cooldown);
+        assert!(crowbar.knockback > 0.0);
+        assert_eq!(melee(Weapon::Crowbar, 4).unwrap().slashes, 2);
+        assert!(melee(Weapon::Crowbar, 5).unwrap().stun > 0);
     }
 }

@@ -87,10 +87,12 @@ card-rare = RARE
 card-legendary = LEGENDARY
 card-level = Lv { $level }/{ $max }
 
+weapon-crowbar = Crowbar
 weapon-machete = Machete
 weapon-pistol = Pistol
 weapon-machine-gun = Machine gun
 weapon-shotgun = Shotgun
+weapon-molotov = Molotov
 weapon-drones = Drones
 
 passive-vitality = Vitality
@@ -107,6 +109,11 @@ passive-wisdom = Wisdom
 legendary-illumination = Illumination
 heal = Heal
 
+gain-crowbar-1 = A heavy blow that pushes back
+gain-crowbar-2 = A wider arc
+gain-crowbar-3 = Damage 18 → 24
+gain-crowbar-4 = A backhand behind you
+gain-crowbar-5 = Stuns what it hits
 gain-machete-1 = Slashes enemies in front
 gain-machete-2 = Reach 2.5 → 3.5
 gain-machete-3 = A second slash, behind
@@ -127,6 +134,11 @@ gain-shotgun-2 = 7 pellets a shot
 gain-shotgun-3 = Damage 6 → 8
 gain-shotgun-4 = Reload in 1.5 s
 gain-shotgun-5 = Pellets pierce one enemy, a wider fan
+gain-molotov-1 = A bottle of fire, every 3 s
+gain-molotov-2 = Wider puddles
+gain-molotov-3 = 2 bottles a throw
+gain-molotov-4 = Puddles burn 5 s
+gain-molotov-5 = A throw every 2 s
 gain-drones-1 = A drone circling you
 gain-drones-more = +1 drone
 gain-drones-3 = Damage 8 → 12

@@ -12,6 +12,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Kamikaze**: a swollen zombie that rushes at the player and blows up on touching them. The blast hurts the enemies around too, so it can be turned against the horde.
 - **Parasites**: an enemy (the abomination?) that bursts into a swarm of small parasites when it falls.
 - **Treasure carrier**: a chest on legs that runs about the map and **flees** the player instead of chasing them. Felled, it drops XP and/or a free upgrade. Rough tuning: rare (one at a time, every 2–3 minutes), a little slower than the player (5 tiles/s), gone if not caught within 20–30 s, an arrow on the edge of the screen while it is out of sight.
+- **Enemy fire**: an enemy that sets things on fire (an incendiary, a zombie in flames spreading it): fire that burns the player too, a danger to keep away from. The player's own Molotov never burns them.
 - **Colour swaps**: zombies in other colours, each with a way of its own, as cheap as the ghouls of the hordes: a red one, faster and frailer; a green one leaving a pool of acid where it falls; a grey one, armoured, with many HP. They would take the place of part of the abominations in the storm and the tempest, where there are too many of them.
 
 ## The map

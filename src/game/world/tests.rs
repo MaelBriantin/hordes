@@ -403,9 +403,9 @@ fn enough_xp_makes_a_level_and_the_rest_carries_over() {
 }
 
 #[test]
-fn a_run_starts_with_the_machete() {
+fn a_run_starts_with_the_crowbar() {
     let world = World::new(1);
-    assert_eq!(world.player.build.weapon_level(Weapon::Machete), 1);
+    assert_eq!(world.player.build.weapon_level(Weapon::Crowbar), 1);
     assert_eq!(world.ammo(), []);
 }
 
@@ -1221,4 +1221,56 @@ fn regeneration_gives_hp_back_of_itself() {
     // 2 HP a second at level 5.
     wait(&mut world, 30 * 3);
     assert_eq!(world.player.hp, 56);
+}
+
+#[test]
+fn an_enemy_burnt_to_death_leaves_ash() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    world.enemies[0].hp = 2;
+    world.enemies[0].ignite();
+    wait(&mut world, 30);
+    assert_eq!(world.enemies, []);
+    assert!(world.stains.iter().any(|stain| stain.ash));
+}
+
+#[test]
+fn a_molotov_bursts_into_a_puddle_that_sets_enemies_on_fire() {
+    let mut world = armed_with(Weapon::Molotov, 1);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(104.0, 50.0)));
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 1);
+    assert_eq!(world.bottles.len(), 1);
+    wait(&mut world, 12);
+    assert_eq!(world.puddles.len(), 1);
+    assert!(world.enemies[0].burning > 0);
+}
+
+#[test]
+fn in_the_dark_no_molotov_is_thrown() {
+    let mut world = in_the_dark();
+    world.player.build.take(Choice::Weapon(Weapon::Molotov));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(104.0, 50.0)));
+    wait(&mut world, 30);
+    assert_eq!(world.bottles, []);
+}
+
+#[test]
+fn the_crowbar_pushes_back_what_it_hits() {
+    let mut world = armed_with(Weapon::Crowbar, 1);
+    world.player.facing = Facing::Right;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 18);
+    assert!(world.enemies[0].position.x > 102.5);
 }

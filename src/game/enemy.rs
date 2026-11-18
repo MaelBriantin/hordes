@@ -1,5 +1,16 @@
 use super::{Facing, Vec2};
 
+/// How long an enemy burns once on fire, in seconds; the ticks between two of its losses, and
+/// what each takes from it, in HP: 2 HP every half second, 12 in all.
+const BURN_SECONDS: u32 = 3;
+const BURN_EVERY: u32 = 15;
+const BURN_DAMAGE: u32 = 1;
+
+/// The ticks an enemy burns once on fire.
+fn burn_ticks() -> u32 {
+    BURN_SECONDS * u32::from(super::TICKS_PER_SECOND)
+}
+
 /// How many ticks an enemy flashes white when hit.
 const FLASH_TICKS: u32 = 3;
 
@@ -88,6 +99,10 @@ pub struct Enemy {
     pub noticed: bool,
     /// Where it wanders when it hasn't, in radians.
     pub wander: f32,
+    /// Ticks left it burns, losing HP as it does; 0 when it doesn't.
+    pub burning: u32,
+    /// Ticks left it stands stunned, not moving; 0 when it isn't.
+    pub stunned: u32,
 }
 
 impl Enemy {
@@ -103,6 +118,24 @@ impl Enemy {
             phase,
             noticed: false,
             wander: phase,
+            burning: 0,
+            stunned: 0,
+        }
+    }
+
+    /// Catches fire, or burns anew: as long again as a fire burns, never longer.
+    pub fn ignite(&mut self) {
+        self.burning = burn_ticks();
+    }
+
+    /// Burns on by a tick, if it burns: a little HP lost every so often.
+    pub fn scorch(&mut self) {
+        if self.burning == 0 {
+            return;
+        }
+        self.burning -= 1;
+        if self.burning.is_multiple_of(BURN_EVERY) {
+            self.hp = self.hp.saturating_sub(BURN_DAMAGE);
         }
     }
 
@@ -115,5 +148,27 @@ impl Enemy {
     /// Where it wants to go this tick, towards `target`, straight. Length 1, or zero.
     pub fn heading(&self, target: Vec2) -> Vec2 {
         (target - self.position).normalized()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_enemy_on_fire_burns_six_hp_over_three_seconds_and_anew_if_set_on_fire_again() {
+        let mut enemy = Enemy::new(0, EnemyKind::Abomination, Vec2::ZERO, 0.0);
+        enemy.hp = 100;
+        enemy.ignite();
+        for _ in 0..burn_ticks() {
+            enemy.scorch();
+        }
+        assert_eq!((enemy.hp, enemy.burning), (94, 0));
+        enemy.ignite();
+        for _ in 0..30 {
+            enemy.scorch();
+        }
+        enemy.ignite();
+        assert_eq!(enemy.burning, burn_ticks());
     }
 }

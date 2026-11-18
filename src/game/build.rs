@@ -20,20 +20,24 @@ pub const VITALITY_HP: u32 = 20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Weapon {
+    Crowbar,
     Machete,
     Pistol,
     MachineGun,
     Drones,
     Shotgun,
+    Molotov,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 5] = [
+    pub const ALL: [Weapon; 7] = [
+        Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
         Weapon::MachineGun,
         Weapon::Drones,
         Weapon::Shotgun,
+        Weapon::Molotov,
     ];
 }
 
@@ -135,10 +139,10 @@ pub struct Build {
 }
 
 impl Build {
-    /// What a run starts with: the machete.
+    /// What a run starts with: the crowbar.
     pub fn new() -> Self {
         Self {
-            weapons: vec![(Weapon::Machete, 1)],
+            weapons: vec![(Weapon::Crowbar, 1)],
             passives: Vec::new(),
             legendaries: Vec::new(),
         }
@@ -360,12 +364,12 @@ mod tests {
     }
 
     #[test]
-    fn a_run_starts_with_the_machete_and_no_passive() {
+    fn a_run_starts_with_the_crowbar_and_no_passive() {
         let build = Build::new();
-        assert_eq!(build.weapon_level(Weapon::Machete), 1);
+        assert_eq!(build.weapon_level(Weapon::Crowbar), 1);
         assert_eq!(build.max_hp(), BASE_HP);
         assert_eq!(build.next_level(Choice::Passive(Passive::Might)), 1);
-        assert_eq!(build.next_level(Choice::Weapon(Weapon::Machete)), 2);
+        assert_eq!(build.next_level(Choice::Weapon(Weapon::Crowbar)), 2);
         assert_eq!(build.next_level(Choice::Weapon(Weapon::Pistol)), 1);
     }
 
@@ -384,15 +388,15 @@ mod tests {
     fn nothing_at_the_top_level_is_offered() {
         let mut build = Build::new();
         for _ in 0..10 {
-            build.take(Choice::Weapon(Weapon::Machete));
+            build.take(Choice::Weapon(Weapon::Crowbar));
         }
-        assert_eq!(build.weapon_level(Weapon::Machete), MAX_LEVEL);
+        assert_eq!(build.weapon_level(Weapon::Crowbar), MAX_LEVEL);
         let mut rng = rng();
         for _ in 0..50 {
             assert!(
                 !build
                     .offers(&mut rng, false, RARE_PERCENT, 5)
-                    .contains(&Choice::Weapon(Weapon::Machete))
+                    .contains(&Choice::Weapon(Weapon::Crowbar))
             );
         }
     }

@@ -12,6 +12,10 @@ H 120 72 40     hair
 F 240 196 150   skin
 T 40 55 120     tunic
 B 70 50 40      boots
+S 38 26 20      the survivor's hair, a very dark brown
+J 120 90 55     the survivor's leather jacket
+x 230 230 232   the survivor's tee
+z 45 52 80      the survivor's jeans
 L 60 140 60     leaves
 l 100 180 80    leaves in the light
 d 35 95 45      leaves in the shade
@@ -58,22 +62,22 @@ s 90 90 95      ashes
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
 hero_front
-.RR.
+.SS.
 .FF.
-FTTF
-.BB.
+JxxJ
+.zz.
 
 hero_back
-.RR.
-.HH.
-FTTF
-.BB.
+.SS.
+.SS.
+JJJJ
+.zz.
 
 hero_side
-RRR.
-.HF.
-.TF.
-.BB.
+.SS.
+.SF.
+.Jx.
+.zz.
 
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
@@ -128,7 +132,6 @@ AAAXAAAA
 
 bullet
 W
-
 
 drone
 j...j
@@ -204,6 +207,16 @@ p
 
 # Level-up cards, 8 × 8: the weapons, then the passives, then the heal.
 
+icon_crowbar
+......nj
+.....r.n
+....r...
+...r....
+..r.....
+.r......
+r.......
+rr......
+
 icon_machete
 .......j
 ......jj
@@ -243,6 +256,16 @@ uuu.....
 uu......
 u.......
 ........
+
+icon_molotov
+...r....
+..fYf...
+...ll...
+..dddd..
+.dlllld.
+.dlYlld.
+.dlllld.
+..dddd..
 
 icon_drones
 jj....jj
