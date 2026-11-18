@@ -1,6 +1,6 @@
 [package]
 name = "hordes"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 description = "Survive the night: a survivor-like in the terminal, in pixel art."
 repository = "https://github.com/MaelBriantin/hordes"

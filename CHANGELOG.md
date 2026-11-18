@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.6.0 · November 19, 2026
+Fire, and a crowbar.
+
 ### New
 - The crowbar, the weapon every run starts with now: a heavy blow, slower than the machete's, pushing back what it hits. The machete is a card.
 - A new weapon, the Molotov: bottles thrown at the enemies nearby, bursting into puddles of fire.
