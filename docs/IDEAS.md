@@ -17,7 +17,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## The map
 
 - **A bounded map**: still drawn from the seed, but large and bounded (say 20 × 20 chunks), with **places set from the start**: the merchant's camp (see Gold), healing, a wrecked mecha. Goals to explore for; the Compass could point to them.
-- **Mecha**: a rare wreck to find on the map. Climbed in, the player strikes their hardest, with weapons of its own (a minigun, rockets), and takes blows far better, for as long as its **fuel** lasts: a gauge, then they are thrown out.
+- **Mecha**: a rare wreck to find on the map. Climbed in, the player strikes their hardest, with weapons of its own (a minigun, rockets), and takes blows far better, for as long as its **fuel** lasts: a gauge, then they are thrown out. Found, the wreck doesn't run yet: **3 parts** lie elsewhere on the map; brought back to it, it repairs while the player stays by it, a gauge filling the while, the horde about.
 
 ## Weapons
 
