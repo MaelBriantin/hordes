@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.2.0 · November 18, 2026
+The hordes come at dusk.
+
 ### New
 - Runs start at dusk: the setting sun lights the whole map for a minute, then the night falls over the next one. The weather worsens from there, 2 minutes later than before.
 - Hordes: every 90 seconds, a wave of enemies comes all at once, announced a moment before; from the storm on, it closes in from every side. Its zombies are pale ghouls. Wiped out, it doubles its points.
