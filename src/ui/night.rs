@@ -204,7 +204,7 @@ const IMPACT_STEPS: u8 = 32;
 const LIGHT_FADE: f32 = 6.0;
 /// An XP gem's glow: how strong at the gem, how far it reaches, in pixels; and the
 /// screen's ground it shows on where nothing is drawn.
-const GEM_GLOW_STRENGTH: f32 = 0.3;
+const GEM_GLOW_STRENGTH: f32 = 0.2;
 /// The light of a gem on what is drawn around it: full within this many tiles, fading over
 /// that many more.
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);

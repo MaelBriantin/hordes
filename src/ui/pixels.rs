@@ -23,12 +23,12 @@ const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
 /// The glow of a gem, by what it is worth, as its colour; and of an energy cell.
 fn gem_glow(value: u32) -> (u8, u8, u8) {
     match value {
-        0 | 1 => (60, 130, 255),
-        2..=4 => (60, 210, 100),
-        _ => (240, 60, 70),
+        0 | 1 => (150, 180, 230),
+        2..=4 => (60, 130, 255),
+        _ => (245, 190, 60),
     }
 }
-const CELL_GLOW: (u8, u8, u8) = (255, 210, 70);
+const CELL_GLOW: (u8, u8, u8) = (80, 215, 110);
 /// How far off the canvas a gem still lights it, in pixels: its halo's reach.
 const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.

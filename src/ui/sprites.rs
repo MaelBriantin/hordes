@@ -35,8 +35,8 @@ pub enum SpriteId {
     Bullet,
     Drone,
     Gem,
-    GemGreen,
-    GemRed,
+    GemBlue,
+    GemGold,
     Cell,
     Tree,
     Rock,
@@ -86,8 +86,8 @@ impl SpriteId {
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
-        SpriteId::GemGreen,
-        SpriteId::GemRed,
+        SpriteId::GemBlue,
+        SpriteId::GemGold,
         SpriteId::Cell,
         SpriteId::Tree,
         SpriteId::Rock,
@@ -137,8 +137,8 @@ impl SpriteId {
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
-            SpriteId::GemGreen => "gem_green",
-            SpriteId::GemRed => "gem_red",
+            SpriteId::GemBlue => "gem_blue",
+            SpriteId::GemGold => "gem_gold",
             SpriteId::Cell => "cell",
             SpriteId::Tree => "tree",
             SpriteId::Rock => "rock",
@@ -274,12 +274,12 @@ pub fn hero(facing: Facing, skin: Skin) -> Look {
     }
 }
 
-/// A gem, by what it is worth: blue for a point, green for a few, red for many.
+/// A gem, by what it is worth, in the cards' colours: silver for a point, blue for a few, gold for many.
 pub fn gem(value: u32) -> SpriteId {
     match value {
         0 | 1 => SpriteId::Gem,
-        2..=4 => SpriteId::GemGreen,
-        _ => SpriteId::GemRed,
+        2..=4 => SpriteId::GemBlue,
+        _ => SpriteId::GemGold,
     }
 }
 

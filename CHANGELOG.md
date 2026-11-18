@@ -18,6 +18,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The hero of before, in a red headband, can be played again: Hero, in the options.
 
 ### Changed
+- The gems take the cards' colours: silver for a point, blue, then gold for the most; the XP bar turns a bluish silver, the energy cells and the battery's gauge green.
 - The hero is a survivor now, with very dark brown hair, a leather jacket and jeans.
 - Lighting up, the torch flickers for as long as luck has it, lighting nothing for the run until it holds; it goes out at once.
 - A campfire's light is warm and sways, told from the torch's at a glance; the fire heals as far as it shows, fading included; a heal shows, small green crosses rising around the player.

@@ -87,12 +87,13 @@ const BAR_CELLS: usize = 12;
 /// The HP bar's red, the herbs': and dimmed, as it blinks.
 const HP_COLOR: Color = Color::Rgb(220, 45, 65);
 const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
-const XP_COLOR: Color = Color::Rgb(70, 150, 255);
+const XP_COLOR: Color = Color::Rgb(115, 138, 178);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The text on the score's gold badge.
 const BADGE_TEXT: Color = Color::Rgb(30, 22, 8);
-/// The torch's battery, the torch on; and below what share of it the battery shows red.
-const TORCH_COLOR: Color = Color::Rgb(255, 215, 100);
+/// The torch's battery, the torch on, green as the energy cells; and below what share of it the
+/// battery shows red.
+const TORCH_COLOR: Color = Color::Rgb(80, 215, 110);
 /// The torch's battery, the torch out and the battery charging.
 const CHARGING_COLOR: Color = Color::Rgb(120, 140, 170);
 const BATTERY_LOW: f32 = 0.2;
@@ -355,7 +356,7 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
     spans.extend(hp_bar);
     spans.push(Span::raw("   "));
     // The torch, on or out, and its battery, from the start (out at dusk, the torch lighting up
-    // of itself as the night falls): yellow while it is on, grey-blue while it is out and
+    // of itself as the night falls): green while it is on, grey-blue while it is out and
     // charging, red when nearly empty.
     let on = world.torch_on().unwrap_or(false);
     let colour = if world.battery < BATTERY_LOW {

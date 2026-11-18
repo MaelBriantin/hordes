@@ -36,12 +36,14 @@ A 160 190 140   abomination skin
 X 70 40 60      stitches
 y 255 210 70    yellow
 W 255 250 225   white: a bullet
-b 70 150 255    gem
-i 175 220 255   gem's shine
-M 70 200 100    green gem
-O 170 240 180   green gem's shine
-U 230 55 70     red gem
-I 255 170 175   red gem's shine
+b 150 180 230   gem, a bluish silver
+i 225 238 255   gem's shine
+M 70 150 255    blue gem
+O 175 220 255   blue gem's shine
+U 240 185 50    gold gem
+I 255 235 160   gold gem's shine
+h 80 215 110    energy cell
+1 225 255 230   energy cell's shine
 r 220 45 65     heart, potion
 o 255 150 160   heart's shine
 u 150 100 60    leather, wood
@@ -162,19 +164,19 @@ gem
 ib
 bb
 
-gem_green
+gem_blue
 OM
 MM
 
-gem_red
+gem_gold
 IU
 UU
 
 # An energy cell, a Shadow leaves it, for the torch's battery: 2 × 2.
 
 cell
-Wy
-yy
+1h
+hh
 
 # Obstacles, 4 × 4: each covers 2 × 2 tiles.
 
