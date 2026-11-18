@@ -12,7 +12,7 @@ use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{Blank, BloodLook, DARK_GREY, GREY, Outline, RainDisplay, ViewState};
+use super::{Blank, BloodLook, DARK_GREY, GREY, Outline, RainDisplay, Skin, ViewState};
 use crate::game::{Entry, Leaderboard, Mode, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
@@ -69,6 +69,8 @@ pub enum OptionItem {
     Rain,
     /// The line around the player.
     Outline,
+    /// How the hero looks.
+    Skin,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
     Announcements,
     /// Whether runs open on the dusk or on the night.
@@ -84,10 +86,11 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 9] = [
+    const ALL: [OptionItem; 10] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Outline,
+        OptionItem::Skin,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
@@ -111,6 +114,13 @@ impl OptionItem {
             OptionItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
             OptionItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
             OptionItem::Outline => fl!("pause-outline", value = outline_name(view.outline)),
+            OptionItem::Skin => fl!(
+                "option-skin",
+                value = match view.skin {
+                    Skin::Survivor => fl!("skin-survivor"),
+                    Skin::Classic => fl!("skin-classic"),
+                }
+            ),
             OptionItem::Announcements => fl!(
                 "pause-announcements",
                 value = match view.weather_news {
@@ -359,15 +369,7 @@ pub fn render_death(
     leaderboard: &Leaderboard,
     name: Option<([u8; 3], usize)>,
 ) {
-    pixels::render_death_scene(
-        frame.buffer_mut(),
-        area,
-        world,
-        sprites,
-        view.frame,
-        view.blood,
-        view.rain,
-    );
+    pixels::render_death_scene(frame.buffer_mut(), area, world, sprites, view);
     let dawn = world.survived();
     let (title, colors) = if dawn {
         (fl!("dawn-title"), DAWN_COLORS)

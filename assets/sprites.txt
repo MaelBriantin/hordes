@@ -79,6 +79,24 @@ hero_side
 .Jx.
 .zz.
 
+classic_front
+.RR.
+.FF.
+FTTF
+.BB.
+
+classic_back
+.RR.
+.HH.
+FTTF
+.BB.
+
+classic_side
+RRR.
+.HF.
+.TF.
+.BB.
+
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
 zombie_side
@@ -132,6 +150,7 @@ AAAXAAAA
 
 bullet
 W
+
 
 drone
 j...j

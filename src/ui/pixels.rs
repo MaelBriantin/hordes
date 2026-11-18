@@ -632,7 +632,7 @@ pub fn render_map(
     // Blinking while nothing can hurt them.
     let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
     if !blinks_out {
-        figures.push((player.position, sprites::hero(player.facing)));
+        figures.push((player.position, sprites::hero(player.facing, view.skin)));
     }
     figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
     for (position, look) in figures {
@@ -679,7 +679,11 @@ pub fn render_map(
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
     if let Some(colour) = view.outline.colour() {
-        canvas.outline(sprites::hero(player.facing), player.position, colour);
+        canvas.outline(
+            sprites::hero(player.facing, view.skin),
+            player.position,
+            colour,
+        );
     }
     canvas.paint_shadow_eyes(world);
     canvas.paint_flames(world, frame);
@@ -722,18 +726,17 @@ pub fn render_map(
 
 /// Where the player fell, for the death screen: the map around them in the dark, lit only by
 /// their fallen torch, the horde still about, dimmed for the words over it; a pool of blood
-/// where they lay, as `blood` says; the weather they fell in, `frame` frames in, its rain shown as
-/// `rain` says. Held out until the dawn, they stand there instead, in the light of the rising
-/// sun, the rain over.
+/// where they lay, as `view.blood` says; the weather they fell in, `view.frame` frames in, its
+/// rain shown as `view.rain` says. Held out until the dawn, they stand there instead, as
+/// `view.skin` says, in the light of the rising sun, the rain over.
 pub fn render_death_scene(
     buffer: &mut Buffer,
     area: Rect,
     world: &World,
     sprites: &Sprites,
-    frame: u32,
-    blood: night::BloodLook,
-    rain: night::RainDisplay,
+    view: ViewState,
 ) {
+    let (frame, blood, rain) = (view.frame, view.blood, view.rain);
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
@@ -752,7 +755,7 @@ pub fn render_death_scene(
         .map(|enemy| (enemy.position, sprites::enemy(enemy)))
         .collect();
     if dawn {
-        figures.push((player.position, sprites::hero(player.facing)));
+        figures.push((player.position, sprites::hero(player.facing, view.skin)));
     } else {
         night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
     }

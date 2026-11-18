@@ -29,7 +29,7 @@ pub use debug::DebugAction;
 pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
 pub use pixels::Outline;
-pub use sprites::Sprites;
+pub use sprites::{Skin, Sprites};
 
 /// Where the player is, outside the run itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,6 +159,8 @@ pub struct ViewState {
     pub rain: RainDisplay,
     /// The line around the player.
     pub outline: Outline,
+    /// How the hero looks.
+    pub skin: Skin,
     /// The mode the next run is played in, and whether it skips the dusk.
     pub mode: Mode,
     pub skip_dusk: bool,

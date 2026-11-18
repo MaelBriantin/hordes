@@ -100,6 +100,7 @@ impl App {
                 blood: self.settings.blood,
                 rain: self.settings.rain,
                 outline: self.settings.outline,
+                skin: self.settings.skin,
                 mode: self.settings.mode,
                 skip_dusk: self.settings.skip_dusk,
                 gear: self.settings.gear,
@@ -331,6 +332,10 @@ impl App {
             OptionItem::Announcements => self.change_weather_news(WeatherNews::previous),
             OptionItem::Dusk => {
                 self.settings.skip_dusk = !self.settings.skip_dusk;
+                self.keep_settings();
+            }
+            OptionItem::Skin => {
+                self.settings.skin = self.settings.skin.next();
                 self.keep_settings();
             }
             OptionItem::Gear => self.switch_gear(),

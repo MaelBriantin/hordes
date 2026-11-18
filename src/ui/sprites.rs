@@ -18,6 +18,10 @@ pub enum SpriteId {
     HeroBack,
     /// Facing right.
     HeroSide,
+    ClassicFront,
+    ClassicBack,
+    /// Facing right.
+    ClassicSide,
     /// Facing right.
     ZombieSide,
     ZombieFront,
@@ -66,10 +70,13 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 44] = [
+    const ALL: [SpriteId; 47] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
+        SpriteId::ClassicFront,
+        SpriteId::ClassicBack,
+        SpriteId::ClassicSide,
         SpriteId::ZombieSide,
         SpriteId::ZombieFront,
         SpriteId::GhoulSide,
@@ -118,6 +125,9 @@ impl SpriteId {
             SpriteId::HeroFront => "hero_front",
             SpriteId::HeroBack => "hero_back",
             SpriteId::HeroSide => "hero_side",
+            SpriteId::ClassicFront => "classic_front",
+            SpriteId::ClassicBack => "classic_back",
+            SpriteId::ClassicSide => "classic_side",
             SpriteId::ZombieSide => "zombie_side",
             SpriteId::ZombieFront => "zombie_front",
             SpriteId::GhoulSide => "ghoul_side",
@@ -219,13 +229,48 @@ impl Look {
     }
 }
 
-/// The hero, turned the way they face.
-pub fn hero(facing: Facing) -> Look {
+/// How the hero looks: a setting, the survivor at first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Skin {
+    /// In a leather jacket and jeans.
+    Survivor,
+    /// The hero of the first versions, in a red headband.
+    Classic,
+}
+
+impl Skin {
+    /// The other one, round and round.
+    pub fn next(self) -> Self {
+        match self {
+            Skin::Survivor => Skin::Classic,
+            Skin::Classic => Skin::Survivor,
+        }
+    }
+
+    /// Its name in the settings file.
+    pub fn id(self) -> &'static str {
+        match self {
+            Skin::Survivor => "survivor",
+            Skin::Classic => "classic",
+        }
+    }
+}
+
+/// The hero, as `skin` says, turned the way they face.
+pub fn hero(facing: Facing, skin: Skin) -> Look {
+    let (front, back, side) = match skin {
+        Skin::Survivor => (SpriteId::HeroFront, SpriteId::HeroBack, SpriteId::HeroSide),
+        Skin::Classic => (
+            SpriteId::ClassicFront,
+            SpriteId::ClassicBack,
+            SpriteId::ClassicSide,
+        ),
+    };
     match facing {
-        Facing::Down => Look::plain(SpriteId::HeroFront),
-        Facing::Up => Look::plain(SpriteId::HeroBack),
-        Facing::Right => Look::plain(SpriteId::HeroSide),
-        Facing::Left => Look::sideways(SpriteId::HeroSide, Facing::Left),
+        Facing::Down => Look::plain(front),
+        Facing::Up => Look::plain(back),
+        Facing::Right => Look::plain(side),
+        Facing::Left => Look::sideways(side, Facing::Left),
     }
 }
 

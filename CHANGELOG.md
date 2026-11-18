@@ -15,6 +15,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Fire: an enemy set on fire burns a while, 6 HP in all, flames over its head, lighting around it, and leaves ash once burnt to death.
 - A new rare passive, Regeneration: HP back of themselves, every second.
 - A new weapon, the shotgun: a double shot, each a fan of pellets, close by.
+- The hero of before, in a red headband, can be played again: Hero, in the options.
 
 ### Changed
 - The hero is a survivor now, with very dark brown hair, a leather jacket and jeans.
