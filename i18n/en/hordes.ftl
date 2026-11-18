@@ -38,7 +38,11 @@ pause-quit = Quit
 ## Status line
 
 weather-dusk = Dusk
-weather-clear = Clear
+announce-dusk = Hold out until dawn
+announce-night = The night has fallen
+announce-worse = The weather worsens
+announce-last = Dawn in two minutes
+weather-clear = Clear night
 weather-drizzle = Drizzle
 weather-rain = Rain
 weather-storm = Storm
@@ -46,6 +50,9 @@ weather-tempest = Tempest
 
 ## Game over
 
+dawn-title = DAWN
+dawn-line = Congratulations, you survived. This time.
+dawn-bonus = +{ $points } for the dawn
 death-title = DEAD
 death-again = Press R for a new run
 over-survived = You survived { $time }
@@ -112,6 +119,7 @@ help-name = ←→ move · ↑↓ or a letter · Enter confirm · Esc skip
 
 ## Hordes
 
-horde-coming = ⚠  A HORDE IS COMING!  ⚠
-horde-everywhere = ⚠  THEY COME FROM EVERYWHERE!  ⚠
+horde-title = HORDE
+horde-coming = It is coming!
+horde-everywhere = They come from everywhere!
 horde-cleared = Horde wiped out! +{ $points }

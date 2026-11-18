@@ -2,6 +2,7 @@
 //! player in a frame, the keys below it; over the map, the title screen, the pause menu, the
 //! level-up's cards or the game over.
 
+mod announce;
 mod font;
 mod horde;
 mod icons;
@@ -181,7 +182,8 @@ pub fn render(
         Screen::Playing => {}
     }
     if !dead {
-        horde::render(frame, map, world, view.frame);
+        horde::render(frame, map, world);
+        announce::render(frame, map, world, sprites);
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
     }
 }
@@ -295,17 +297,23 @@ fn weather_name(weather: Weather) -> String {
     }
 }
 
-/// The weather's colour: orange at dusk, grey for a clear night, darkening through blues to red.
+/// The weather's colour, bold.
 fn weather_style(weather: Weather) -> Style {
-    let color = match weather {
+    Style::new()
+        .fg(weather_colour(weather))
+        .add_modifier(Modifier::BOLD)
+}
+
+/// The weather's colour: orange at dusk, grey for a clear night, darkening through blues to red.
+fn weather_colour(weather: Weather) -> Color {
+    match weather {
         Weather::Dusk => Color::Rgb(240, 150, 70),
         Weather::Clear => Color::Rgb(160, 160, 170),
         Weather::Drizzle => Color::Rgb(130, 170, 220),
         Weather::Rain => Color::Rgb(80, 120, 230),
         Weather::Storm => Color::Rgb(170, 90, 230),
         Weather::Tempest => Color::Rgb(230, 50, 50),
-    };
-    Style::new().fg(color).add_modifier(Modifier::BOLD)
+    }
 }
 
 /// How far the run is to the next weather, as a short bar; full in the tempest, the last.

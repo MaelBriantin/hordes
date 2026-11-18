@@ -1,4 +1,5 @@
-//! Hordes: now and then, a wave of enemies comes all at once, announced a moment before. A pack
+//! Hordes: once a stage of weather, in its middle, a wave of enemies comes all at once, announced
+//! a moment before. A pack
 //! out of one side at first; from the storm on, a ring closing in from every side. Wiped out to
 //! the last, a horde doubles the points its kills were worth.
 
@@ -9,13 +10,16 @@ use super::spawn::MARGIN;
 use super::weather::Weather;
 use super::{Facing, TICKS_PER_SECOND, Vec2};
 
-/// The seconds between two hordes, the first one included.
-const EVERY_SECONDS: u32 = 90;
+/// The seconds into the run the first horde comes at: in the middle of the first night, once it
+/// has fallen.
+const FIRST_SECONDS: u32 = 120;
+/// The seconds between two hordes: one in the middle of each stage of weather.
+const EVERY_SECONDS: u32 = 120;
 /// The seconds a horde is announced before it comes.
 const WARNING_SECONDS: u32 = 3;
 /// The enemies of the first horde, and how many more each one after brings.
 const FIRST_SIZE: u32 = 30;
-const GROWTH: u32 = 10;
+const GROWTH: u32 = 15;
 /// How wide and how deep a pack is, in tiles: it comes in a band this wide, this deep.
 const PACK_WIDTH: f32 = 16.0;
 const PACK_DEPTH: f32 = 5.0;
@@ -38,6 +42,11 @@ pub struct Tally {
     pub points: u64,
 }
 
+/// The tick the first horde comes at.
+pub fn first() -> u32 {
+    FIRST_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
 /// The ticks between two hordes.
 pub fn every() -> u32 {
     EVERY_SECONDS * u32::from(TICKS_PER_SECOND)
@@ -58,13 +67,13 @@ pub fn rings(weather: Weather) -> bool {
     weather >= Weather::Storm
 }
 
-/// The kind of one of a horde's enemies, in that weather: zombies; a bat in four from the rain
+/// The kind of one of a horde's enemies, in that weather: zombies; a bat in ten from the rain
 /// on; an abomination in ten in the tempest.
 pub fn kind(rng: &mut impl Rng, weather: Weather) -> EnemyKind {
     let roll = rng.random_range(0..100);
     if weather == Weather::Tempest && roll < 10 {
         EnemyKind::Abomination
-    } else if weather >= Weather::Rain && roll >= 75 {
+    } else if weather >= Weather::Rain && roll >= 90 {
         EnemyKind::Bat
     } else {
         EnemyKind::Zombie
@@ -117,7 +126,7 @@ mod tests {
 
     #[test]
     fn hordes_grow_one_after_the_other() {
-        assert_eq!([0, 1, 4].map(size), [30, 40, 70]);
+        assert_eq!([0, 1, 4].map(size), [30, 45, 90]);
     }
 
     #[test]

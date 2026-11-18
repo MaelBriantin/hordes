@@ -354,7 +354,12 @@ pub fn render_map(
         canvas.paint_at(Look::plain(SpriteId::Bullet), bullet.position);
     }
     let weather = world.weather();
-    if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
+    if let Some(rain) = night::run_rain(
+        weather,
+        weather_progress(world.seconds()),
+        rain,
+        daylight(world.ticks()),
+    ) {
         night::paint_rain(&mut canvas, frame, rain);
     }
     if let Some(strike) = strike {
@@ -370,7 +375,8 @@ pub fn render_map(
 /// Where the player fell, for the death screen: the map around them in the dark, lit only by
 /// their fallen torch, the horde still about, dimmed for the words over it; a pool of blood
 /// where they lay, as `blood` says; the weather they fell in, `frame` frames in, its rain shown as
-/// `rain` says.
+/// `rain` says. Held out until the dawn, they stand there instead, in the light of the rising
+/// sun, the rain over.
 pub fn render_death_scene(
     buffer: &mut Buffer,
     area: Rect,
@@ -389,16 +395,26 @@ pub fn render_death_scene(
         tick: world.ticks(),
         size: DEATH_POOL,
     };
+    let dawn = world.survived();
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
-    night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
-    let mut enemies: Vec<_> = world.enemies.iter().collect();
-    enemies.sort_by(|a, b| a.position.y.total_cmp(&b.position.y));
-    for enemy in enemies {
-        canvas.paint_at(sprites::enemy(enemy), enemy.position);
+    let mut figures: Vec<(Vec2, Look)> = world
+        .enemies
+        .iter()
+        .map(|enemy| (enemy.position, sprites::enemy(enemy)))
+        .collect();
+    if dawn {
+        figures.push((player.position, sprites::hero(player.facing)));
+    } else {
+        night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
+    }
+    figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
+    for (position, look) in figures {
+        canvas.paint_at(look, position);
     }
     let weather = world.weather();
     let strike = weather
         .lightning_every()
+        .filter(|_| !dawn)
         .and_then(|every| night::strike_every(frame, every));
     let mut lights = vec![night::Light::torch(centre, DEATH_LIGHT)];
     lights.extend(canvas.paint_healing(world, frame));
@@ -406,10 +422,16 @@ pub fn render_death_scene(
         &mut canvas,
         &lights,
         night::flash(strike),
-        daylight(world.ticks()),
+        if dawn { 1.0 } else { daylight(world.ticks()) },
     );
     night::dim(&mut canvas, DEATH_DIM);
-    if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
+    if let Some(rain) = night::run_rain(
+        weather,
+        weather_progress(world.seconds()),
+        rain,
+        daylight(world.ticks()),
+    ) && !dawn
+    {
         night::paint_rain(&mut canvas, frame, rain);
     }
     if let Some(strike) = strike {

@@ -1,10 +1,12 @@
-//! Where and what enemies appear: just beyond what the player sees, more and more of them.
+//! Where and what enemies appear: just beyond what the player sees, more and more of them, and
+//! tougher kinds, as the weather worsens.
 
 use std::f32::consts::TAU;
 
 use rand::{Rng, RngExt};
 
 use super::enemy::EnemyKind;
+use super::weather::Weather;
 use super::{Facing, Vec2};
 
 /// The most enemies at once.
@@ -13,22 +15,44 @@ pub const MAX_ENEMIES: usize = 300;
 /// sprite.
 pub const MARGIN: f32 = 3.0;
 
-/// How many enemies appear per second: 1, and 1 more each minute.
-pub fn rate(seconds: u32) -> f32 {
-    f32::from(u16::try_from(1 + seconds / 60).unwrap_or(u16::MAX))
+/// How many enemies appear per second in a weather, at its start.
+fn rate_of(weather: Weather) -> f32 {
+    match weather {
+        Weather::Dusk => 1.0,
+        Weather::Clear => 2.0,
+        Weather::Drizzle => 4.0,
+        Weather::Rain => 6.0,
+        Weather::Storm => 8.0,
+        Weather::Tempest => 10.0,
+    }
 }
 
-/// A kind of enemy, at random among those arrived by then, by their weights.
-pub fn pick_kind(rng: &mut impl Rng, seconds: u32) -> EnemyKind {
-    let arrived = || {
-        EnemyKind::ALL
-            .into_iter()
-            .filter(move |kind| kind.stats().arrives_at <= seconds)
-    };
-    let total: u32 = arrived().map(|kind| kind.stats().weight).sum();
-    let mut roll = rng.random_range(0..total.max(1));
-    for kind in arrived() {
-        let weight = kind.stats().weight;
+/// How many enemies appear per second in a weather, `progress` through it: from its own rate to
+/// the next weather's, little by little.
+pub fn rate(weather: Weather, progress: f32) -> f32 {
+    let now = rate_of(weather);
+    let next = weather.next().map_or(now, rate_of);
+    now + (next - now) * progress
+}
+
+/// How often each kind of enemy appears in a weather, against the others: zombie, bat,
+/// abomination.
+fn weights(weather: Weather) -> [u32; 3] {
+    match weather {
+        Weather::Dusk => [10, 0, 0],
+        Weather::Clear => [9, 1, 0],
+        Weather::Drizzle => [8, 1, 1],
+        Weather::Rain => [7, 2, 1],
+        Weather::Storm => [6, 2, 2],
+        Weather::Tempest => [5, 2, 3],
+    }
+}
+
+/// A kind of enemy, at random by the weather's weights.
+pub fn pick_kind(rng: &mut impl Rng, weather: Weather) -> EnemyKind {
+    let weights = weights(weather);
+    let mut roll = rng.random_range(0..weights.iter().sum::<u32>().max(1));
+    for (kind, weight) in EnemyKind::ALL.into_iter().zip(weights) {
         if roll < weight {
             return kind;
         }
@@ -68,19 +92,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_rate_grows_each_minute() {
-        assert!((rate(0) - 1.0).abs() < f32::EPSILON);
-        assert!((rate(59) - 1.0).abs() < f32::EPSILON);
-        assert!((rate(60) - 2.0).abs() < f32::EPSILON);
-        assert!((rate(9 * 60 + 30) - 10.0).abs() < f32::EPSILON);
+    fn the_rate_grows_through_the_weather() {
+        assert!((rate(Weather::Dusk, 0.0) - 1.0).abs() < f32::EPSILON);
+        assert!((rate(Weather::Clear, 0.5) - 3.0).abs() < f32::EPSILON);
+        assert!((rate(Weather::Tempest, 1.0) - 10.0).abs() < f32::EPSILON);
     }
 
     #[test]
-    fn only_arrived_kinds_appear() {
+    fn the_dusk_brings_zombies_only_and_the_tempest_every_kind() {
         let mut rng = StdRng::seed_from_u64(3);
-        let early: Vec<_> = (0..200).map(|_| pick_kind(&mut rng, 59)).collect();
+        let early: Vec<_> = (0..200)
+            .map(|_| pick_kind(&mut rng, Weather::Dusk))
+            .collect();
         assert!(early.iter().all(|kind| *kind == EnemyKind::Zombie));
-        let late: Vec<_> = (0..500).map(|_| pick_kind(&mut rng, 180)).collect();
+        let late: Vec<_> = (0..500)
+            .map(|_| pick_kind(&mut rng, Weather::Tempest))
+            .collect();
         for kind in EnemyKind::ALL {
             assert!(late.contains(&kind), "no {kind:?}");
         }

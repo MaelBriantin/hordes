@@ -1,4 +1,5 @@
 use super::super::Obstacle;
+use super::super::announce::News;
 use super::super::build::{BASE_HP, Build, Choice, Passive, Weapon};
 use super::super::gem::Gem;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -22,6 +23,13 @@ fn moving(x: f32, y: f32) -> Input {
     Input {
         direction: Vec2::new(x, y),
     }
+}
+
+/// A run as the game starts it, past the dusk's announcement.
+fn running(seed: u64) -> World {
+    let mut world = World::new(seed);
+    world.announcement = None;
+    world
 }
 
 fn on(map: Map, start: Vec2) -> World {
@@ -66,7 +74,7 @@ fn wait(world: &mut World, ticks: u32) {
 
 #[test]
 fn standing_still_stays_put() {
-    let mut world = World::new(1);
+    let mut world = running(1);
     let start = world.player.position;
     world.update(Input::default());
     assert_eq!(world.player.position, start);
@@ -74,7 +82,7 @@ fn standing_still_stays_put() {
 
 #[test]
 fn a_second_of_moving_covers_the_players_speed() {
-    let mut world = World::new(1);
+    let mut world = running(1);
     let start = world.player.position;
     for _ in 0..30 {
         world.update(moving(1.0, 0.0));
@@ -85,7 +93,7 @@ fn a_second_of_moving_covers_the_players_speed() {
 
 #[test]
 fn a_diagonal_is_no_faster_than_a_straight_line() {
-    let mut world = World::new(1);
+    let mut world = running(1);
     let start = world.player.position;
     world.update(moving(1.0, -1.0));
     let moved = world.player.position - start;
@@ -95,7 +103,7 @@ fn a_diagonal_is_no_faster_than_a_straight_line() {
 
 #[test]
 fn the_player_faces_where_they_go() {
-    let mut world = World::new(1);
+    let mut world = running(1);
     world.update(moving(-1.0, 0.0));
     world.update(Input::default());
     assert_eq!(world.player.facing, Facing::Left);
@@ -159,7 +167,7 @@ fn an_enemy_appears_after_a_second() {
 
 #[test]
 fn enemies_appear_beyond_the_view_and_clear_of_obstacles() {
-    let mut world = World::new(9);
+    let mut world = running(9);
     world.set_view(Vec2::new(20.0, 8.0));
     for _ in 0..30 * 60 {
         world.update(Input::default());
@@ -188,8 +196,9 @@ fn enemies_appear_beyond_the_view_and_clear_of_obstacles() {
 fn there_are_never_more_than_the_most_enemies() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
-    // No horde: it has a most of its own.
+    // No horde: it has a most of its own; no lightning, which fells some.
     world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
     world.ticks = 30 * 60 * 9;
     for _ in 0..30 * 60 {
         world.update(Input::default());
@@ -799,13 +808,18 @@ fn a_horde_is_announced_then_comes_out_of_its_side() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
     world.set_view(Vec2::new(30.0, 12.0));
-    world.ticks = 30 * 87 - 1;
+    world.ticks = 30 * 117 - 1;
     wait(&mut world, 1);
     let warning = world.horde_warning.expect("announced 3 seconds before");
-    assert_eq!(warning.arrives_at, 30 * 90);
+    assert_eq!(warning.arrives_at, 30 * 120);
     assert!(warning.side.is_some());
+    assert_eq!(
+        world.announcement.map(|told| told.news),
+        Some(News::Horde { everywhere: false })
+    );
     world.enemies.clear();
-    wait(&mut world, 30 * 3);
+    // The announcement, 2 seconds, then the 3 of the warning.
+    wait(&mut world, 30 * 2 + 30 * 3);
     assert_eq!(world.horde_warning, None);
     let horde: Vec<_> = world
         .enemies
@@ -862,4 +876,51 @@ fn enemies_far_apart_never_push_each_other() {
     let pushes = world.separations();
     assert!(pushes[0].x < 0.0 && pushes[1].x > 0.0);
     assert_eq!(pushes[2], Vec2::ZERO);
+}
+
+#[test]
+fn a_run_opens_on_the_dusk_and_stands_still_while_it_is_told() {
+    let mut world = World::new(1);
+    assert_eq!(
+        world.announcement.map(|told| told.news),
+        Some(News::Weather(Weather::Dusk))
+    );
+    wait(&mut world, 30 * 2);
+    assert_eq!((world.ticks(), world.announcement), (0, None));
+    wait(&mut world, 1);
+    assert_eq!(world.ticks(), 1);
+}
+
+#[test]
+fn a_new_weather_is_announced() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 60 - 1;
+    wait(&mut world, 1);
+    assert_eq!(
+        world.announcement.map(|told| told.news),
+        Some(News::Weather(Weather::Clear))
+    );
+}
+
+#[test]
+fn the_run_is_won_at_dawn_with_a_bonus() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.score = 1_000;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    world.ticks = 30 * 660 - 1;
+    wait(&mut world, 1);
+    assert!(world.daybreak() && !world.is_over());
+    // The daybreak: the enemies flee, then burn; then the run is won.
+    wait(&mut world, 30 * 4);
+    assert_eq!(world.enemies, []);
+    assert!(world.survived() && world.is_over());
+    assert_eq!((world.score, world.dawn_bonus), (1_500, Some(500)));
+    let won_at = world.ticks();
+    wait(&mut world, 1);
+    assert_eq!(world.ticks(), won_at);
 }

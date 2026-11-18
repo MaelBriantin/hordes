@@ -38,6 +38,10 @@ pause-quit = Quitter
 ## Ligne d'état
 
 weather-dusk = Crépuscule
+announce-dusk = Tiens jusqu'à l'aube
+announce-night = La nuit est tombée
+announce-worse = Le temps se gâte
+announce-last = L'aube dans deux minutes
 weather-clear = Nuit claire
 weather-drizzle = Bruine
 weather-rain = Pluie
@@ -46,6 +50,9 @@ weather-tempest = Tempête
 
 ## Fin de partie
 
+dawn-title = AUBE
+dawn-line = Bravo, tu as survécu. Cette fois.
+dawn-bonus = +{ $points } pour l'aube
 death-title = MORT
 death-again = Appuie sur R pour rejouer
 over-survived = Tu as survécu { $time }
@@ -112,6 +119,7 @@ help-name = ←→ bouger · ↑↓ ou une lettre · Entrée valider · Échap p
 
 ## Hordes
 
-horde-coming = ⚠  UNE HORDE ARRIVE !  ⚠
-horde-everywhere = ⚠  ILS ARRIVENT DE PARTOUT !  ⚠
+horde-title = HORDE
+horde-coming = Elle arrive !
+horde-everywhere = Ils arrivent de partout !
 horde-cleared = Horde abattue ! +{ $points }

@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
 
+use super::announce::{Announcement, News};
 use super::body::{fits, slide, touch};
 use super::build::{BASE_HP, Build, Choice, HEAL, Passive, VITALITY_HP, Weapon};
 use super::drones;
@@ -40,6 +41,8 @@ const MAX_ENEMIES_WITH_HORDE: usize = 600;
 /// The size of a cell of the grid enemies are sorted in to push each other apart, in tiles:
 /// more than the widest two bodies, so that only neighbouring cells can overlap.
 const SEPARATION_CELL: f32 = 2.0;
+/// The ticks an enemy flashes white before it burns at daybreak.
+const BURN_FLASH: u32 = 6;
 /// The most gems lying around at once: past it, the oldest go.
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
@@ -134,6 +137,10 @@ pub struct World {
     tallies: HashMap<u32, Tally>,
     /// The last horde wiped out: when, and the bonus it was worth.
     pub horde_cleared: Option<(u32, u64)>,
+    /// The news the world stands still for, while it shows.
+    pub announcement: Option<Announcement>,
+    /// What reaching the dawn added to the score, once the run has: the run is won, and over.
+    pub dawn_bonus: Option<u64>,
     /// The herbs picked, by tile.
     picked: HashSet<(i32, i32)>,
     /// The HP each campfire has given, by tile.
@@ -159,7 +166,10 @@ impl World {
     pub fn new(seed: u64) -> Self {
         let start = Vec2::new(0.5, 0.5);
         let map = Map::new(seed, start.tile());
-        Self::on(map, start, StdRng::seed_from_u64(seed))
+        let mut world = Self::on(map, start, StdRng::seed_from_u64(seed));
+        // A run opens on the dusk, told.
+        world.announcement = Some(Announcement::new(News::Weather(Weather::Dusk)));
+        world
     }
 
     /// A run on a given map, the player at `start`.
@@ -194,10 +204,12 @@ impl World {
             drone_repairs: Vec::new(),
             lightning: None,
             horde_warning: None,
-            next_horde: horde::every(),
+            next_horde: horde::first(),
             hordes_come: 0,
             tallies: HashMap::new(),
             horde_cleared: None,
+            announcement: None,
+            dawn_bonus: None,
             picked: HashSet::new(),
             burnt: HashMap::new(),
             by_the_fire: 0,
@@ -239,19 +251,49 @@ impl World {
 
     /// Whether the player has fallen: the world no longer moves on.
     pub fn is_over(&self) -> bool {
-        self.player.hp == 0
+        self.player.hp == 0 || self.survived()
     }
 
-    /// Moves the world on by one tick; not while the run is over or a choice is on offer.
+    /// Whether the player has held out until the dawn.
+    pub fn survived(&self) -> bool {
+        self.dawn_bonus.is_some()
+    }
+
+    /// Whether the sun has risen: for a few seconds, the enemies flee it and burn, nothing
+    /// comes, nothing hurts the player; then the run is won.
+    pub fn daybreak(&self) -> bool {
+        self.ticks >= weather::dawn()
+    }
+
+    /// Moves the world on by one tick; not while the run is over or a choice is on offer, and not
+    /// while news is told: the announcement only wears off.
     pub fn update(&mut self, input: Input) {
         if self.is_over() || self.offer.is_some() {
             return;
         }
+        if let Some(announcement) = &mut self.announcement {
+            announcement.left = announcement.left.saturating_sub(1);
+            if announcement.left == 0 {
+                self.announcement = None;
+            }
+            return;
+        }
+        let weather = self.weather();
         self.ticks += 1;
+        if self.ticks >= weather::dawn() + weather::daybreak() {
+            let bonus = self.score * score::DAWN_BONUS_PERCENT / 100;
+            self.score += bonus;
+            self.dawn_bonus = Some(bonus);
+            return;
+        }
+        if self.weather() != weather {
+            self.announcement = Some(Announcement::new(News::Weather(self.weather())));
+        }
         self.move_player(input);
         self.spawn();
         self.hordes();
         self.move_enemies();
+        self.burn_enemies();
         self.relocate_stragglers();
         self.storm();
         self.swing_machete();
@@ -370,7 +412,8 @@ impl World {
     /// sees; from the storm on, it hurts the enemies it falls among.
     fn storm(&mut self) {
         let weather = self.weather();
-        let Some(every) = weather.lightning_every() else {
+        let rising = self.ticks >= weather::sunrise();
+        let Some(every) = weather.lightning_every().filter(|_| !rising) else {
             self.next_strike_in = None;
             return;
         };
@@ -640,22 +683,26 @@ impl World {
 
     /// New enemies, as many as the rate owes, up to the most at once.
     fn spawn(&mut self) {
+        if self.daybreak() {
+            self.spawn_debt = 0.0;
+            return;
+        }
         if self.enemies.len() >= MAX_ENEMIES {
             self.spawn_debt = 0.0;
             return;
         }
-        let seconds = self.seconds();
-        self.spawn_debt += spawn::rate(seconds) * tick_seconds();
+        let (weather, seconds) = (self.weather(), self.seconds());
+        self.spawn_debt += spawn::rate(weather, weather::progress(seconds)) * tick_seconds();
         while self.spawn_debt >= 1.0 {
             self.spawn_debt -= 1.0;
             if self.enemies.len() >= MAX_ENEMIES {
                 break;
             }
-            let kind = spawn::pick_kind(&mut self.rng, seconds);
+            let kind = spawn::pick_kind(&mut self.rng, weather);
             if let Some(position) = self.free_edge_point(kind, None) {
                 let phase = spawn::phase(&mut self.rng);
                 let mut enemy = Enemy::new(self.next_enemy_id, kind, position, phase);
-                enemy.hp = enemy.hp * self.weather().hp_percent() / 100;
+                enemy.hp = enemy.hp * weather.hp_percent() / 100;
                 self.enemies.push(enemy);
                 self.next_enemy_id += 1;
             }
@@ -665,6 +712,10 @@ impl World {
     /// Announces the next horde a moment before it comes, then brings it: a pack out of one side,
     /// or a ring out of every side from the storm on.
     fn hordes(&mut self) {
+        if self.daybreak() {
+            self.horde_warning = None;
+            return;
+        }
         if self.horde_warning.is_none() && self.ticks + horde::warning() >= self.next_horde {
             let side = if horde::rings(self.weather()) {
                 None
@@ -679,6 +730,9 @@ impl World {
                 side,
                 number: self.hordes_come,
             });
+            self.announcement = Some(Announcement::new(News::Horde {
+                everywhere: side.is_none(),
+            }));
         }
         if let Some(warning) = self.horde_warning
             && self.ticks >= warning.arrives_at
@@ -738,10 +792,14 @@ impl World {
         let pushes = self.separations();
         let target = self.player.position;
         let weather = self.weather();
+        // At daybreak, they flee the player, the risen sun at their back.
+        let flee = self.daybreak();
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
             let stats = enemy.kind.stats();
-            let heading = if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
+            let heading = if flee {
+                (enemy.position - target).normalized()
+            } else if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
                 Vec2::ZERO
             } else {
                 enemy.heading(target)
@@ -757,6 +815,23 @@ impl World {
                 stats.flies,
             );
         }
+    }
+
+    /// At daybreak, the enemies burn in the sun one by one, each at a moment of its own over the
+    /// daybreak, flashing white just before: they leave nothing, and are worth nothing.
+    fn burn_enemies(&mut self) {
+        if !self.daybreak() {
+            return;
+        }
+        let since = self.ticks - weather::dawn();
+        let last = weather::daybreak().saturating_sub(BURN_FLASH).max(1);
+        self.enemies.retain_mut(|enemy| {
+            let burns_at = enemy.id.wrapping_mul(2_654_435_761) % last;
+            if since + BURN_FLASH >= burns_at {
+                enemy.flash = enemy.flash.max(1);
+            }
+            since < burns_at + BURN_FLASH
+        });
     }
 
     /// How far each enemy is pushed by those it overlaps, in the order of `enemies`. Enemies are
@@ -890,6 +965,9 @@ impl World {
     /// The player loses the HP of the hardest-hitting enemy touching them, then nothing hurts
     /// them for half a second.
     fn hurt_player(&mut self) {
+        if self.daybreak() {
+            return;
+        }
         let player = &mut self.player;
         if player.invincible > 0 {
             player.invincible -= 1;

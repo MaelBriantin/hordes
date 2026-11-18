@@ -18,7 +18,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## The run
 
 - The world moves on **30 times per second**.
-- **Victory**: survive **10 minutes**. *(planned)*
+- **Announcements**: the run opens on the dusk, told in big letters over the map, with the goal under it (hold out until dawn); each new weather (see Weather) and each horde (see Hordes) is told the same way, a line under it: the night has fallen, the weather worsens, dawn in two minutes. The world stands still for the **2 s** it shows: the clock, the weather and the enemies wait.
+- **Victory**: the **dawn**, at **11:00**, after the tempest's two minutes. Over its last minute, the sun rises little by little, the rain thins out to nothing, and lightning no longer strikes. At 11:00, the dawn's word shows over the run, which goes on for **4 s**: the enemies flee the player, the risen sun at their back, and burn one by one, flashing white, worth nothing; none comes, nothing hurts the player. Then the run stops: the screen shows the player standing in the light of the risen sun, a line under the word (congratulations, you survived; this time), the rain over, the score with a **dawn bonus of 50%** of it, and the leaderboard, where a sun marks the runs that saw the dawn.
 - **Death**: at 0 HP, the screen shows where the player fell, in the dark but for their torch, a pool of blood (if shown) where they lay, under the storm: the score, the time survived, the level and the kills, and the leaderboard. A run that makes the leaderboard asks for its three letters right there. R starts a new run on a new map.
 
 ## The map
@@ -36,10 +37,10 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 ## Hordes
 
-- Every **90 s** (the first at 1:30), a **horde** comes: **30** enemies, and **10** more for each horde before it.
-- It is **announced 3 s before**: a blinking banner on top of the map, three red arrows on the edge it comes from, and the map shaking twice.
+- A **horde** comes in the middle of each stage of weather, once the night has fallen: at **2:00**, then every **2 minutes** (4:00, 6:00…). It brings **30** enemies, and **15** more for each horde before it.
+- It is **announced 3 s before**: told in big letters (see The run), then three red arrows on the edge it comes from, and the map shaking twice.
 - Until the storm, it comes as a dense **pack** out of one side (a band 16 tiles wide, 5 deep, just beyond the screen); from the storm on, as a **ring** out of every side, announced on every edge.
-- Its enemies: zombies; a bat in four from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
+- Its enemies: zombies; a bat in ten from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
 - **Wiped out** to the last, a horde **doubles** the points its kills were worth: the bonus shows in gold on top of the map.
 - Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
 
@@ -55,7 +56,7 @@ Every run is played for its score, arcade style.
 
 ## The night
 
-- Runs start at **dusk**: for the first minute, the setting sun lights the whole map, warm; over the next minute, the night falls, dimmer and bluer, until only the lights below show anything.
+- Runs start at **dusk**, for a minute: for its first 30 s, the setting sun lights the whole map, warm; over the next 30 s, the night falls, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
 - The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
 - **Gems, bullets and the machete's swings glow**: they show in the dark.
@@ -64,16 +65,17 @@ Every run is played for its score, arcade style.
 
 ## Weather
 
-The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does, after the dusk (see The night). The status line shows it, with a gauge to the next stage. The rain thickens over the last quarter of a stage, into the next one's.
+The weather worsens as the run goes on, a stage every **2 minutes**, as the difficulty does, after the minute of dusk (see The night). The status line shows it, with a gauge to the next stage. The rain thickens over the last quarter of a stage, into the next one's.
 
 | From | Weather | Rain | Lightning | Light | Enemies appearing |
 |---|---|---|---|---|---|
 | 0:00 | Dusk | none | none | — | — |
-| 2:00 | Clear | none | none | — | — |
-| 4:00 | Drizzle | 4 drops per 1000 pixels | every 8 s | — | — |
-| 6:00 | Rain | 8 | every 5 s | −1 tile | +10% HP |
-| 8:00 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
-| 10:00 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
+| 1:00 | Clear night | none | none | — | — |
+| 3:00 | Drizzle | 4 drops per 1000 pixels | every 8 s | — | — |
+| 5:00 | Rain | 8 | every 5 s | −1 tile | +10% HP |
+| 7:00 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
+| 9:00 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
+| 11:00 | Dawn | — | — | — | the run is won (see The run) |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
 - From the storm on, a strike takes **30 HP** from every enemy within **2.5 tiles** of where it falls (a ring shows it). It never hurts the player.
@@ -90,11 +92,11 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 
 ## Enemies
 
-| Enemy | HP | XP | Speed | Damage | Body | Moves | From |
-|---|---|---|---|---|---|---|---|
-| Zombie | 10 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player | 0:00 |
-| Bat | 5 | 1 (3 times in 4) | 5 tiles/s | 3 | 0.7 tile | In a zigzag, **flying over obstacles** | 1:00 |
-| Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player | 3:00 |
+| Enemy | HP | XP | Speed | Damage | Body | Moves |
+|---|---|---|---|---|---|---|
+| Zombie | 10 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
+| Bat | 5 | 1 (3 times in 4) | 5 tiles/s | 3 | 0.7 tile | In a zigzag, **flying over obstacles** |
+| Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 
 - Every enemy is slower than the player: they can always be outrun.
 - **Obstacles** stop zombies and abominations, which slide along them; bats fly over.
@@ -105,8 +107,17 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 ## Waves
 
 - Enemies appear just beyond what the player sees (3 tiles past the edge of the screen), never on an obstacle (bats excepted).
-- **1 per second**, and 1 more per second each minute: 2 from 1:00, 10 from 9:00.
-- Which kind, among those arrived, by weight: zombie **6**, bat **3**, abomination **1**.
+- How many, and which kinds, follow the weather: each stage starts at its own rate, and over the stage the rate grows little by little to the next one's.
+
+| Weather | Enemies a second | Zombie / bat / abomination, by weight |
+|---|---|---|
+| Dusk | 1 | 10 / 0 / 0 |
+| Clear night | 2 | 9 / 1 / 0 |
+| Drizzle | 4 | 8 / 1 / 1 |
+| Rain | 6 | 7 / 2 / 1 |
+| Storm | 8 | 6 / 2 / 2 |
+| Tempest | 10 | 5 / 2 / 3 |
+
 - At most **300** enemies at once (600 while a horde is about).
 - An enemy left far behind (twice as far as the edge of the screen) appears again just beyond the side the player faces.
 

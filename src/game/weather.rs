@@ -1,14 +1,23 @@
-//! The weather: the sun sets at the start of a run; then the night's weather worsens as the run goes on, stage by stage, every 2 minutes, as the
-//! difficulty does. Rain hides the horde, lightning shows it all, and from the storm on, strikes
-//! of lightning hurt the enemies they fall among.
+//! The weather: the sun sets at the start of a run, in a minute; then the night's weather worsens
+//! as the run goes on, stage by stage, every 2 minutes, as the difficulty does, until the sun
+//! rises. Rain hides the horde, lightning shows it all, and from the storm on, strikes of
+//! lightning hurt the enemies they fall among.
 
 use super::TICKS_PER_SECOND;
 
-/// How long a stage of weather lasts, in seconds.
+/// How long the dusk lasts, in seconds: the sun sets over its first half, the night falls over
+/// its second.
+const DUSK_SECONDS: u32 = 60;
+/// How long each stage of weather after the dusk lasts, in seconds.
 const STAGE_SECONDS: u32 = 120;
-/// How long the sun takes to set, at the start of the dusk, in seconds; the night falls over the
-/// rest of it.
-const SUNSET_SECONDS: u32 = 60;
+/// The seconds into the run the sun has risen at, after the tempest's two minutes: the run is
+/// won.
+pub const DAWN_SECONDS: u32 = DUSK_SECONDS + 5 * STAGE_SECONDS;
+/// How long the sun takes to rise, before the dawn, in seconds.
+const SUNRISE_SECONDS: u32 = 60;
+/// How long the enemies flee the risen sun, burning one by one, before the run is won, in
+/// seconds.
+const DAYBREAK_SECONDS: u32 = 4;
 /// What a strike of lightning takes from each enemy near where it falls, in HP, from the storm.
 pub const STRIKE_DAMAGE: u32 = 30;
 /// How near where it falls a strike hurts enemies, in tiles.
@@ -27,12 +36,14 @@ pub enum Weather {
 impl Weather {
     /// The weather `seconds` into a run.
     pub fn at(seconds: u32) -> Self {
-        match seconds / STAGE_SECONDS {
-            0 => Weather::Dusk,
-            1 => Weather::Clear,
-            2 => Weather::Drizzle,
-            3 => Weather::Rain,
-            4 => Weather::Storm,
+        let Some(after_dusk) = seconds.checked_sub(DUSK_SECONDS) else {
+            return Weather::Dusk;
+        };
+        match after_dusk / STAGE_SECONDS {
+            0 => Weather::Clear,
+            1 => Weather::Drizzle,
+            2 => Weather::Rain,
+            3 => Weather::Storm,
             _ => Weather::Tempest,
         }
     }
@@ -92,20 +103,49 @@ impl Weather {
     }
 }
 
-/// How much daylight is left `ticks` into a run, from 1 (the setting sun) to 0 (the night):
-/// all of it for the first half of the dusk, then less and less over the second.
+/// The tick the sun has risen at.
+pub fn dawn() -> u32 {
+    DAWN_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// The tick the sun starts to rise at: no more lightning from then on.
+pub fn sunrise() -> u32 {
+    (DAWN_SECONDS - SUNRISE_SECONDS) * u32::from(TICKS_PER_SECOND)
+}
+
+/// The ticks the enemies flee the risen sun for, before the run is won.
+pub fn daybreak() -> u32 {
+    DAYBREAK_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// How much daylight there is `ticks` into a run, from 1 (the setting or rising sun) to 0 (the
+/// night): all of it for the first half of the dusk, then less and less over the second; more
+/// and more again over the last minute before the dawn.
 pub fn daylight(ticks: u32) -> f32 {
-    let sunset = SUNSET_SECONDS * u32::from(TICKS_PER_SECOND);
-    let nightfall = (STAGE_SECONDS - SUNSET_SECONDS) * u32::from(TICKS_PER_SECOND);
-    let fallen = ticks.saturating_sub(sunset).min(nightfall);
-    let share = |n: u32| f32::from(u16::try_from(n).unwrap_or(u16::MAX));
-    1.0 - share(fallen) / share(nightfall)
+    let second = u32::from(TICKS_PER_SECOND);
+    let share = |part: u32, whole: u32| {
+        f32::from(u16::try_from(part.min(whole)).unwrap_or(u16::MAX))
+            / f32::from(u16::try_from(whole.max(1)).unwrap_or(u16::MAX))
+    };
+    let (sunset, nightfall) = (DUSK_SECONDS / 2 * second, DUSK_SECONDS / 2 * second);
+    if ticks >= sunrise() {
+        share(ticks - sunrise(), SUNRISE_SECONDS * second)
+    } else {
+        1.0 - share(ticks.saturating_sub(sunset), nightfall)
+    }
 }
 
 /// How far `seconds` into a run is through its stage of weather, from 0 to 1.
 pub fn progress(seconds: u32) -> f32 {
-    f32::from(u16::try_from(seconds % STAGE_SECONDS).unwrap_or(0))
-        / f32::from(u16::try_from(STAGE_SECONDS).unwrap_or(1))
+    let (into, length) = match seconds.checked_sub(DUSK_SECONDS) {
+        None => (seconds, DUSK_SECONDS),
+        Some(after_dusk) if Weather::at(seconds) == Weather::Tempest => {
+            (after_dusk - 4 * STAGE_SECONDS, STAGE_SECONDS)
+        }
+        Some(after_dusk) => (after_dusk % STAGE_SECONDS, STAGE_SECONDS),
+    };
+    f32::from(u16::try_from(into.min(length)).unwrap_or(0))
+        / f32::from(u16::try_from(length).unwrap_or(1))
 }
 
 #[cfg(test)]
@@ -113,8 +153,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_weather_worsens_every_two_minutes() {
-        let stages: Vec<Weather> = [0, 119, 120, 240, 360, 480, 600, 3_000]
+    fn the_weather_worsens_after_a_minute_of_dusk_then_every_two_minutes() {
+        let stages: Vec<Weather> = [0, 59, 60, 179, 180, 300, 420, 540, 3_000]
             .map(Weather::at)
             .into();
         assert_eq!(
@@ -123,6 +163,7 @@ mod tests {
                 Weather::Dusk,
                 Weather::Dusk,
                 Weather::Clear,
+                Weather::Clear,
                 Weather::Drizzle,
                 Weather::Rain,
                 Weather::Storm,
@@ -130,6 +171,7 @@ mod tests {
                 Weather::Tempest
             ]
         );
+        assert_eq!(DAWN_SECONDS, 660);
     }
 
     #[test]
@@ -140,19 +182,24 @@ mod tests {
     }
 
     #[test]
-    fn the_sun_sets_then_the_night_falls() {
+    fn the_sun_sets_then_the_night_falls_then_the_sun_rises() {
         let second = u32::from(TICKS_PER_SECOND);
         assert!((daylight(0) - 1.0).abs() < 1e-4);
-        assert!((daylight(60 * second) - 1.0).abs() < 1e-4);
-        assert!((daylight(90 * second) - 0.5).abs() < 1e-4);
-        assert!(daylight(120 * second) < f32::EPSILON);
-        assert!(daylight(3_000 * second) < f32::EPSILON);
+        assert!((daylight(30 * second) - 1.0).abs() < 1e-4);
+        assert!((daylight(45 * second) - 0.5).abs() < 1e-4);
+        assert!(daylight(60 * second) < f32::EPSILON);
+        assert!(daylight(599 * second) < f32::EPSILON);
+        assert!((daylight(630 * second) - 0.5).abs() < 1e-4);
+        assert!((daylight(660 * second) - 1.0).abs() < 1e-4);
     }
 
     #[test]
     fn progress_runs_through_each_stage() {
         assert!(progress(0) < f32::EPSILON);
-        assert!((progress(60) - 0.5).abs() < 1e-4);
-        assert!(progress(120) < f32::EPSILON);
+        assert!((progress(30) - 0.5).abs() < 1e-4);
+        assert!(progress(60) < f32::EPSILON);
+        assert!((progress(120) - 0.5).abs() < 1e-4);
+        assert!((progress(600) - 0.5).abs() < 1e-4);
+        assert!((progress(3_000) - 1.0).abs() < 1e-4);
     }
 }

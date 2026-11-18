@@ -32,10 +32,6 @@ pub struct Stats {
     pub half_width: f32,
     /// Whether it flies over obstacles.
     pub flies: bool,
-    /// When it starts to appear, in seconds into the run.
-    pub arrives_at: u32,
-    /// How often it appears, against the other kinds that have arrived.
-    pub weight: u32,
 }
 
 impl EnemyKind {
@@ -52,8 +48,6 @@ impl EnemyKind {
                 damage: 5,
                 half_width: 0.45,
                 flies: false,
-                arrives_at: 0,
-                weight: 6,
             },
             EnemyKind::Bat => Stats {
                 hp: 5,
@@ -64,8 +58,6 @@ impl EnemyKind {
                 damage: 3,
                 half_width: 0.35,
                 flies: true,
-                arrives_at: 60,
-                weight: 3,
             },
             EnemyKind::Abomination => Stats {
                 hp: 40,
@@ -76,8 +68,6 @@ impl EnemyKind {
                 damage: 15,
                 half_width: 0.8,
                 flies: false,
-                arrives_at: 180,
-                weight: 1,
             },
         }
     }

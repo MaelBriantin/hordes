@@ -5,6 +5,8 @@ use super::TICKS_PER_SECOND;
 use super::enemy::EnemyKind;
 use super::weather::Weather;
 
+/// What reaching the dawn adds to the score, in percent of it.
+pub const DAWN_BONUS_PERCENT: u64 = 50;
 /// The most the combo adds to the multiplier, in tenths: up to ×2.
 const MAX_COMBO: u32 = 10;
 

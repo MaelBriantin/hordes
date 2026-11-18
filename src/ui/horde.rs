@@ -1,5 +1,5 @@
-//! A horde as the screen tells it: announced by a blinking banner on top of the map, arrows on
-//! the edge it comes from (every edge for a ring) and the map shaking; wiped out, a banner in
+//! A horde as the screen tells it, once announced in big letters (see the announcements): arrows
+//! on the edge it comes from (every edge for a ring) and the map shaking; wiped out, a banner in
 //! gold with its bonus.
 
 use ratatui::Frame;
@@ -13,21 +13,12 @@ use crate::game::{Facing, TICKS_PER_SECOND, World};
 
 const DANGER: Color = Color::Rgb(230, 50, 50);
 const GOLD: Color = Color::Rgb(240, 200, 60);
-/// The frames the warning stays lit, then out, as it blinks.
-const BLINK: u32 = 6;
 /// How long the banner of a horde wiped out stays, in seconds.
 const CLEARED_SECONDS: u32 = 2;
 
 /// The horde's banners and arrows over the map.
-pub fn render(frame: &mut Frame, map: Rect, world: &World, frames: u32) {
+pub fn render(frame: &mut Frame, map: Rect, world: &World) {
     if let Some(warning) = world.horde_warning {
-        if (frames / BLINK).is_multiple_of(2) {
-            let words = match warning.side {
-                Some(_) => fl!("horde-coming"),
-                None => fl!("horde-everywhere"),
-            };
-            banner(frame, map, &format!("════  {words}  ════"), DANGER);
-        }
         let sides = match warning.side {
             Some(side) => vec![side],
             None => vec![Facing::Up, Facing::Down, Facing::Left, Facing::Right],

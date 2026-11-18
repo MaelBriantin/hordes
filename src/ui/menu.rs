@@ -13,7 +13,7 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
 use super::{Blank, BloodLook, DARK_GREY, GREY, RainDisplay, ViewState};
-use crate::game::{Entry, Leaderboard, World};
+use crate::game::{DAWN_SECONDS, Entry, Leaderboard, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
@@ -23,6 +23,10 @@ const GOLD: Color = Color::Rgb(240, 200, 60);
 const BOARD_WIDTH: u16 = 30;
 /// The death screen's big word: blood red on top, darker below, as the title.
 const DEATH_COLORS: (Color, Color) = (Color::Rgb(210, 40, 40), Color::Rgb(140, 20, 25));
+/// `nf-md-weather_sunny`: by a run that saw the dawn, on the leaderboard.
+const DAWN_MARK: &str = "\u{F0599}";
+/// The dawn's word, for a run held out to the end: the rising sun's gold.
+pub const DAWN_COLORS: (Color, Color) = (Color::Rgb(255, 210, 90), Color::Rgb(230, 140, 50));
 
 /// What the pause menu offers, in its order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -209,7 +213,12 @@ pub fn render_death(
         view.blood,
         view.rain,
     );
-    let title = fl!("death-title");
+    let dawn = world.survived();
+    let (title, colors) = if dawn {
+        (fl!("dawn-title"), DAWN_COLORS)
+    } else {
+        (fl!("death-title"), DEATH_COLORS)
+    };
     // Twice as big where it fits.
     let wide = font::width(&title) * 2 + 4 <= i32::from(area.width);
     let scale = if wide && area.height >= 26 { 2 } else { 1 };
@@ -232,10 +241,11 @@ pub fn render_death(
     } else {
         u16::try_from(runs.len()).unwrap_or(0) + 3
     };
-    let [_, big, _, score, summary, _, prompt, board_area, _] = Layout::vertical([
+    let [_, big, under, _, score, summary, _, prompt, board_area, _] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(word_rows),
-        Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Length(1),
@@ -244,17 +254,22 @@ pub fn render_death(
         Constraint::Fill(2),
     ])
     .areas(area);
-    font::render(
-        frame.buffer_mut(),
-        big,
-        sprites,
-        &title,
-        DEATH_COLORS,
-        scale,
-    );
+    font::render(frame.buffer_mut(), big, sprites, &title, colors, scale);
+    if dawn {
+        label(
+            frame,
+            &fl!("dawn-line"),
+            Style::new().fg(DAWN_COLORS.0).add_modifier(Modifier::BOLD),
+            under,
+        );
+    }
+    let mut points = fl!("over-points", score = world.score);
+    if let Some(bonus) = world.dawn_bonus {
+        points = format!("{points} ({})", fl!("dawn-bonus", points = bonus));
+    }
     label(
         frame,
-        &fl!("over-points", score = world.score),
+        &points,
         Style::new().fg(GOLD).add_modifier(Modifier::BOLD),
         score,
     );
@@ -309,7 +324,7 @@ fn render_death_board(
     let rows = block.inner(boxed_board);
     frame.render_widget(block, boxed_board);
     for (place, (entry, row)) in runs.iter().zip(rows.rows()).enumerate() {
-        let line = format!("{:>2}. {}  {:>7}", place + 1, entry.name, entry.score);
+        let line = board_line(place, entry);
         match highlight {
             // The run, a new high score: gleaming.
             Some(0) if place == 0 => centred_spans(frame, shimmer(&line, frames), row),
@@ -385,6 +400,17 @@ fn render_name_prompt(
     frame.render_widget(Paragraph::new(Line::from(spans)), ground);
 }
 
+/// A run on the leaderboard: its place, its name and its score, a sun after it if it saw the
+/// dawn.
+fn board_line(place: usize, entry: &Entry) -> String {
+    let sun = if entry.seconds >= DAWN_SECONDS {
+        DAWN_MARK
+    } else {
+        " "
+    };
+    format!("{:>2}. {}  {:>7} {sun}", place + 1, entry.name, entry.score)
+}
+
 /// The best runs in a box, its title on its frame, the runs in columns.
 fn render_board(frame: &mut Frame, area: Rect, runs: &[Entry], frames: u32) {
     let [area] = Layout::horizontal([Constraint::Length(BOARD_WIDTH)])
@@ -397,7 +423,7 @@ fn render_board(frame: &mut Frame, area: Rect, runs: &[Entry], frames: u32) {
     let inside = block.inner(area);
     frame.render_widget(block, area);
     for (place, (entry, row)) in runs.iter().zip(inside.rows()).enumerate() {
-        let line = format!("{:>2}. {}  {:>7}", place + 1, entry.name, entry.score);
+        let line = board_line(place, entry);
         // The best run gleams.
         if place == 0 {
             centred_spans(frame, shimmer(&line, frames), row);

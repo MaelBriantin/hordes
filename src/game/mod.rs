@@ -1,6 +1,7 @@
 //! The game: its rules and its state. No terminal and no clock here: the app moves it on one tick
 //! at a time with what the player holds down, and the ui draws what it holds.
 
+mod announce;
 mod body;
 mod build;
 mod drones;
@@ -21,6 +22,7 @@ mod vec2;
 mod weather;
 mod world;
 
+pub use announce::News;
 pub use build::{Choice, MAX_LEVEL, Passive, Weapon};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
@@ -31,7 +33,7 @@ pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use weather::{STRIKE_RADIUS, Weather, daylight, progress as weather_progress};
+pub use weather::{DAWN_SECONDS, STRIKE_RADIUS, Weather, daylight, progress as weather_progress};
 pub use world::{Input, Lightning, World};
 
 /// How many ticks the world moves on per second.

@@ -131,13 +131,19 @@ impl RainDisplay {
 
 /// A run's rain in that weather, `progress` through its stage, shown as `display` says: dimmer
 /// than the title's, so as not to hide the horde, and turning into the next weather's at the
-/// end of the stage. None when there is none to show.
-pub fn run_rain(weather: Weather, progress: f32, display: RainDisplay) -> Option<Rain> {
+/// end of the stage; less and less as the sun rises, the `daylight` there is. None when there is
+/// none to show.
+pub fn run_rain(
+    weather: Weather,
+    progress: f32,
+    display: RainDisplay,
+    daylight: f32,
+) -> Option<Rain> {
     let stage = |weather: Weather| RAIN_BY_WEATHER[weather as usize];
     let now = stage(weather);
     let next = weather.next().map_or(now, stage);
     let turn = ((progress - (1.0 - RAIN_TURN)) / RAIN_TURN).clamp(0.0, 1.0);
-    let full = now + (next - now) * turn;
+    let full = (now + (next - now) * turn) * (1.0 - daylight);
     let per_thousand = match display {
         RainDisplay::Full => full,
         RainDisplay::Reduced => full * 0.5,
@@ -248,7 +254,7 @@ pub fn dim(canvas: &mut Canvas, share: f32) {
     clippy::cast_sign_loss,
     reason = "clamped between 0 and 255 first"
 )]
-fn scale_channel(value: u8, share: f32) -> u8 {
+pub fn scale_channel(value: u8, share: f32) -> u8 {
     (f32::from(value) * share).round().clamp(0.0, 255.0) as u8
 }
 
@@ -503,10 +509,17 @@ mod tests {
     #[test]
     fn the_rain_follows_the_weather_and_turns_at_the_end_of_a_stage() {
         let heavy = |rain: Option<Rain>| rain.map_or(0.0, |rain| rain.per_thousand);
-        assert_eq!(heavy(run_rain(Weather::Clear, 0.5, RainDisplay::Full)), 0.0);
-        assert!((heavy(run_rain(Weather::Clear, 0.875, RainDisplay::Full)) - 2.0).abs() < 1e-4);
-        assert!((heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Full)) - 8.0).abs() < 1e-4);
-        assert!((heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Reduced)) - 4.0).abs() < 1e-4);
-        assert!(run_rain(Weather::Tempest, 0.9, RainDisplay::Off).is_none());
+        assert_eq!(
+            heavy(run_rain(Weather::Clear, 0.5, RainDisplay::Full, 0.0)),
+            0.0
+        );
+        assert!(
+            (heavy(run_rain(Weather::Clear, 0.875, RainDisplay::Full, 0.0)) - 2.0).abs() < 1e-4
+        );
+        assert!((heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Full, 0.0)) - 8.0).abs() < 1e-4);
+        assert!(
+            (heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Reduced, 0.0)) - 4.0).abs() < 1e-4
+        );
+        assert!(run_rain(Weather::Tempest, 0.9, RainDisplay::Off, 0.0).is_none());
     }
 }

@@ -9,6 +9,15 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The dawn: hold out until 11:00, the sun rising over the last minute as the rain stops, and the enemies flee the risen sun and burn; the run is won, with a bonus of half its score. A sun marks those runs on the leaderboard.
+- Each new weather and each horde is told in big letters over the map, the world standing still for 2 seconds; the run opens on the dusk, told the same way.
+
+### Changed
+- The dusk lasts a minute rather than two: half of it in sunlight, half as the night falls. The weather comes a minute sooner.
+- A horde comes in the middle of each stage of weather, once the night has fallen: at 2:00, then every 2 minutes, 15 enemies bigger each time.
+- How many enemies appear, and of which kinds, follows the weather rather than the clock: zombies alone at dusk, abominations from the drizzle. Bats come less often, in the hordes too.
+
 ## v0.2.0 · November 18, 2026
 The hordes come at dusk.
 
