@@ -13,6 +13,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Red herbs on the ground, which give back 20 HP to a hurt player walking over them.
 - Campfires, which heal 3 HP a second to a player staying by them: their light shrinks as they give, until they die out.
 - Herbs and campfires are rare: the map holds about one herb for 33 chunks, one campfire for 100. Only the torch, a strike of lightning or a campfire's own light shows them.
+- A new passive, Compass: a red arrow on the edge of the screen points to the nearest healing.
 - `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
 
 ### Changed

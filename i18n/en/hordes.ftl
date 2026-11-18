@@ -72,6 +72,7 @@ passive-swiftness = Swiftness
 passive-magnet = Magnet
 passive-might = Might
 passive-haste = Haste
+passive-compass = Compass
 passive-flashlight = Flashlight
 heal = Heal
 
@@ -99,6 +100,8 @@ gain-swiftness = +8% speed
 gain-magnet = Gems fly in from 1 tile further
 gain-might = +10% damage
 gain-haste = −8% weapon cooldowns
+gain-compass = Points to the nearest healing
+gain-compass-more = Finds healing 25 tiles further
 gain-flashlight = +2 tiles of light
 gain-heal = Heal 20 HP
 

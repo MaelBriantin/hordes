@@ -773,3 +773,18 @@ fn a_campfire_heals_three_hp_a_second_until_it_dies_out() {
     assert_eq!(world.player.hp, 10 + CAMPFIRE_HP);
     assert_eq!(world.campfire_left((101, 50)), 0);
 }
+
+#[test]
+fn the_compass_points_to_the_nearest_healing_within_its_range() {
+    let mut map = Map::empty();
+    map.put_feature((140, 50), Feature::Herb);
+    map.put_feature((100, 85), Feature::Campfire);
+    let mut world = on(map, Vec2::new(100.5, 50.5));
+    assert_eq!(world.compass(), None);
+    world.player.build.take(Choice::Passive(Passive::Compass));
+    assert_eq!(world.compass(), Some(Vec2::middle_of((100, 85))));
+    world.burnt.insert((100, 85), CAMPFIRE_HP);
+    assert_eq!(world.compass(), Some(Vec2::middle_of((140, 50))));
+    world.picked.insert((140, 50));
+    assert_eq!(world.compass(), None);
+}

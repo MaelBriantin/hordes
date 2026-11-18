@@ -126,6 +126,9 @@ pub fn render(
             view.blood,
             view.rain,
         );
+        if let Some(healing) = world.compass() {
+            pixels::render_compass(frame.buffer_mut(), map, world.player.position, healing);
+        }
     }
     let help = match screen {
         Screen::Title => fl!("help-title"),

@@ -3,7 +3,7 @@
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
@@ -16,6 +16,8 @@ use crate::game::{
 const TILE_PIXELS: i32 = 2;
 /// The frames a campfire's flame keeps one look before the other.
 const FLICKER: u32 = 6;
+/// The compass's arrow: the red of the herbs.
+const COMPASS: Color = Color::Rgb(220, 45, 65);
 /// The colour of an enemy just hit.
 const FLASH: Color = Color::Rgb(255, 255, 255);
 /// The colour of a machete's swing, then as it fades.
@@ -317,6 +319,66 @@ pub fn render_death_scene(
     canvas.draw(buffer, area);
 }
 
+/// The compass's arrow: on the edge of `area`, the way the healing at `target` lies from the
+/// player in its middle; none while the healing is on screen, for the torch to find.
+pub fn render_compass(buffer: &mut Buffer, area: Rect, player: Vec2, target: Vec2) {
+    let (centre, aim) = (pixel(player), pixel(target));
+    // In cells from the middle of the area: a cell is a pixel wide and two tall.
+    let across = aim.0 - centre.0;
+    let down = (aim.1 - centre.1).div_euclid(2);
+    let (half_width, half_height) = (i32::from(area.width) / 2, i32::from(area.height) / 2);
+    if across.abs() < half_width && down.abs() < half_height {
+        return;
+    }
+    // Along the way to the healing, up to the edge.
+    let (edge_x, edge_y) = (half_width - 1, half_height - 1);
+    let (across_f, down_f) = (cells(across), cells(down));
+    let reach = [
+        (across != 0).then(|| cells(edge_x) / across_f.abs()),
+        (down != 0).then(|| cells(edge_y) / down_f.abs()),
+    ]
+    .into_iter()
+    .flatten()
+    .fold(f32::MAX, f32::min);
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "within the area, a few hundred cells"
+    )]
+    let (x, y) = (
+        (across_f * reach).round() as i32 + half_width,
+        (down_f * reach).round() as i32 + half_height,
+    );
+    let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) else {
+        return;
+    };
+    // The way, as the eye sees it: two rows of pixels to a cell.
+    let arrow = arrow(across_f, down_f * 2.0);
+    buffer.set_string(
+        area.x + x.min(area.width - 1),
+        area.y + y.min(area.height - 1),
+        arrow,
+        Style::new().fg(COMPASS).add_modifier(Modifier::BOLD),
+    );
+}
+
+/// A count of cells, for the compass's sums.
+fn cells(count: i32) -> f32 {
+    f32::from(i16::try_from(count).unwrap_or(i16::MAX))
+}
+
+/// The arrow nearest a way, among the eight.
+fn arrow(across: f32, down: f32) -> &'static str {
+    const ARROWS: [&str; 8] = ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"];
+    let eighth = (down.atan2(across) / std::f32::consts::FRAC_PI_4).round();
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "an eighth of a turn, from -4 to 4"
+    )]
+    let index = (eighth as i32).rem_euclid(8) as usize;
+    ARROWS[index]
+}
+
 /// How far the fallen torch lights the death screen, in tiles.
 const DEATH_LIGHT: f32 = 6.0;
 /// How big the pool of blood where the player fell.
@@ -383,5 +445,43 @@ fn decor((x, y): (i32, i32)) -> Option<SpriteId> {
         0..=2 => Some(SpriteId::Grass),
         3 => Some(SpriteId::Pebble),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_compass_arrow_points_the_way_the_eye_sees() {
+        assert_eq!(arrow(1.0, 0.0), "→");
+        assert_eq!(arrow(0.0, 1.0), "↓");
+        assert_eq!(arrow(-1.0, -1.0), "↖");
+        assert_eq!(arrow(1.0, -1.0), "↗");
+    }
+
+    #[test]
+    fn the_compass_arrow_stands_on_the_edge_the_healing_lies_beyond() {
+        let area = Rect::new(0, 0, 40, 20);
+        let mut buffer = Buffer::empty(area);
+        render_compass(
+            &mut buffer,
+            area,
+            Vec2::new(0.5, 0.5),
+            Vec2::new(200.5, 0.5),
+        );
+        let row: String = (0..40)
+            .map(|x| buffer[(x, 10)].symbol().to_owned())
+            .collect();
+        assert_eq!(row.trim(), "→");
+        assert_eq!(buffer[(39, 10)].symbol(), "→");
+    }
+
+    #[test]
+    fn the_compass_says_nothing_of_healing_on_screen() {
+        let area = Rect::new(0, 0, 40, 20);
+        let mut buffer = Buffer::empty(area);
+        render_compass(&mut buffer, area, Vec2::new(0.5, 0.5), Vec2::new(5.5, 2.5));
+        assert_eq!(buffer, Buffer::empty(area));
     }
 }

@@ -46,16 +46,19 @@ pub enum Passive {
     Haste,
     /// +2 tiles of light around the player.
     Flashlight,
+    /// Points to the nearest healing on the map.
+    Compass,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 6] = [
+    pub const ALL: [Passive; 7] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
         Passive::Might,
         Passive::Haste,
         Passive::Flashlight,
+        Passive::Compass,
     ];
 }
 
@@ -164,6 +167,15 @@ impl Build {
     /// Flashlight.
     pub fn light_radius(&self) -> f32 {
         9.0 + 2.0 * f32::from(self.passive_level(Passive::Flashlight))
+    }
+
+    /// How far the compass finds healing, in tiles: 50, and 25 more per level after the first;
+    /// none without it.
+    pub fn compass_range(&self) -> Option<f32> {
+        match self.passive_level(Passive::Compass) {
+            0 => None,
+            level => Some(25.0 + 25.0 * f32::from(level)),
+        }
     }
 
     /// A weapon's damage, with Might.

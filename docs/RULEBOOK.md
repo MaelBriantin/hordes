@@ -154,6 +154,7 @@ Up to **4 passives**, each up to **level 5**.
 | Might | +10% damage of every weapon |
 | Haste | −8% to every weapon's cooldown |
 | Flashlight | +2 tiles of light around the player (9 at first) |
+| Compass | A red arrow on the edge of the screen points to the nearest healing (a herb, a burning campfire), while it is off screen: within 50 tiles, 25 more per level |
 
 ## Experience
 

@@ -72,6 +72,7 @@ passive-swiftness = Vitesse
 passive-magnet = Aimant
 passive-might = Force
 passive-haste = Cadence
+passive-compass = Boussole
 passive-flashlight = Lampe torche
 heal = Soin
 
@@ -99,6 +100,8 @@ gain-swiftness = +8 % de vitesse
 gain-magnet = Les gemmes viennent de plus loin
 gain-might = +10 % de dégâts
 gain-haste = Armes 8 % plus rapides
+gain-compass = Indique le soin le plus proche
+gain-compass-more = Trouve le soin 25 cases plus loin
 gain-flashlight = +2 cases de lumière
 gain-heal = Soigne 20 PV
 

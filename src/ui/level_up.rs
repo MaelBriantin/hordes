@@ -168,6 +168,7 @@ fn icon(choice: Choice) -> SpriteId {
             Passive::Might => SpriteId::IconMight,
             Passive::Haste => SpriteId::IconHaste,
             Passive::Flashlight => SpriteId::IconFlashlight,
+            Passive::Compass => SpriteId::IconCompass,
         },
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -183,6 +184,7 @@ fn name(choice: Choice) -> String {
             Passive::Might => fl!("passive-might"),
             Passive::Haste => fl!("passive-haste"),
             Passive::Flashlight => fl!("passive-flashlight"),
+            Passive::Compass => fl!("passive-compass"),
         },
         Choice::Heal => fl!("heal"),
     }
@@ -234,6 +236,8 @@ fn gain_of(choice: Choice, level: u8) -> String {
             Passive::Might => fl!("gain-might"),
             Passive::Haste => fl!("gain-haste"),
             Passive::Flashlight => fl!("gain-flashlight"),
+            Passive::Compass if level <= 1 => fl!("gain-compass"),
+            Passive::Compass => fl!("gain-compass-more"),
         },
         Choice::Heal => fl!("gain-heal"),
     }
