@@ -5,11 +5,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
+use super::level_up;
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    Feature, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, World,
-    campfire_light, daylight, weather_progress,
+    Choice, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing,
+    Vec2, World, campfire_light, daylight, weather_progress,
 };
 
 /// Pixels per tile, each way.
@@ -21,6 +22,14 @@ const FLICKER: u32 = 6;
 const COMPASS: Color = Color::Rgb(220, 45, 65);
 const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
 const COMPASS_PULSE: u32 = 10;
+/// The gear over the top left of the map: the share of the light its veil leaves, the room
+/// between two icons and around them, in pixels; the levels and rounds under the icons.
+const VEIL: f32 = 0.55;
+const GEAR_GAP: i32 = 2;
+const GEAR_LEVEL: Color = Color::Rgb(235, 235, 240);
+const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
+const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
+const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
 /// The colour of a broken drone, repairing.
 const BROKEN: Color = Color::Rgb(75, 75, 82);
 /// The colour of a machete's swing, then as it fades.
@@ -81,6 +90,78 @@ impl<'a> Canvas<'a> {
         for (x, y, color) in sprite.pixels(look.mirrored) {
             if let Some(index) = self.index((left + x, top + y)) {
                 self.pixels[index] = Some(look.tint.unwrap_or(color));
+            }
+        }
+    }
+
+    /// The player's gear, over the top left of what the canvas shows, on a dark veil: each
+    /// weapon's icon, then each passive's, as on the level-up cards; under each, its level, a
+    /// pixel a level; under a gun's, its rounds left, or its reload as it goes.
+    fn paint_gear(&mut self, world: &World) {
+        let build = &world.player.build;
+        let ammo = world.ammo();
+        let weapons = build.weapons().iter().map(|&(weapon, level)| {
+            let rounds = ammo.iter().find(|gun| gun.0 == weapon).map(|gun| {
+                let (_, magazine, full, reload) = *gun;
+                if magazine.reloading > 0 {
+                    (reload - magazine.reloading, reload, GEAR_RELOADING)
+                } else {
+                    (magazine.rounds, full, GEAR_ROUNDS)
+                }
+            });
+            (level_up::icon(Choice::Weapon(weapon)), level, rounds)
+        });
+        let passives = build
+            .passives()
+            .iter()
+            .map(|&(passive, level)| (level_up::icon(Choice::Passive(passive)), level, None));
+        let gear: Vec<_> = weapons.chain(passives).collect();
+        if gear.is_empty() {
+            return;
+        }
+        let size = self.sprites.get(SpriteId::IconMachete).width();
+        let step = size + GEAR_GAP;
+        let width = GEAR_GAP + step * i32::try_from(gear.len()).unwrap_or(0);
+        // The icon, a row, the level, a row, the rounds, a row.
+        let height = GEAR_GAP + size + 6;
+        let (left, top) = self.origin;
+        for y in 0..height.min(self.height) {
+            for x in 0..width.min(self.width) {
+                if let Some(index) = self.index((left + x, top + y))
+                    && let Some(Color::Rgb(red, green, blue)) = self.pixels[index]
+                {
+                    let dim = |value: u8| {
+                        #[allow(
+                            clippy::cast_possible_truncation,
+                            clippy::cast_sign_loss,
+                            reason = "a share of a colour, between 0 and 255"
+                        )]
+                        let dimmed = (f32::from(value) * VEIL).round() as u8;
+                        dimmed
+                    };
+                    self.pixels[index] = Some(Color::Rgb(dim(red), dim(green), dim(blue)));
+                }
+            }
+        }
+        for (slot, (sprite, level, rounds)) in (0..).zip(gear) {
+            let x = left + GEAR_GAP + step * slot;
+            let y = top + GEAR_GAP;
+            self.paint(Look::plain(sprite), (x, y));
+            for pixel in 0..i32::from(MAX_LEVEL) {
+                let lit = pixel < i32::from(level);
+                self.set(
+                    (x + pixel, y + size + 1),
+                    if lit { GEAR_LEVEL } else { GEAR_EMPTY },
+                );
+            }
+            if let Some((part, whole, colour)) = rounds {
+                let lit = share_of(part, whole, size);
+                for pixel in 0..size {
+                    self.set(
+                        (x + pixel, y + size + 3),
+                        if pixel < lit { colour } else { GEAR_EMPTY },
+                    );
+                }
             }
         }
     }
@@ -282,6 +363,7 @@ pub fn render_map(
             night::paint_impact(&mut canvas, strike, STRIKE_RADIUS);
         }
     }
+    canvas.paint_gear(world);
     canvas.draw(buffer, area);
 }
 
@@ -455,6 +537,13 @@ pub fn view(area: Rect) -> Vec2 {
     Vec2::new(f32::from(area.width) / 4.0, f32::from(area.height) / 2.0)
 }
 
+/// How many of `pixels` a share of `part` in `whole` lights, rounded up: one round left shows.
+fn share_of(part: u32, whole: u32, pixels: i32) -> i32 {
+    let pixels_u32 = u32::try_from(pixels).unwrap_or(0);
+    let lit = (part * pixels_u32).div_ceil(whole.max(1)).min(pixels_u32);
+    i32::try_from(lit).unwrap_or(0)
+}
+
 /// The pixel a point of the map falls on.
 pub fn pixel(point: Vec2) -> (i32, i32) {
     #[allow(clippy::cast_precision_loss, reason = "2 is exact")]
@@ -501,6 +590,14 @@ mod tests {
             .collect();
         assert_eq!(row.trim(), "→");
         assert_eq!(buffer[(39, 10)].symbol(), "→");
+    }
+
+    #[test]
+    fn a_share_lights_its_pixels_one_round_left_showing() {
+        assert_eq!(share_of(0, 6, 8), 0);
+        assert_eq!(share_of(1, 20, 8), 1);
+        assert_eq!(share_of(3, 6, 8), 4);
+        assert_eq!(share_of(9, 9, 8), 8);
     }
 
     #[test]

@@ -3,7 +3,6 @@
 
 ## Keys, on the last line of the screen
 
-help-run = ←↑↓→ / WASD / ZQSD move · P / Esc pause
 help-title = Enter start · B blood · R rain · L language · Esc quit
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
 help-over = R new run · Esc quit
@@ -37,11 +36,6 @@ pause-new-run = New run
 pause-quit = Quit
 
 ## Status line
-
-status-hp = HP
-status-level = Lv
-status-kills = Kills { $count }
-status-reloading = reloading
 
 weather-dusk = Dusk
 weather-clear = Clear
@@ -108,7 +102,6 @@ gain-heal = Heal 20 HP
 
 ## Score
 
-status-score = Score { $score }
 multiplier = ×{ $whole }.{ $tenth }
 over-points = { $score } points
 leaderboard-title = Best scores

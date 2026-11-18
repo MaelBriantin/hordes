@@ -4,6 +4,7 @@
 
 mod font;
 mod horde;
+mod icons;
 mod level_up;
 mod menu;
 mod night;
@@ -47,8 +48,8 @@ pub enum Screen {
 const LOW_HP_PERCENT: u32 = 30;
 /// The frames the low HP bar stays lit, then dimmed, as it blinks.
 const LOW_HP_BLINK: u32 = 8;
-/// The width of the HP and XP bars' insides, in cells.
-const BAR: u32 = 12;
+/// The width of the HP bar's inside, in cells.
+const BAR_CELLS: usize = 12;
 /// The HP bar's red, the herbs': and dimmed, as it blinks.
 const HP_COLOR: Color = Color::Rgb(220, 45, 65);
 const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
@@ -56,7 +57,6 @@ const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The width of the weather's gauge, in cells.
 const WEATHER_GAUGE: u8 = 6;
-
 /// The game's own background and text, whatever the terminal's theme: a light one would wash
 /// the night out.
 const SCREEN: Style = Style::new()
@@ -138,7 +138,7 @@ pub fn render(
         };
         menu::render_death(frame, map, sprites, view, world, leaderboard, name);
     } else {
-        frame.render_widget(status(world, leaderboard, view.frame), areas.top);
+        render_status(frame, areas.top, world, leaderboard, view.frame);
         pixels::render_map(
             frame.buffer_mut(),
             map,
@@ -159,15 +159,19 @@ pub fn render(
             );
         }
     }
+    // The keys below, but for the run going on: its XP bar, all along the screen.
     let help = match screen {
-        Screen::Title => fl!("help-title"),
-        Screen::Paused { .. } => fl!("help-paused"),
-        Screen::NameEntry { .. } => fl!("help-name"),
-        Screen::Playing if world.is_over() => fl!("help-over"),
-        Screen::Playing if world.offer.is_some() => fl!("help-level-up"),
-        Screen::Playing => fl!("help-run"),
+        Screen::Title => Some(fl!("help-title")),
+        Screen::Paused { .. } => Some(fl!("help-paused")),
+        Screen::NameEntry { .. } => Some(fl!("help-name")),
+        Screen::Playing if world.is_over() => Some(fl!("help-over")),
+        Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
+        Screen::Playing => None,
     };
-    frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help);
+    match help {
+        Some(help) => frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help),
+        None => frame.render_widget(experience(world, areas.help.width), areas.help),
+    }
     match screen {
         Screen::Title | Screen::NameEntry { .. } => return,
         Screen::Paused { selected } => {
@@ -182,78 +186,102 @@ pub fn render(
     }
 }
 
-/// The player's HP, their level and XP, the time survived and the kills.
-fn status(world: &World, leaderboard: &Leaderboard, frame: u32) -> Line<'static> {
+/// The status line, in two parts: on the left, what keeps the player alive (their HP and the
+/// weather); on the right, how the run goes (the time and the score).
+fn render_status(
+    frame: &mut Frame,
+    area: Rect,
+    world: &World,
+    leaderboard: &Leaderboard,
+    frames: u32,
+) {
+    frame.render_widget(survival(world, frames), area);
+    frame.render_widget(run(world, leaderboard, frames).right_aligned(), area);
+}
+
+/// The player's HP and the weather, as gauges.
+fn survival(world: &World, frames: u32) -> Line<'static> {
+    let bold = Style::new().add_modifier(Modifier::BOLD);
     let player = &world.player;
     let (hp, max_hp) = (player.hp, player.max_hp());
     let low = hp * 100 < max_hp * LOW_HP_PERCENT;
-    let hp_color = if low && (frame / LOW_HP_BLINK).is_multiple_of(2) {
+    let hp_color = if low && (frames / LOW_HP_BLINK).is_multiple_of(2) {
         HP_DIMMED
     } else {
         HP_COLOR
     };
-    let mut spans = vec![
-        Span::raw(format!(" {} ", fl!("status-hp"))),
+    let weather = world.weather();
+    Line::from(vec![
+        Span::styled(format!(" {} ", icons::HP), bold.fg(HP_COLOR)),
         Span::styled(bar(hp, max_hp), hp_color),
-        Span::styled(format!(" {hp}"), Style::new().add_modifier(Modifier::BOLD)),
-        Span::raw(format!("   {} ", fl!("status-level"))),
+        Span::styled(format!(" {hp}"), bold),
         Span::styled(
-            player.level.to_string(),
-            Style::new().add_modifier(Modifier::BOLD),
+            format!("   {} ", icons::weather(weather)),
+            weather_style(weather),
         ),
-        Span::raw(" "),
-        Span::styled(bar(player.xp, xp_to_next(player.level)), XP_COLOR),
-        Span::raw("   "),
-        Span::raw(clock(world.seconds())),
-        Span::raw("  "),
-        Span::styled(
-            weather_name(world.weather()),
-            weather_style(world.weather()),
-        ),
+        Span::styled(weather_name(weather), weather_style(weather)),
         Span::raw(" "),
         Span::styled(
-            weather_gauge(world.weather(), world.seconds()),
-            weather_style(world.weather()),
+            weather_gauge(weather, world.seconds()),
+            weather_style(weather),
         ),
-        Span::raw("   "),
+    ])
+}
+
+/// The player's level and their XP, in a bar as wide as `width` leaves.
+fn experience(world: &World, width: u16) -> Line<'static> {
+    let bold = Style::new().add_modifier(Modifier::BOLD);
+    let player = &world.player;
+    let mut spans = vec![
+        Span::styled(format!(" {} ", icons::LEVEL), bold.fg(XP_COLOR)),
+        Span::styled(format!("{} ", player.level), bold),
     ];
-    // Ahead of the best run kept: the score gleams, as a new high score does.
-    let score = fl!("status-score", score = world.score);
+    let taken: usize = spans.iter().map(Span::width).sum();
+    // The bar's two ends take a cell each, and a cell is left after it.
+    let cells = usize::from(width).saturating_sub(taken + 3);
+    spans.push(Span::styled(
+        bar_of(player.xp, xp_to_next(player.level), cells),
+        XP_COLOR,
+    ));
+    Line::from(spans)
+}
+
+/// The time survived and the score, with its multiplier: the score gleams while ahead of the
+/// best run kept, as a new high score does.
+fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
+    let bold = Style::new().add_modifier(Modifier::BOLD);
+    let mut spans = vec![
+        Span::styled(format!("{} ", icons::TIME), bold),
+        Span::styled(clock(world.seconds()), bold),
+        Span::styled(format!("   {} ", icons::SCORE), bold.fg(SCORE_COLOR)),
+    ];
+    let score = world.score.to_string();
     let best = leaderboard.entries().first().map(|entry| entry.score);
     if best.is_some_and(|best| world.score > best) {
-        spans.extend(text::shimmer(&score, frame));
+        spans.extend(text::shimmer(&score, frames));
     } else {
-        spans.push(Span::styled(
-            score,
-            Style::new().add_modifier(Modifier::BOLD),
-        ));
+        spans.push(Span::styled(score, bold.fg(SCORE_COLOR)));
     }
     spans.extend([
         Span::raw(" "),
         Span::styled(multiplier(world.multiplier_tenths()), SCORE_COLOR),
+        Span::raw(" "),
     ]);
-    for (weapon, magazine, full) in world.ammo() {
-        let rounds = if magazine.reloading > 0 {
-            fl!("status-reloading")
-        } else {
-            format!("{}/{full}", magazine.rounds)
-        };
-        spans.push(Span::raw(format!("   {} ", level_up::weapon_name(weapon))));
-        spans.push(Span::styled(
-            rounds,
-            Style::new().add_modifier(Modifier::BOLD),
-        ));
-    }
     Line::from(spans)
 }
 
 /// A share of a whole as a bar: `▕████░░░░░░░░▏`. Rounded down, so it only shows full when it
 /// is.
 fn bar(part: u32, whole: u32) -> String {
-    let filled = (part * BAR / whole.max(1)).min(BAR);
+    bar_of(part, whole, BAR_CELLS)
+}
+
+/// The same bar, `cells` wide inside its ends.
+fn bar_of(part: u32, whole: u32, cells: usize) -> String {
+    let cells_u64 = u64::try_from(cells).unwrap_or(0);
+    let filled = (u64::from(part) * cells_u64 / u64::from(whole.max(1))).min(cells_u64);
     let filled = usize::try_from(filled).unwrap_or(0);
-    let empty = usize::try_from(BAR).unwrap_or(0) - filled;
-    format!("▕{}{}▏", "█".repeat(filled), "░".repeat(empty))
+    format!("▕{}{}▏", "█".repeat(filled), "░".repeat(cells - filled))
 }
 
 fn weather_name(weather: Weather) -> String {

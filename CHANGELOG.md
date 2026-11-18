@@ -19,6 +19,9 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
 
 ### Changed
+- The status line wears icons (Nerd Font): HP, weather, time, score; the time and the score stand out in bold. 
+- Over the top left of the map, on a dark veil, the weapons and passives picked show as the icons of their cards, each with its level in pixels under it; the guns show their rounds there too, filling back as they reload.
+- The XP bar runs along the bottom of the screen during a run, the level at its start.
 - The game draws its own dark background and text, whatever the terminal's theme: a light one no longer washes it out.
 - A drone breaks on its blow, and repairs in 2 seconds: drones were too strong.
 - Blood comes red, as ketchup, mayo or pesto, or not at all: B on the title screen, or the pause menu.

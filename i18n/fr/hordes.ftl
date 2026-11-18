@@ -3,7 +3,6 @@
 
 ## Touches, sur la dernière ligne de l'écran
 
-help-run = ←↑↓→ / ZQSD bouger · P / Échap pause
 help-title = Entrée jouer · B sang · R pluie · L langue · Échap quitter
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
 help-over = R nouvelle partie · Échap quitter
@@ -37,11 +36,6 @@ pause-new-run = Nouvelle partie
 pause-quit = Quitter
 
 ## Ligne d'état
-
-status-hp = PV
-status-level = Niv
-status-kills = Tués { $count }
-status-reloading = recharge
 
 weather-dusk = Crépuscule
 weather-clear = Nuit claire
@@ -108,7 +102,6 @@ gain-heal = Soigne 20 PV
 
 ## Score
 
-status-score = Score { $score }
 multiplier = ×{ $whole },{ $tenth }
 over-points = { $score } points
 leaderboard-title = Meilleurs scores

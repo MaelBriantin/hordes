@@ -154,7 +154,8 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
     centred(frame, &gain_of(card.choice, card.level), Style::new(), gain);
 }
 
-fn icon(choice: Choice) -> SpriteId {
+/// The picture of a weapon, a passive or the heal, on its card.
+pub fn icon(choice: Choice) -> SpriteId {
     match choice {
         Choice::Weapon(weapon) => match weapon {
             Weapon::Machete => SpriteId::IconMachete,

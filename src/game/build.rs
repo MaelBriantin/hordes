@@ -95,6 +95,16 @@ impl Build {
         }
     }
 
+    /// The weapons the player has, with their levels, in the order picked.
+    pub fn weapons(&self) -> &[(Weapon, u8)] {
+        &self.weapons
+    }
+
+    /// The passives the player has, with their levels, in the order picked.
+    pub fn passives(&self) -> &[(Passive, u8)] {
+        &self.passives
+    }
+
     /// A weapon's level, 0 without it.
     pub fn weapon_level(&self, weapon: Weapon) -> u8 {
         level_of(&self.weapons, weapon)

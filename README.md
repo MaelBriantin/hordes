@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/MaelBriantin/horde
 
 Then run `hordes`. To update to the latest version, run `hordes update`. `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
 
-The game wants a terminal with true colour. A terminal with kitty's keyboard protocol (Ghostty, kitty, WezTerm, iTerm2…) knows when a key is let go: the hero stops the moment you do.
+The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfonts.com) (for instance JetBrains Mono Nerd Font) for the icons of its status line: without one, they show as empty boxes. A terminal with kitty's keyboard protocol (Ghostty, kitty, WezTerm, iTerm2…) knows when a key is let go: the hero stops the moment you do.
 
 ## Controls
 

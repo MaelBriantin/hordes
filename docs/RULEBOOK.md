@@ -128,7 +128,7 @@ A swing in an arc before the player, the way they face, hitting **every enemy in
 
 ### Guns
 
-A gun shoots at the **nearest enemies within its range**, a bullet per enemy, while its **magazine** holds rounds; empty, it **reloads**, then shoots again at once. The reserve of rounds is endless. A bullet flies over obstacles and stops at the first enemy it hits, unless it **pierces**: then it goes through that many enemies first, hitting each once. The status line shows each gun's rounds.
+A gun shoots at the **nearest enemies within its range**, a bullet per enemy, while its **magazine** holds rounds; empty, it **reloads**, then shoots again at once. The reserve of rounds is endless. A bullet flies over obstacles and stops at the first enemy it hits, unless it **pierces**: then it goes through that many enemies first, hitting each once. Over the top left of the map, under each gun's icon, a bar shows its rounds left, filling back in grey as it reloads.
 
 | Level | Pistol | Machine gun |
 |---|---|---|

@@ -484,8 +484,9 @@ impl World {
         });
     }
 
-    /// The guns the player has, each with its magazine and how many rounds it holds full.
-    pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32)> {
+    /// The guns the player has, each with its magazine, how many rounds it holds full, and the
+    /// ticks a whole reload takes.
+    pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32, u32)> {
         [Weapon::Pistol, Weapon::MachineGun]
             .into_iter()
             .filter_map(|weapon| {
@@ -495,7 +496,8 @@ impl World {
                     rounds: gun.magazine,
                     ..Magazine::default()
                 });
-                Some((weapon, magazine, gun.magazine))
+                let reload = self.player.build.cooldown(gun.reload).max(1);
+                Some((weapon, magazine, gun.magazine, reload))
             })
             .collect()
     }
