@@ -984,21 +984,31 @@ fn the_torch_lights_up_of_itself_as_the_night_falls_and_goes_out_at_will() {
     assert!(!world.torch_lit());
     world.switch_torch();
     assert_eq!(world.torch_on(), None);
+    // It lights up at 0:26, holding once it has flickered, a second and a half at most.
     world.ticks = 30 * 26 - 1;
-    let flickers: Vec<bool> = (0..25)
-        .map(|_| {
-            wait(&mut world, 1);
-            world.torch_lit()
-        })
-        .collect();
-    assert!(flickers.contains(&false) && flickers.contains(&true));
+    wait(&mut world, 1);
+    wait(&mut world, 45);
     assert!(world.torch_lit());
     world.switch_torch();
+    assert!(!world.torch_lit() && !world.torch_shines());
+    world.switch_torch();
+    wait(&mut world, 46);
+    assert!(world.torch_lit());
+}
+
+#[test]
+fn a_flickering_torch_lights_nothing_for_the_run() {
+    let mut world = in_the_dark();
+    // Lit again, flickering as long as it may.
+    world.switch_torch();
+    world.torch_steady_at = world.ticks() + 45;
     assert!(!world.torch_lit());
-    world.switch_torch();
-    assert!(!world.torch_lit(), "flickering on");
-    wait(&mut world, 25);
-    assert!(world.torch_lit());
+    world.player.build.take(Choice::Weapon(Weapon::Pistol));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
+    wait(&mut world, 30);
+    assert_eq!(world.bullets, []);
 }
 
 /// A run in the night, the torch out, no horde nor lightning to come.
@@ -1044,8 +1054,9 @@ fn in_the_dark_the_guns_hold_their_fire() {
         .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
     wait(&mut world, 30);
     assert_eq!(world.bullets, []);
+    // Lit again: once it holds, after its flicker, the guns fire.
     world.switch_torch();
-    wait(&mut world, 30);
+    wait(&mut world, 45 + 30);
     assert!(world.enemies[0].hp < EnemyKind::Abomination.stats().hp);
 }
 
@@ -1058,9 +1069,12 @@ fn shadows_hunt_in_the_dark_and_shun_the_torch() {
     wait(&mut world, 1);
     assert!(world.enemies[0].noticed, "the torch out, it hunts");
     world.switch_torch();
+    // Once it holds, after its flicker.
+    wait(&mut world, 45);
+    let at = world.enemies[0].position.x;
     wait(&mut world, 30);
     assert!(!world.enemies[0].noticed);
-    assert!(world.enemies[0].position.x > 125.0, "away from the light");
+    assert!(world.enemies[0].position.x > at, "away from the light");
 }
 
 #[test]
@@ -1178,4 +1192,33 @@ fn a_horde_told_without_a_pause_lets_the_run_go_on() {
         world.told,
         Some((News::Horde { everywhere: false }, 30 * 87))
     );
+}
+
+#[test]
+fn a_campfire_heals_within_its_light() {
+    let mut map = Map::empty();
+    map.put_feature((110, 50), Feature::Campfire);
+    let mut world = on(map, Vec2::new(105.5, 50.5));
+    disarm(&mut world);
+    world.player.hp = 50;
+    wait(&mut world, 30);
+    // Five tiles off, within its six of light: healed.
+    assert!(world.player.hp > 50);
+    assert!(world.healed_at.is_some());
+}
+
+#[test]
+fn regeneration_gives_hp_back_of_itself() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.player.hp = 50;
+    for _ in 0..5 {
+        world
+            .player
+            .build
+            .take(Choice::Passive(Passive::Regeneration));
+    }
+    // 2 HP a second at level 5.
+    wait(&mut world, 30 * 3);
+    assert_eq!(world.player.hp, 56);
 }

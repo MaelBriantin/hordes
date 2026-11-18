@@ -210,6 +210,8 @@ const GEM_GLOW_STRENGTH: f32 = 0.3;
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
 const GEM_GLOW_REACH: i32 = 4;
 const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
+/// A fire's light, against the torch's white: orange.
+const FIRE_TINT: (f32, f32, f32) = (1.3, 0.95, 0.55);
 /// How much of its brightness a thing keeps in the dark.
 const DARK: f32 = 0.14;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
@@ -389,6 +391,8 @@ pub struct Light {
     pub centre: (i32, i32),
     pub radius: f32,
     pub fade: f32,
+    /// How warm its light, from 0 (white, the torch's) to 1 (a fire's orange).
+    warmth: f32,
 }
 
 impl Light {
@@ -398,15 +402,17 @@ impl Light {
             centre,
             radius,
             fade: LIGHT_FADE,
+            warmth: 0.0,
         }
     }
 
-    /// A campfire, lighting `radius` tiles around it: it fades as far as it lights.
+    /// A campfire, lighting `radius` tiles around it, warm: it fades as far as it lights.
     pub fn fire(centre: (i32, i32), radius: f32) -> Self {
         Self {
             centre,
             radius,
             fade: radius,
+            warmth: 1.0,
         }
     }
 
@@ -417,6 +423,7 @@ impl Light {
             centre,
             radius: GEM_LIGHT.0,
             fade: GEM_LIGHT.1,
+            warmth: 0.0,
         }
     }
 
@@ -444,8 +451,10 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
     let look = Dusk::of(daylight);
     let (left, top) = canvas.origin;
     let (width, height) = (canvas.width, canvas.height);
-    // Each light over the pixels it reaches only: the brightest where they meet.
+    // Each light over the pixels it reaches only: the brightest where they meet, and the
+    // warmest.
     let mut lit = vec![0.0_f32; canvas.pixels.len()];
+    let mut warm = vec![0.0_f32; canvas.pixels.len()];
     for light in lights {
         let reach = light.reach();
         let (cx, cy) = (light.centre.0 - left, light.centre.1 - top);
@@ -456,16 +465,32 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
                     continue;
                 };
                 lit[index] = lit[index].max(on);
+                warm[index] = warm[index].max(on * light.warmth);
             }
         }
     }
-    for (pixel, on) in canvas.pixels.iter_mut().zip(lit) {
+    for ((pixel, on), warm) in canvas.pixels.iter_mut().zip(lit).zip(warm) {
         let Some(Color::Rgb(red, green, blue)) = *pixel else {
             continue;
         };
         let level = (ambient + (1.0 - ambient) * on).max(flash);
-        *pixel = Some(look.colour((red, green, blue), level));
+        *pixel = Some(warmed(look.colour((red, green, blue), level), warm));
     }
+}
+
+/// A colour under a fire's light, as warm as it is (from 0 to 1): more red, less blue.
+fn warmed(color: Color, warm: f32) -> Color {
+    let Color::Rgb(red, green, blue) = color else {
+        return color;
+    };
+    if warm <= 0.0 {
+        return color;
+    }
+    Color::Rgb(
+        scale_channel(red, 1.0 + (FIRE_TINT.0 - 1.0) * warm),
+        scale_channel(green, 1.0 + (FIRE_TINT.1 - 1.0) * warm),
+        scale_channel(blue, 1.0 + (FIRE_TINT.2 - 1.0) * warm),
+    )
 }
 
 /// A glow on the map: the pixel it shines from, and its colour.

@@ -59,10 +59,12 @@ pub enum Passive {
     Batteries,
     /// +10% chance for an enemy to leave a gem.
     Loot,
+    /// +0.4 HP a second, of itself.
+    Regeneration,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 10] = [
+    pub const ALL: [Passive; 11] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -73,6 +75,7 @@ impl Passive {
         Passive::Wisdom,
         Passive::Batteries,
         Passive::Loot,
+        Passive::Regeneration,
     ];
 }
 
@@ -97,7 +100,8 @@ impl Choice {
                 | Passive::Haste
                 | Passive::Compass
                 | Passive::Wisdom
-                | Passive::Batteries,
+                | Passive::Batteries
+                | Passive::Regeneration,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Heal => Rarity::Common,
@@ -293,6 +297,12 @@ impl Build {
     /// charges; 25 more per level of Batteries.
     pub fn battery_percent(&self) -> u32 {
         100 + 25 * u32::from(self.passive_level(Passive::Batteries))
+    }
+
+    /// The HP the player gets back of themselves each second, in tenths: 4 per level of
+    /// Regeneration.
+    pub fn regeneration_tenths(&self) -> u32 {
+        4 * u32::from(self.passive_level(Passive::Regeneration))
     }
 
     /// How much likelier an enemy is to leave a gem, in points of percent: 10 per level of Loot.

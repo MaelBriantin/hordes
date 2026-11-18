@@ -10,9 +10,12 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- A new rare passive, Regeneration: HP back of themselves, every second.
 - A new weapon, the shotgun: a double shot, each a fan of pellets, close by.
 
 ### Changed
+- Lighting up, the torch flickers for as long as luck has it, lighting nothing for the run until it holds; it goes out at once.
+- A campfire's light is warm and sways, told from the torch's at a glance; the fire heals as far as it shows, fading included; a heal shows, small green crosses rising around the player.
 - A horde wiped out brings a level, once told, its cards rarer; in arcade, it doubles its points too.
 
 ## v0.5.0 · November 18, 2026

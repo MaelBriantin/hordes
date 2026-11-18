@@ -236,9 +236,9 @@ q.qqq...
 
 icon_shotgun
 ........
-jjjjjjjj
-nnnnnnnn
-nnuuuunn
+..jjjjjj
+..nnnnnn
+..uuuunn
 uuu.....
 uu......
 u.......
@@ -353,6 +353,16 @@ uukkkkuu
 uukkkkuu
 uuuuuuuu
 .uuuuuu.
+
+icon_regeneration
+........
+.ll..ll.
+llllllll
+lllWllll
+llWWWlll
+.llWlll.
+..llll..
+...ll...
 
 # The legendaries, on their golden cards.
 

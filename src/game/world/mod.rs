@@ -12,7 +12,7 @@ use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
 use super::guns::{self, Bullet, Magazine};
-use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_REACH, HERB_HP, HERB_REACH};
+use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
 use super::horde::{self, Tally, Warning};
 use super::level::xp_to_next;
 use super::machete::{self, Swing};
@@ -70,8 +70,8 @@ const NOTICE_REACH: f32 = 6.0;
 const LOSE_REACH: f32 = 12.0;
 const LURE_REACH: f32 = 20.0;
 const WANDER_PACE: f32 = 0.5;
-/// When the torch, lighting up, is out still, in ticks since: it flickers twice, then holds.
-const TORCH_FLICKER_OFF: [std::ops::Range<u32>; 3] = [0..2, 5..11, 14..20];
+/// The most ticks the torch flickers as it lights up, before it holds: a second and a half.
+const TORCH_FLICKER_MOST: u32 = 45;
 /// The seconds a horde wiped out waits before its level comes, for the news to be read first;
 /// and the chance, in percent, of a rare card on that level.
 const HORDE_LEVEL_DELAY: u32 = 2;
@@ -193,11 +193,14 @@ pub struct World {
     /// tick it was told at.
     pub weather_news: WeatherNews,
     pub told: Option<(News, u32)>,
-    /// The tick the player was last hurt at, if they have been.
+    /// The tick the player was last hurt at, and last healed at, if they have been.
     pub hurt_at: Option<u32>,
-    /// Whether the player wants their torch on, and the tick they last lit it at.
+    pub healed_at: Option<u32>,
+    /// Whether the player wants their torch on; the tick it holds from, lit, flickering until
+    /// then, as long as luck has it; and that luck, for the flicker.
     torch_switch: bool,
-    torch_lit_at: u32,
+    pub(super) torch_steady_at: u32,
+    torch_luck: u32,
     /// The torch's battery, from 0 (empty) to 1 (full).
     pub battery: f32,
     /// Nothing hurts the player: a debug tool.
@@ -216,6 +219,8 @@ pub struct World {
     pending_levels: u32,
     /// XP gathered short of a whole point, in hundredths: Wisdom gives tenths.
     xp_hundredths: u32,
+    /// HP regenerated short of a whole point, in tenths.
+    hp_tenths: u32,
     /// The level-ups dealt since the last legendary offered.
     without_legendary: u32,
     /// The ticks the levels of hordes wiped out are due at, and the levels they brought still to
@@ -257,7 +262,7 @@ impl World {
 
     /// A run on a given map, the player at `start`.
     fn on(map: Map, start: Vec2, rng: StdRng) -> Self {
-        Self {
+        let mut world = Self {
             map,
             player: Player {
                 position: start,
@@ -298,8 +303,10 @@ impl World {
             weather_news: WeatherNews::Paused,
             told: None,
             hurt_at: None,
+            healed_at: None,
             torch_switch: true,
-            torch_lit_at: 0,
+            torch_steady_at: 0,
+            torch_luck: 0,
             battery: 1.0,
             unhurt: false,
             picked: HashSet::new(),
@@ -309,6 +316,7 @@ impl World {
             offer: None,
             pending_levels: 0,
             xp_hundredths: 0,
+            hp_tenths: 0,
             without_legendary: 0,
             horde_levels_due: Vec::new(),
             rare_levels: 0,
@@ -316,7 +324,10 @@ impl World {
             rng,
             spawn_debt: 0.0,
             view: DEFAULT_VIEW,
-        }
+        };
+        // It lights up of itself as the night falls, flickering as luck has it.
+        world.light_up_torch();
+        world
     }
 
     /// Tells the world how much of it the player sees: half of it each way, in tiles.
@@ -388,16 +399,36 @@ impl World {
         (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
     }
 
-    /// Whether the player's torch is lit: not at dusk; it lights up of itself, flickering, as
-    /// the night falls, and when the player lights it again.
+    /// Whether the player's torch is lit, and holds: not at dusk; it lights up of itself as the
+    /// night falls, and when the player lights it again, after flickering a while.
     pub fn torch_lit(&self) -> bool {
         let Some(true) = self.torch_on() else {
             return false;
         };
-        let since = self.ticks - self.torch_lit_at.max(torch_lights_up());
         // Its battery nearly empty, it flickers, then dies out.
         let dying = self.battery < BATTERY_DYING && (self.ticks / 4).is_multiple_of(3);
-        !dying && !TORCH_FLICKER_OFF.iter().any(|off| off.contains(&since))
+        !dying && self.ticks >= self.torch_steady_at
+    }
+
+    /// Whether the torch shines now: lit, or flickering as it lights up, on and off as luck has
+    /// it. Flickering, it lights nothing for the run: the player isn't seen, the guns hold.
+    pub fn torch_shines(&self) -> bool {
+        if self.torch_lit() {
+            return true;
+        }
+        let flickering = self.torch_on() == Some(true) && self.ticks < self.torch_steady_at;
+        let luck = ((self.ticks / 2) ^ self.torch_luck)
+            .wrapping_mul(0x9E37_79B9)
+            .rotate_left(7);
+        flickering && luck.is_multiple_of(3)
+    }
+
+    /// The torch starts to light up: it flickers, as long as luck has it (maybe not at all),
+    /// before it holds.
+    fn light_up_torch(&mut self) {
+        self.torch_steady_at =
+            self.ticks.max(torch_lights_up()) + self.rng.random_range(0..=TORCH_FLICKER_MOST);
+        self.torch_luck = self.rng.random();
     }
 
     /// Whether the player has their torch on: none before it lights up of itself, the night
@@ -415,7 +446,7 @@ impl World {
             Some(false) if self.battery < BATTERY_TO_LIGHT => {}
             Some(false) => {
                 self.torch_switch = true;
-                self.torch_lit_at = self.ticks;
+                self.light_up_torch();
             }
         }
     }
@@ -516,6 +547,7 @@ impl World {
         self.gather_gems();
         self.give_horde_levels();
         self.illuminate();
+        self.regenerate();
         self.heal_player();
         self.hurt_player();
         if self.pending_levels > 0 && !self.is_over() {
@@ -968,6 +1000,14 @@ impl World {
         self.pending_levels += self.player.gain(missing);
     }
 
+    /// A debug tool: a burning campfire a few tiles to the player's right.
+    pub fn debug_campfire(&mut self) {
+        let (x, y) = self.player.position.tile();
+        let tile = (x + 4, y);
+        self.map.put_feature(tile, Feature::Campfire);
+        self.burnt.remove(&tile);
+    }
+
     /// A debug tool: the player's HP all back.
     pub fn debug_heal(&mut self) {
         self.player.hp = self.player.max_hp();
@@ -1014,6 +1054,18 @@ impl World {
             self.pending_levels += self.player.gain(missing);
             self.rare_levels += 1;
         }
+    }
+
+    /// Regeneration gives HP back of itself, every second, tenths kept until they make a whole
+    /// one.
+    fn regenerate(&mut self) {
+        if !self.ticks.is_multiple_of(u32::from(TICKS_PER_SECOND)) {
+            return;
+        }
+        self.hp_tenths += self.player.build.regeneration_tenths();
+        let whole = self.hp_tenths / 10;
+        self.hp_tenths %= 10;
+        self.player.hp = (self.player.hp + whole).min(self.player.max_hp());
     }
 
     /// Illumination gives XP of itself, a point a second.
@@ -1373,7 +1425,12 @@ impl World {
     fn heal_player(&mut self) {
         let player = self.player.position;
         let (x, y) = player.tile();
-        let around = 3;
+        // As far as a campfire's light shows at its brightest, fading included: it heals within.
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "a campfire's light, a few tiles"
+        )]
+        let around = (2.0 * CAMPFIRE_LIGHT).ceil() as i32 + 1;
         let mut fire = None;
         for (tile, feature) in self.features_in((x - around, y - around), (x + around, y + around))
         {
@@ -1384,9 +1441,12 @@ impl World {
                 Feature::Herb if hurt && apart <= HERB_REACH => {
                     self.player.hp = (self.player.hp + HERB_HP).min(self.player.max_hp());
                     self.picked.insert(tile);
+                    self.healed_at = Some(self.ticks);
                 }
                 Feature::Campfire
-                    if hurt && apart <= CAMPFIRE_REACH && self.campfire_left(tile) > 0 =>
+                    if hurt
+                        && self.campfire_left(tile) > 0
+                        && apart <= heal::reach(self.campfire_left(tile)) =>
                 {
                     fire = Some(tile);
                 }
@@ -1402,6 +1462,7 @@ impl World {
             self.by_the_fire = 0;
             self.player.hp += 1;
             *self.burnt.entry(tile).or_insert(0) += 1;
+            self.healed_at = Some(self.ticks);
         }
     }
 

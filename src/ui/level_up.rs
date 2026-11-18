@@ -222,6 +222,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Wisdom => SpriteId::IconWisdom,
             Passive::Batteries => SpriteId::IconBatteries,
             Passive::Loot => SpriteId::IconLoot,
+            Passive::Regeneration => SpriteId::IconRegeneration,
         },
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
@@ -242,6 +243,7 @@ fn name(choice: Choice) -> String {
             Passive::Wisdom => fl!("passive-wisdom"),
             Passive::Batteries => fl!("passive-batteries"),
             Passive::Loot => fl!("passive-loot"),
+            Passive::Regeneration => fl!("passive-regeneration"),
         },
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
@@ -304,6 +306,8 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Magnet => 2 + level,
                 Passive::Might | Passive::Wisdom | Passive::Loot => 10 * level,
                 Passive::Batteries => 25 * level,
+                // In tenths of HP a second.
+                Passive::Regeneration => 4 * level,
                 Passive::Flashlight => 9 + 2 * level,
                 Passive::Compass => 100 + 50 * level,
             };
@@ -319,6 +323,10 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Wisdom => fl!("gain-wisdom", total = total),
                 Passive::Batteries => fl!("gain-batteries", total = total),
                 Passive::Loot => fl!("gain-loot", total = total),
+                Passive::Regeneration => {
+                    let (whole, tenth) = (total / 10, total % 10);
+                    fl!("gain-regeneration", whole = whole, tenth = tenth)
+                }
             }
         }
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),

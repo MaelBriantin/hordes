@@ -22,16 +22,18 @@ pub enum DebugAction {
     Dawn,
     LevelUp,
     Heal,
+    Campfire,
     Unhurt,
 }
 
 impl DebugAction {
-    pub const ALL: [DebugAction; 6] = [
+    pub const ALL: [DebugAction; 7] = [
         DebugAction::NextWeather,
         DebugAction::Horde,
         DebugAction::Dawn,
         DebugAction::LevelUp,
         DebugAction::Heal,
+        DebugAction::Campfire,
         DebugAction::Unhurt,
     ];
 
@@ -43,6 +45,7 @@ impl DebugAction {
             DebugAction::Dawn => "Dawn in 10 s".into(),
             DebugAction::LevelUp => "Level up".into(),
             DebugAction::Heal => "Full heal".into(),
+            DebugAction::Campfire => "Campfire here".into(),
             DebugAction::Unhurt => format!("Unhurt: {}", if unhurt { "on" } else { "off" }),
         }
     }

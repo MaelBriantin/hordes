@@ -9,10 +9,9 @@ pub const HERB_HP: u32 = 20;
 pub const HERB_REACH: f32 = 0.9;
 /// All the HP a campfire gives before it dies out: 8 seconds of healing.
 pub const CAMPFIRE_HP: u32 = 24;
-/// How near a campfire's middle the player is healed by it, in tiles.
-pub const CAMPFIRE_REACH: f32 = 2.0;
-/// How far a campfire lights the night at its brightest, in tiles; it shrinks as the fire
-/// gives its HP.
+/// How far a campfire lights the night fully at its brightest, in tiles, its light fading over
+/// as far again; it shrinks as the fire gives its HP. The player is healed as far as its light
+/// shows, fading included.
 pub const CAMPFIRE_LIGHT: f32 = 6.0;
 
 /// The ticks for each HP a campfire gives: 3 HP a second.
@@ -29,6 +28,12 @@ pub fn light(left: u32) -> f32 {
     let share = f32::from(u16::try_from(left).unwrap_or(u16::MAX))
         / f32::from(u16::try_from(CAMPFIRE_HP).unwrap_or(1));
     (CAMPFIRE_LIGHT * share).max(1.5)
+}
+
+/// How far a campfire with `left` HP still to give heals: as far as its light shows, fading
+/// included.
+pub fn reach(left: u32) -> f32 {
+    2.0 * light(left)
 }
 
 #[cfg(test)]

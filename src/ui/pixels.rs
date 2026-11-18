@@ -33,6 +33,17 @@ const CELL_GLOW: (u8, u8, u8) = (255, 210, 70);
 const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.
 const TILE_PIXELS: i32 = 2;
+/// How much a campfire's light sways, as a share of its reach.
+const FIRE_SWAY: f32 = 0.12;
+
+/// A campfire's light swaying, `frame` frames in, from -1 to 1: two waves of its own, one slow,
+/// one quick, never quite the same as another fire's.
+fn sway(frame: u32, (x, y): (i32, i32)) -> f32 {
+    let seed = f32::from(u16::try_from((x * 31 + y * 17).rem_euclid(1_000)).unwrap_or(0));
+    let time = f32::from(u16::try_from(frame % 10_000).unwrap_or(0));
+    (time * 0.21 + seed).sin() * 0.6 + (time * 0.67 + seed * 1.7).sin() * 0.4
+}
+
 /// The frames a campfire's flame keeps one look before the other.
 const FLICKER: u32 = 6;
 /// The compass's arrow: on the red of the herbs, and a darker red as it pulses, every so many
@@ -98,6 +109,12 @@ const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
 const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
 const GEAR_LEGENDARY: Color = Color::Rgb(255, 200, 60);
+/// A heal around the player: how long its crosses rise, in ticks; where they start from the
+/// player's middle, in pixels; their green, then darker.
+const HEAL_TICKS: u32 = 18;
+const HEAL_CROSSES: [(i32, i32); 3] = [(-5, 1), (5, -1), (0, -5)];
+const HEAL_BRIGHT: Color = Color::Rgb(110, 235, 120);
+const HEAL_DIM: Color = Color::Rgb(50, 140, 60);
 /// A shotgun's pellets, every other one: the gold and the red of its shells.
 const PELLETS: (Color, Color) = (Color::Rgb(240, 190, 60), Color::Rgb(220, 50, 50));
 /// A machine gun's tracer, from its head to the end of its trail.
@@ -204,6 +221,26 @@ impl<'a> Canvas<'a> {
         for (step, colour) in (0..).zip(TRACER) {
             let behind = bullet.position - way * (0.5 * f32::from(u8::try_from(step).unwrap_or(0)));
             self.set(pixel(behind), colour);
+        }
+    }
+
+    /// Small green crosses rising around the player at `centre`, `since` ticks after they were
+    /// healed, darker as they go: healed, it shows.
+    fn paint_heal(&mut self, centre: (i32, i32), since: u32) {
+        if since >= HEAL_TICKS {
+            return;
+        }
+        let colour = if since < HEAL_TICKS / 2 {
+            HEAL_BRIGHT
+        } else {
+            HEAL_DIM
+        };
+        let rise = i32::try_from(since / 3).unwrap_or(0);
+        for (dx, dy) in HEAL_CROSSES {
+            let (x, y) = (centre.0 + dx, centre.1 + dy - rise);
+            for (px, py) in [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)] {
+                self.set((x + px, y + py), colour);
+            }
         }
     }
 
@@ -342,7 +379,8 @@ impl<'a> Canvas<'a> {
             for pixel in 0..i32::from(MAX_LEVEL) {
                 let lit = pixel < i32::from(level);
                 self.set(
-                    (x + pixel, y + size + 1),
+                    // One pixel in: the level's five pixels in the middle of the icon's eight.
+                    (x + 1 + pixel, y + size + 1),
                     if lit { level_colour } else { GEAR_EMPTY },
                 );
             }
@@ -404,7 +442,8 @@ impl<'a> Canvas<'a> {
                         SpriteId::Ashes
                     } else {
                         let centre = pixel(Vec2::middle_of(tile));
-                        lights.push(night::Light::fire(centre, campfire_light(left)));
+                        let radius = campfire_light(left) * (1.0 + FIRE_SWAY * sway(frame, tile));
+                        lights.push(night::Light::fire(centre, radius));
                         burning
                     }
                 }
@@ -533,13 +572,16 @@ pub fn render_map(
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
     let mut lights = Vec::new();
-    if world.torch_lit() {
+    if world.torch_shines() {
         lights.push(night::Light::torch(centre, world.light_radius()));
     }
     lights.extend(canvas.paint_healing(world, frame));
     let glows = canvas.glows(world);
     lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
+    if let Some(healed_at) = world.healed_at {
+        canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
+    }
     if let Some(colour) = view.outline.colour() {
         canvas.outline(sprites::hero(player.facing), player.position, colour);
     }

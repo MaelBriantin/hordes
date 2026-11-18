@@ -114,8 +114,7 @@ impl Map {
         found
     }
 
-    /// Lays something on the ground of a tile.
-    #[cfg(test)]
+    /// Lays something on the ground of a tile: for the tests, and the debug console.
     pub fn put_feature(&mut self, tile: (i32, i32), feature: Feature) {
         let (chunk, _) = locate(tile);
         let seed = self.seed;

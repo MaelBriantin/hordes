@@ -46,8 +46,9 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 ## Healing
 
+- A heal shows: small green crosses rise around the player.
 - **Herbs**: a hurt player walking over a herb (within 0.9 tile of its middle) picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs don't glow: only the torch or a strike of lightning shows them.
-- **Campfires**: a hurt player within **2 tiles** of a burning campfire gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
+- **Campfires**: a hurt player as far as a burning campfire's light shows (its full light and its fading, 12 tiles at its brightest, shrinking as it gives) gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, warm and swaying, apart from the torch's white, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
 
 ## Hordes
 
@@ -73,7 +74,7 @@ In arcade, every run is played for its score.
 
 - Runs start at **dusk**, for half a minute, just enough to look around: for its first 24 s, the setting sun lights the whole map, warm, less and less, down to half its light; then the night falls all of a sudden, in **6 s**, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls, flickering twice before it holds. **Space** or **F** puts it out, or lights it again, flickering the same.
+- The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls. **Space** or **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
 - **Its battery**: a full one keeps the torch lit **2 minutes**; out, it charges back from empty in **1 minute** (Batteries: both 25% better per level). Nearly empty, the torch flickers, then dies out; it lights again only from **10%**. The status line shows the torch, on or out (a bulb), and its battery as a gauge, its percent in the middle, yellow while the torch is on, grey-blue while it charges, red under 20%. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
 - **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **12**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the machete and the drones still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
 - **Shadows** go the other way round, at night: they hunt the player in the dark, wherever they are, their eyes shining red; the torch lit, they keep away from it.
@@ -204,6 +205,7 @@ Up to **4 passives**, each up to **level 5**.
 | Compass | A red arrow on the edge of the screen, white on pulsing red cells, a healing cross beside it, points to the nearest healing (a herb, a burning campfire), while it is off screen: within 150 tiles, 50 more per level |
 | Batteries | +25% to the torch's battery: it lasts longer, and charges faster |
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
+| Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
 
 ## Legendaries
@@ -222,6 +224,6 @@ Up to **4 passives**, each up to **level 5**.
 - A fallen **Shadow** also leaves an **energy cell**, yellow, beside its gem: it flies in as gems do, and gives the torch's battery **15%**.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heal. Rare: Might, Haste, Compass, Wisdom, Batteries. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heal. Rare: Might, Haste, Compass, Wisdom, Batteries, Regeneration. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Batteries is offered: there is still light enough. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Choosing**: ←/→ (or Q/A and D) then Enter (or Space), or 1, 2, 3 straight away.
