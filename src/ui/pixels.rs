@@ -16,8 +16,11 @@ use crate::game::{
 const TILE_PIXELS: i32 = 2;
 /// The frames a campfire's flame keeps one look before the other.
 const FLICKER: u32 = 6;
-/// The compass's arrow: the red of the herbs.
+/// The compass's arrow: on the red of the herbs, and a darker red as it pulses, every so many
+/// frames.
 const COMPASS: Color = Color::Rgb(220, 45, 65);
+const COMPASS_DIM: Color = Color::Rgb(130, 25, 38);
+const COMPASS_PULSE: u32 = 10;
 /// The colour of an enemy just hit.
 const FLASH: Color = Color::Rgb(255, 255, 255);
 /// The colour of a machete's swing, then as it fades.
@@ -321,7 +324,7 @@ pub fn render_death_scene(
 
 /// The compass's arrow: on the edge of `area`, the way the healing at `target` lies from the
 /// player in its middle; none while the healing is on screen, for the torch to find.
-pub fn render_compass(buffer: &mut Buffer, area: Rect, player: Vec2, target: Vec2) {
+pub fn render_compass(buffer: &mut Buffer, area: Rect, player: Vec2, target: Vec2, frame: u32) {
     let (centre, aim) = (pixel(player), pixel(target));
     // In cells from the middle of the area: a cell is a pixel wide and two tall.
     let across = aim.0 - centre.0;
@@ -357,7 +360,15 @@ pub fn render_compass(buffer: &mut Buffer, area: Rect, player: Vec2, target: Vec
         area.x + x.min(area.width - 1),
         area.y + y.min(area.height - 1),
         arrow,
-        Style::new().fg(COMPASS).add_modifier(Modifier::BOLD),
+        // A white arrow on a red cell, pulsing: seen at a glance on the edge of the night.
+        Style::new()
+            .fg(Color::Rgb(255, 255, 255))
+            .bg(if (frame / COMPASS_PULSE).is_multiple_of(2) {
+                COMPASS
+            } else {
+                COMPASS_DIM
+            })
+            .add_modifier(Modifier::BOLD),
     );
 }
 
@@ -469,6 +480,7 @@ mod tests {
             area,
             Vec2::new(0.5, 0.5),
             Vec2::new(200.5, 0.5),
+            0,
         );
         let row: String = (0..40)
             .map(|x| buffer[(x, 10)].symbol().to_owned())
@@ -481,7 +493,13 @@ mod tests {
     fn the_compass_says_nothing_of_healing_on_screen() {
         let area = Rect::new(0, 0, 40, 20);
         let mut buffer = Buffer::empty(area);
-        render_compass(&mut buffer, area, Vec2::new(0.5, 0.5), Vec2::new(5.5, 2.5));
+        render_compass(
+            &mut buffer,
+            area,
+            Vec2::new(0.5, 0.5),
+            Vec2::new(5.5, 2.5),
+            0,
+        );
         assert_eq!(buffer, Buffer::empty(area));
     }
 }

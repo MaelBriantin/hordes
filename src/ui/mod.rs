@@ -127,7 +127,13 @@ pub fn render(
             view.rain,
         );
         if let Some(healing) = world.compass() {
-            pixels::render_compass(frame.buffer_mut(), map, world.player.position, healing);
+            pixels::render_compass(
+                frame.buffer_mut(),
+                map,
+                world.player.position,
+                healing,
+                view.frame,
+            );
         }
     }
     let help = match screen {

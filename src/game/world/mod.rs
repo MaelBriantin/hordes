@@ -707,7 +707,7 @@ impl World {
         let (x, y) = player.tile();
         #[allow(
             clippy::cast_possible_truncation,
-            reason = "a range of a few dozen tiles"
+            reason = "a range of a few hundred tiles"
         )]
         let reach = range.ceil() as i32;
         self.features_in((x - reach, y - reach), (x + reach, y + reach))

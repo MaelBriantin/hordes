@@ -169,12 +169,12 @@ impl Build {
         9.0 + 2.0 * f32::from(self.passive_level(Passive::Flashlight))
     }
 
-    /// How far the compass finds healing, in tiles: 50, and 25 more per level after the first;
-    /// none without it.
+    /// How far the compass finds healing, in tiles: 150, and 50 more per level after the first;
+    /// none without it. Healing is rare: within 150 tiles, there is nearly always some.
     pub fn compass_range(&self) -> Option<f32> {
         match self.passive_level(Passive::Compass) {
             0 => None,
-            level => Some(25.0 + 25.0 * f32::from(level)),
+            level => Some(100.0 + 50.0 * f32::from(level)),
         }
     }
 
