@@ -24,6 +24,12 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Campfires**: standing next to one heals little by little, but staying put is dangerous with the horde around, and the fire dies out on its own after a while.
 - **Revival**: a rare bonus that brings the player back once, at 0 HP.
 
+## Gold
+
+- Enemies drop **gold** besides the XP gems, once there is something to spend it on:
+  - **boosting upgrades**: paying to raise a card's level further, or to draw new cards on a level-up;
+  - a **merchant met on the map**, in a lit spot of his own, selling herbs, weapons and upgrades for the gold gathered.
+
 ## Building
 
 - **Materials** to pick up on the map (dropped by enemies, or gathered from trees and rocks), and **barricades** the player places with a key. A barricade blocks like a rock: zombies slide around it, bats fly over, the abomination could break it.
