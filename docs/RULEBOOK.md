@@ -34,6 +34,15 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Herbs**: a hurt player walking over a herb (within 0.9 tile of its middle) picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs don't glow: only the torch or a strike of lightning shows them.
 - **Campfires**: a hurt player within **2 tiles** of a burning campfire gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
 
+## Hordes
+
+- Every **90 s** (the first at 1:30), a **horde** comes: **30** enemies, and **10** more for each horde before it.
+- It is **announced 3 s before**: a blinking banner on top of the map, three red arrows on the edge it comes from, and the map shaking twice.
+- Until the storm, it comes as a dense **pack** out of one side (a band 16 tiles wide, 5 deep, just beyond the screen); from the storm on, as a **ring** out of every side, announced on every edge.
+- Its enemies: zombies; a bat in four from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
+- **Wiped out** to the last, a horde **doubles** the points its kills were worth: the bonus shows in gold on top of the map.
+- Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
+
 ## Score
 
 Every run is played for its score, arcade style.
@@ -98,7 +107,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 - Enemies appear just beyond what the player sees (3 tiles past the edge of the screen), never on an obstacle (bats excepted).
 - **1 per second**, and 1 more per second each minute: 2 from 1:00, 10 from 9:00.
 - Which kind, among those arrived, by weight: zombie **6**, bat **3**, abomination **1**.
-- At most **300** enemies at once.
+- At most **300** enemies at once (600 while a horde is about).
 - An enemy left far behind (twice as far as the edge of the screen) appears again just beyond the side the player faces.
 
 ## Weapons

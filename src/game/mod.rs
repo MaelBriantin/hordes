@@ -9,6 +9,7 @@ mod facing;
 mod gem;
 mod guns;
 mod heal;
+mod horde;
 mod leaderboard;
 mod level;
 mod machete;

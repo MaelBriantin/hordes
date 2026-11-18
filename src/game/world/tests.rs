@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
 use super::super::heal::{CAMPFIRE_HP, HERB_HP};
+use super::super::horde::Warning;
 use super::super::map::Feature;
 use super::super::score;
 use super::super::stain;
@@ -187,6 +188,8 @@ fn enemies_appear_beyond_the_view_and_clear_of_obstacles() {
 fn there_are_never_more_than_the_most_enemies() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
+    // No horde: it has a most of its own.
+    world.next_horde = u32::MAX;
     world.ticks = 30 * 60 * 9;
     for _ in 0..30 * 60 {
         world.update(Input::default());
@@ -789,4 +792,74 @@ fn the_compass_points_to_the_nearest_healing_within_its_range() {
     assert_eq!(world.compass(), Some(Vec2::middle_of((140, 50))));
     world.picked.insert((140, 50));
     assert_eq!(world.compass(), None);
+}
+
+#[test]
+fn a_horde_is_announced_then_comes_out_of_its_side() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.set_view(Vec2::new(30.0, 12.0));
+    world.ticks = 30 * 87 - 1;
+    wait(&mut world, 1);
+    let warning = world.horde_warning.expect("announced 3 seconds before");
+    assert_eq!(warning.arrives_at, 30 * 90);
+    assert!(warning.side.is_some());
+    world.enemies.clear();
+    wait(&mut world, 30 * 3);
+    assert_eq!(world.horde_warning, None);
+    let horde: Vec<_> = world
+        .enemies
+        .iter()
+        .filter(|enemy| enemy.horde == Some(0))
+        .collect();
+    assert_eq!(horde.len(), 30);
+}
+
+#[test]
+fn from_the_storm_on_a_horde_comes_from_every_side() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.ticks = 30 * 480;
+    world.next_horde = 30 * 482;
+    wait(&mut world, 1);
+    assert_eq!(world.horde_warning.map(|warning| warning.side), Some(None));
+}
+
+#[test]
+fn a_horde_wiped_out_doubles_its_kills() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.set_view(Vec2::new(30.0, 12.0));
+    world.bring_horde(Warning {
+        arrives_at: 0,
+        side: Some(Facing::Right),
+        number: 0,
+    });
+    let count = world.enemies.len();
+    assert!(count > 0);
+    for enemy in &mut world.enemies {
+        enemy.hp = 0;
+    }
+    world.fell_enemies();
+    let (_, bonus) = world.horde_cleared.expect("wiped out");
+    assert_eq!(world.score, 2 * bonus);
+    assert!(bonus >= 10 * u64::try_from(count).unwrap());
+}
+
+#[test]
+fn enemies_far_apart_never_push_each_other() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(120.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(120.5, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(140.0, 50.0)));
+    let pushes = world.separations();
+    assert!(pushes[0].x < 0.0 && pushes[1].x > 0.0);
+    assert_eq!(pushes[2], Vec2::ZERO);
 }

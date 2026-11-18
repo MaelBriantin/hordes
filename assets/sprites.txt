@@ -24,6 +24,8 @@ p 85 85 85      pebble
 Z 110 170 90    zombie skin
 C 110 100 120   torn clothes
 N 60 55 65      zombie legs
+P 175 170 185   ghoul skin
+c 80 70 85      ghoul rags
 V 150 80 190    bat
 E 230 40 40     red eyes
 A 160 190 140   abomination skin
@@ -81,6 +83,20 @@ zombie_front
 .ZZ.
 ZCCZ
 .CC.
+.NN.
+
+# A zombie come with a horde: a ghoul, pale, in darker rags; the same two ways.
+
+ghoul_side
+.PP.
+.cPP
+.cc.
+.NN.
+
+ghoul_front
+.PP.
+PccP
+.cc.
 .NN.
 
 # The bat, 4 × 4: its wings up, then down.

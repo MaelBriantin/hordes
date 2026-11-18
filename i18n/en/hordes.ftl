@@ -116,3 +116,9 @@ name-title = New high score!
 name-place = Number { $place } on the leaderboard!
 name-prompt = Your name:
 help-name = ←→ move · ↑↓ or a letter · Enter confirm · Esc skip
+
+## Hordes
+
+horde-coming = ⚠  A HORDE IS COMING!  ⚠
+horde-everywhere = ⚠  THEY COME FROM EVERYWHERE!  ⚠
+horde-cleared = Horde wiped out! +{ $points }

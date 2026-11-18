@@ -21,6 +21,9 @@ pub enum SpriteId {
     /// Facing right.
     ZombieSide,
     ZombieFront,
+    /// Facing right.
+    GhoulSide,
+    GhoulFront,
     BatUp,
     BatDown,
     /// Facing right.
@@ -52,12 +55,14 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 32] = [
+    const ALL: [SpriteId; 34] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
         SpriteId::ZombieSide,
         SpriteId::ZombieFront,
+        SpriteId::GhoulSide,
+        SpriteId::GhoulFront,
         SpriteId::BatUp,
         SpriteId::BatDown,
         SpriteId::Abomination,
@@ -94,6 +99,8 @@ impl SpriteId {
             SpriteId::HeroSide => "hero_side",
             SpriteId::ZombieSide => "zombie_side",
             SpriteId::ZombieFront => "zombie_front",
+            SpriteId::GhoulSide => "ghoul_side",
+            SpriteId::GhoulFront => "ghoul_front",
             SpriteId::BatUp => "bat_up",
             SpriteId::BatDown => "bat_down",
             SpriteId::Abomination => "abomination",
@@ -197,10 +204,18 @@ const FLASH: Color = Color::Rgb(255, 255, 255);
 /// An enemy as it shows: turned the way it faces, a bat's wings up or down, white when just hit.
 pub fn enemy(enemy: &Enemy) -> Look {
     let look = match enemy.kind {
-        EnemyKind::Zombie => match enemy.facing {
-            Facing::Left | Facing::Right => Look::sideways(SpriteId::ZombieSide, enemy.facing),
-            Facing::Up | Facing::Down => Look::plain(SpriteId::ZombieFront),
-        },
+        // A zombie come with a horde shows as a ghoul.
+        EnemyKind::Zombie => {
+            let (side, front) = if enemy.horde.is_some() {
+                (SpriteId::GhoulSide, SpriteId::GhoulFront)
+            } else {
+                (SpriteId::ZombieSide, SpriteId::ZombieFront)
+            };
+            match enemy.facing {
+                Facing::Left | Facing::Right => Look::sideways(side, enemy.facing),
+                Facing::Up | Facing::Down => Look::plain(front),
+            }
+        }
         // Three wingbeats to a swerve of its zigzag.
         EnemyKind::Bat if (enemy.phase * 3.0).sin() > 0.0 => Look::plain(SpriteId::BatUp),
         EnemyKind::Bat => Look::plain(SpriteId::BatDown),

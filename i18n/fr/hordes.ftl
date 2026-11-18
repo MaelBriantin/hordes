@@ -116,3 +116,9 @@ name-title = Nouveau record !
 name-place = { $place }ᵉ du classement !
 name-prompt = Ton nom :
 help-name = ←→ bouger · ↑↓ ou une lettre · Entrée valider · Échap passer
+
+## Hordes
+
+horde-coming = ⚠  UNE HORDE ARRIVE !  ⚠
+horde-everywhere = ⚠  ILS ARRIVENT DE PARTOUT !  ⚠
+horde-cleared = Horde abattue ! +{ $points }

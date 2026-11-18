@@ -10,6 +10,7 @@ use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
 use super::guns::{self, Bullet, Magazine};
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_REACH, HERB_HP, HERB_REACH};
+use super::horde::{self, Tally, Warning};
 use super::level::xp_to_next;
 use super::machete::{self, Swing};
 use super::map::Feature;
@@ -34,6 +35,11 @@ const SEPARATION: f32 = 0.25;
 const MAX_STEP: f32 = 0.9;
 /// How many tries to find a free spot for an enemy to appear on.
 const SPAWN_TRIES: u32 = 10;
+/// The most enemies at once while a horde is about: a horde comes beyond the usual most.
+const MAX_ENEMIES_WITH_HORDE: usize = 600;
+/// The size of a cell of the grid enemies are sorted in to push each other apart, in tiles:
+/// more than the widest two bodies, so that only neighbouring cells can overlap.
+const SEPARATION_CELL: f32 = 2.0;
 /// The most gems lying around at once: past it, the oldest go.
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
@@ -119,6 +125,15 @@ pub struct World {
     drone_repairs: Vec<u32>,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
+    /// The horde on its way, once announced.
+    pub horde_warning: Option<Warning>,
+    /// The tick the next horde comes at, and its number.
+    next_horde: u32,
+    hordes_come: u32,
+    /// The hordes come and not yet wiped out, by number.
+    tallies: HashMap<u32, Tally>,
+    /// The last horde wiped out: when, and the bonus it was worth.
+    pub horde_cleared: Option<(u32, u64)>,
     /// The herbs picked, by tile.
     picked: HashSet<(i32, i32)>,
     /// The HP each campfire has given, by tile.
@@ -178,6 +193,11 @@ impl World {
             drone_angle: 0.0,
             drone_repairs: Vec::new(),
             lightning: None,
+            horde_warning: None,
+            next_horde: horde::every(),
+            hordes_come: 0,
+            tallies: HashMap::new(),
+            horde_cleared: None,
             picked: HashSet::new(),
             burnt: HashMap::new(),
             by_the_fire: 0,
@@ -230,6 +250,7 @@ impl World {
         self.ticks += 1;
         self.move_player(input);
         self.spawn();
+        self.hordes();
         self.move_enemies();
         self.relocate_stragglers();
         self.storm();
@@ -551,10 +572,24 @@ impl World {
         }
         let weather = self.weather();
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
-            self.score += score::worth(enemy.kind, weather, self.combo);
+            // Worth the combo as it stood before this kill.
+            let worth = score::worth(enemy.kind, weather, self.combo);
+            self.score += worth;
             self.combo += 1;
             self.last_kill = self.ticks;
             let stats = enemy.kind.stats();
+            // A horde wiped out to the last doubles what its kills were worth.
+            if let Some(number) = enemy.horde
+                && let Some(tally) = self.tallies.get_mut(&number)
+            {
+                tally.points += worth;
+                tally.left -= 1;
+                if tally.left == 0 {
+                    self.score += tally.points;
+                    self.horde_cleared = Some((self.ticks, tally.points));
+                    self.tallies.remove(&number);
+                }
+            }
             if self.rng.random_range(0..100) < stats.drop_percent {
                 self.gems.push(Gem::new(enemy.position, stats.xp));
             }
@@ -625,6 +660,67 @@ impl World {
         }
     }
 
+    /// Announces the next horde a moment before it comes, then brings it: a pack out of one side,
+    /// or a ring out of every side from the storm on.
+    fn hordes(&mut self) {
+        if self.horde_warning.is_none() && self.ticks + horde::warning() >= self.next_horde {
+            let side = if horde::rings(self.weather()) {
+                None
+            } else {
+                Some(
+                    [Facing::Up, Facing::Down, Facing::Left, Facing::Right]
+                        [self.rng.random_range(0..4)],
+                )
+            };
+            self.horde_warning = Some(Warning {
+                arrives_at: self.next_horde,
+                side,
+                number: self.hordes_come,
+            });
+        }
+        if let Some(warning) = self.horde_warning
+            && self.ticks >= warning.arrives_at
+        {
+            self.bring_horde(warning);
+            self.horde_warning = None;
+            self.hordes_come += 1;
+            // From when it came: never a horde owed from the past.
+            self.next_horde = self.ticks + horde::every();
+        }
+    }
+
+    /// A horde comes: its enemies, as many as fit, just beyond what the player sees.
+    fn bring_horde(&mut self, warning: Warning) {
+        let weather = self.weather();
+        let room = MAX_ENEMIES_WITH_HORDE.saturating_sub(self.enemies.len());
+        let count = horde::size(warning.number).min(u32::try_from(room).unwrap_or(0));
+        let spots = horde::spots(
+            &mut self.rng,
+            self.player.position,
+            self.view,
+            warning.side,
+            count,
+        );
+        let mut tally = Tally::default();
+        for spot in spots {
+            let kind = horde::kind(&mut self.rng, weather);
+            let stats = kind.stats();
+            if !fits(&self.map, spot, stats.half_width, stats.flies) {
+                continue;
+            }
+            let phase = spawn::phase(&mut self.rng);
+            let mut enemy = Enemy::new(self.next_enemy_id, kind, spot, phase);
+            enemy.hp = enemy.hp * weather.hp_percent() / 100;
+            enemy.horde = Some(warning.number);
+            self.enemies.push(enemy);
+            self.next_enemy_id += 1;
+            tally.left += 1;
+        }
+        if tally.left > 0 {
+            self.tallies.insert(warning.number, tally);
+        }
+    }
+
     /// A point just beyond what the player sees where an enemy of that kind fits: on `side`,
     /// or on any. None if the tries all fall on obstacles or off the map.
     fn free_edge_point(&mut self, kind: EnemyKind, side: Option<Facing>) -> Option<Vec2> {
@@ -661,26 +757,43 @@ impl World {
         }
     }
 
-    /// How far each enemy is pushed by those it overlaps, in the order of `enemies`.
+    /// How far each enemy is pushed by those it overlaps, in the order of `enemies`. Enemies are
+    /// sorted into a grid first, so that each meets only those in its own cell and the cells
+    /// around: a horde of hundreds stays cheap.
     fn separations(&self) -> Vec<Vec2> {
+        let cell_of = |position: Vec2| (position * (1.0 / SEPARATION_CELL)).tile();
+        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+        for (index, enemy) in self.enemies.iter().enumerate() {
+            grid.entry(cell_of(enemy.position)).or_default().push(index);
+        }
         let mut pushes = vec![Vec2::ZERO; self.enemies.len()];
         for (i, a) in self.enemies.iter().enumerate() {
-            for (j, b) in self.enemies.iter().enumerate().skip(i + 1) {
-                let reach = a.kind.stats().half_width + b.kind.stats().half_width;
-                let apart = a.position - b.position;
-                let distance = apart.length();
-                if distance >= reach {
-                    continue;
+            let (cx, cy) = cell_of(a.position);
+            for dy in -1..=1 {
+                for dx in -1..=1 {
+                    let Some(others) = grid.get(&(cx + dx, cy + dy)) else {
+                        continue;
+                    };
+                    // Each pair once: the one with the larger index pushes both.
+                    for &j in others.iter().filter(|j| **j > i) {
+                        let b = &self.enemies[j];
+                        let reach = a.kind.stats().half_width + b.kind.stats().half_width;
+                        let apart = a.position - b.position;
+                        let distance = apart.length();
+                        if distance >= reach {
+                            continue;
+                        }
+                        // Two on the very same spot part sideways.
+                        let away = if distance > f32::EPSILON {
+                            apart * (1.0 / distance)
+                        } else {
+                            Vec2::new(1.0, 0.0)
+                        };
+                        let push = away * ((reach - distance) * SEPARATION);
+                        pushes[i] += push;
+                        pushes[j] -= push;
+                    }
                 }
-                // Two on the very same spot part sideways.
-                let away = if distance > f32::EPSILON {
-                    apart * (1.0 / distance)
-                } else {
-                    Vec2::new(1.0, 0.0)
-                };
-                let push = away * ((reach - distance) * SEPARATION);
-                pushes[i] += push;
-                pushes[j] -= push;
             }
         }
         pushes

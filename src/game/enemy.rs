@@ -94,6 +94,8 @@ pub struct Enemy {
     pub hp: u32,
     /// Ticks left during which it shows white, after a hit.
     pub flash: u32,
+    /// The horde it came with, if it did.
+    pub horde: Option<u32>,
     /// Where it is in its zigzag and wingbeat, in radians: a bat's own, drawn as it appears.
     pub phase: f32,
 }
@@ -107,6 +109,7 @@ impl Enemy {
             facing: Facing::default(),
             hp: kind.stats().hp,
             flash: 0,
+            horde: None,
             phase,
         }
     }

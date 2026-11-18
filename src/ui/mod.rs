@@ -3,6 +3,7 @@
 //! level-up's cards or the game over.
 
 mod font;
+mod horde;
 mod level_up;
 mod menu;
 mod night;
@@ -126,6 +127,7 @@ pub fn render(
             view.blood,
             view.rain,
         );
+        horde::shift(frame.buffer_mut(), map, horde::shake(world));
         if let Some(healing) = world.compass() {
             pixels::render_compass(
                 frame.buffer_mut(),
@@ -154,6 +156,7 @@ pub fn render(
         Screen::Playing => {}
     }
     if !dead {
+        horde::render(frame, map, world, view.frame);
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
     }
 }
