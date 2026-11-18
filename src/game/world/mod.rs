@@ -141,6 +141,8 @@ pub struct World {
     pub announcement: Option<Announcement>,
     /// What reaching the dawn added to the score, once the run has: the run is won, and over.
     pub dawn_bonus: Option<u64>,
+    /// The tick the player was last hurt at, if they have been.
+    pub hurt_at: Option<u32>,
     /// Nothing hurts the player: a debug tool.
     pub unhurt: bool,
     /// The herbs picked, by tile.
@@ -212,6 +214,7 @@ impl World {
             horde_cleared: None,
             announcement: None,
             dawn_bonus: None,
+            hurt_at: None,
             unhurt: false,
             picked: HashSet::new(),
             burnt: HashMap::new(),
@@ -1037,6 +1040,7 @@ impl World {
         if let Some(damage) = hit {
             player.hp = player.hp.saturating_sub(damage);
             player.invincible = u32::from(TICKS_PER_SECOND) / 2;
+            self.hurt_at = Some(self.ticks);
             self.stains.push(Stain {
                 position: player.position,
                 tick: self.ticks,

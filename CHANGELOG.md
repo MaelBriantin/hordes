@@ -10,6 +10,7 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- A blow to the player spurts blood (as the settings say) and flushes the edges of the screen red for a moment.
 - The title screen and the pause menu show the game's version.
 
 ## v0.3.0 · November 18, 2026

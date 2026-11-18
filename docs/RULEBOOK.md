@@ -62,7 +62,8 @@ Every run is played for its score, arcade style.
 - The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
 - **Gems, bullets and the machete's swings glow**: they show in the dark.
 - **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
-- **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**.
+- **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**. A hit player also spurts a few drops every way, for a third of a second.
+- **A blow** to the player flushes the edges of the screen red for half a second, whatever the blood setting.
 
 ## Weather
 

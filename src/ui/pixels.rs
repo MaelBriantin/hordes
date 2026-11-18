@@ -326,6 +326,10 @@ pub fn render_map(
     for (position, look) in figures {
         canvas.paint_at(look, position);
     }
+    if let Some(hurt_at) = world.hurt_at {
+        let since = world.ticks().saturating_sub(hurt_at);
+        night::paint_spurt(&mut canvas, centre, since, hurt_at, blood);
+    }
     for (drone, broken) in world.drones() {
         let look = Look {
             tint: broken.then_some(BROKEN),

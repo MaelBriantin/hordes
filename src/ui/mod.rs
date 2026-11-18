@@ -64,6 +64,12 @@ const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The width of the weather's gauge, in cells.
 const WEATHER_GAUGE: u8 = 6;
+/// How long the edges of the map flush red after a blow, in ticks; how deep, in cells; how red
+/// at most, and in which red.
+const HURT_TICKS: u32 = 15;
+const HURT_EDGE: u16 = 4;
+const HURT_STRENGTH: f32 = 0.6;
+const HURT_RED: (u8, u8, u8) = (200, 20, 30);
 /// The game's own background and text, whatever the terminal's theme: a light one would wash
 /// the night out.
 const SCREEN: Style = Style::new()
@@ -156,6 +162,7 @@ pub fn render(
             view.rain,
         );
         horde::shift(frame.buffer_mut(), map, horde::shake(world));
+        render_hurt(frame.buffer_mut(), map, world);
         if let Some(healing) = world.compass() {
             pixels::render_compass(
                 frame.buffer_mut(),
@@ -195,6 +202,57 @@ pub fn render(
         horde::render(frame, map, world);
         announce::render(frame, map, world, sprites);
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
+    }
+}
+
+/// The edges of the map flushing red a moment after the player is hurt, fading: the blow is
+/// felt.
+fn render_hurt(buffer: &mut Buffer, map: Rect, world: &World) {
+    let Some(at) = world.hurt_at else {
+        return;
+    };
+    let since = world.ticks().saturating_sub(at);
+    if since >= HURT_TICKS {
+        return;
+    }
+    let share = |part: u32, whole: u32| {
+        f32::from(u16::try_from(part).unwrap_or(0)) / f32::from(u16::try_from(whole).unwrap_or(1))
+    };
+    let strength = HURT_STRENGTH * (1.0 - share(since, HURT_TICKS));
+    let redden = |color: Color, by: f32| match color {
+        Color::Rgb(red, green, blue) => {
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "between two channels, 0 to 255"
+            )]
+            let mix = |from: u8, to: u8| {
+                let from = f32::from(from);
+                (from + (f32::from(to) - from) * by).round() as u8
+            };
+            Color::Rgb(
+                mix(red, HURT_RED.0),
+                mix(green, HURT_RED.1),
+                mix(blue, HURT_RED.2),
+            )
+        }
+        other => other,
+    };
+    for y in map.top()..map.bottom() {
+        for x in map.left()..map.right() {
+            // In cells across, and in half cells down: a cell is twice as tall as wide.
+            let edge = (x - map.left())
+                .min(map.right() - 1 - x)
+                .min((y - map.top()) * 2)
+                .min((map.bottom() - 1 - y) * 2);
+            if edge >= HURT_EDGE {
+                continue;
+            }
+            let by = strength * (1.0 - share(u32::from(edge), u32::from(HURT_EDGE)));
+            let cell = &mut buffer[(x, y)];
+            cell.fg = redden(cell.fg, by);
+            cell.bg = redden(cell.bg, by);
+        }
     }
 }
 

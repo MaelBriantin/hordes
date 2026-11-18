@@ -129,6 +129,44 @@ impl RainDisplay {
     }
 }
 
+/// How long blood spurts from the player when hurt, in ticks, and how many drops.
+const SPURT_TICKS: u32 = 10;
+const SPURT_DROPS: u32 = 10;
+
+/// Blood spurting from the player at `centre`, `since` ticks after the blow, in their `look`:
+/// drops flying out every way, each at its own speed, the same for the same `seed`.
+pub fn paint_spurt(
+    canvas: &mut Canvas,
+    centre: (i32, i32),
+    since: u32,
+    seed: u32,
+    look: BloodLook,
+) {
+    let Some(colours) = look.colours() else {
+        return;
+    };
+    if since >= SPURT_TICKS {
+        return;
+    }
+    let since = f32::from(u16::try_from(since).unwrap_or(0)) + 1.0;
+    for drop in 0..SPURT_DROPS {
+        let luck = noise(seed.wrapping_add(drop));
+        let angle = f32::from(u16::try_from(luck % 360).unwrap_or(0)).to_radians();
+        // From half a pixel to a pixel a tick.
+        let pace = 0.5 + f32::from(u16::try_from((luck >> 9) % 50).unwrap_or(0)) / 100.0;
+        let reach = since * pace;
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "a few pixels from the player"
+        )]
+        let at = (
+            centre.0 + (angle.cos() * reach).round() as i32,
+            centre.1 + (angle.sin() * reach).round() as i32,
+        );
+        canvas.set(at, colours[usize::try_from(drop % 2).unwrap_or(0)]);
+    }
+}
+
 /// A run's rain in that weather, `progress` through its stage, shown as `display` says: dimmer
 /// than the title's, so as not to hide the horde, and turning into the next weather's at the
 /// end of the stage; less and less as the sun rises, the `daylight` there is. None when there is
