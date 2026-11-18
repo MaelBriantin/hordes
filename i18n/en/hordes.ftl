@@ -17,8 +17,11 @@ title-options = Blood: { $blood } (B) · Rain: { $rain } (R) · { $language } (L
 
 ## Settings
 
-setting-on = on
 setting-off = off
+blood-red = red
+blood-ketchup = ketchup
+blood-mayo = mayo
+blood-pesto = pesto
 rain-full = full
 rain-reduced = reduced
 rain-off = off

@@ -7,7 +7,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
 - **Start**: the game opens on its title screen, the run standing still; Enter starts it.
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), show blood or not, set the rain, change the language, start a new run or quit. ↑↓ choose, Enter confirms, ←→ change a setting.
-- **Blood**: on or off, with B on the title screen or from the pause menu.
+- **Blood**: red, ketchup, mayo, pesto or off, with B on the title screen or from the pause menu.
 - **Rain**: how it shows (full, reduced to half its drops, or off), with R on the title screen or from the pause menu. The weather itself is the same whatever the choice.
 - **Language**: English or French, with L on the title screen or from the pause menu. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).
@@ -27,11 +27,11 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - Each run draws a new map from a **seed**, chunk by chunk (32 × 32 tiles) as the player nears them: the same place always looks the same.
 - **Obstacles** block the way: trees and rocks, each covering **2 × 2 tiles**. They come in clumps of up to **8**: groves (70% of clumps) and heaps of rocks (30%). Together they cover **8%** of each chunk.
 - The player starts with no obstacle within **8 tiles**.
-- Healing is **rare**: about one chunk in 8 holds a **herb** on its free ground, one in 25 a **campfire** in a clearing (no obstacle of the chunk within 2 tiles). The same place always holds the same.
+- Healing is **rare**: about one chunk in 33 holds a **herb** on its free ground, one in 100 a **campfire** in a clearing (no obstacle of the chunk within 2 tiles). The same place always holds the same.
 
 ## Healing
 
-- **Herbs**: a hurt player walking over a herb (within 0.9 tile of its middle) picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs glow red in the dark.
+- **Herbs**: a hurt player walking over a herb (within 0.9 tile of its middle) picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs don't glow: only the torch or a strike of lightning shows them.
 - **Campfires**: a hurt player within **2 tiles** of a burning campfire gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
 
 ## Score
@@ -50,7 +50,7 @@ Every run is played for its score, arcade style.
 - The player carries a **light**: everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (a tenth of their brightness).
 - **Gems, bullets and the machete's swings glow**: they show in the dark.
 - **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
-- **Blood** (if shown): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**.
+- **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**.
 
 ## Weather
 

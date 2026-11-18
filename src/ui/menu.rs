@@ -12,7 +12,7 @@ use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{RainDisplay, ViewState};
+use super::{BloodLook, RainDisplay, ViewState};
 use crate::game::{Entry, Leaderboard, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
@@ -51,7 +51,7 @@ impl PauseItem {
     fn label(self, view: ViewState) -> String {
         match self {
             PauseItem::Resume => fl!("pause-resume"),
-            PauseItem::Blood => fl!("pause-blood", value = on_off(view.blood)),
+            PauseItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
             PauseItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
             PauseItem::Language => fl!("pause-language", value = view.language),
             PauseItem::NewRun => fl!("pause-new-run"),
@@ -60,11 +60,13 @@ impl PauseItem {
     }
 }
 
-fn on_off(on: bool) -> String {
-    if on {
-        fl!("setting-on")
-    } else {
-        fl!("setting-off")
+fn blood_name(blood: BloodLook) -> String {
+    match blood {
+        BloodLook::Red => fl!("blood-red"),
+        BloodLook::Ketchup => fl!("blood-ketchup"),
+        BloodLook::Mayo => fl!("blood-mayo"),
+        BloodLook::Pesto => fl!("blood-pesto"),
+        BloodLook::Off => fl!("setting-off"),
     }
 }
 
@@ -161,7 +163,7 @@ pub fn render_title(
         frame,
         &fl!(
             "title-options",
-            blood = on_off(view.blood),
+            blood = blood_name(view.blood),
             rain = rain_name(view.rain),
             language = view.language
         ),

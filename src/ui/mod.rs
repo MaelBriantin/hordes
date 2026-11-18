@@ -21,7 +21,7 @@ use ratatui::widgets::Block;
 use crate::game::{Leaderboard, Vec2, World, xp_to_next};
 use crate::game::{Weather, weather_progress};
 pub use menu::PauseItem;
-pub use night::RainDisplay;
+pub use night::{BloodLook, RainDisplay};
 pub use sprites::Sprites;
 
 /// Where the player is, outside the run itself.
@@ -84,8 +84,8 @@ pub struct ViewState {
     pub selected: usize,
     pub shown: Duration,
     pub frame: u32,
-    /// Whether blood shows, and how the rain shows.
-    pub blood: bool,
+    /// How blood shows, and how the rain shows.
+    pub blood: BloodLook,
     pub rain: RainDisplay,
     /// The language the game speaks, by its own name: `Français`.
     pub language: &'static str,

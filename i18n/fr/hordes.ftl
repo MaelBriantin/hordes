@@ -17,8 +17,11 @@ title-options = Sang : { $blood } (B) · Pluie : { $rain } (R) · { $language } 
 
 ## Réglages
 
-setting-on = oui
 setting-off = non
+blood-red = rouge
+blood-ketchup = ketchup
+blood-mayo = mayo
+blood-pesto = pesto
 rain-full = forte
 rain-reduced = réduite
 rain-off = aucune

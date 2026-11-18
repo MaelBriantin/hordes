@@ -19,7 +19,7 @@ use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
 use crate::game::{Entry, Leaderboard, TICKS_PER_SECOND, World};
-use crate::ui::{self, PauseItem, RainDisplay, Screen, Sprites, ViewState};
+use crate::ui::{self, BloodLook, PauseItem, RainDisplay, Screen, Sprites, ViewState};
 use keys::Keys;
 use settings::Settings;
 
@@ -157,7 +157,7 @@ impl App {
     fn on_title(&mut self, code: KeyCode) {
         match code {
             KeyCode::Enter | KeyCode::Char(' ') => self.screen = Screen::Playing,
-            KeyCode::Char('b' | 'B') => self.toggle_blood(),
+            KeyCode::Char('b' | 'B') => self.change_blood(BloodLook::next),
             KeyCode::Char('r' | 'R') => self.change_rain(RainDisplay::next),
             KeyCode::Char('l' | 'L') => self.change_language(),
             KeyCode::Esc => self.should_quit = true,
@@ -165,9 +165,9 @@ impl App {
         }
     }
 
-    /// Shows blood or hides it, and keeps the choice for the next runs.
-    fn toggle_blood(&mut self) {
-        self.settings.blood = !self.settings.blood;
+    /// Changes how blood shows, and keeps the choice for the next runs.
+    fn change_blood(&mut self, change: fn(BloodLook) -> BloodLook) {
+        self.settings.blood = change(self.settings.blood);
         self.keep_settings();
     }
 
@@ -205,16 +205,19 @@ impl App {
             }
             KeyCode::Enter | KeyCode::Char(' ') => match PauseItem::ALL[selected] {
                 PauseItem::Resume => self.screen = Screen::Playing,
-                PauseItem::Blood => self.toggle_blood(),
+                PauseItem::Blood => self.change_blood(BloodLook::next),
                 PauseItem::Rain => self.change_rain(RainDisplay::next),
                 PauseItem::Language => self.change_language(),
                 PauseItem::NewRun => self.new_run(),
                 PauseItem::Quit => self.should_quit = true,
             },
-            KeyCode::Left | KeyCode::Right | KeyCode::Char('q' | 'a' | 'd')
+            KeyCode::Left | KeyCode::Char('q' | 'a')
                 if PauseItem::ALL[selected] == PauseItem::Blood =>
             {
-                self.toggle_blood();
+                self.change_blood(BloodLook::previous);
+            }
+            KeyCode::Right | KeyCode::Char('d') if PauseItem::ALL[selected] == PauseItem::Blood => {
+                self.change_blood(BloodLook::next);
             }
             KeyCode::Left | KeyCode::Char('q' | 'a')
                 if PauseItem::ALL[selected] == PauseItem::Rain =>

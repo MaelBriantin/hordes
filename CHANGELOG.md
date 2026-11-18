@@ -12,10 +12,11 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 ### New
 - Red herbs on the ground, which give back 20 HP to a hurt player walking over them.
 - Campfires, which heal 3 HP a second to a player staying by them: their light shrinks as they give, until they die out.
-- Herbs and campfires are rare: the map holds about one herb for 8 chunks, one campfire for 25.
+- Herbs and campfires are rare: the map holds about one herb for 33 chunks, one campfire for 100. Only the torch, a strike of lightning or a campfire's own light shows them.
 - `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
 
 ### Changed
+- Blood comes red, as ketchup, mayo or pesto, or not at all: B on the title screen, or the pause menu.
 - The HP bar is red, and blinks when HP run low.
 - The score gleams in the status line while the run is ahead of the best one.
 

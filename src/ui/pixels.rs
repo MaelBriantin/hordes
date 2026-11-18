@@ -107,41 +107,33 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The healing on the ground the canvas shows, as the night will see it: the campfires gone
-    /// out, which the night darkens like the rest. The lights of those still burning.
-    fn paint_healing(&mut self, world: &World) -> Vec<night::Light> {
-        let mut lights = Vec::new();
-        for (tile, feature) in self.healing(world) {
-            if feature != Feature::Campfire {
-                continue;
-            }
-            let left = world.campfire_left(tile);
-            if left == 0 {
-                self.paint_at(Look::plain(SpriteId::Ashes), Vec2::middle_of(tile));
-            } else {
-                let centre = pixel(Vec2::middle_of(tile));
-                lights.push(night::Light::fire(centre, campfire_light(left)));
-            }
-        }
-        lights
-    }
-
-    /// What glows on the ground, painted after the night: the herbs not yet picked, and the
-    /// campfires still burning, their flame flickering.
-    fn paint_glowing_healing(&mut self, world: &World, frame: u32) {
+    /// The healing on the ground the canvas shows, before the night falls on it: herbs, which
+    /// only the player's torch or a strike of lightning shows, campfires, their flame flickering,
+    /// or their logs once out. The lights of the campfires still burning.
+    fn paint_healing(&mut self, world: &World, frame: u32) -> Vec<night::Light> {
         let burning = if (frame / FLICKER).is_multiple_of(2) {
             SpriteId::Campfire1
         } else {
             SpriteId::Campfire2
         };
+        let mut lights = Vec::new();
         for (tile, feature) in self.healing(world) {
             let sprite = match feature {
                 Feature::Herb => SpriteId::Herb,
-                Feature::Campfire if world.campfire_left(tile) > 0 => burning,
-                Feature::Campfire => continue,
+                Feature::Campfire => {
+                    let left = world.campfire_left(tile);
+                    if left == 0 {
+                        SpriteId::Ashes
+                    } else {
+                        let centre = pixel(Vec2::middle_of(tile));
+                        lights.push(night::Light::fire(centre, campfire_light(left)));
+                        burning
+                    }
+                }
             };
             self.paint_at(Look::plain(sprite), Vec2::middle_of(tile));
         }
+        lights
     }
 
     /// The healing on the ground within the canvas, and a little around it: a sprite may stick
@@ -217,23 +209,21 @@ impl<'a> Canvas<'a> {
 }
 
 /// The map around the player, the player in the middle of `area`, at night: lit around the
-/// player and by lightning, under the `rain`, `frame` frames in; blood stains shown if `blood`.
+/// player and by lightning, under the `rain`, `frame` frames in; blood stains as `blood` says.
 pub fn render_map(
     buffer: &mut Buffer,
     area: Rect,
     world: &World,
     sprites: &Sprites,
     frame: u32,
-    blood: bool,
+    blood: night::BloodLook,
     rain: night::RainDisplay,
 ) {
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
     canvas.paint_map(world);
-    if blood {
-        night::paint_stains(&mut canvas, &world.stains, world.ticks());
-    }
+    night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
 
     // The player and the enemies, the lowest on the map last: in front of those above them.
     let mut figures: Vec<(Vec2, Look)> = world
@@ -257,9 +247,8 @@ pub fn render_map(
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
     let mut lights = vec![night::Light::torch(centre, world.light_radius())];
-    lights.extend(canvas.paint_healing(world));
+    lights.extend(canvas.paint_healing(world, frame));
     night::light(&mut canvas, &lights, night::flash(strike));
-    canvas.paint_glowing_healing(world, frame);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
     }
@@ -284,7 +273,7 @@ pub fn render_map(
 
 /// Where the player fell, for the death screen: the map around them in the dark, lit only by
 /// their fallen torch, the horde still about, dimmed for the words over it; a pool of blood
-/// where they lay, if `blood`; the weather they fell in, `frame` frames in, its rain shown as
+/// where they lay, as `blood` says; the weather they fell in, `frame` frames in, its rain shown as
 /// `rain` says.
 pub fn render_death_scene(
     buffer: &mut Buffer,
@@ -292,22 +281,20 @@ pub fn render_death_scene(
     world: &World,
     sprites: &Sprites,
     frame: u32,
-    blood: bool,
+    blood: night::BloodLook,
     rain: night::RainDisplay,
 ) {
     let player = &world.player;
     let centre = pixel(player.position);
     let mut canvas = Canvas::new(sprites, area, centre);
     canvas.paint_map(world);
-    if blood {
-        night::paint_stains(&mut canvas, &world.stains, world.ticks());
-        let pool = Stain {
-            position: player.position,
-            tick: world.ticks(),
-            size: DEATH_POOL,
-        };
-        night::paint_stains(&mut canvas, &[pool], world.ticks());
-    }
+    let pool = Stain {
+        position: player.position,
+        tick: world.ticks(),
+        size: DEATH_POOL,
+    };
+    night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
+    night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
     let mut enemies: Vec<_> = world.enemies.iter().collect();
     enemies.sort_by(|a, b| a.position.y.total_cmp(&b.position.y));
     for enemy in enemies {
@@ -318,9 +305,8 @@ pub fn render_death_scene(
         .lightning_every()
         .and_then(|every| night::strike_every(frame, every));
     let mut lights = vec![night::Light::torch(centre, DEATH_LIGHT)];
-    lights.extend(canvas.paint_healing(world));
+    lights.extend(canvas.paint_healing(world, frame));
     night::light(&mut canvas, &lights, night::flash(strike));
-    canvas.paint_glowing_healing(world, frame);
     night::dim(&mut canvas, DEATH_DIM);
     if let Some(rain) = night::run_rain(weather, weather_progress(world.seconds()), rain) {
         night::paint_rain(&mut canvas, frame, rain);

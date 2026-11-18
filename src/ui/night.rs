@@ -36,6 +36,65 @@ const RAIN_BY_WEATHER: [f32; 5] = [0.0, 4.0, 8.0, 14.0, 20.0];
 /// The share of a stage of weather, at its end, over which the rain turns into the next one's.
 const RAIN_TURN: f32 = 0.25;
 
+/// How blood shows: real, for fun as ketchup, mayonnaise or pesto, or not at all. The player's
+/// choice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BloodLook {
+    Red,
+    Ketchup,
+    Mayo,
+    Pesto,
+    Off,
+}
+
+impl BloodLook {
+    /// Every look, in the order the settings go through them.
+    const ALL: [BloodLook; 5] = [
+        BloodLook::Red,
+        BloodLook::Ketchup,
+        BloodLook::Mayo,
+        BloodLook::Pesto,
+        BloodLook::Off,
+    ];
+
+    /// The next look, round and round: red, ketchup, mayo, pesto, off.
+    pub fn next(self) -> Self {
+        self.step(1)
+    }
+
+    /// The look before, round and round.
+    pub fn previous(self) -> Self {
+        self.step(Self::ALL.len() - 1)
+    }
+
+    fn step(self, by: usize) -> Self {
+        let at = Self::ALL.iter().position(|look| *look == self).unwrap_or(0);
+        Self::ALL[(at + by) % Self::ALL.len()]
+    }
+
+    /// Its name in the settings file.
+    pub fn id(self) -> &'static str {
+        match self {
+            BloodLook::Red => "red",
+            BloodLook::Ketchup => "ketchup",
+            BloodLook::Mayo => "mayo",
+            BloodLook::Pesto => "pesto",
+            BloodLook::Off => "off",
+        }
+    }
+
+    /// The two colours its stains are made of; none when it doesn't show.
+    fn colours(self) -> Option<[Color; 2]> {
+        match self {
+            BloodLook::Red => Some([Color::Rgb(115, 10, 16), Color::Rgb(155, 20, 26)]),
+            BloodLook::Ketchup => Some([Color::Rgb(205, 30, 22), Color::Rgb(240, 55, 35)]),
+            BloodLook::Mayo => Some([Color::Rgb(232, 220, 160), Color::Rgb(250, 240, 195)]),
+            BloodLook::Pesto => Some([Color::Rgb(70, 140, 45), Color::Rgb(110, 175, 60)]),
+            BloodLook::Off => None,
+        }
+    }
+}
+
 /// How the rain shows during a run: the player's choice, for readability; the weather is the
 /// same whatever it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,7 +162,6 @@ const DARK: f32 = 0.1;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
 const SATURATION: f32 = 0.7;
 const TINT: (f32, f32, f32) = (0.85, 0.9, 1.05);
-const BLOOD: [Color; 2] = [Color::Rgb(115, 10, 16), Color::Rgb(155, 20, 26)];
 
 /// A strike of lightning as it shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -320,9 +378,12 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32) {
     }
 }
 
-/// Blood stains on the canvas, fading as they age, `now` the run's tick: a few pixels each,
-/// fewer as time goes, scattered the same way for as long as the stain lasts.
-pub fn paint_stains(canvas: &mut Canvas, stains: &[Stain], now: u32) {
+/// Blood stains on the canvas in their `look`, fading as they age, `now` the run's tick: a few
+/// pixels each, fewer as time goes, scattered the same way for as long as the stain lasts.
+pub fn paint_stains(canvas: &mut Canvas, stains: &[Stain], now: u32, look: BloodLook) {
+    let Some(colours) = look.colours() else {
+        return;
+    };
     for stain in stains {
         let lasts = stain_lasts().max(1);
         let age = now.saturating_sub(stain.tick).min(lasts);
@@ -337,7 +398,7 @@ pub fn paint_stains(canvas: &mut Canvas, stains: &[Stain], now: u32) {
                 i32::try_from(luck % span).unwrap_or(0) - i32::try_from(span / 2).unwrap_or(0)
             };
             let at = (centre.0 + offset(luck), centre.1 + offset(luck >> 8));
-            canvas.set(at, BLOOD[usize::try_from(drop % 2).unwrap_or(0)]);
+            canvas.set(at, colours[usize::try_from(drop % 2).unwrap_or(0)]);
         }
     }
 }

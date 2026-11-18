@@ -1,12 +1,12 @@
 //! The player's settings, kept between runs in `settings.txt` in the game's data folder
 //! (`~/Library/Application Support/hordes` on macOS, `~/.local/share/hordes` on Linux), or in
-//! `HORDES_DATA_DIR` when it is set. One setting per line: `language = fr`, `blood = off`.
+//! `HORDES_DATA_DIR` when it is set. One setting per line: `language = fr`, `blood = mayo`.
 
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use crate::ui::RainDisplay;
+use crate::ui::{BloodLook, RainDisplay};
 
 /// Where the settings go instead of the data folder, if set: for tests.
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
@@ -64,8 +64,8 @@ impl Language {
 pub struct Settings {
     /// The language the game speaks: the system's at first.
     pub language: Language,
-    /// Whether blood shows: stains where enemies fall and the player is hit.
-    pub blood: bool,
+    /// How blood shows: stains where enemies fall and the player is hit.
+    pub blood: BloodLook,
     /// How the rain shows during a run.
     pub rain: RainDisplay,
 }
@@ -74,7 +74,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             language: Language::of_system(),
-            blood: true,
+            blood: BloodLook::Red,
             rain: RainDisplay::Full,
         }
     }
@@ -107,8 +107,12 @@ impl Settings {
             match (key.trim(), value.trim()) {
                 ("language", "en") => settings.language = Language::English,
                 ("language", "fr") => settings.language = Language::French,
-                ("blood", "on") => settings.blood = true,
-                ("blood", "off") => settings.blood = false,
+                // `on`, the setting of before there was ketchup.
+                ("blood", "red" | "on") => settings.blood = BloodLook::Red,
+                ("blood", "ketchup") => settings.blood = BloodLook::Ketchup,
+                ("blood", "mayo") => settings.blood = BloodLook::Mayo,
+                ("blood", "pesto") => settings.blood = BloodLook::Pesto,
+                ("blood", "off") => settings.blood = BloodLook::Off,
                 ("rain", "full" | "heavy") => settings.rain = RainDisplay::Full,
                 ("rain", "reduced" | "light") => settings.rain = RainDisplay::Reduced,
                 ("rain", "off") => settings.rain = RainDisplay::Off,
@@ -122,7 +126,7 @@ impl Settings {
         format!(
             "language = {}\nblood = {}\nrain = {}\n",
             self.language.id(),
-            if self.blood { "on" } else { "off" },
+            self.blood.id(),
             self.rain.id()
         )
     }
@@ -153,7 +157,7 @@ mod tests {
     fn settings_read_back_what_they_wrote() {
         let settings = Settings {
             language: Language::French,
-            blood: false,
+            blood: BloodLook::Mayo,
             rain: RainDisplay::Reduced,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);
@@ -161,6 +165,16 @@ mod tests {
             Settings::parse(&Settings::default().text()),
             Settings::default()
         );
+    }
+
+    #[test]
+    fn blood_reads_its_four_looks_and_the_old_on() {
+        let blood = |line: &str| Settings::parse(line).blood;
+        assert_eq!(blood("blood = ketchup"), BloodLook::Ketchup);
+        assert_eq!(blood("blood = mayo"), BloodLook::Mayo);
+        assert_eq!(blood("blood = pesto"), BloodLook::Pesto);
+        assert_eq!(blood("blood = on"), BloodLook::Red);
+        assert_eq!(blood("blood = off"), BloodLook::Off);
     }
 
     #[test]

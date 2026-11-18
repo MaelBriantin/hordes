@@ -24,10 +24,10 @@ const MAX_CLUMPS: u32 = 40;
 const GROVE_CHANCE: f64 = 0.7;
 /// No obstacle this close to where the player starts, in tiles.
 const CLEAR_RADIUS: i32 = 8;
-/// The chance a chunk holds a herb, and a campfire, in percent: about one chunk in 8, and one
-/// in 25.
-const HERB_PERCENT: u32 = 12;
-const CAMPFIRE_PERCENT: u32 = 4;
+/// The chance a chunk holds a herb, and a campfire, in percent: about one chunk in 33, and one
+/// in 100.
+const HERB_PERCENT: u32 = 3;
+const CAMPFIRE_PERCENT: u32 = 1;
 /// How many tiles around a campfire are free of obstacles, each way: its clearing.
 const CLEARING: i32 = 2;
 /// How many spots a chunk tries for its herb and its campfire.
@@ -319,7 +319,7 @@ mod tests {
         let map = Map::new(3, START);
         let tiles = CHUNK_SIZE * OBSTACLE_SIZE;
         let (mut herbs, mut fires) = (0, 0);
-        for chunk in 0..200 {
+        for chunk in 0..600 {
             let from = (chunk * tiles, 16 * tiles);
             for ((x, y), feature) in map.features_in(from, (from.0 + tiles - 1, from.1 + tiles - 1))
             {
@@ -330,9 +330,9 @@ mod tests {
                 }
             }
         }
-        // About one chunk in 8 for a herb, one in 25 for a campfire.
-        assert!((12..=40).contains(&herbs), "{herbs} herbs in 200 chunks");
-        assert!((2..=16).contains(&fires), "{fires} campfires in 200 chunks");
+        // About one chunk in 33 for a herb, one in 100 for a campfire.
+        assert!((8..=32).contains(&herbs), "{herbs} herbs in 600 chunks");
+        assert!((1..=14).contains(&fires), "{fires} campfires in 600 chunks");
     }
 
     #[test]
