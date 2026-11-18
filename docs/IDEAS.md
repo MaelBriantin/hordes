@@ -5,6 +5,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## Characters
 
 - **Unlockable characters**, each with a speciality of its own: a starting weapon, different stats. A werewolf could be one of them.
+- **Found on the map**: a character to unlock is met during a run (a survivor to reach, to rescue); once found, it can be played in the next runs. The game's only progression from one run to the next.
 
 ## Enemies
 
@@ -16,6 +17,12 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
 - **Rare drones**: other kinds of drones, found on rare cards. Missile drones, for one: circling the player like the drones, each fires a missile in turn, so salvos streak across the screen.
+
+## Healing
+
+- **Herbs** to pick up on the map, as in survival horror: a green one heals a little; maybe mixed with others for more.
+- **Campfires**: standing next to one heals little by little, but staying put is dangerous with the horde around, and the fire dies out on its own after a while.
+- **Revival**: a rare bonus that brings the player back once, at 0 HP.
 
 ## Building
 
