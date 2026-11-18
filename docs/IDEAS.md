@@ -24,6 +24,8 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## Weapons
 
 - **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
+- **Sniper rifle**: aims at an enemy far off (12–15 tiles, the furthest or the toughest), a red laser dot on it for a moment before the shot; a heavy hit (enough for a Shadow at once), a shot every few seconds; later, the bullet goes through several. A gun: holds its fire in the dark.
+- **Grenade**: thrown at the enemies nearby, it bursts at once, no fire: heavy damage over an area, the enemies caught in it blown outwards, away from its centre, giving the player room.
 
 ## Level-ups
 
