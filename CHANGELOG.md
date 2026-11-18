@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.4.0 · November 18, 2026
+Rare finds in a sharper night.
+
 ### New
 - A new passive, Wisdom: +10% XP from the gems per level.
 - Legendaries, on golden cards that come now and then, more and more likely the longer without one: Illumination, the first, gives an XP point every second.
