@@ -13,6 +13,11 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Parasites**: an enemy (the abomination?) that bursts into a swarm of small parasites when it falls.
 - **Treasure carrier**: a chest on legs that runs about the map and **flees** the player instead of chasing them. Felled, it drops XP and/or a free upgrade. Rough tuning: rare (one at a time, every 2–3 minutes), a little slower than the player (5 tiles/s), gone if not caught within 20–30 s, an arrow on the edge of the screen while it is out of sight.
 
+## Weapons
+
+- **Shotgun**: a gun that fires a spread of pellets at once, wide and short-ranged: it clears what is close.
+- **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
+
 ## Level-ups
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
