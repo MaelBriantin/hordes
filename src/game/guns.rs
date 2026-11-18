@@ -11,6 +11,8 @@ pub const BULLET_HALF_WIDTH: f32 = 0.25;
 /// What a gun is like at a level.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Gun {
+    /// Which gun it is: its bullets show its own way.
+    pub weapon: Weapon,
     /// The rounds a full magazine holds: one per shot.
     pub magazine: u32,
     /// The ticks between two shots.
@@ -29,6 +31,9 @@ pub struct Gun {
     pub range: f32,
 }
 
+/// The ticks the machine gun waits between two shots: a shot every 5 ticks, a sixth of a second.
+const MACHINE_GUN_INTERVAL: u32 = 4;
+
 /// Tenths of a second, in ticks.
 fn tenths(count: u32) -> u32 {
     u32::from(TICKS_PER_SECOND) * count / 10
@@ -38,6 +43,7 @@ fn tenths(count: u32) -> u32 {
 pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
     match weapon {
         Weapon::Pistol => Some(Gun {
+            weapon,
             magazine: match level {
                 0 | 1 => 6,
                 2..=4 => 9,
@@ -52,10 +58,11 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             range: 12.0,
         }),
         Weapon::MachineGun => Some(Gun {
+            weapon,
             magazine: if level >= 2 { 30 } else { 20 },
-            interval: tenths(1),
+            interval: MACHINE_GUN_INTERVAL,
             reload: if level >= 4 { tenths(20) } else { tenths(30) },
-            damage: if level >= 3 { 6 } else { 4 },
+            damage: if level >= 3 { 5 } else { 3 },
             bullets: 1,
             pierce: u32::from(level >= 5),
             speed: 22.0,
@@ -88,6 +95,8 @@ pub struct Bullet {
     pub pierce: u32,
     /// The enemies it has hit, by id: it hits each only once.
     pub hit: Vec<u32>,
+    /// The gun it left: a pistol's slug and a machine gun's tracer don't look alike.
+    pub weapon: Weapon,
 }
 
 impl Bullet {
@@ -101,7 +110,13 @@ impl Bullet {
             damage,
             pierce: gun.pierce,
             hit: Vec::new(),
+            weapon: gun.weapon,
         }
+    }
+
+    /// The way it flies, length 1.
+    pub fn way(&self) -> Vec2 {
+        self.velocity.normalized()
     }
 
     /// Moves it on by one tick. Whether it is still flying.
@@ -142,7 +157,7 @@ mod tests {
     #[test]
     fn the_machine_gun_shoots_fast_and_pierces_at_the_top() {
         let first = gun(Weapon::MachineGun, 1).unwrap();
-        assert_eq!((first.interval, first.magazine, first.pierce), (3, 20, 0));
+        assert_eq!((first.interval, first.magazine, first.pierce), (4, 20, 0));
         assert_eq!(gun(Weapon::MachineGun, 5).unwrap().pierce, 1);
     }
 

@@ -219,6 +219,8 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Flashlight => SpriteId::IconFlashlight,
             Passive::Compass => SpriteId::IconCompass,
             Passive::Wisdom => SpriteId::IconWisdom,
+            Passive::Batteries => SpriteId::IconBatteries,
+            Passive::Loot => SpriteId::IconLoot,
         },
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
@@ -237,6 +239,8 @@ fn name(choice: Choice) -> String {
             Passive::Flashlight => fl!("passive-flashlight"),
             Passive::Compass => fl!("passive-compass"),
             Passive::Wisdom => fl!("passive-wisdom"),
+            Passive::Batteries => fl!("passive-batteries"),
+            Passive::Loot => fl!("passive-loot"),
         },
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
@@ -289,7 +293,8 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Vitality => 100 + 20 * level,
                 Passive::Swiftness | Passive::Haste => 8 * level,
                 Passive::Magnet => 2 + level,
-                Passive::Might | Passive::Wisdom => 10 * level,
+                Passive::Might | Passive::Wisdom | Passive::Loot => 10 * level,
+                Passive::Batteries => 25 * level,
                 Passive::Flashlight => 9 + 2 * level,
                 Passive::Compass => 100 + 50 * level,
             };
@@ -303,6 +308,8 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Compass if level <= 1 => fl!("gain-compass"),
                 Passive::Compass => fl!("gain-compass-more", total = total),
                 Passive::Wisdom => fl!("gain-wisdom", total = total),
+                Passive::Batteries => fl!("gain-batteries", total = total),
+                Passive::Loot => fl!("gain-loot", total = total),
             }
         }
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
 
-use super::announce::{Announcement, News};
+use super::announce::{Announcement, News, WeatherNews};
 use super::body::{fits, slide, touch};
 use super::build::{BASE_HP, Build, Choice, HEAL, Legendary, Passive, VITALITY_HP, Weapon};
 use super::drones;
@@ -15,6 +15,7 @@ use super::horde::{self, Tally, Warning};
 use super::level::xp_to_next;
 use super::machete::{self, Swing};
 use super::map::Feature;
+use super::mode::Mode;
 use super::score;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::stain::{self, MAX_STAINS, Stain};
@@ -41,13 +42,42 @@ const MAX_ENEMIES_WITH_HORDE: usize = 600;
 /// The size of a cell of the grid enemies are sorted in to push each other apart, in tiles:
 /// more than the widest two bodies, so that only neighbouring cells can overlap.
 const SEPARATION_CELL: f32 = 2.0;
-/// When the torch, lighting up as the night has fallen, is out still, in ticks since: it
-/// flickers twice, then holds.
+/// In arcade, how much harder the run grows each minute, compounded; and how many enemies appear a
+/// second at its start.
+const ARCADE_GROWTH: f32 = 1.07;
+const ARCADE_RATE: f32 = 1.5;
+/// How long a full battery keeps the torch lit, and charges back from empty, the torch out, in
+/// seconds, before Batteries; how low it lets the torch flicker, dying, and how full it has to
+/// be for the torch to light again, from 0 to 1.
+const BATTERY_SECONDS: u32 = 120;
+const CHARGE_SECONDS: u32 = 60;
+const BATTERY_DYING: f32 = 0.025;
+const BATTERY_TO_LIGHT: f32 = 0.1;
+/// The seconds into the run the torch lights up of itself at, the night falling.
+const TORCH_SECONDS: u32 = 26;
+
+/// The tick the torch lights up of itself at.
+fn torch_lights_up() -> u32 {
+    TORCH_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// How near the player, in the dark, an enemy finds them, and how far it loses them again; how
+/// far a campfire lures those that haven't, and how fast they wander, against their speed, in
+/// tiles.
+const NOTICE_REACH: f32 = 6.0;
+const LOSE_REACH: f32 = 12.0;
+const LURE_REACH: f32 = 20.0;
+const WANDER_PACE: f32 = 0.5;
+/// When the torch, lighting up, is out still, in ticks since: it flickers twice, then holds.
 const TORCH_FLICKER_OFF: [std::ops::Range<u32>; 3] = [0..2, 5..11, 14..20];
 /// The chance, in percent, that a level-up offers a legendary, at first and after one.
 const LEGENDARY_PERCENT: u32 = 5;
 /// The ticks an enemy flashes white before it burns at daybreak.
 const BURN_FLASH: u32 = 6;
+/// What an energy cell gives the torch's battery, in percent; how far beside a Shadow's gem it
+/// falls, in tiles.
+const CELL_PERCENT: u32 = 15;
+const CELL_OFFSET: f32 = 0.6;
 /// The most gems lying around at once: past it, the oldest go.
 const MAX_GEMS: usize = 500;
 /// What the player sees until the app tells, half of it each way, in tiles.
@@ -108,6 +138,9 @@ pub struct World {
     next_enemy_id: u32,
     pub bullets: Vec<Bullet>,
     pub gems: Vec<Gem>,
+    /// The energy cells lying around, for the torch's battery: each gives its value, in
+    /// percent of the battery.
+    pub cells: Vec<Gem>,
     /// Where blood was spilt lately, oldest first.
     pub stains: Vec<Stain>,
     /// The enemies the player has felled.
@@ -146,8 +179,19 @@ pub struct World {
     pub announcement: Option<Announcement>,
     /// What reaching the dawn added to the score, once the run has: the run is won, and over.
     pub dawn_bonus: Option<u64>,
+    /// The way the run is played: from dusk to dawn, or endless, for the score.
+    pub mode: Mode,
+    /// How a new weather or a horde is told; and the last news told the run going on, with the
+    /// tick it was told at.
+    pub weather_news: WeatherNews,
+    pub told: Option<(News, u32)>,
     /// The tick the player was last hurt at, if they have been.
     pub hurt_at: Option<u32>,
+    /// Whether the player wants their torch on, and the tick they last lit it at.
+    torch_switch: bool,
+    torch_lit_at: u32,
+    /// The torch's battery, from 0 (empty) to 1 (full).
+    pub battery: f32,
     /// Nothing hurts the player: a debug tool.
     pub unhurt: bool,
     /// The herbs picked, by tile.
@@ -177,11 +221,25 @@ pub struct World {
 impl World {
     /// A new run, all its luck from `seed`: the map, and the enemies that appear.
     pub fn new(seed: u64) -> Self {
+        Self::with(seed, Mode::Standard, false)
+    }
+
+    /// A new run in a mode on a map drawn from `seed`, from the dusk, or from the night if
+    /// `skip_dusk`, the torch lit.
+    pub fn with(seed: u64, mode: Mode, skip_dusk: bool) -> Self {
         let start = Vec2::new(0.5, 0.5);
         let map = Map::new(seed, start.tile());
         let mut world = Self::on(map, start, StdRng::seed_from_u64(seed));
-        // A run opens on the dusk, told.
-        world.announcement = Some(Announcement::new(News::Weather(Weather::Dusk)));
+        world.mode = mode;
+        world.next_horde = horde::first(mode);
+        // A run opens on the dusk, told; or on the night, the dusk skipped.
+        let opening = if skip_dusk {
+            world.ticks = weather::DUSK_SECONDS * u32::from(TICKS_PER_SECOND);
+            Weather::Clear
+        } else {
+            Weather::Dusk
+        };
+        world.announcement = Some(Announcement::new(News::Weather(opening)));
         world
     }
 
@@ -202,6 +260,7 @@ impl World {
             next_enemy_id: 0,
             bullets: Vec::new(),
             gems: Vec::new(),
+            cells: Vec::new(),
             stains: Vec::new(),
             kills: 0,
             score: 0,
@@ -217,13 +276,19 @@ impl World {
             drone_repairs: Vec::new(),
             lightning: None,
             horde_warning: None,
-            next_horde: horde::first(),
+            next_horde: horde::first(Mode::Standard),
             hordes_come: 0,
             tallies: HashMap::new(),
             horde_cleared: None,
             announcement: None,
             dawn_bonus: None,
+            mode: Mode::Standard,
+            weather_news: WeatherNews::Paused,
+            told: None,
             hurt_at: None,
+            torch_switch: true,
+            torch_lit_at: 0,
+            battery: 1.0,
             unhurt: false,
             picked: HashSet::new(),
             burnt: HashMap::new(),
@@ -257,7 +322,50 @@ impl World {
 
     /// The weather now: it worsens as the run goes on.
     pub fn weather(&self) -> Weather {
-        Weather::at(self.seconds())
+        Weather::at(self.seconds(), self.mode)
+    }
+
+    /// The weather to come after this one: none after the tempest of a standard run.
+    pub fn next_weather(&self) -> Option<Weather> {
+        weather::next_stage_at(self.seconds(), self.mode).map(|at| Weather::at(at, self.mode))
+    }
+
+    /// How far the run is through its stage of weather, from 0 to 1.
+    pub fn weather_progress(&self) -> f32 {
+        weather::progress(self.seconds(), self.mode)
+    }
+
+    /// How much daylight there is now, from 1 (the setting or rising sun) to 0 (the night).
+    pub fn daylight(&self) -> f32 {
+        weather::daylight(self.ticks, self.mode)
+    }
+
+    /// In arcade, how much harder the run has grown: 7% more a minute, compounded (×2 at 10
+    /// minutes, ×3.9 at 20); 1 in a standard run.
+    pub fn pressure(&self) -> f32 {
+        if self.mode == Mode::Standard {
+            return 1.0;
+        }
+        let minutes =
+            f32::from(u16::try_from(self.ticks / u32::from(TICKS_PER_SECOND)).unwrap_or(u16::MAX))
+                / 60.0;
+        ARCADE_GROWTH.powf(minutes)
+    }
+
+    /// The HP of an enemy appearing now: by the weather in a standard run, by the pressure in
+    /// arcade.
+    fn toughened(&self, hp: u32) -> u32 {
+        match self.mode {
+            Mode::Standard => hp * self.weather().hp_percent() / 100,
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "a few hundred HP at most"
+            )]
+            Mode::Arcade => {
+                (f32::from(u16::try_from(hp).unwrap_or(u16::MAX)) * self.pressure()).round() as u32
+            }
+        }
     }
 
     /// How far around the player the night is lit, in tiles: their light, less what the
@@ -266,14 +374,76 @@ impl World {
         (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
     }
 
-    /// Whether the player's torch is lit: not at dusk, nor while the night is told; then it
-    /// flickers on, and stays lit.
+    /// Whether the player's torch is lit: not at dusk; it lights up of itself, flickering, as
+    /// the night falls, and when the player lights it again.
     pub fn torch_lit(&self) -> bool {
-        let night = weather::starts_at(Weather::Clear) * u32::from(TICKS_PER_SECOND);
-        let Some(since) = self.ticks.checked_sub(night) else {
+        let Some(true) = self.torch_on() else {
             return false;
         };
-        !TORCH_FLICKER_OFF.iter().any(|off| off.contains(&since))
+        let since = self.ticks - self.torch_lit_at.max(torch_lights_up());
+        // Its battery nearly empty, it flickers, then dies out.
+        let dying = self.battery < BATTERY_DYING && (self.ticks / 4).is_multiple_of(3);
+        !dying && !TORCH_FLICKER_OFF.iter().any(|off| off.contains(&since))
+    }
+
+    /// Whether the player has their torch on: none before it lights up of itself, the night
+    /// falling.
+    pub fn torch_on(&self) -> Option<bool> {
+        (self.ticks >= torch_lights_up()).then_some(self.torch_switch)
+    }
+
+    /// Puts the torch out, or lights it again, flickering: once it has lit up of itself.
+    pub fn switch_torch(&mut self) {
+        match self.torch_on() {
+            None => {}
+            Some(true) => self.torch_switch = false,
+            // Not on a battery too low.
+            Some(false) if self.battery < BATTERY_TO_LIGHT => {}
+            Some(false) => {
+                self.torch_switch = true;
+                self.torch_lit_at = self.ticks;
+            }
+        }
+    }
+
+    /// The torch's battery runs down while it is on, and charges while it is out, Batteries
+    /// making it last longer and charge faster; empty, the torch goes out.
+    fn run_battery(&mut self) {
+        let Some(on) = self.torch_on() else {
+            return;
+        };
+        let percent =
+            f32::from(u16::try_from(self.player.build.battery_percent()).unwrap_or(100)) / 100.0;
+        let per_second = |seconds: u32| {
+            1.0 / (f32::from(u16::try_from(seconds).unwrap_or(1)) * f32::from(TICKS_PER_SECOND))
+        };
+        if on {
+            self.battery = (self.battery - per_second(BATTERY_SECONDS) / percent).max(0.0);
+            if self.battery <= 0.0 {
+                self.torch_switch = false;
+            }
+        } else {
+            self.battery = (self.battery + per_second(CHARGE_SECONDS) * percent).min(1.0);
+        }
+    }
+
+    /// Whether the enemies see the player from afar: by daylight, or by their torch.
+    fn seen_from_afar(&self) -> bool {
+        self.torch_on().is_none() || self.torch_lit()
+    }
+
+    /// Tells news, as the player wants it: the world standing still while it shows, or going on.
+    fn tell(&mut self, news: News) {
+        if self.weather_news == WeatherNews::Paused {
+            self.announcement = Some(Announcement::new(news));
+        } else {
+            self.told = Some((news, self.ticks));
+        }
+    }
+
+    /// How many enemies of the hordes come are still standing.
+    pub fn horde_left(&self) -> u32 {
+        self.tallies.values().map(|tally| tally.left).sum()
     }
 
     /// Whether the player has fallen: the world no longer moves on.
@@ -289,7 +459,7 @@ impl World {
     /// Whether the sun has risen: for a few seconds, the enemies flee it and burn, nothing
     /// comes, nothing hurts the player; then the run is won.
     pub fn daybreak(&self) -> bool {
-        self.ticks >= weather::dawn()
+        self.mode == Mode::Standard && self.ticks >= weather::dawn()
     }
 
     /// Moves the world on by one tick; not while the run is over or a choice is on offer, and not
@@ -307,16 +477,17 @@ impl World {
         }
         let weather = self.weather();
         self.ticks += 1;
-        if self.ticks >= weather::dawn() + weather::daybreak() {
+        if self.mode == Mode::Standard && self.ticks >= weather::dawn() + weather::daybreak() {
             let bonus = self.score * score::DAWN_BONUS_PERCENT / 100;
             self.score += bonus;
             self.dawn_bonus = Some(bonus);
             return;
         }
         if self.weather() != weather {
-            self.announcement = Some(Announcement::new(News::Weather(self.weather())));
+            self.tell(News::Weather(self.weather()));
         }
         self.move_player(input);
+        self.run_battery();
         self.spawn();
         self.hordes();
         self.move_enemies();
@@ -457,7 +628,7 @@ impl World {
     /// sees; from the storm on, it hurts the enemies it falls among.
     fn storm(&mut self) {
         let weather = self.weather();
-        let rising = self.ticks >= weather::sunrise();
+        let rising = self.mode == Mode::Standard && self.ticks >= weather::sunrise();
         let Some(every) = weather.lightning_every().filter(|_| !rising) else {
             self.next_strike_in = None;
             return;
@@ -484,6 +655,8 @@ impl World {
             tick: self.ticks,
             at,
         });
+        // The whole map lit: every enemy on screen sees the player.
+        self.give_away(self.view.x.max(self.view.y));
         if !hurts {
             return;
         }
@@ -497,6 +670,8 @@ impl World {
     /// Each gun the player has shoots at the nearest enemies in its range, while its magazine
     /// holds rounds; empty, it reloads.
     fn fire_guns(&mut self) {
+        // In the dark, the torch out, nothing to aim at: the guns hold their fire.
+        let dark = self.torch_on().is_some() && !self.torch_lit();
         let Self {
             player,
             enemies,
@@ -523,6 +698,9 @@ impl World {
             }
             if magazine.wait > 0 {
                 magazine.wait -= 1;
+                continue;
+            }
+            if dark {
                 continue;
             }
             let targets = guns::targets(enemies, player.position, gun.bullets, gun.range);
@@ -651,7 +829,17 @@ impl World {
 
     /// The score's multiplier now, in tenths: the weather's times the combo's.
     pub fn multiplier_tenths(&self) -> u64 {
-        score::weather_tenths(self.weather()) * score::combo_tenths(self.combo) / 10
+        // In arcade, the pressure; in a standard run, scored for nothing, the weather.
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "a multiplier of a few dozen tenths"
+        )]
+        let base = match self.mode {
+            Mode::Standard => score::weather_tenths(self.weather()),
+            Mode::Arcade => (self.pressure() * 10.0).round() as u64,
+        };
+        base * score::combo_tenths(self.combo) / 10
     }
 
     /// Enemies out of HP fall, each worth its points, some leaving a gem. The combo closes when
@@ -680,8 +868,14 @@ impl World {
                     self.tallies.remove(&number);
                 }
             }
-            if self.rng.random_range(0..100) < stats.drop_percent {
+            let drop = (stats.drop_percent + self.player.build.drop_bonus()).min(100);
+            if self.rng.random_range(0..100) < drop {
                 self.gems.push(Gem::new(enemy.position, stats.xp));
+            }
+            // A Shadow leaves an energy cell, for the torch's battery, by its gem.
+            if enemy.kind == EnemyKind::Shadow {
+                let beside = enemy.position + Vec2::new(CELL_OFFSET, 0.0);
+                self.cells.push(Gem::new(beside, CELL_PERCENT));
             }
             self.stains.push(Stain {
                 position: enemy.position,
@@ -705,8 +899,8 @@ impl World {
     /// A debug tool: the run jumps to just before the next weather, which is then told; in the
     /// tempest, to the sunrise.
     pub fn debug_next_weather(&mut self) {
-        self.ticks = match self.weather().next() {
-            Some(next) => weather::starts_at(next) * u32::from(TICKS_PER_SECOND) - 1,
+        self.ticks = match weather::next_stage_at(self.seconds(), self.mode) {
+            Some(next) => next * u32::from(TICKS_PER_SECOND) - 1,
             None => self.ticks.max(weather::sunrise()),
         };
         self.after_a_jump();
@@ -716,7 +910,7 @@ impl World {
     /// middle of its stage.
     fn after_a_jump(&mut self) {
         self.horde_warning = None;
-        self.next_horde = horde::due_after(self.ticks + horde::warning());
+        self.next_horde = horde::due_after(self.ticks + horde::warning(), self.mode);
     }
 
     /// A debug tool: the next horde is announced at once.
@@ -758,6 +952,17 @@ impl World {
             !picked
         });
         self.give_xp(gathered * self.player.build.xp_percent());
+        // Energy cells fly in as gems do, and charge the torch's battery.
+        let mut charge = 0;
+        self.cells.retain_mut(|cell| {
+            let picked = cell.update(position, magnet);
+            if picked {
+                charge += cell.value;
+            }
+            !picked
+        });
+        let charge = f32::from(u16::try_from(charge).unwrap_or(u16::MAX)) / 100.0;
+        self.battery = (self.battery + charge).min(1.0);
     }
 
     /// Illumination gives XP of itself, a point a second.
@@ -797,8 +1002,13 @@ impl World {
             self.spawn_debt = 0.0;
             return;
         }
-        let (weather, seconds) = (self.weather(), self.seconds());
-        self.spawn_debt += spawn::rate(weather, weather::progress(seconds)) * tick_seconds();
+        let weather = self.weather();
+        // By the weather in a standard run; by the pressure in arcade.
+        let rate = match self.mode {
+            Mode::Standard => spawn::rate(weather, self.weather_progress()),
+            Mode::Arcade => ARCADE_RATE * self.pressure(),
+        };
+        self.spawn_debt += rate * tick_seconds();
         while self.spawn_debt >= 1.0 {
             self.spawn_debt -= 1.0;
             if self.enemies.len() >= MAX_ENEMIES {
@@ -808,7 +1018,7 @@ impl World {
             if let Some(position) = self.free_edge_point(kind, None) {
                 let phase = spawn::phase(&mut self.rng);
                 let mut enemy = Enemy::new(self.next_enemy_id, kind, position, phase);
-                enemy.hp = enemy.hp * weather.hp_percent() / 100;
+                enemy.hp = self.toughened(enemy.hp);
                 self.enemies.push(enemy);
                 self.next_enemy_id += 1;
             }
@@ -836,9 +1046,9 @@ impl World {
                 side,
                 number: self.hordes_come,
             });
-            self.announcement = Some(Announcement::new(News::Horde {
+            self.tell(News::Horde {
                 everywhere: side.is_none(),
-            }));
+            });
         }
         if let Some(warning) = self.horde_warning
             && self.ticks >= warning.arrives_at
@@ -847,7 +1057,7 @@ impl World {
             self.horde_warning = None;
             self.hordes_come += 1;
             // From when it came: never a horde owed from the past.
-            self.next_horde = self.ticks + horde::every();
+            self.next_horde = self.ticks + horde::every(self.mode);
         }
     }
 
@@ -872,7 +1082,7 @@ impl World {
             }
             let phase = spawn::phase(&mut self.rng);
             let mut enemy = Enemy::new(self.next_enemy_id, kind, spot, phase);
-            enemy.hp = enemy.hp * weather.hp_percent() / 100;
+            enemy.hp = self.toughened(enemy.hp);
             enemy.horde = Some(warning.number);
             self.enemies.push(enemy);
             self.next_enemy_id += 1;
@@ -900,18 +1110,65 @@ impl World {
         let weather = self.weather();
         // At daybreak, they flee the player, the risen sun at their back.
         let flee = self.daybreak();
+        // In the dark, those that haven't seen the player go for the campfires, or wander.
+        let seen = self.seen_from_afar();
+        let fires = if seen { Vec::new() } else { self.fires_near() };
+        // At night, whether Shadows hunt: with the torch out; lit, they shun it.
+        let dark_hunt = self.torch_on().map(|_| !self.torch_lit());
+        let ticks = self.ticks;
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
             let stats = enemy.kind.stats();
-            let heading = if flee {
-                (enemy.position - target).normalized()
+            let apart = (target - enemy.position).length();
+            if enemy.horde.is_some() {
+                enemy.noticed = true;
+            } else if enemy.kind == EnemyKind::Shadow && dark_hunt.is_some() {
+                // Shadows hunt in the dark, and keep away from the torch's light.
+                enemy.noticed = dark_hunt == Some(true);
+            } else if seen || apart <= NOTICE_REACH {
+                enemy.noticed = true;
+            } else if apart > LOSE_REACH {
+                enemy.noticed = false;
+            }
+            let fire = fires
+                .iter()
+                .copied()
+                .filter(|fire| (*fire - enemy.position).length() <= LURE_REACH)
+                .min_by(|a, b| {
+                    (*a - enemy.position)
+                        .length()
+                        .total_cmp(&(*b - enemy.position).length())
+                });
+            let (heading, pace) = if flee {
+                ((enemy.position - target).normalized(), 1.0)
+            } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)
+            {
+                // Away from the light, at their speed.
+                ((enemy.position - target).normalized(), 1.0)
+            } else if !enemy.noticed {
+                match fire {
+                    Some(fire) if (fire - enemy.position).length() > 1.0 => {
+                        (enemy.heading(fire), WANDER_PACE)
+                    }
+                    Some(_) => (Vec2::ZERO, WANDER_PACE),
+                    None => {
+                        // A slow turn of its own, never the same as its neighbours'.
+                        let id = f32::from(u16::try_from(enemy.id % 1_000).unwrap_or(0));
+                        let now = f32::from(u16::try_from(ticks % 10_000).unwrap_or(0));
+                        enemy.wander += (now * 0.02 + id).sin() * 0.04;
+                        (
+                            Vec2::new(enemy.wander.cos(), enemy.wander.sin()),
+                            WANDER_PACE,
+                        )
+                    }
+                }
             } else if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
-                Vec2::ZERO
+                (Vec2::ZERO, 1.0)
             } else {
-                enemy.heading(target)
+                (enemy.heading(target), 1.0)
             };
             enemy.facing = enemy.facing.after(heading);
-            let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0;
+            let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace;
             let step = (heading * (speed * tick_seconds()) + push).clamp_length(MAX_STEP);
             enemy.position = slide(
                 &self.map,
@@ -920,6 +1177,35 @@ impl World {
                 stats.half_width,
                 stats.flies,
             );
+        }
+    }
+
+    /// The campfires still burning around what the player sees, as far as they lure enemies: in
+    /// the dark, those that haven't found the player go for them.
+    fn fires_near(&self) -> Vec<Vec2> {
+        let (x, y) = self.player.position.tile();
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "the view and the lure, a few dozen tiles"
+        )]
+        let reach = (self.view.x.max(self.view.y) + LURE_REACH).ceil() as i32;
+        self.features_in((x - reach, y - reach), (x + reach, y + reach))
+            .into_iter()
+            .filter(|(tile, feature)| {
+                *feature == Feature::Campfire && self.campfire_left(*tile) > 0
+            })
+            .map(|(tile, _)| Vec2::middle_of(tile))
+            .collect()
+    }
+
+    /// The enemies within `reach` of the player find them: a strike of lightning gives their
+    /// place away.
+    fn give_away(&mut self, reach: f32) {
+        let player = self.player.position;
+        for enemy in &mut self.enemies {
+            if (enemy.position - player).length() <= reach {
+                enemy.noticed = true;
+            }
         }
     }
 

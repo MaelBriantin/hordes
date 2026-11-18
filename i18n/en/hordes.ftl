@@ -3,7 +3,8 @@
 
 ## Keys, on the last line of the screen
 
-help-title = Enter start · B blood · R rain · O outline · L language · Esc quit
+help-title = Enter start · ←→ mode · O / Esc options
+help-options = ↑↓ choose · ←→ / Enter change · Esc back
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
 help-over = R new run · Esc quit
 help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
@@ -12,7 +13,10 @@ help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
 
 title-tagline = Survive the night.
 title-start = Press Enter to start
-title-options = Blood: { $blood } (B) · Rain: { $rain } (R) · Outline: { $outline } (O) · { $language } (L)
+mode-standard = Standard: hold out until dawn
+mode-arcade = Arcade: endless, for the score
+dusk-played = played
+dusk-skipped = skipped
 
 ## Settings
 
@@ -24,6 +28,10 @@ blood-pesto = pesto
 rain-full = full
 rain-reduced = reduced
 rain-off = off
+
+announcements-paused = big, with a pause
+announcements-big = big, no pause
+announcements-banner = banner
 
 outline-off = off
 outline-white = white
@@ -37,15 +45,23 @@ pause-resume = Resume
 pause-blood = Blood: { $value }
 pause-rain = Rain: { $value }
 pause-outline = Outline: { $value }
+pause-announcements = Announcements: { $value }
+options-title = Options
+option-dusk = Dusk: { $value }
+option-gear = Gear: { $value }
+gear-shown = shown
+gear-hidden = hidden
+option-back = Back
 pause-language = Language: { $value }
 pause-new-run = New run
+pause-title-screen = Main menu
 pause-quit = Quit
 
 ## Status line
 
 weather-dusk = Dusk
 announce-dusk = Hold out until dawn
-announce-night = The night has fallen
+announce-night = The night has fallen · Space: torch
 announce-worse = The weather worsens
 announce-last = Dawn in two minutes
 weather-clear = Night
@@ -58,7 +74,6 @@ weather-tempest = Tempest
 
 dawn-title = DAWN
 dawn-line = Congratulations, you survived. This time.
-dawn-bonus = +{ $points } for the dawn
 death-title = DEAD
 death-again = Press R for a new run
 over-survived = You survived { $time }
@@ -84,6 +99,8 @@ passive-might = Might
 passive-haste = Haste
 passive-compass = Compass
 passive-flashlight = Flashlight
+passive-loot = Loot
+passive-batteries = Batteries
 passive-wisdom = Wisdom
 legendary-illumination = Illumination
 heal = Heal
@@ -100,7 +117,7 @@ gain-pistol-4 = +1 bullet per shot
 gain-pistol-5 = Magazine 12, damage 15
 gain-machine-gun-1 = Bursts of 20 rounds
 gain-machine-gun-2 = Magazine 20 → 30
-gain-machine-gun-3 = Damage 4 → 6
+gain-machine-gun-3 = Damage 3 → 5
 gain-machine-gun-4 = Reloads in 2 s
 gain-machine-gun-5 = Bullets go through an enemy
 gain-drones-1 = A drone circling you
@@ -115,6 +132,8 @@ gain-haste = −8% weapon cooldowns (total −{ $total }%)
 gain-compass = Points to the nearest healing
 gain-compass-more = Finds healing 50 tiles further (total { $total })
 gain-flashlight = +2 tiles of light (total { $total })
+gain-loot = +10% chance of a gem (total +{ $total }%)
+gain-batteries = +25% torch battery (total +{ $total }%)
 gain-wisdom = +10% XP from gems (total +{ $total }%)
 gain-illumination = +1 XP every second
 gain-heal = Heal 20 HP
@@ -134,4 +153,16 @@ help-name = ←→ move · ↑↓ or a letter · Enter confirm · Esc skip
 horde-title = HORDE
 horde-coming = It is coming!
 horde-everywhere = They come from everywhere!
-horde-cleared = Horde wiped out! +{ $points }
+horde-left = HORDE · { $left }
+horde-cleared = HORDE WIPED OUT
+horde-cleared-points = +{ $points } points
+
+## Keys
+
+keys-title = Keys
+keys-move = Arrows / WASD / ZQSD   move
+keys-torch = Space / F              torch on or off
+keys-cards = ← → / 1 2 3 · Enter    take a card
+keys-gear = I                      show or hide the gear
+keys-pause = P / Esc                pause
+keys-keys = ?                      these keys

@@ -19,11 +19,11 @@ pub const MARGIN: f32 = 3.0;
 fn rate_of(weather: Weather) -> f32 {
     match weather {
         Weather::Dusk => 1.0,
-        Weather::Clear => 2.0,
-        Weather::Drizzle => 4.0,
-        Weather::Rain => 6.0,
-        Weather::Storm => 8.0,
-        Weather::Tempest => 10.0,
+        Weather::Clear => 1.5,
+        Weather::Drizzle => 3.0,
+        Weather::Rain => 4.5,
+        Weather::Storm => 6.0,
+        Weather::Tempest => 7.5,
     }
 }
 
@@ -35,7 +35,7 @@ pub fn rate(weather: Weather, progress: f32) -> f32 {
     now + (next - now) * progress
 }
 
-/// How often each kind of enemy appears in a weather, against the others: zombie, bat,
+/// How often each kind of enemy appears in a weather, against the others: zombie, Shadow,
 /// abomination.
 fn weights(weather: Weather) -> [u32; 3] {
     match weather {
@@ -79,7 +79,7 @@ pub fn edge_point(rng: &mut impl Rng, centre: Vec2, view: Vec2, side: Option<Fac
     centre + offset
 }
 
-/// A bat's own start in its zigzag.
+/// An enemy's own number, drawn as it appears: where it starts to wander.
 pub fn phase(rng: &mut impl Rng) -> f32 {
     rng.random_range(0.0..TAU)
 }
@@ -94,8 +94,8 @@ mod tests {
     #[test]
     fn the_rate_grows_through_the_weather() {
         assert!((rate(Weather::Dusk, 0.0) - 1.0).abs() < f32::EPSILON);
-        assert!((rate(Weather::Clear, 0.5) - 3.0).abs() < f32::EPSILON);
-        assert!((rate(Weather::Tempest, 1.0) - 10.0).abs() < f32::EPSILON);
+        assert!((rate(Weather::Clear, 0.5) - 2.25).abs() < f32::EPSILON);
+        assert!((rate(Weather::Tempest, 1.0) - 7.5).abs() < f32::EPSILON);
     }
 
     #[test]

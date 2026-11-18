@@ -1,16 +1,12 @@
-use super::{Facing, Vec2, tick_seconds};
+use super::{Facing, Vec2};
 
-/// How fast a bat goes through its zigzag (and beats its wings), in radians per second.
-const WOBBLE_SPEED: f32 = 6.0;
 /// How many ticks an enemy flashes white when hit.
 const FLASH_TICKS: u32 = 3;
-/// How far a bat's zigzag swerves from its way, against 1 for its way.
-const WOBBLE_STRENGTH: f32 = 0.9;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnemyKind {
     Zombie,
-    Bat,
+    Shadow,
     Abomination,
 }
 
@@ -35,7 +31,7 @@ pub struct Stats {
 }
 
 impl EnemyKind {
-    pub const ALL: [EnemyKind; 3] = [EnemyKind::Zombie, EnemyKind::Bat, EnemyKind::Abomination];
+    pub const ALL: [EnemyKind; 3] = [EnemyKind::Zombie, EnemyKind::Shadow, EnemyKind::Abomination];
 
     pub fn stats(self) -> Stats {
         match self {
@@ -49,13 +45,13 @@ impl EnemyKind {
                 half_width: 0.45,
                 flies: false,
             },
-            EnemyKind::Bat => Stats {
-                hp: 5,
-                xp: 1,
+            EnemyKind::Shadow => Stats {
+                hp: 25,
+                xp: 2,
                 drop_percent: 75,
                 stain: 2,
-                speed: 5.0,
-                damage: 3,
+                speed: 5.7,
+                damage: 8,
                 half_width: 0.35,
                 flies: true,
             },
@@ -86,8 +82,12 @@ pub struct Enemy {
     pub flash: u32,
     /// The horde it came with, if it did.
     pub horde: Option<u32>,
-    /// Where it is in its zigzag and wingbeat, in radians: a bat's own, drawn as it appears.
+    /// A number of its own, drawn as it appears, in radians: where it starts to wander.
     pub phase: f32,
+    /// Whether it has found the player, and goes for them: in the dark, it has to see them first.
+    pub noticed: bool,
+    /// Where it wanders when it hasn't, in radians.
+    pub wander: f32,
 }
 
 impl Enemy {
@@ -101,6 +101,8 @@ impl Enemy {
             flash: 0,
             horde: None,
             phase,
+            noticed: false,
+            wander: phase,
         }
     }
 
@@ -110,14 +112,8 @@ impl Enemy {
         self.flash = FLASH_TICKS;
     }
 
-    /// Where it wants to go this tick, towards `target`: straight for most, in a zigzag for a
-    /// bat. Length 1, or zero.
-    pub fn heading(&mut self, target: Vec2) -> Vec2 {
-        let way = (target - self.position).normalized();
-        if self.kind != EnemyKind::Bat {
-            return way;
-        }
-        self.phase += WOBBLE_SPEED * tick_seconds();
-        (way + way.perpendicular() * (self.phase.sin() * WOBBLE_STRENGTH)).normalized()
+    /// Where it wants to go this tick, towards `target`, straight. Length 1, or zero.
+    pub fn heading(&self, target: Vec2) -> Vec2 {
+        (target - self.position).normalized()
     }
 }

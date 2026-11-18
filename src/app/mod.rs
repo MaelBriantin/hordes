@@ -19,8 +19,10 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
-use crate::game::{Entry, Leaderboard, TICKS_PER_SECOND, World};
-use crate::ui::{self, BloodLook, Outline, PauseItem, RainDisplay, Screen, Sprites, ViewState};
+use crate::game::{Entry, Leaderboard, Mode, TICKS_PER_SECOND, WeatherNews, World};
+use crate::ui::{
+    self, BloodLook, OptionItem, Outline, PauseItem, RainDisplay, Screen, Sprites, ViewState,
+};
 use keys::Keys;
 use settings::Settings;
 
@@ -98,6 +100,10 @@ impl App {
                 blood: self.settings.blood,
                 rain: self.settings.rain,
                 outline: self.settings.outline,
+                mode: self.settings.mode,
+                skip_dusk: self.settings.skip_dusk,
+                gear: self.settings.gear,
+                weather_news: self.settings.weather_news,
                 language: self.settings.language.name(),
                 highlight: self.highlight,
             };
@@ -159,6 +165,16 @@ impl App {
                 Screen::Debug { selected } => {
                     self.screen = debug::handle_key(&mut self.world, key.code, selected);
                 }
+                Screen::Options {
+                    selected,
+                    from_pause,
+                } => self.on_options(key.code, selected, from_pause),
+                // Any of these keys leaves the list of keys, back to the run.
+                Screen::Keys => {
+                    if matches!(key.code, KeyCode::Char('?') | KeyCode::Esc | KeyCode::Enter) {
+                        self.screen = Screen::Playing;
+                    }
+                }
             }
         }
         // Held keys are followed in menus too: still held after them, they keep moving.
@@ -167,12 +183,19 @@ impl App {
 
     fn on_title(&mut self, code: KeyCode) {
         match code {
-            KeyCode::Enter | KeyCode::Char(' ') => self.screen = Screen::Playing,
-            KeyCode::Char('b' | 'B') => self.change_blood(BloodLook::next),
-            KeyCode::Char('r' | 'R') => self.change_rain(RainDisplay::next),
-            KeyCode::Char('o' | 'O') => self.change_outline(Outline::next),
-            KeyCode::Char('l' | 'L') => self.change_language(),
-            KeyCode::Esc => self.should_quit = true,
+            // A new run, in the mode chosen.
+            KeyCode::Enter | KeyCode::Char(' ') => self.new_run(),
+            KeyCode::Left | KeyCode::Right | KeyCode::Char('a' | 'A' | 'q' | 'Q' | 'd' | 'D') => {
+                self.settings.mode = self.settings.mode.other();
+                self.keep_settings();
+            }
+            // The options, where the game is quit too.
+            KeyCode::Char('o' | 'O') | KeyCode::Esc => {
+                self.screen = Screen::Options {
+                    selected: 0,
+                    from_pause: false,
+                };
+            }
             _ => {}
         }
     }
@@ -186,6 +209,19 @@ impl App {
     /// Changes the line around the player, and keeps the choice for the next runs.
     fn change_outline(&mut self, change: fn(Outline) -> Outline) {
         self.settings.outline = change(self.settings.outline);
+        self.keep_settings();
+    }
+
+    /// Shows or hides the gear over the map: kept for the next runs.
+    fn switch_gear(&mut self) {
+        self.settings.gear = !self.settings.gear;
+        self.keep_settings();
+    }
+
+    /// Changes how a new weather is told, from now on: kept for the next runs.
+    fn change_weather_news(&mut self, change: fn(WeatherNews) -> WeatherNews) {
+        self.settings.weather_news = change(self.settings.weather_news);
+        self.world.weather_news = self.settings.weather_news;
         self.keep_settings();
     }
 
@@ -223,51 +259,88 @@ impl App {
             }
             KeyCode::Enter | KeyCode::Char(' ') => match PauseItem::ALL[selected] {
                 PauseItem::Resume => self.screen = Screen::Playing,
-                PauseItem::Blood => self.change_blood(BloodLook::next),
-                PauseItem::Rain => self.change_rain(RainDisplay::next),
-                PauseItem::Outline => self.change_outline(Outline::next),
-                PauseItem::Language => self.change_language(),
+                PauseItem::Options => {
+                    self.screen = Screen::Options {
+                        selected: 0,
+                        from_pause: true,
+                    };
+                }
                 PauseItem::NewRun => self.new_run(),
+                PauseItem::Title => self.screen = Screen::Title,
                 PauseItem::Quit => self.should_quit = true,
             },
-            KeyCode::Left | KeyCode::Char('q' | 'a')
-                if PauseItem::ALL[selected] == PauseItem::Blood =>
-            {
-                self.change_blood(BloodLook::previous);
-            }
-            KeyCode::Right | KeyCode::Char('d') if PauseItem::ALL[selected] == PauseItem::Blood => {
-                self.change_blood(BloodLook::next);
-            }
-            KeyCode::Left | KeyCode::Char('q' | 'a')
-                if PauseItem::ALL[selected] == PauseItem::Rain =>
-            {
-                self.change_rain(RainDisplay::previous);
-            }
-            KeyCode::Right | KeyCode::Char('d') if PauseItem::ALL[selected] == PauseItem::Rain => {
-                self.change_rain(RainDisplay::next);
-            }
-            KeyCode::Left | KeyCode::Char('q' | 'a')
-                if PauseItem::ALL[selected] == PauseItem::Outline =>
-            {
-                self.change_outline(Outline::previous);
-            }
-            KeyCode::Right | KeyCode::Char('d')
-                if PauseItem::ALL[selected] == PauseItem::Outline =>
-            {
-                self.change_outline(Outline::next);
-            }
-            KeyCode::Left | KeyCode::Right | KeyCode::Char('q' | 'a' | 'd')
-                if PauseItem::ALL[selected] == PauseItem::Language =>
-            {
-                self.change_language();
-            }
             KeyCode::Esc | KeyCode::Char('p' | 'P') => self.screen = Screen::Playing,
             _ => {}
         }
     }
 
-    /// In the run: P or Esc pause it, or once it is over, R starts anew and Esc quits; on a
-    /// level-up, the cards.
+    /// In the options menu: ↑↓ move, ←→ or Enter change the setting selected, Esc or Back go back
+    /// where the menu was opened from.
+    fn on_options(&mut self, code: KeyCode, selected: usize, from_pause: bool) {
+        let items = OptionItem::items(from_pause);
+        let count = items.len();
+        let back = if from_pause {
+            let options = PauseItem::ALL
+                .iter()
+                .position(|item| *item == PauseItem::Options)
+                .unwrap_or(0);
+            Screen::Paused { selected: options }
+        } else {
+            Screen::Title
+        };
+        let item = items[selected];
+        let forward = match code {
+            KeyCode::Up | KeyCode::Char('w' | 'z') => {
+                self.screen = Screen::Options {
+                    selected: (selected + count - 1) % count,
+                    from_pause,
+                };
+                return;
+            }
+            KeyCode::Down | KeyCode::Char('s') => {
+                self.screen = Screen::Options {
+                    selected: (selected + 1) % count,
+                    from_pause,
+                };
+                return;
+            }
+            KeyCode::Esc => {
+                self.screen = back;
+                return;
+            }
+            KeyCode::Enter | KeyCode::Char(' ') if item == OptionItem::Back => {
+                self.screen = back;
+                return;
+            }
+            KeyCode::Enter | KeyCode::Char(' ') if item == OptionItem::Quit => {
+                self.should_quit = true;
+                return;
+            }
+            KeyCode::Enter | KeyCode::Char(' ' | 'd') | KeyCode::Right => true,
+            KeyCode::Left | KeyCode::Char('q' | 'a') => false,
+            _ => return,
+        };
+        match item {
+            OptionItem::Blood if forward => self.change_blood(BloodLook::next),
+            OptionItem::Blood => self.change_blood(BloodLook::previous),
+            OptionItem::Rain if forward => self.change_rain(RainDisplay::next),
+            OptionItem::Rain => self.change_rain(RainDisplay::previous),
+            OptionItem::Outline if forward => self.change_outline(Outline::next),
+            OptionItem::Outline => self.change_outline(Outline::previous),
+            OptionItem::Announcements if forward => self.change_weather_news(WeatherNews::next),
+            OptionItem::Announcements => self.change_weather_news(WeatherNews::previous),
+            OptionItem::Dusk => {
+                self.settings.skip_dusk = !self.settings.skip_dusk;
+                self.keep_settings();
+            }
+            OptionItem::Gear => self.switch_gear(),
+            OptionItem::Language => self.change_language(),
+            OptionItem::Back | OptionItem::Quit => {}
+        }
+    }
+
+    /// In the run: P or Esc pause it, Space or F switches the torch, or once it is over, R starts anew and
+    /// Esc quits; on a level-up, the cards.
     fn on_run(&mut self, code: KeyCode) {
         if self.world.is_over() {
             match code {
@@ -285,13 +358,27 @@ impl App {
             self.screen = Screen::Debug { selected: 0 };
             return;
         }
+        if code == KeyCode::Char('?') {
+            self.screen = Screen::Keys;
+            return;
+        }
+        if matches!(code, KeyCode::Char('i' | 'I')) {
+            self.switch_gear();
+            return;
+        }
+        // Space or F switches the torch, but for the cards of a level-up, where Space takes one.
+        if matches!(code, KeyCode::Char(' ' | 'f' | 'F')) && self.world.offer.is_none() {
+            self.world.switch_torch();
+            return;
+        }
         self.choose(code);
     }
 
     /// The run is over: if its score makes the leaderboard, three letters to type in.
     fn weigh_score(&mut self) {
         self.scored = true;
-        if self.leaderboard.qualifies(self.world.score) {
+        // A standard run keeps no score.
+        if self.world.mode == Mode::Arcade && self.leaderboard.qualifies(self.world.score) {
             self.screen = Screen::NameEntry {
                 letters: self.last_name,
                 cursor: 0,
@@ -342,7 +429,8 @@ impl App {
     fn new_run(&mut self) {
         self.scored = false;
         self.highlight = None;
-        self.world = World::new(rand::random());
+        self.world = World::with(rand::random(), self.settings.mode, self.settings.skip_dusk);
+        self.world.weather_news = self.settings.weather_news;
         self.selected = 0;
         self.dealt_at = None;
         self.screen = Screen::Playing;
@@ -383,4 +471,6 @@ impl App {
 /// every key as a code, with whether it is pressed, held down (repeated) or released.
 const KEY_REPORTING: KeyboardEnhancementFlags = KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
     .union(KeyboardEnhancementFlags::REPORT_EVENT_TYPES)
-    .union(KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES);
+    .union(KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
+    // The shifted key too: `?`, not `/` with Shift, whatever the keyboard's layout.
+    .union(KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS);

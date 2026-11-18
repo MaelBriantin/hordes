@@ -9,6 +9,26 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- Two modes, chosen on the title screen: standard, from dusk to dawn, with no score; arcade, endless, the weather going up to the tempest and back down, again and again, 7% harder a minute, for the score and its leaderboard. The pause menu leads back to the title screen.
+- The dusk can be skipped (C on the title screen): the run opens on the night.
+- ? lists every key during a run; I shows or hides the gear.
+- An options menu, O on the title screen or from the pause menu, holds every setting: the title screen keeps only the mode, Enter and O.
+- How new weathers and hordes are told, an option: big with a pause, as before; big with no pause; or on a banner on the top of the map, the run going on. The gear shows or hides from the options too.
+- In arcade, the score shows on a gold badge, its thousands apart.
+- The torch on or off, with Space or F: it lights up of itself as the night falls. Out, the player sees next to nothing, but the enemies only find them close by, wandering or drawn to the campfires otherwise; a strike of lightning gives them away. The guns hold their fire in the dark.
+- The torch's battery: two minutes lit, a minute to charge back out; empty, the torch dies out. A new rare passive, Batteries, makes it last longer and charge faster; a fallen Shadow leaves an energy cell that charges it.
+- Gems by their worth: blue, green, red, each glowing its colour. A new passive, Loot, makes them likelier.
+- A count of the horde still standing, on the top of the map.
+- The Shadows, in place of the bats: hunched, barely seen in the dark but for their red eyes, passing through obstacles, faster and far tougher than the bats were. They go the other way round: they hunt in the dark, and shun the torch.
+
+### Changed
+- The machine gun is weaker, it did the work alone: 3 damage (5 from level 3) rather than 4 (6), a shot every 0.17 s rather than 0.13: about 30% less damage a second.
+- The machine gun shoots thin tracers, their trail fading behind them: told from the pistol's bullets at a glance.
+- Easier: every weapon is a common card again, the rare ones are the strongest passives; a quarter fewer enemies appear, and each horde brings 10 more than the last rather than 15.
+- The HP show in the middle of their bar, as the level in the XP bar.
+- A horde wiped out is told in big gold letters; its arrows make a blinking band on the edge it comes from; the compass's arrow comes with a healing cross: all seen at a glance.
+
 ## v0.4.0 · November 18, 2026
 Rare finds in a sharper night.
 

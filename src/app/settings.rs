@@ -6,6 +6,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+use crate::game::{Mode, WeatherNews};
 use crate::ui::{BloodLook, Outline, RainDisplay};
 
 /// Where the settings go instead of the data folder, if set: for tests.
@@ -70,6 +71,13 @@ pub struct Settings {
     pub rain: RainDisplay,
     /// The line around the player.
     pub outline: Outline,
+    /// The mode runs are played in, and whether they skip the dusk.
+    pub mode: Mode,
+    pub skip_dusk: bool,
+    /// Whether the gear shows over the top left of the map.
+    pub gear: bool,
+    /// How a new weather is told.
+    pub weather_news: WeatherNews,
 }
 
 impl Default for Settings {
@@ -79,6 +87,10 @@ impl Default for Settings {
             blood: BloodLook::Red,
             rain: RainDisplay::Full,
             outline: Outline::Off,
+            mode: Mode::Standard,
+            skip_dusk: false,
+            gear: true,
+            weather_news: WeatherNews::Paused,
         }
     }
 }
@@ -123,6 +135,18 @@ impl Settings {
                 ("outline", "white") => settings.outline = Outline::White,
                 ("outline", "yellow") => settings.outline = Outline::Yellow,
                 ("outline", "red") => settings.outline = Outline::Red,
+                ("mode", "standard") => settings.mode = Mode::Standard,
+                ("mode", "arcade") => settings.mode = Mode::Arcade,
+                ("dusk", "played") => settings.skip_dusk = false,
+                ("dusk", "skipped") => settings.skip_dusk = true,
+                ("gear", "shown") => settings.gear = true,
+                ("gear", "hidden") => settings.gear = false,
+                ("announcements", "paused") => settings.weather_news = WeatherNews::Paused,
+                ("announcements", "big") => settings.weather_news = WeatherNews::Big,
+                // `quiet`, the setting of before there were three.
+                ("announcements", "banner" | "quiet") => {
+                    settings.weather_news = WeatherNews::Banner;
+                }
                 _ => {}
             }
         }
@@ -131,11 +155,15 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\noutline = {}\n",
+            "language = {}\nblood = {}\nrain = {}\noutline = {}\nmode = {}\ndusk = {}\ngear = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
-            self.outline.id()
+            self.outline.id(),
+            self.mode.id(),
+            if self.skip_dusk { "skipped" } else { "played" },
+            if self.gear { "shown" } else { "hidden" },
+            self.weather_news.id()
         )
     }
 }
@@ -168,6 +196,10 @@ mod tests {
             blood: BloodLook::Mayo,
             rain: RainDisplay::Reduced,
             outline: Outline::Yellow,
+            mode: Mode::Arcade,
+            skip_dusk: true,
+            gear: false,
+            weather_news: WeatherNews::Big,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);
         assert_eq!(

@@ -53,10 +53,14 @@ pub enum Passive {
     Compass,
     /// +10% XP from the gems.
     Wisdom,
+    /// +25% to the torch's battery: it lasts longer, and charges faster.
+    Batteries,
+    /// +10% chance for an enemy to leave a gem.
+    Loot,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 8] = [
+    pub const ALL: [Passive; 10] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -65,6 +69,8 @@ impl Passive {
         Passive::Flashlight,
         Passive::Compass,
         Passive::Wisdom,
+        Passive::Batteries,
+        Passive::Loot,
     ];
 }
 
@@ -84,9 +90,12 @@ impl Choice {
     /// How rare its card is.
     pub fn rarity(self) -> Rarity {
         match self {
-            Choice::Weapon(Weapon::MachineGun | Weapon::Drones)
-            | Choice::Passive(
-                Passive::Might | Passive::Haste | Passive::Compass | Passive::Wisdom,
+            Choice::Passive(
+                Passive::Might
+                | Passive::Haste
+                | Passive::Compass
+                | Passive::Wisdom
+                | Passive::Batteries,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Heal => Rarity::Common,
@@ -182,7 +191,7 @@ impl Build {
 
     /// Three choices at random among what can still be picked, all different; a heal if
     /// nothing can. Each card is a rare one a time in four, a common one otherwise (or the other,
-    /// if none is left of its rarity). At `dusk`, no Flashlight: there is still light enough.
+    /// if none is left of its rarity). At `dusk`, no Flashlight nor Batteries: there is still light enough.
     /// `legendary_percent` of the time, the last is a legendary not found yet.
     pub fn offers(&self, rng: &mut impl Rng, dusk: bool, legendary_percent: u32) -> Vec<Choice> {
         let mut pool: Vec<Choice> = Vec::new();
@@ -192,7 +201,7 @@ impl Build {
             }
         }
         for passive in Passive::ALL {
-            if dusk && passive == Passive::Flashlight {
+            if dusk && matches!(passive, Passive::Flashlight | Passive::Batteries) {
                 continue;
             }
             if can_pick(&self.passives, passive, MAX_PASSIVES) {
@@ -270,6 +279,17 @@ impl Build {
             0 => None,
             level => Some(100.0 + 50.0 * f32::from(level)),
         }
+    }
+
+    /// The torch's battery, against its own, in percent: how long it lasts, and how fast it
+    /// charges; 25 more per level of Batteries.
+    pub fn battery_percent(&self) -> u32 {
+        100 + 25 * u32::from(self.passive_level(Passive::Batteries))
+    }
+
+    /// How much likelier an enemy is to leave a gem, in points of percent: 10 per level of Loot.
+    pub fn drop_bonus(&self) -> u32 {
+        10 * u32::from(self.passive_level(Passive::Loot))
     }
 
     /// The XP the gems give, against their own, in percent: 10 more per level of Wisdom.

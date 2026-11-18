@@ -13,7 +13,7 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
 use super::{Blank, BloodLook, DARK_GREY, GREY, Outline, RainDisplay, ViewState};
-use crate::game::{DAWN_SECONDS, Entry, Leaderboard, World};
+use crate::game::{Entry, Leaderboard, Mode, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
@@ -21,10 +21,10 @@ const SELECTED: Color = Color::Rgb(230, 55, 55);
 const GOLD: Color = Color::Rgb(240, 200, 60);
 /// The width of the leaderboard's box on the title screen.
 const BOARD_WIDTH: u16 = 30;
+/// The box of the keys: its longest line, and room around it.
+const KEYS_WIDTH: u16 = 52;
 /// The death screen's big word: blood red on top, darker below, as the title.
 const DEATH_COLORS: (Color, Color) = (Color::Rgb(210, 40, 40), Color::Rgb(140, 20, 25));
-/// `nf-md-weather_sunny`: by a run that saw the dawn, on the leaderboard.
-const DAWN_MARK: &str = "\u{F0599}";
 /// The dawn's word, for a run held out to the end: the rising sun's gold.
 pub const DAWN_COLORS: (Color, Color) = (Color::Rgb(255, 210, 90), Color::Rgb(230, 140, 50));
 
@@ -32,38 +32,112 @@ pub const DAWN_COLORS: (Color, Color) = (Color::Rgb(255, 210, 90), Color::Rgb(23
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PauseItem {
     Resume,
+    /// The settings.
+    Options,
+    NewRun,
+    /// Back to the title screen, the run left.
+    Title,
+    Quit,
+}
+
+impl PauseItem {
+    pub const ALL: [PauseItem; 5] = [
+        PauseItem::Resume,
+        PauseItem::Options,
+        PauseItem::NewRun,
+        PauseItem::Title,
+        PauseItem::Quit,
+    ];
+
+    fn label(self) -> String {
+        match self {
+            PauseItem::Resume => fl!("pause-resume"),
+            PauseItem::Options => fl!("options-title"),
+            PauseItem::NewRun => fl!("pause-new-run"),
+            PauseItem::Title => fl!("pause-title-screen"),
+            PauseItem::Quit => fl!("pause-quit"),
+        }
+    }
+}
+
+/// What the options menu offers, in its order: the settings, kept for the next runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OptionItem {
     /// Blood shown or not.
     Blood,
     /// How the rain shows.
     Rain,
     /// The line around the player.
     Outline,
+    /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
+    Announcements,
+    /// Whether runs open on the dusk or on the night.
+    Dusk,
+    /// Whether the gear shows over the top left of the map.
+    Gear,
     /// The language the game speaks.
     Language,
-    NewRun,
+    /// Back where the menu was opened from.
+    Back,
+    /// Quit the game: from the title screen's options.
     Quit,
 }
 
-impl PauseItem {
-    pub const ALL: [PauseItem; 7] = [
-        PauseItem::Resume,
-        PauseItem::Blood,
-        PauseItem::Rain,
-        PauseItem::Outline,
-        PauseItem::Language,
-        PauseItem::NewRun,
-        PauseItem::Quit,
+impl OptionItem {
+    const ALL: [OptionItem; 9] = [
+        OptionItem::Blood,
+        OptionItem::Rain,
+        OptionItem::Outline,
+        OptionItem::Announcements,
+        OptionItem::Dusk,
+        OptionItem::Gear,
+        OptionItem::Language,
+        OptionItem::Back,
+        OptionItem::Quit,
     ];
+
+    /// The items of the menu, opened from the pause menu (which has its own way to quit) or
+    /// from the title screen.
+    pub fn items(from_pause: bool) -> &'static [OptionItem] {
+        if from_pause {
+            &Self::ALL[..Self::ALL.len() - 1]
+        } else {
+            &Self::ALL
+        }
+    }
 
     fn label(self, view: ViewState) -> String {
         match self {
-            PauseItem::Resume => fl!("pause-resume"),
-            PauseItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
-            PauseItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
-            PauseItem::Outline => fl!("pause-outline", value = outline_name(view.outline)),
-            PauseItem::Language => fl!("pause-language", value = view.language),
-            PauseItem::NewRun => fl!("pause-new-run"),
-            PauseItem::Quit => fl!("pause-quit"),
+            OptionItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
+            OptionItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
+            OptionItem::Outline => fl!("pause-outline", value = outline_name(view.outline)),
+            OptionItem::Announcements => fl!(
+                "pause-announcements",
+                value = match view.weather_news {
+                    WeatherNews::Paused => fl!("announcements-paused"),
+                    WeatherNews::Big => fl!("announcements-big"),
+                    WeatherNews::Banner => fl!("announcements-banner"),
+                }
+            ),
+            OptionItem::Dusk => fl!(
+                "option-dusk",
+                value = if view.skip_dusk {
+                    fl!("dusk-skipped")
+                } else {
+                    fl!("dusk-played")
+                }
+            ),
+            OptionItem::Gear => fl!(
+                "option-gear",
+                value = if view.gear {
+                    fl!("gear-shown")
+                } else {
+                    fl!("gear-hidden")
+                }
+            ),
+            OptionItem::Language => fl!("pause-language", value = view.language),
+            OptionItem::Back => fl!("option-back"),
+            OptionItem::Quit => fl!("pause-quit"),
         }
     }
 }
@@ -139,18 +213,21 @@ pub fn render_title(
     let name_rows = u16::try_from(4 * scale).unwrap_or(4);
     // The leaderboard's box under the title, as many of its runs as the screen has room for;
     // the settings on the last line.
+    // The leaderboard, the arcade's: its room kept in either mode, the title staying in place.
     let runs = leaderboard.entries().len();
-    let room = usize::from(area.height.saturating_sub(name_rows + 13));
+    let room = usize::from(area.height.saturating_sub(name_rows + 15));
     let shown = runs.min(room);
     let board_rows = if shown == 0 {
         0
     } else {
         u16::try_from(shown).unwrap_or(0) + 2
     };
-    let [_, name, _, line, _, start, _, board, _, option, last] = Layout::vertical([
+    let [_, name, _, line, _, mode, _, start, _, board, _, _, last] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(name_rows),
         Constraint::Length(2),
+        Constraint::Length(1),
+        Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Length(1),
@@ -161,11 +238,22 @@ pub fn render_title(
         Constraint::Length(1),
     ])
     .areas(area);
-    if shown > 0 {
+    if shown > 0 && view.mode == Mode::Arcade {
         render_board(frame, board, &leaderboard.entries()[..shown], frames);
     }
     pixels::render_sprite_scaled(frame.buffer_mut(), name, sprites, SpriteId::Title, scale);
     centred(frame, &fl!("title-tagline"), Style::new().fg(GREY), line);
+    // The mode the run will be played in, changed with ←→.
+    let mode_words = match view.mode {
+        Mode::Standard => fl!("mode-standard"),
+        Mode::Arcade => fl!("mode-arcade"),
+    };
+    centred(
+        frame,
+        &format!("◀  {mode_words}  ▶"),
+        Style::new().fg(GOLD).add_modifier(Modifier::BOLD),
+        mode,
+    );
     // Blinking, as on an arcade cabinet: shown two thirds of each second.
     if frames % 30 < 20 {
         centred(
@@ -175,18 +263,6 @@ pub fn render_title(
             start,
         );
     }
-    centred(
-        frame,
-        &fl!(
-            "title-options",
-            blood = blood_name(view.blood),
-            rain = rain_name(view.rain),
-            outline = outline_name(view.outline),
-            language = view.language
-        ),
-        Style::new().fg(DARK_GREY),
-        option,
-    );
     frame.render_widget(
         Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
         last,
@@ -198,28 +274,73 @@ fn version() -> String {
     format!("v{}", env!("CARGO_PKG_VERSION"))
 }
 
-/// The pause menu, `selected` its highlighted item, the settings as `view` holds them.
-pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize, view: ViewState) {
-    let height = u16::try_from(PauseItem::ALL.len()).unwrap_or(3) + 4;
+/// Every key of a run, in a box over the map, the run standing still.
+pub fn render_keys(frame: &mut Frame, map: Rect) {
+    let lines = [
+        fl!("keys-move"),
+        fl!("keys-torch"),
+        fl!("keys-cards"),
+        fl!("keys-gear"),
+        fl!("keys-pause"),
+        fl!("keys-keys"),
+    ];
+    let height = u16::try_from(lines.len()).unwrap_or(6) + 4;
     let inside = boxed(
         frame,
         map,
-        28,
+        KEYS_WIDTH,
         height,
-        &fl!("pause-title").to_uppercase(),
-        &version(),
+        &fl!("keys-title").to_uppercase(),
+        "",
     );
-    let lines: Vec<Line> = PauseItem::ALL
+    let lines: Vec<Line> = lines.into_iter().map(Line::from).collect();
+    frame.render_widget(Paragraph::new(lines), inside);
+}
+
+/// The pause menu, `selected` its highlighted item.
+pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize) {
+    let labels: Vec<String> = PauseItem::ALL.iter().map(|item| item.label()).collect();
+    render_list(frame, map, &fl!("pause-title"), &labels, selected, 28);
+}
+
+/// The options menu, `selected` its highlighted item, the settings as `view` holds them.
+pub fn render_options(
+    frame: &mut Frame,
+    map: Rect,
+    selected: usize,
+    from_pause: bool,
+    view: ViewState,
+) {
+    let labels: Vec<String> = OptionItem::items(from_pause)
+        .iter()
+        .map(|item| item.label(view))
+        .collect();
+    render_list(frame, map, &fl!("options-title"), &labels, selected, 44);
+}
+
+/// A menu in its box: its `title` on the frame, the game's version under it, its `labels` one a
+/// line, the `selected` one marked.
+fn render_list(
+    frame: &mut Frame,
+    map: Rect,
+    title: &str,
+    labels: &[String],
+    selected: usize,
+    width: u16,
+) {
+    let height = u16::try_from(labels.len()).unwrap_or(3) + 4;
+    let inside = boxed(frame, map, width, height, &title.to_uppercase(), &version());
+    let lines: Vec<Line> = labels
         .iter()
         .enumerate()
-        .map(|(index, item)| {
+        .map(|(index, label)| {
             if index == selected {
                 Line::styled(
-                    format!("▶ {}", item.label(view).to_uppercase()),
+                    format!("▶ {}", label.to_uppercase()),
                     Style::new().fg(SELECTED).add_modifier(Modifier::BOLD),
                 )
             } else {
-                Line::from(format!("  {}", item.label(view).to_uppercase()))
+                Line::from(format!("  {}", label.to_uppercase()))
             }
         })
         .collect();
@@ -258,8 +379,14 @@ pub fn render_death(
     let scale = if wide && area.height >= 26 { 2 } else { 1 };
     let word_rows = u16::try_from(4 * scale).unwrap_or(4);
 
-    // While the name is typed in, the run in its place, with the letters so far.
-    let mut board = leaderboard.clone();
+    // While the name is typed in, the run in its place, with the letters so far. A standard run
+    // keeps no score, nor leaderboard.
+    let arcade = world.mode == Mode::Arcade;
+    let mut board = if arcade {
+        leaderboard.clone()
+    } else {
+        Leaderboard::default()
+    };
     let highlight = match name {
         Some((letters, _)) => board.insert(Entry {
             name: String::from_utf8_lossy(&letters).into_owned(),
@@ -297,16 +424,14 @@ pub fn render_death(
             under,
         );
     }
-    let mut points = fl!("over-points", score = world.score);
-    if let Some(bonus) = world.dawn_bonus {
-        points = format!("{points} ({})", fl!("dawn-bonus", points = bonus));
+    if arcade {
+        label(
+            frame,
+            &fl!("over-points", score = world.score),
+            Style::new().fg(GOLD).add_modifier(Modifier::BOLD),
+            score,
+        );
     }
-    label(
-        frame,
-        &points,
-        Style::new().fg(GOLD).add_modifier(Modifier::BOLD),
-        score,
-    );
     let line = [
         fl!("over-survived", time = clock(world.seconds())),
         fl!(
@@ -434,15 +559,9 @@ fn render_name_prompt(
     frame.render_widget(Paragraph::new(Line::from(spans)), ground);
 }
 
-/// A run on the leaderboard: its place, its name and its score, a sun after it if it saw the
-/// dawn.
+/// A run on the leaderboard: its place, its name and its score.
 fn board_line(place: usize, entry: &Entry) -> String {
-    let sun = if entry.seconds >= DAWN_SECONDS {
-        DAWN_MARK
-    } else {
-        " "
-    };
-    format!("{:>2}. {}  {:>7} {sun}", place + 1, entry.name, entry.score)
+    format!("{:>2}. {}  {:>7}", place + 1, entry.name, entry.score)
 }
 
 /// The best runs in a box, its title on its frame, the runs in columns.

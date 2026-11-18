@@ -1,7 +1,8 @@
 use super::super::Obstacle;
-use super::super::announce::News;
+use super::super::announce::{News, WeatherNews};
 use super::super::build::{BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::gem::Gem;
+use super::super::mode::Mode;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
@@ -220,7 +221,7 @@ fn a_zombie_walks_to_the_player() {
 }
 
 #[test]
-fn a_rock_stops_a_zombie_but_not_a_bat() {
+fn a_rock_stops_a_zombie_but_not_a_shadow() {
     let mut world = by_a_rock(Vec2::new(17.0, 11.0));
     disarm(&mut world);
     world
@@ -228,11 +229,11 @@ fn a_rock_stops_a_zombie_but_not_a_bat() {
         .push(enemy(EnemyKind::Zombie, Vec2::new(24.0, 11.0)));
     world
         .enemies
-        .push(enemy(EnemyKind::Bat, Vec2::new(24.0, 11.0)));
+        .push(enemy(EnemyKind::Shadow, Vec2::new(24.0, 11.0)));
     wait(&mut world, 45);
-    let (zombie, bat) = (&world.enemies[0], &world.enemies[1]);
+    let (zombie, shadow) = (&world.enemies[0], &world.enemies[1]);
     assert!(zombie.position.x >= 22.0 + 0.45 - 1e-3, "{zombie:?}");
-    assert!(bat.position.x < 20.0, "{bat:?}");
+    assert!(shadow.position.x < 20.0, "{shadow:?}");
 }
 
 #[test]
@@ -564,17 +565,15 @@ fn the_machine_gun_fires_a_burst_of_its_magazine() {
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(109.0, 50.0)));
     world.enemies[0].hp = 100_000;
-    let mut shots = 0;
-    for _ in 0..90 {
-        let before = world.bullets.len();
-        world.enemies[0].position = Vec2::new(109.0, 50.0);
-        wait(&mut world, 1);
-        if world.bullets.len() > before {
-            shots += 1;
-        }
-    }
-    // A shot every 3 ticks: the 20 rounds in 60 ticks, then a 3-second reload.
-    assert_eq!(shots, 20);
+    let rounds = |world: &World| world.ammo()[0].1.rounds;
+    // A shot every 5 ticks (its wait, then the shot): the 20 rounds in 100 ticks, then a
+    // 3-second reload.
+    wait(&mut world, 1);
+    assert_eq!(rounds(&world), 19);
+    wait(&mut world, 5 * 18);
+    assert_eq!(rounds(&world), 1);
+    assert_eq!(world.ammo()[0].1.reloading, 0);
+    wait(&mut world, 5);
     assert!(world.ammo()[0].1.reloading > 0);
 }
 
@@ -957,16 +956,14 @@ fn illumination_gives_a_point_of_xp_a_second() {
 }
 
 #[test]
-fn the_torch_lights_up_once_the_night_has_fallen_and_been_told() {
+fn the_torch_lights_up_of_itself_as_the_night_falls_and_goes_out_at_will() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.next_horde = u32::MAX;
     assert!(!world.torch_lit());
-    world.ticks = 30 * 30 - 1;
-    wait(&mut world, 1);
-    // The night told: the world stands still, the torch out.
-    assert!(world.announcement.is_some() && !world.torch_lit());
-    wait(&mut world, 30 * 2);
+    world.switch_torch();
+    assert_eq!(world.torch_on(), None);
+    world.ticks = 30 * 26 - 1;
     let flickers: Vec<bool> = (0..25)
         .map(|_| {
             wait(&mut world, 1);
@@ -975,4 +972,189 @@ fn the_torch_lights_up_once_the_night_has_fallen_and_been_told() {
         .collect();
     assert!(flickers.contains(&false) && flickers.contains(&true));
     assert!(world.torch_lit());
+    world.switch_torch();
+    assert!(!world.torch_lit());
+    world.switch_torch();
+    assert!(!world.torch_lit(), "flickering on");
+    wait(&mut world, 25);
+    assert!(world.torch_lit());
+}
+
+/// A run in the night, the torch out, no horde nor lightning to come.
+fn in_the_dark() -> World {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
+    world.ticks = 30 * 40;
+    world.switch_torch();
+    world
+}
+
+#[test]
+fn in_the_dark_a_far_enemy_does_not_find_the_player() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(120.0, 50.0)));
+    wait(&mut world, 30);
+    let apart = (world.enemies[0].position - world.player.position).length();
+    assert!(apart > 18.5, "{apart}");
+    assert!(!world.enemies[0].noticed);
+}
+
+#[test]
+fn in_the_dark_a_near_enemy_finds_the_player() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
+    wait(&mut world, 30);
+    assert!(world.enemies[0].noticed);
+    assert!(world.enemies[0].position.x < 104.0);
+}
+
+#[test]
+fn in_the_dark_the_guns_hold_their_fire() {
+    let mut world = in_the_dark();
+    world.player.build.take(Choice::Weapon(Weapon::Pistol));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
+    wait(&mut world, 30);
+    assert_eq!(world.bullets, []);
+    world.switch_torch();
+    wait(&mut world, 30);
+    assert!(world.enemies[0].hp < EnemyKind::Abomination.stats().hp);
+}
+
+#[test]
+fn shadows_hunt_in_the_dark_and_shun_the_torch() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(125.0, 50.0)));
+    wait(&mut world, 1);
+    assert!(world.enemies[0].noticed, "the torch out, it hunts");
+    world.switch_torch();
+    wait(&mut world, 30);
+    assert!(!world.enemies[0].noticed);
+    assert!(world.enemies[0].position.x > 125.0, "away from the light");
+}
+
+#[test]
+fn the_battery_runs_down_lit_and_charges_out() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
+    world.ticks = 30 * 40;
+    world.unhurt = true;
+    // Two minutes lit, and the torch dies out.
+    wait(&mut world, 30 * 60);
+    assert!((world.battery - 0.5).abs() < 0.01, "{}", world.battery);
+    // A minute more, and the 2 seconds the drizzle is told the while.
+    wait(&mut world, 30 * 63);
+    assert_eq!(world.torch_on(), Some(false));
+    // Too low to light again; out, it charges: full in a minute.
+    world.switch_torch();
+    assert_eq!(world.torch_on(), Some(false));
+    wait(&mut world, 30 * 6);
+    world.switch_torch();
+    assert_eq!(world.torch_on(), Some(true));
+    world.switch_torch();
+    wait(&mut world, 30 * 60);
+    assert!((world.battery - 1.0).abs() < f32::EPSILON);
+}
+
+#[test]
+fn batteries_make_the_battery_last_longer() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
+    world.ticks = 30 * 40;
+    for _ in 0..4 {
+        world.player.build.take(Choice::Passive(Passive::Batteries));
+    }
+    // Twice as long: after two minutes, half of it left.
+    wait(&mut world, 30 * 120);
+    assert!((world.battery - 0.5).abs() < 0.01, "{}", world.battery);
+}
+
+#[test]
+fn a_fallen_shadow_leaves_a_cell_that_charges_the_battery() {
+    let mut world = in_the_dark();
+    world.battery = 0.5;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(101.0, 50.0)));
+    world.enemies[0].hp = 0;
+    wait(&mut world, 1);
+    assert_eq!(world.cells.len(), 1);
+    wait(&mut world, 30);
+    assert_eq!(world.cells, []);
+    assert!(world.battery > 0.6, "{}", world.battery);
+}
+
+#[test]
+fn loot_makes_gems_likelier() {
+    let mut build = Build::new();
+    assert_eq!(build.drop_bonus(), 0);
+    build.take(Choice::Passive(Passive::Loot));
+    build.take(Choice::Passive(Passive::Loot));
+    assert_eq!(build.drop_bonus(), 20);
+}
+
+#[test]
+fn skipping_the_dusk_opens_on_the_night_the_torch_lit() {
+    let world = World::with(1, Mode::Standard, true);
+    assert_eq!(world.weather(), Weather::Clear);
+    assert_eq!(
+        world.announcement.map(|told| told.news),
+        Some(News::Weather(Weather::Clear))
+    );
+    assert!(world.torch_lit());
+}
+
+#[test]
+fn in_arcade_there_is_no_dawn_and_the_pressure_grows() {
+    let mut world = World::with(1, Mode::Arcade, false);
+    world.announcement = None;
+    world.next_horde = u32::MAX;
+    world.player.build = Build::unarmed();
+    world.unhurt = true;
+    world.ticks = 30 * 630;
+    wait(&mut world, 30 * 5);
+    assert!(!world.daybreak() && !world.is_over());
+    world.ticks = 30 * 600;
+    assert!((world.pressure() - 1.07_f32.powi(10)).abs() < 0.01);
+    // The multiplier follows the pressure: ×2 at ten minutes.
+    assert_eq!(world.multiplier_tenths(), 20);
+}
+
+#[test]
+fn a_new_weather_told_quietly_lets_the_run_go_on() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.weather_news = WeatherNews::Banner;
+    world.ticks = 30 * 30 - 1;
+    wait(&mut world, 1);
+    assert_eq!(world.announcement, None);
+    assert_eq!(world.told, Some((News::Weather(Weather::Clear), 30 * 30)));
+}
+
+#[test]
+fn a_horde_told_without_a_pause_lets_the_run_go_on() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.weather_news = WeatherNews::Big;
+    world.set_view(Vec2::new(30.0, 12.0));
+    world.ticks = 30 * 87 - 1;
+    wait(&mut world, 1);
+    assert_eq!(world.announcement, None);
+    assert_eq!(
+        world.told,
+        Some((News::Horde { everywhere: false }, 30 * 87))
+    );
 }

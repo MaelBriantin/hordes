@@ -88,7 +88,7 @@ impl BloodLook {
         match self {
             BloodLook::Red => Some([Color::Rgb(115, 10, 16), Color::Rgb(155, 20, 26)]),
             BloodLook::Ketchup => Some([Color::Rgb(205, 30, 22), Color::Rgb(240, 55, 35)]),
-            BloodLook::Mayo => Some([Color::Rgb(232, 220, 160), Color::Rgb(250, 240, 195)]),
+            BloodLook::Mayo => Some([Color::Rgb(225, 190, 60), Color::Rgb(245, 215, 95)]),
             BloodLook::Pesto => Some([Color::Rgb(70, 140, 45), Color::Rgb(110, 175, 60)]),
             BloodLook::Off => None,
         }
@@ -167,19 +167,20 @@ pub fn paint_spurt(
     }
 }
 
-/// A run's rain in that weather, `progress` through its stage, shown as `display` says: dimmer
+/// A run's rain in that weather, `next` to come, `progress` through its stage, shown as `display` says: dimmer
 /// than the title's, so as not to hide the horde, and turning into the next weather's at the
 /// end of the stage; less and less as the sun rises, the `daylight` there is. None when there is
 /// none to show.
 pub fn run_rain(
     weather: Weather,
+    next: Option<Weather>,
     progress: f32,
     display: RainDisplay,
     daylight: f32,
 ) -> Option<Rain> {
     let stage = |weather: Weather| RAIN_BY_WEATHER[weather as usize];
     let now = stage(weather);
-    let next = weather.next().map_or(now, stage);
+    let next = next.map_or(now, stage);
     let turn = ((progress - (1.0 - RAIN_TURN)) / RAIN_TURN).clamp(0.0, 1.0);
     let full = (now + (next - now) * turn) * (1.0 - daylight);
     let per_thousand = match display {
@@ -201,9 +202,8 @@ const BOLT_GLOW: Color = Color::Rgb(170, 180, 255);
 const IMPACT_STEPS: u8 = 32;
 /// How far the player's light fades into the night, past its full reach, in tiles.
 const LIGHT_FADE: f32 = 6.0;
-/// An XP gem's glow: its blue, how strong at the gem, how far it reaches, in pixels; and the
+/// An XP gem's glow: how strong at the gem, how far it reaches, in pixels; and the
 /// screen's ground it shows on where nothing is drawn.
-const GEM_GLOW: (u8, u8, u8) = (60, 130, 255);
 const GEM_GLOW_STRENGTH: f32 = 0.3;
 /// The light of a gem on what is drawn around it: full within this many tiles, fading over
 /// that many more.
@@ -468,13 +468,16 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
     }
 }
 
-/// A blue glow around each gem at `centres`, added to what is there, the bare ground included:
+/// A glow on the map: the pixel it shines from, and its colour.
+pub type Glow = ((i32, i32), (u8, u8, u8));
+
+/// A glow around each gem or cell, in its colour, added to what is there, the bare ground included:
 /// strongest at the gem, fading out over `GEM_GLOW_REACH` pixels.
-pub fn paint_glows(canvas: &mut Canvas, centres: &[(i32, i32)]) {
+pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
     let (left, top) = canvas.origin;
     let (width, height) = (canvas.width, canvas.height);
     let reach = GEM_GLOW_REACH;
-    for &(gx, gy) in centres {
+    for &((gx, gy), colour) in glows {
         let (cx, cy) = (gx - left, gy - top);
         for y in (cy - reach).max(0)..(cy + reach + 1).min(height) {
             for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
@@ -495,9 +498,9 @@ pub fn paint_glows(canvas: &mut Canvas, centres: &[(i32, i32)]) {
                 };
                 let add = |value: u8, glow: u8| value.saturating_add(scale_channel(glow, strength));
                 canvas.pixels[index] = Some(Color::Rgb(
-                    add(red, GEM_GLOW.0),
-                    add(green, GEM_GLOW.1),
-                    add(blue, GEM_GLOW.2),
+                    add(red, colour.0),
+                    add(green, colour.1),
+                    add(blue, colour.2),
                 ));
             }
         }
@@ -625,16 +628,57 @@ mod tests {
     fn the_rain_follows_the_weather_and_turns_at_the_end_of_a_stage() {
         let heavy = |rain: Option<Rain>| rain.map_or(0.0, |rain| rain.per_thousand);
         assert_eq!(
-            heavy(run_rain(Weather::Clear, 0.5, RainDisplay::Full, 0.0)),
+            heavy(run_rain(
+                Weather::Clear,
+                Weather::Clear.next(),
+                0.5,
+                RainDisplay::Full,
+                0.0
+            )),
             0.0
         );
         assert!(
-            (heavy(run_rain(Weather::Clear, 0.875, RainDisplay::Full, 0.0)) - 2.0).abs() < 1e-4
+            (heavy(run_rain(
+                Weather::Clear,
+                Weather::Clear.next(),
+                0.875,
+                RainDisplay::Full,
+                0.0
+            )) - 2.0)
+                .abs()
+                < 1e-4
         );
-        assert!((heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Full, 0.0)) - 8.0).abs() < 1e-4);
         assert!(
-            (heavy(run_rain(Weather::Rain, 0.1, RainDisplay::Reduced, 0.0)) - 4.0).abs() < 1e-4
+            (heavy(run_rain(
+                Weather::Rain,
+                Weather::Rain.next(),
+                0.1,
+                RainDisplay::Full,
+                0.0
+            )) - 8.0)
+                .abs()
+                < 1e-4
         );
-        assert!(run_rain(Weather::Tempest, 0.9, RainDisplay::Off, 0.0).is_none());
+        assert!(
+            (heavy(run_rain(
+                Weather::Rain,
+                Weather::Rain.next(),
+                0.1,
+                RainDisplay::Reduced,
+                0.0
+            )) - 4.0)
+                .abs()
+                < 1e-4
+        );
+        assert!(
+            run_rain(
+                Weather::Tempest,
+                Weather::Tempest.next(),
+                0.9,
+                RainDisplay::Off,
+                0.0
+            )
+            .is_none()
+        );
     }
 }

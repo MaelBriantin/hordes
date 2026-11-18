@@ -10,6 +10,9 @@ pub const HP: &str = "\u{F02D1}";
 pub const TIME: &str = "\u{F13AB}";
 /// `nf-md-weather_sunset_up`: the dawn, at the end of the weathers.
 pub const DAWN: &str = "\u{F059C}";
+/// `nf-md-lightbulb_on` and `nf-md-lightbulb_off`: the torch, on or out, by its battery.
+pub const TORCH_ON: &str = "\u{F06E8}";
+pub const TORCH_OFF: &str = "\u{F0E4F}";
 /// `nf-md-trophy`: the score.
 pub const SCORE: &str = "\u{F0538}";
 

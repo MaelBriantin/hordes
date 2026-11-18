@@ -6,20 +6,16 @@
 use rand::{Rng, RngExt};
 
 use super::enemy::EnemyKind;
+use super::mode::Mode;
 use super::spawn::MARGIN;
-use super::weather::Weather;
+use super::weather::{self, Weather};
 use super::{Facing, TICKS_PER_SECOND, Vec2};
 
-/// The seconds into the run the first horde comes at: in the middle of the first night, once it
-/// has fallen.
-const FIRST_SECONDS: u32 = 90;
-/// The seconds between two hordes: one in the middle of each stage of weather.
-const EVERY_SECONDS: u32 = 120;
 /// The seconds a horde is announced before it comes.
 const WARNING_SECONDS: u32 = 3;
 /// The enemies of the first horde, and how many more each one after brings.
 const FIRST_SIZE: u32 = 30;
-const GROWTH: u32 = 15;
+const GROWTH: u32 = 10;
 /// How wide and how deep a pack is, in tiles: it comes in a band this wide, this deep.
 const PACK_WIDTH: f32 = 16.0;
 const PACK_DEPTH: f32 = 5.0;
@@ -42,25 +38,25 @@ pub struct Tally {
     pub points: u64,
 }
 
-/// The tick the first horde comes at.
-pub fn first() -> u32 {
-    FIRST_SECONDS * u32::from(TICKS_PER_SECOND)
+/// The tick the first horde comes at: in the middle of the first night, once it has fallen.
+pub fn first(mode: Mode) -> u32 {
+    (weather::DUSK_SECONDS + weather::stage_seconds(mode) / 2) * u32::from(TICKS_PER_SECOND)
 }
 
 /// The tick the first horde due after `ticks` comes at, by the clock: one in the middle of each
 /// stage of weather.
-pub fn due_after(ticks: u32) -> u32 {
-    let passed = ticks.saturating_sub(first()) / every() + 1;
-    if ticks < first() {
-        first()
+pub fn due_after(ticks: u32, mode: Mode) -> u32 {
+    let (first, every) = (first(mode), every(mode));
+    if ticks < first {
+        first
     } else {
-        first() + passed * every()
+        first + ((ticks - first) / every + 1) * every
     }
 }
 
-/// The ticks between two hordes.
-pub fn every() -> u32 {
-    EVERY_SECONDS * u32::from(TICKS_PER_SECOND)
+/// The ticks between two hordes: a stage of weather.
+pub fn every(mode: Mode) -> u32 {
+    weather::stage_seconds(mode) * u32::from(TICKS_PER_SECOND)
 }
 
 /// The ticks a horde is announced before it comes.
@@ -78,14 +74,14 @@ pub fn rings(weather: Weather) -> bool {
     weather >= Weather::Storm
 }
 
-/// The kind of one of a horde's enemies, in that weather: zombies; a bat in ten from the rain
+/// The kind of one of a horde's enemies, in that weather: zombies; a Shadow in ten from the rain
 /// on; an abomination in ten in the tempest.
 pub fn kind(rng: &mut impl Rng, weather: Weather) -> EnemyKind {
     let roll = rng.random_range(0..100);
     if weather == Weather::Tempest && roll < 10 {
         EnemyKind::Abomination
     } else if weather >= Weather::Rain && roll >= 90 {
-        EnemyKind::Bat
+        EnemyKind::Shadow
     } else {
         EnemyKind::Zombie
     }
@@ -138,14 +134,15 @@ mod tests {
     #[test]
     fn the_next_horde_is_due_in_the_middle_of_a_stage() {
         let second = u32::from(TICKS_PER_SECOND);
-        assert_eq!(due_after(0), 90 * second);
-        assert_eq!(due_after(90 * second), 210 * second);
-        assert_eq!(due_after(329 * second), 330 * second);
+        assert_eq!(due_after(0, Mode::Standard), 90 * second);
+        assert_eq!(due_after(90 * second, Mode::Standard), 210 * second);
+        assert_eq!(due_after(329 * second, Mode::Standard), 330 * second);
+        assert_eq!(due_after(0, Mode::Arcade), 120 * second);
     }
 
     #[test]
     fn hordes_grow_one_after_the_other() {
-        assert_eq!([0, 1, 4].map(size), [30, 45, 90]);
+        assert_eq!([0, 1, 4].map(size), [30, 40, 70]);
     }
 
     #[test]

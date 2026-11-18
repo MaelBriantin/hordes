@@ -38,11 +38,6 @@ impl Vec2 {
         }
     }
 
-    /// At right angles to this one, a quarter turn clockwise on screen (`y` grows downwards).
-    pub fn perpendicular(self) -> Self {
-        Self::new(-self.y, self.x)
-    }
-
     /// The middle of a tile.
     #[allow(
         clippy::cast_precision_loss,

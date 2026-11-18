@@ -48,4 +48,6 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 ## Runs
 
+- **Trophies**, in the standard mode (which keeps no leaderboard): goals reached in a run, kept from one run to the next. Hold out until dawn; wipe out every horde of a run; reach dawn without lighting the torch again once it is out; and so on.
+
 - Show the run's **seed** on the game over, to play the same map again.

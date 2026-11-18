@@ -24,13 +24,16 @@ pub enum SpriteId {
     /// Facing right.
     GhoulSide,
     GhoulFront,
-    BatUp,
-    BatDown,
+    /// Facing right.
+    Shadow,
     /// Facing right.
     Abomination,
     Bullet,
     Drone,
     Gem,
+    GemGreen,
+    GemRed,
+    Cell,
     Tree,
     Rock,
     Grass,
@@ -51,13 +54,15 @@ pub enum SpriteId {
     IconFlashlight,
     IconCompass,
     IconWisdom,
+    IconBatteries,
+    IconLoot,
     IconIllumination,
     IconHeal,
     Title,
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 36] = [
+    const ALL: [SpriteId; 40] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -65,12 +70,14 @@ impl SpriteId {
         SpriteId::ZombieFront,
         SpriteId::GhoulSide,
         SpriteId::GhoulFront,
-        SpriteId::BatUp,
-        SpriteId::BatDown,
+        SpriteId::Shadow,
         SpriteId::Abomination,
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
+        SpriteId::GemGreen,
+        SpriteId::GemRed,
+        SpriteId::Cell,
         SpriteId::Tree,
         SpriteId::Rock,
         SpriteId::Grass,
@@ -91,6 +98,8 @@ impl SpriteId {
         SpriteId::IconFlashlight,
         SpriteId::IconCompass,
         SpriteId::IconWisdom,
+        SpriteId::IconBatteries,
+        SpriteId::IconLoot,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
         SpriteId::Title,
@@ -105,12 +114,14 @@ impl SpriteId {
             SpriteId::ZombieFront => "zombie_front",
             SpriteId::GhoulSide => "ghoul_side",
             SpriteId::GhoulFront => "ghoul_front",
-            SpriteId::BatUp => "bat_up",
-            SpriteId::BatDown => "bat_down",
+            SpriteId::Shadow => "shadow",
             SpriteId::Abomination => "abomination",
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
+            SpriteId::GemGreen => "gem_green",
+            SpriteId::GemRed => "gem_red",
+            SpriteId::Cell => "cell",
             SpriteId::Tree => "tree",
             SpriteId::Rock => "rock",
             SpriteId::Grass => "grass",
@@ -131,6 +142,8 @@ impl SpriteId {
             SpriteId::IconFlashlight => "icon_flashlight",
             SpriteId::IconCompass => "icon_compass",
             SpriteId::IconWisdom => "icon_wisdom",
+            SpriteId::IconBatteries => "icon_batteries",
+            SpriteId::IconLoot => "icon_loot",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
             SpriteId::Title => "title",
@@ -204,10 +217,19 @@ pub fn hero(facing: Facing) -> Look {
     }
 }
 
+/// A gem, by what it is worth: blue for a point, green for a few, red for many.
+pub fn gem(value: u32) -> SpriteId {
+    match value {
+        0 | 1 => SpriteId::Gem,
+        2..=4 => SpriteId::GemGreen,
+        _ => SpriteId::GemRed,
+    }
+}
+
 /// The colour of an enemy just hit.
 const FLASH: Color = Color::Rgb(255, 255, 255);
 
-/// An enemy as it shows: turned the way it faces, a bat's wings up or down, white when just hit.
+/// An enemy as it shows: turned the way it faces, white when just hit.
 pub fn enemy(enemy: &Enemy) -> Look {
     let look = match enemy.kind {
         // A zombie come with a horde shows as a ghoul.
@@ -222,9 +244,7 @@ pub fn enemy(enemy: &Enemy) -> Look {
                 Facing::Up | Facing::Down => Look::plain(front),
             }
         }
-        // Three wingbeats to a swerve of its zigzag.
-        EnemyKind::Bat if (enemy.phase * 3.0).sin() > 0.0 => Look::plain(SpriteId::BatUp),
-        EnemyKind::Bat => Look::plain(SpriteId::BatDown),
+        EnemyKind::Shadow => Look::sideways(SpriteId::Shadow, enemy.facing),
         EnemyKind::Abomination => Look::sideways(SpriteId::Abomination, enemy.facing),
     };
     Look {

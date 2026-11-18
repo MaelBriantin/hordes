@@ -26,8 +26,12 @@ The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfon
 |---|---|
 | `←` `↑` `↓` `→` / `WASD` / `ZQSD` | Move (the last key pressed wins) |
 | `Enter` | Start, take a card, confirm |
-| `P` / `Esc` | Pause: resume, settings, new run, quit |
-| `B` `R` `O` `L` | On the title screen: blood, rain, the player's outline, language |
+| `Space` / `F` | Torch on or off, once the night falls |
+| `I` | Show or hide the gear |
+| `?` | Every key of a run |
+| `P` / `Esc` | Pause: resume, options, new run, main menu, quit |
+| `←` `→` / `A` `D` | On the title screen: the mode, standard (until dawn) or arcade (endless, for the score) |
+| `O` / `Esc` | On the title screen: the options (blood, rain, the player's outline, announcements, dusk, language), and quit |
 | `R` | After a death: a new run |
 | `Ctrl` `C` | Quit at once |
 

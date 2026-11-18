@@ -12,10 +12,23 @@ use super::level_up;
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    Choice, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing,
-    Vec2, World, campfire_light, daylight, weather_progress,
+    Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS,
+    SWING_TICKS, Stain, Swing, Vec2, Weapon, World, campfire_light,
 };
 
+/// The Shadows' eyes, the red of the sprites' palette, and the darker red they shine with in the
+/// dark.
+const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
+const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
+/// The glow of a gem, by what it is worth, as its colour; and of an energy cell.
+fn gem_glow(value: u32) -> (u8, u8, u8) {
+    match value {
+        0 | 1 => (60, 130, 255),
+        2..=4 => (60, 210, 100),
+        _ => (240, 60, 70),
+    }
+}
+const CELL_GLOW: (u8, u8, u8) = (255, 210, 70);
 /// How far off the canvas a gem still lights it, in pixels: its halo's reach.
 const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.
@@ -85,6 +98,12 @@ const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
 const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
 const GEAR_LEGENDARY: Color = Color::Rgb(255, 200, 60);
+/// A machine gun's tracer, from its head to the end of its trail.
+const TRACER: [Color; 3] = [
+    Color::Rgb(255, 225, 160),
+    Color::Rgb(230, 140, 60),
+    Color::Rgb(130, 70, 30),
+];
 /// The colour of a broken drone, repairing.
 const BROKEN: Color = Color::Rgb(75, 75, 82);
 /// The colour of a machete's swing, then as it fades.
@@ -167,6 +186,71 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// A bullet: a pistol's, a white pixel; a machine gun's, a thin tracer, its trail fading
+    /// behind it.
+    fn paint_bullet(&mut self, bullet: &Bullet) {
+        if bullet.weapon == Weapon::Pistol {
+            self.paint_at(Look::plain(SpriteId::Bullet), bullet.position);
+            return;
+        }
+        let way = bullet.way();
+        for (step, colour) in (0..).zip(TRACER) {
+            let behind = bullet.position - way * (0.5 * f32::from(u8::try_from(step).unwrap_or(0)));
+            self.set(pixel(behind), colour);
+        }
+    }
+
+    /// The gems and cells the canvas shows, or nearly, each with its glow's colour.
+    fn glows(&self, world: &World) -> Vec<night::Glow> {
+        world
+            .gems
+            .iter()
+            .map(|gem| (pixel(gem.position), gem_glow(gem.value)))
+            .chain(
+                world
+                    .cells
+                    .iter()
+                    .map(|cell| (pixel(cell.position), CELL_GLOW)),
+            )
+            .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
+            .collect()
+    }
+
+    /// At night, the Shadows' eyes, shining red in the dark.
+    fn paint_shadow_eyes(&mut self, world: &World) {
+        if world.torch_on().is_none() {
+            return;
+        }
+        for enemy in world
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.kind == EnemyKind::Shadow)
+        {
+            self.repaint(
+                sprites::enemy(enemy),
+                enemy.position,
+                SHADOW_EYES,
+                SHADOW_EYES_GLOW,
+            );
+        }
+    }
+
+    /// Only the pixels of a sprite in one `colour`, placed as `paint_at` would, in another one,
+    /// `shown`: its eyes, say, shining in the dark.
+    fn repaint(&mut self, look: Look, position: Vec2, colour: Color, shown: Color) {
+        let centre = pixel(position);
+        let sprite = self.sprites.get(look.sprite);
+        let (left, top) = (
+            centre.0 - sprite.width() / 2,
+            centre.1 - sprite.height() / 2,
+        );
+        for (x, y, pixel) in sprite.pixels(look.mirrored) {
+            if pixel == colour {
+                self.set((left + x, top + y), shown);
+            }
+        }
+    }
+
     /// A sprite with its top-left pixel at a pixel of the map.
     fn paint(&mut self, look: Look, (left, top): (i32, i32)) {
         let sprite = self.sprites.get(look.sprite);
@@ -192,18 +276,28 @@ impl<'a> Canvas<'a> {
                     (magazine.rounds, full, GEAR_ROUNDS)
                 }
             });
-            (level_up::icon(Choice::Weapon(weapon)), level, rounds)
+            (
+                level_up::icon(Choice::Weapon(weapon)),
+                level,
+                GEAR_LEVEL,
+                rounds,
+            )
         });
-        let passives = build
-            .passives()
-            .iter()
-            .map(|&(passive, level)| (level_up::icon(Choice::Passive(passive)), level, None));
+        let passives = build.passives().iter().map(|&(passive, level)| {
+            (
+                level_up::icon(Choice::Passive(passive)),
+                level,
+                GEAR_LEVEL,
+                None,
+            )
+        });
         // A legendary has one level: its bar full, in gold.
         let legendaries = build.legendaries().iter().map(|&legendary| {
             (
                 level_up::icon(Choice::Legendary(legendary)),
                 MAX_LEVEL,
-                Some((1, 1, GEAR_LEGENDARY)),
+                GEAR_LEGENDARY,
+                None,
             )
         });
         let gear: Vec<_> = weapons.chain(passives).chain(legendaries).collect();
@@ -234,7 +328,7 @@ impl<'a> Canvas<'a> {
                 }
             }
         }
-        for (slot, (sprite, level, rounds)) in (0..).zip(gear) {
+        for (slot, (sprite, level, level_colour, rounds)) in (0..).zip(gear) {
             let x = left + GEAR_GAP + step * slot;
             let y = top + GEAR_GAP;
             self.paint(Look::plain(sprite), (x, y));
@@ -242,7 +336,7 @@ impl<'a> Canvas<'a> {
                 let lit = pixel < i32::from(level);
                 self.set(
                     (x + pixel, y + size + 1),
-                    if lit { GEAR_LEVEL } else { GEAR_EMPTY },
+                    if lit { level_colour } else { GEAR_EMPTY },
                 );
             }
             if let Some((part, whole, colour)) = rounds {
@@ -436,39 +530,34 @@ pub fn render_map(
         lights.push(night::Light::torch(centre, world.light_radius()));
     }
     lights.extend(canvas.paint_healing(world, frame));
-    let gems: Vec<(i32, i32)> = world
-        .gems
-        .iter()
-        .map(|gem| pixel(gem.position))
-        .filter(|&at| canvas.near(at, GEM_HALO_MARGIN))
-        .collect();
-    lights.extend(gems.iter().copied().map(night::Light::gem));
-    night::light(
-        &mut canvas,
-        &lights,
-        night::flash(strike),
-        daylight(world.ticks()),
-    );
+    let glows = canvas.glows(world);
+    lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
+    night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
     if let Some(colour) = view.outline.colour() {
         canvas.outline(sprites::hero(player.facing), player.position, colour);
     }
-    // Each gem on screen glows blue around it, then shows over its glow.
-    night::paint_glows(&mut canvas, &gems);
+    canvas.paint_shadow_eyes(world);
+    // Each gem and cell on screen glows its colour around it, then shows over its glow.
+    night::paint_glows(&mut canvas, &glows);
     for gem in &world.gems {
-        canvas.paint_at(Look::plain(SpriteId::Gem), gem.position);
+        canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
+    }
+    for cell in &world.cells {
+        canvas.paint_at(Look::plain(SpriteId::Cell), cell.position);
     }
     if let Some(swing) = &world.swing {
         canvas.paint_swing(swing, player.position);
     }
     for bullet in &world.bullets {
-        canvas.paint_at(Look::plain(SpriteId::Bullet), bullet.position);
+        canvas.paint_bullet(bullet);
     }
     let weather = world.weather();
     if let Some(rain) = night::run_rain(
         weather,
-        weather_progress(world.seconds()),
+        world.next_weather(),
+        world.weather_progress(),
         view.rain,
-        daylight(world.ticks()),
+        world.daylight(),
     ) {
         night::paint_rain(&mut canvas, frame, rain);
     }
@@ -478,7 +567,9 @@ pub fn render_map(
             night::paint_impact(&mut canvas, strike, STRIKE_RADIUS);
         }
     }
-    canvas.paint_gear(world);
+    if view.gear {
+        canvas.paint_gear(world);
+    }
     canvas.draw(buffer, area);
 }
 
@@ -532,14 +623,15 @@ pub fn render_death_scene(
         &mut canvas,
         &lights,
         night::flash(strike),
-        if dawn { 1.0 } else { daylight(world.ticks()) },
+        if dawn { 1.0 } else { world.daylight() },
     );
     night::dim(&mut canvas, DEATH_DIM);
     if let Some(rain) = night::run_rain(
         weather,
-        weather_progress(world.seconds()),
+        world.next_weather(),
+        world.weather_progress(),
         rain,
-        daylight(world.ticks()),
+        world.daylight(),
     ) && !dawn
     {
         night::paint_rain(&mut canvas, frame, rain);
@@ -584,20 +676,24 @@ pub fn render_compass(buffer: &mut Buffer, area: Rect, player: Vec2, target: Vec
     };
     // The way, as the eye sees it: two rows of pixels to a cell.
     let arrow = arrow(across_f, down_f * 2.0);
-    buffer.set_string(
-        area.x + x.min(area.width - 1),
-        area.y + y.min(area.height - 1),
-        arrow,
-        // A white arrow on a red cell, pulsing: seen at a glance on the edge of the night.
-        Style::new()
-            .fg(Color::Rgb(255, 255, 255))
-            .bg(if (frame / COMPASS_PULSE).is_multiple_of(2) {
-                COMPASS
-            } else {
-                COMPASS_DIM
-            })
-            .add_modifier(Modifier::BOLD),
-    );
+    // A white arrow on red cells, pulsing, a healing cross beside it, on the inner side: seen
+    // at a glance on the edge of the night.
+    let style = Style::new()
+        .fg(Color::Rgb(255, 255, 255))
+        .bg(if (frame / COMPASS_PULSE).is_multiple_of(2) {
+            COMPASS
+        } else {
+            COMPASS_DIM
+        })
+        .add_modifier(Modifier::BOLD);
+    let (x, y) = (x.min(area.width - 1), y.min(area.height - 1));
+    let cross = if i32::from(x) >= half_width {
+        x.saturating_sub(1)
+    } else {
+        (x + 1).min(area.width - 1)
+    };
+    buffer.set_string(area.x + cross, area.y + y, "✚", style);
+    buffer.set_string(area.x + x, area.y + y, arrow, style);
 }
 
 /// A count of cells, for the compass's sums.
@@ -707,7 +803,7 @@ mod tests {
     }
 
     #[test]
-    fn the_compass_arrow_stands_on_the_edge_the_healing_lies_beyond() {
+    fn the_compass_arrow_stands_on_the_edge_the_healing_lies_beyond_a_cross_beside_it() {
         let area = Rect::new(0, 0, 40, 20);
         let mut buffer = Buffer::empty(area);
         render_compass(
@@ -720,7 +816,7 @@ mod tests {
         let row: String = (0..40)
             .map(|x| buffer[(x, 10)].symbol().to_owned())
             .collect();
-        assert_eq!(row.trim(), "→");
+        assert_eq!(row.trim(), "✚→");
         assert_eq!(buffer[(39, 10)].symbol(), "→");
     }
 

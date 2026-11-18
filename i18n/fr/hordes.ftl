@@ -3,7 +3,8 @@
 
 ## Touches, sur la dernière ligne de l'écran
 
-help-title = Entrée jouer · B sang · R pluie · O contour · L langue · Échap quitter
+help-title = Entrée jouer · ←→ mode · O / Échap options
+help-options = ↑↓ choisir · ←→ / Entrée changer · Échap retour
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
 help-over = R nouvelle partie · Échap quitter
 help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
@@ -12,7 +13,10 @@ help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
 
 title-tagline = Survis à la nuit.
 title-start = Appuie sur Entrée pour jouer
-title-options = Sang : { $blood } (B) · Pluie : { $rain } (R) · Contour : { $outline } (O) · { $language } (L)
+mode-standard = Standard : tenir jusqu'à l'aube
+mode-arcade = Arcade : sans fin, pour le score
+dusk-played = joué
+dusk-skipped = passé
 
 ## Réglages
 
@@ -24,6 +28,10 @@ blood-pesto = pesto
 rain-full = forte
 rain-reduced = réduite
 rain-off = aucune
+
+announcements-paused = gros, avec pause
+announcements-big = gros, sans pause
+announcements-banner = bandeau
 
 outline-off = aucun
 outline-white = blanc
@@ -37,15 +45,23 @@ pause-resume = Reprendre
 pause-blood = Sang : { $value }
 pause-rain = Pluie : { $value }
 pause-outline = Contour : { $value }
+pause-announcements = Annonces : { $value }
+options-title = Options
+option-dusk = Crépuscule : { $value }
+option-gear = Équipement : { $value }
+gear-shown = affiché
+gear-hidden = masqué
+option-back = Retour
 pause-language = Langue : { $value }
 pause-new-run = Nouvelle partie
+pause-title-screen = Menu principal
 pause-quit = Quitter
 
 ## Ligne d'état
 
 weather-dusk = Crépuscule
 announce-dusk = Tiens jusqu'à l'aube
-announce-night = La nuit est tombée
+announce-night = La nuit est tombée · Espace : lampe
 announce-worse = Le temps se gâte
 announce-last = L'aube dans deux minutes
 weather-clear = Nuit
@@ -58,7 +74,6 @@ weather-tempest = Tempête
 
 dawn-title = AUBE
 dawn-line = Bravo, tu as survécu. Cette fois.
-dawn-bonus = +{ $points } pour l'aube
 death-title = MORT
 death-again = Appuie sur R pour rejouer
 over-survived = Tu as survécu { $time }
@@ -84,6 +99,8 @@ passive-might = Force
 passive-haste = Cadence
 passive-compass = Boussole
 passive-flashlight = Lampe torche
+passive-loot = Butin
+passive-batteries = Piles
 passive-wisdom = Savoir
 legendary-illumination = Illumination
 heal = Soin
@@ -100,7 +117,7 @@ gain-pistol-4 = +1 balle par tir
 gain-pistol-5 = Chargeur 12, dégâts 15
 gain-machine-gun-1 = Rafales de 20 balles
 gain-machine-gun-2 = Chargeur 20 → 30
-gain-machine-gun-3 = Dégâts 4 → 6
+gain-machine-gun-3 = Dégâts 3 → 5
 gain-machine-gun-4 = Recharge en 2 s
 gain-machine-gun-5 = Les balles traversent un ennemi
 gain-drones-1 = Un drone tourne autour de toi
@@ -115,6 +132,8 @@ gain-haste = Armes 8 % plus rapides (total −{ $total } %)
 gain-compass = Indique le soin le plus proche
 gain-compass-more = Trouve le soin 50 cases plus loin (total { $total })
 gain-flashlight = +2 cases de lumière (total { $total })
+gain-loot = +10 % de chances de gemme (total +{ $total } %)
+gain-batteries = +25 % de pile pour la lampe (total +{ $total } %)
 gain-wisdom = +10 % d'XP des gemmes (total +{ $total } %)
 gain-illumination = +1 XP chaque seconde
 gain-heal = Soigne 20 PV
@@ -134,4 +153,16 @@ help-name = ←→ bouger · ↑↓ ou une lettre · Entrée valider · Échap p
 horde-title = HORDE
 horde-coming = Elle arrive !
 horde-everywhere = Ils arrivent de partout !
-horde-cleared = Horde abattue ! +{ $points }
+horde-left = HORDE · { $left }
+horde-cleared = HORDE ABATTUE
+horde-cleared-points = +{ $points } points
+
+## Keys
+
+keys-title = Commandes
+keys-move = Flèches / ZQSD / WASD  bouger
+keys-torch = Espace / F             lampe
+keys-cards = ← → / 1 2 3 · Entrée   prendre une carte
+keys-gear = I                      afficher l'équipement
+keys-pause = P / Échap              pause
+keys-keys = ?                      ces commandes

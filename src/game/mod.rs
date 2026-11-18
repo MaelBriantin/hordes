@@ -15,6 +15,7 @@ mod leaderboard;
 mod level;
 mod machete;
 mod map;
+mod mode;
 mod score;
 mod spawn;
 mod stain;
@@ -22,18 +23,20 @@ mod vec2;
 mod weather;
 mod world;
 
-pub use announce::News;
+pub use announce::{News, WeatherNews};
 pub use build::{Choice, Legendary, MAX_LEVEL, Passive, Rarity, Weapon};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
+pub use guns::Bullet;
 pub use heal::light as campfire_light;
 pub use leaderboard::{Entry, Leaderboard};
 pub use level::xp_to_next;
 pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
+pub use mode::Mode;
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use weather::{DAWN_SECONDS, STRIKE_RADIUS, Weather, daylight, progress as weather_progress};
+pub use weather::{STRIKE_RADIUS, Weather};
 pub use world::{Input, Lightning, World};
 
 /// How many ticks the world moves on per second.

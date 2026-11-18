@@ -24,9 +24,9 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Widget};
 
 use crate::game::{Leaderboard, Vec2, World, xp_to_next};
-use crate::game::{Weather, weather_progress};
+use crate::game::{Mode, Weather, WeatherNews};
 pub use debug::DebugAction;
-pub use menu::PauseItem;
+pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
 pub use pixels::Outline;
 pub use sprites::Sprites;
@@ -50,6 +50,14 @@ pub enum Screen {
     /// The run stands still, the debug console open on its action `selected`: debug builds only.
     Debug {
         selected: usize,
+    },
+    /// The run stands still, every key told.
+    Keys,
+    /// The options menu open on its item `selected`: over the run, opened from the pause menu, or
+    /// over the title screen.
+    Options {
+        selected: usize,
+        from_pause: bool,
     },
 }
 /// How bright a bar's empty part is, against its full part.
@@ -81,6 +89,15 @@ const HP_COLOR: Color = Color::Rgb(220, 45, 65);
 const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
 const XP_COLOR: Color = Color::Rgb(70, 150, 255);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
+/// The text on the score's gold badge.
+const BADGE_TEXT: Color = Color::Rgb(30, 22, 8);
+/// The torch's battery, the torch on; and below what share of it the battery shows red.
+const TORCH_COLOR: Color = Color::Rgb(255, 215, 100);
+/// The torch's battery, the torch out and the battery charging.
+const CHARGING_COLOR: Color = Color::Rgb(120, 140, 170);
+const BATTERY_LOW: f32 = 0.2;
+/// The battery's gauge, its inside, in cells: as the HP's.
+const BATTERY_CELLS: usize = 12;
 /// How long the edges of the map flush red after a blow, in ticks; how deep, in cells; how red
 /// at most, and in which red.
 const HURT_TICKS: u32 = 15;
@@ -142,6 +159,13 @@ pub struct ViewState {
     pub rain: RainDisplay,
     /// The line around the player.
     pub outline: Outline,
+    /// The mode the next run is played in, and whether it skips the dusk.
+    pub mode: Mode,
+    pub skip_dusk: bool,
+    /// Whether the gear shows over the top left of the map.
+    pub gear: bool,
+    /// How a new weather is told.
+    pub weather_news: WeatherNews,
     /// The language the game speaks, by its own name: `Français`.
     pub language: &'static str,
     /// The leaderboard's place of the run just over, if it made it.
@@ -162,8 +186,20 @@ pub fn render(
     let map = block.inner(areas.field);
     frame.render_widget(block, areas.field);
     // The run over, the death screen, but for the pause menu over the run.
-    let dead = world.is_over() && !matches!(screen, Screen::Paused { .. } | Screen::Debug { .. });
-    if screen == Screen::Title {
+    let dead = world.is_over()
+        && !matches!(
+            screen,
+            Screen::Paused { .. } | Screen::Debug { .. } | Screen::Keys | Screen::Options { .. }
+        );
+    let on_title = matches!(
+        screen,
+        Screen::Title
+            | Screen::Options {
+                from_pause: false,
+                ..
+            }
+    );
+    if on_title {
         menu::render_title(frame, map, sprites, view, leaderboard);
     } else if dead {
         let name = match screen {
@@ -189,10 +225,11 @@ pub fn render(
     let help = match screen {
         Screen::Title => Some(fl!("help-title")),
         Screen::Paused { .. } => Some(fl!("help-paused")),
+        Screen::Options { .. } => Some(fl!("help-options")),
         Screen::NameEntry { .. } => Some(fl!("help-name")),
         Screen::Playing if world.is_over() => Some(fl!("help-over")),
         Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
-        Screen::Playing | Screen::Debug { .. } => None,
+        Screen::Playing | Screen::Debug { .. } | Screen::Keys => None,
     };
     match help {
         Some(help) => frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help),
@@ -200,18 +237,34 @@ pub fn render(
     }
     match screen {
         Screen::Title | Screen::NameEntry { .. } => return,
+        // A menu open: what lies under it dimmed, the menu standing out.
         Screen::Paused { selected } => {
-            menu::render_pause(frame, map, selected, view);
+            announce::dim(frame.buffer_mut(), map);
+            menu::render_pause(frame, map, selected);
+            return;
+        }
+        Screen::Options {
+            selected,
+            from_pause,
+        } => {
+            announce::dim(frame.buffer_mut(), map);
+            menu::render_options(frame, map, selected, from_pause, view);
             return;
         }
         Screen::Debug { selected } => {
+            announce::dim(frame.buffer_mut(), map);
             debug::render(frame, map, selected, world.unhurt);
+            return;
+        }
+        Screen::Keys => {
+            announce::dim(frame.buffer_mut(), map);
+            menu::render_keys(frame, map);
             return;
         }
         Screen::Playing => {}
     }
     if !dead {
-        horde::render(frame, map, world);
+        horde::render(frame, map, world, view.frame);
         announce::render(frame, map, world, sprites);
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
     }
@@ -294,9 +347,31 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
     };
     let weather = world.weather();
     let mut spans = vec![Span::styled(format!(" {} ", icons::HP), bold.fg(HP_COLOR))];
-    spans.extend(embossed(&bar(hp, max_hp), hp_color));
-    spans.push(Span::styled(format!(" {hp}   "), bold));
-    spans.extend(weather_track(weather, weather_progress(world.seconds())));
+    // The HP in the middle of their bar.
+    let mut hp_bar = embossed(&bar(hp, max_hp), hp_color);
+    labelled(&mut hp_bar, &hp.to_string(), hp_color);
+    spans.extend(hp_bar);
+    spans.push(Span::raw("   "));
+    // The torch, on or out, and its battery, from the start (out at dusk, the torch lighting up
+    // of itself as the night falls): yellow while it is on, grey-blue while it is out and
+    // charging, red when nearly empty.
+    let on = world.torch_on().unwrap_or(false);
+    let colour = if world.battery < BATTERY_LOW {
+        HP_COLOR
+    } else if on {
+        TORCH_COLOR
+    } else {
+        CHARGING_COLOR
+    };
+    let icon = if on {
+        icons::TORCH_ON
+    } else {
+        icons::TORCH_OFF
+    };
+    spans.push(Span::styled(format!("{icon} "), bold.fg(colour)));
+    spans.extend(battery(world.battery, colour));
+    spans.push(Span::raw("   "));
+    spans.extend(weather_track(world));
     spans.push(Span::styled(
         format!(" {}", weather_name(weather)),
         weather_style(weather),
@@ -306,7 +381,6 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
 
 /// The player's level and their XP, in a bar as wide as `width` leaves.
 fn experience(world: &World, width: u16) -> Line<'static> {
-    let bold = Style::new().add_modifier(Modifier::BOLD);
     let player = &world.player;
     let mut spans = vec![Span::raw(" ")];
     let taken: usize = spans.iter().map(Span::width).sum();
@@ -316,41 +390,42 @@ fn experience(world: &World, width: u16) -> Line<'static> {
         &bar_of(player.xp, xp_to_next(player.level), cells),
         XP_COLOR,
     );
-    // The level in the middle of the bar, in white on whatever part of it is there.
-    let level = format!(" {} ", player.level);
-    let start = bar.len().saturating_sub(level.len()) / 2;
-    for (offset, digit) in level.chars().enumerate() {
-        if let Some(cell) = bar.get_mut(start + offset) {
-            let ground = cell.style.bg.unwrap_or(XP_COLOR);
-            *cell = Span::styled(
-                digit.to_string(),
-                bold.fg(Color::Rgb(245, 245, 250)).bg(ground),
-            );
-        }
-    }
+    // The level in the middle of the bar.
+    labelled(&mut bar, &player.level.to_string(), XP_COLOR);
     spans.extend(bar);
     Line::from(spans)
 }
 
-/// The time survived and the score, with its multiplier: the score gleams while ahead of the
-/// best run kept, as a new high score does.
+/// The time survived and, in arcade, the score, with its multiplier: the score gleams while
+/// ahead of the best run kept, as a new high score does.
 fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
     let mut spans = vec![
         Span::styled(format!("{} ", icons::TIME), bold),
         Span::styled(clock(world.seconds()), bold),
-        Span::styled(format!("   {} ", icons::SCORE), bold.fg(SCORE_COLOR)),
     ];
-    let score = world.score.to_string();
+    // A standard run keeps no score: the time alone.
+    if world.mode == Mode::Standard {
+        spans.push(Span::raw(" "));
+        return Line::from(spans);
+    }
+    // The score as a badge, dark on gold, its thousands apart: seen at a glance. Ahead of the best
+    // run kept, it gleams instead, as a new high score does.
+    let badge = bold.fg(BADGE_TEXT).bg(SCORE_COLOR);
+    spans.push(Span::raw("   "));
+    spans.push(Span::styled(format!(" {} ", icons::SCORE), badge));
+    let score = thousands(world.score);
     let best = leaderboard.entries().first().map(|entry| entry.score);
     if best.is_some_and(|best| world.score > best) {
         spans.extend(text::shimmer(&score, frames));
     } else {
-        spans.push(Span::styled(score, bold.fg(SCORE_COLOR)));
+        spans.push(Span::styled(score, badge));
     }
     spans.extend([
-        Span::raw(" "),
-        Span::styled(multiplier(world.multiplier_tenths()), SCORE_COLOR),
+        Span::styled(
+            format!(" {} ", multiplier(world.multiplier_tenths())),
+            badge,
+        ),
         Span::raw(" "),
     ]);
     Line::from(spans)
@@ -370,7 +445,7 @@ fn bar_of(part: u32, whole: u32, cells: usize) -> String {
     format!("▕{}{}▏", "█".repeat(filled), "░".repeat(cells - filled))
 }
 
-fn weather_name(weather: Weather) -> String {
+pub fn weather_name(weather: Weather) -> String {
     match weather {
         Weather::Dusk => fl!("weather-dusk"),
         Weather::Clear => fl!("weather-clear"),
@@ -389,7 +464,7 @@ fn weather_style(weather: Weather) -> Style {
 }
 
 /// The weather's colour: orange at dusk, grey for a clear night, darkening through blues to red.
-fn weather_colour(weather: Weather) -> Color {
+pub fn weather_colour(weather: Weather) -> Color {
     match weather {
         Weather::Dusk => Color::Rgb(240, 150, 70),
         Weather::Clear => Color::Rgb(160, 160, 170),
@@ -403,8 +478,12 @@ fn weather_colour(weather: Weather) -> Color {
 /// Every weather's icon in a row, from the dusk to the tempest: the weather now in its colour,
 /// those gone dimmed, those to come barely there, but the next one, coming out of the dark as
 /// the run goes `progress` through the weather now.
-fn weather_track(now: Weather, progress: f32) -> Vec<Span<'static>> {
-    let next = now.next();
+fn weather_track(world: &World) -> Vec<Span<'static>> {
+    let (now, next, progress) = (
+        world.weather(),
+        world.next_weather(),
+        world.weather_progress(),
+    );
     let mut spans = Vec::new();
     for weather in WEATHERS {
         let colour = weather_colour(weather);
@@ -415,7 +494,8 @@ fn weather_track(now: Weather, progress: f32) -> Vec<Span<'static>> {
                 colour,
                 WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress,
             )
-        } else if weather < now {
+        } else if weather < now && world.mode == Mode::Standard {
+            // Gone for good in a standard run; in arcade, every weather comes back.
             WEATHER_GONE
         } else {
             faded(colour, WEATHER_AHEAD)
@@ -431,7 +511,10 @@ fn weather_track(now: Weather, progress: f32) -> Vec<Span<'static>> {
         }
         spans.push(Span::styled(icons::weather(weather), style));
     }
-    // The dawn last, coming out of the dark through the tempest.
+    // The dawn last, coming out of the dark through the tempest: none in arcade.
+    if world.mode == Mode::Arcade {
+        return spans;
+    }
     let dawn = if now == Weather::Tempest {
         WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress
     } else {
@@ -473,6 +556,38 @@ fn embossed(bar: &str, color: Color) -> Vec<Span<'static>> {
         .collect()
 }
 
+/// The torch's battery as a gauge in relief, as the HP's, its percent in the middle.
+fn battery(charge: f32, color: Color) -> Vec<Span<'static>> {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a share of a hundred, clamped"
+    )]
+    let percent = (charge.clamp(0.0, 1.0) * 100.0).round() as u32;
+    let mut gauge = embossed(&bar_of(percent, 100, BATTERY_CELLS), color);
+    labelled(&mut gauge, &format!("{percent}%"), color);
+    gauge
+}
+
+/// A number in the middle of a bar, in white on whatever part of the bar is there, a space each
+/// side.
+fn labelled(bar: &mut [Span<'static>], text: &str, color: Color) {
+    let label = format!(" {text} ");
+    let start = bar.len().saturating_sub(label.len()) / 2;
+    for (offset, digit) in label.chars().enumerate() {
+        if let Some(cell) = bar.get_mut(start + offset) {
+            let ground = cell.style.bg.unwrap_or(color);
+            *cell = Span::styled(
+                digit.to_string(),
+                Style::new()
+                    .fg(Color::Rgb(245, 245, 250))
+                    .bg(ground)
+                    .add_modifier(Modifier::BOLD),
+            );
+        }
+    }
+}
+
 /// A colour a third of the way to white: the lit top of a bar.
 fn lighter(color: Color) -> Color {
     match color {
@@ -482,6 +597,19 @@ fn lighter(color: Color) -> Color {
         }
         other => other,
     }
+}
+
+/// A number with its thousands apart: `12 345`.
+fn thousands(number: u64) -> String {
+    let digits = number.to_string();
+    let mut grouped = String::new();
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            grouped.push(' ');
+        }
+        grouped.push(digit);
+    }
+    grouped
 }
 
 /// A multiplier given in tenths: `×2.4`.
@@ -504,6 +632,14 @@ mod tests {
         assert_eq!(clock(0), "00:00");
         assert_eq!(clock(222), "03:42");
         assert_eq!(clock(600), "10:00");
+    }
+
+    #[test]
+    fn a_number_shows_its_thousands_apart() {
+        assert_eq!(thousands(0), "0");
+        assert_eq!(thousands(999), "999");
+        assert_eq!(thousands(12_345), "12 345");
+        assert_eq!(thousands(1_234_567), "1 234 567");
     }
 
     #[test]

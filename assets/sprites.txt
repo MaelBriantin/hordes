@@ -26,7 +26,7 @@ C 110 100 120   torn clothes
 N 60 55 65      zombie legs
 P 175 170 185   ghoul skin
 c 80 70 85      ghoul rags
-V 150 80 190    bat
+V 72 68 98      shadow: about the screen's ground in the dark
 E 230 40 40     red eyes
 A 160 190 140   abomination skin
 X 70 40 60      stitches
@@ -34,6 +34,10 @@ y 255 210 70    yellow
 W 255 250 225   white: a bullet
 b 70 150 255    gem
 i 175 220 255   gem's shine
+M 70 200 100    green gem
+O 170 240 180   green gem's shine
+U 230 55 70     red gem
+I 255 170 175   red gem's shine
 r 220 45 65     heart, potion
 o 255 150 160   heart's shine
 u 150 100 60    leather, wood
@@ -99,19 +103,15 @@ PccP
 .cc.
 .NN.
 
-# The bat, 4 × 4: its wings up, then down.
+# The Shadow, 6 × 6, hunched, facing right: barely seen in the dark but for its eyes.
 
-bat_up
-V..V
-VEEV
-.VV.
-....
-
-bat_down
-....
-VEEV
-V..V
-....
+shadow
+......
+..VVV.
+.VEVEV
+VVVVV.
+V.VV..
+..V.V.
 
 # The abomination, 8 × 7: facing right.
 
@@ -129,6 +129,7 @@ AAAXAAAA
 bullet
 W
 
+
 drone
 j...j
 .nnn.
@@ -138,6 +139,20 @@ j...j
 gem
 ib
 bb
+
+gem_green
+OM
+MM
+
+gem_red
+IU
+UU
+
+# An energy cell, a Shadow leaves it, for the torch's battery: 2 × 2.
+
+cell
+Wy
+yy
 
 # Obstacles, 4 × 4: each covers 2 × 2 tiles.
 
@@ -308,6 +323,26 @@ ibbbbbb.
 .bbbbb..
 ..bbb...
 ...b....
+
+icon_batteries
+...jj...
+.nnnnnn.
+.nyyyyn.
+.nyyyyn.
+.nyWyyn.
+.nyyyyn.
+.nyyyyn.
+.nnnnnn.
+
+icon_loot
+...uu...
+..u..u..
+...uu...
+.uuuuuu.
+uukkkkuu
+uukkkkuu
+uuuuuuuu
+.uuuuuu.
 
 # The legendaries, on their golden cards.
 
