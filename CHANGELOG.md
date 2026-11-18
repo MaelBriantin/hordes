@@ -21,13 +21,12 @@ Fire, and a crowbar.
 - An arrow bouncing over the player's head, to see them at once in the crowd: always, in a colour of the Arrow setting, or for 2 s on E.
 - Small HP and battery bars over the player's head: a setting, off at first.
 - A coloured ground, dark grass speckled with earth: an experimental setting, off at first. It redraws most of the screen at every step: best turned on in a modern, fast terminal (Ghostty, kitty, WezTerm…), rather than over SSH or tmux.
-- The hero of before, in a red headband, can be played again: Hero, in the options.
 
 ### Changed
 - The options start otherwise: the gear hidden, the announcements big, with no pause.
 - The arrow takes the place of the line around the player: the Outline setting is the Arrow setting now, its colour kept.
 - The gems take the cards' colours: silver for a point, blue, then gold for the most; the XP bar turns a bluish silver, the energy cells and the battery's gauge green.
-- The hero is a survivor now, with very dark brown hair, a leather jacket and jeans.
+- The hero is a survivor now, with very dark brown hair, a leather jacket and jeans. The hero of the first versions, in a red headband, can still be chosen: Hero, in the options.
 - Lighting up, the torch flickers for as long as luck has it, lighting nothing for the run until it holds; it goes out at once.
 - A campfire's light is warm and sways, told from the torch's at a glance; the fire heals as far as it shows, fading included; a heal shows, small green crosses rising around the player.
 - A horde wiped out brings a level, once told, its cards rarer; in arcade, it doubles its points too.

@@ -5,7 +5,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## Characters
 
 - **Unlockable characters**, each with a speciality of its own: a starting weapon, different stats. A werewolf could be one of them.
-- **Found on the map**: a character to unlock is met during a run (a survivor to reach, to rescue); once found, it can be played in the next runs. The game's only progression from one run to the next.
+- **Found on the map**: a character to unlock is met during a run (a survivor to reach, to rescue); once found, it can be played in the next runs. With the weapons to unlock (see Weapons), the game's progression from one run to the next.
 
 ## Enemies
 
@@ -23,6 +23,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 ## Weapons
 
+- **Weapons to unlock**, as the characters: only a few in the cards at first (the crowbar, the pistol, the machete?), the others unlocked for the next runs by **exploring** the map (a cache, a crate, an abandoned car holding the shotgun) or by **challenges** (100 enemies down with the crowbar for the machete; the dawn without lighting the torch again; and so on). Fewer weapons about at first, builds easier to balance.
 - **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
 - **Sniper rifle**: aims at an enemy far off (12–15 tiles, the furthest or the toughest), a red laser dot on it for a moment before the shot; a heavy hit (enough for a Shadow at once), a shot every few seconds; later, the bullet goes through several. A gun: holds its fire in the dark.
 - **Grenade**: thrown at the enemies nearby, it bursts at once, no fire: heavy damage over an area, the enemies caught in it blown outwards, away from its centre, giving the player room.
@@ -56,3 +57,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Trophies**, in the standard mode (which keeps no leaderboard): goals reached in a run, kept from one run to the next. Hold out until dawn; wipe out every horde of a run; reach dawn without lighting the torch again once it is out; and so on.
 
 - Show the run's **seed** on the game over, to play the same map again.
+
+## Engine
+
+- **Godot, one day**: the game in Godot rather than the terminal. The rules in `src/game` stay as they are, pure Rust, as a Godot extension (godot-rust's gdext); only the screen is made again, in scenes, shaders and Godot's 2D lights, which would draw the night, the torch and the halos better. The sprites of `assets/sprites.txt` turn into PNGs with a script. Until then, no rule of the game goes into `src/ui`, so the move stays a matter of drawing.
