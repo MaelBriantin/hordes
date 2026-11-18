@@ -308,7 +308,8 @@ impl World {
         self.heal_player();
         self.hurt_player();
         if self.pending_levels > 0 && !self.is_over() {
-            self.offer = Some(self.player.build.offers(&mut self.rng));
+            let dusk = self.weather() == Weather::Dusk;
+            self.offer = Some(self.player.build.offers(&mut self.rng, dusk));
         }
     }
 
@@ -333,7 +334,9 @@ impl World {
             _ => player.build.take(choice),
         }
         self.pending_levels -= 1;
-        self.offer = (self.pending_levels > 0).then(|| self.player.build.offers(&mut self.rng));
+        let dusk = self.weather() == Weather::Dusk;
+        self.offer =
+            (self.pending_levels > 0).then(|| self.player.build.offers(&mut self.rng, dusk));
     }
 
     /// The machete swings once it can and an enemy is in reach; the slashes of a swing follow

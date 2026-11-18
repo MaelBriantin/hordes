@@ -125,8 +125,8 @@ impl Build {
     }
 
     /// Three choices at random among what can still be picked, all different; a heal if
-    /// nothing can.
-    pub fn offers(&self, rng: &mut impl Rng) -> Vec<Choice> {
+    /// nothing can. At `dusk`, no Flashlight: there is still light enough.
+    pub fn offers(&self, rng: &mut impl Rng, dusk: bool) -> Vec<Choice> {
         let mut pool: Vec<Choice> = Vec::new();
         for weapon in Weapon::ALL {
             if can_pick(&self.weapons, weapon, MAX_WEAPONS) {
@@ -134,6 +134,9 @@ impl Build {
             }
         }
         for passive in Passive::ALL {
+            if dusk && passive == Passive::Flashlight {
+                continue;
+            }
             if can_pick(&self.passives, passive, MAX_PASSIVES) {
                 pool.push(Choice::Passive(passive));
             }
@@ -247,7 +250,7 @@ mod tests {
         let build = Build::new();
         let mut rng = rng();
         for _ in 0..50 {
-            let offers = build.offers(&mut rng);
+            let offers = build.offers(&mut rng, false);
             assert_eq!(offers.len(), 3);
             assert!(offers[0] != offers[1] && offers[1] != offers[2] && offers[0] != offers[2]);
         }
@@ -264,7 +267,7 @@ mod tests {
         for _ in 0..50 {
             assert!(
                 !build
-                    .offers(&mut rng)
+                    .offers(&mut rng, false)
                     .contains(&Choice::Weapon(Weapon::Machete))
             );
         }
@@ -280,7 +283,7 @@ mod tests {
         for _ in 0..50 {
             assert!(
                 !build
-                    .offers(&mut rng)
+                    .offers(&mut rng, false)
                     .contains(&Choice::Passive(Passive::Haste))
             );
         }
@@ -297,7 +300,7 @@ mod tests {
                 build.take(Choice::Passive(*passive));
             }
         }
-        assert_eq!(build.offers(&mut rng()), [Choice::Heal]);
+        assert_eq!(build.offers(&mut rng(), false), [Choice::Heal]);
     }
 
     #[test]
@@ -313,5 +316,18 @@ mod tests {
         assert_eq!(build.damage(10), 12);
         assert_eq!(build.cooldown(60), 50);
         assert!((build.light_radius() - 13.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn no_flashlight_is_offered_at_dusk() {
+        let mut rng = rng();
+        let build = Build::new();
+        for _ in 0..200 {
+            assert!(
+                !build
+                    .offers(&mut rng, true)
+                    .contains(&Choice::Passive(Passive::Flashlight))
+            );
+        }
     }
 }

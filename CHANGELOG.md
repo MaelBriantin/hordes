@@ -14,6 +14,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Each new weather and each horde is told in big letters over the map, the world standing still for 2 seconds; the run opens on the dusk, told the same way.
 
 ### Changed
+- Flashlight is no longer offered at dusk, while the sun still lights the map.
 - The dusk lasts a minute rather than two: half of it in sunlight, half as the night falls. The weather comes a minute sooner.
 - A horde comes in the middle of each stage of weather, once the night has fallen: at 2:00, then every 2 minutes, 15 enemies bigger each time.
 - How many enemies appear, and of which kinds, follows the weather rather than the clock: zombies alone at dusk, abominations from the drizzle. Bats come less often, in the hordes too.
