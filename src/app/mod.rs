@@ -5,6 +5,8 @@ mod keys;
 mod scores;
 mod settings;
 
+pub use settings::data_folder;
+
 use std::io;
 use std::time::{Duration, Instant};
 

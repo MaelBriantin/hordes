@@ -132,13 +132,17 @@ fn path() -> Option<PathBuf> {
     data_file(FILE)
 }
 
-/// A file of the game's data folder, or of `HORDES_DATA_DIR` when it is set.
+/// A file of the game's data folder.
 pub fn data_file(name: &str) -> Option<PathBuf> {
-    let folder = match std::env::var_os(DATA_DIR_VARIABLE) {
-        Some(folder) => PathBuf::from(folder),
-        None => dirs::data_dir()?.join("hordes"),
-    };
-    Some(folder.join(name))
+    Some(data_folder()?.join(name))
+}
+
+/// The game's data folder, or `HORDES_DATA_DIR` when it is set.
+pub fn data_folder() -> Option<PathBuf> {
+    match std::env::var_os(DATA_DIR_VARIABLE) {
+        Some(folder) => Some(PathBuf::from(folder)),
+        None => Some(dirs::data_dir()?.join("hordes")),
+    }
 }
 
 #[cfg(test)]

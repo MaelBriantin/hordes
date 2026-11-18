@@ -860,6 +860,7 @@ dependencies = [
  "rand 0.10.4",
  "ratatui",
  "rust-embed",
+ "self-replace",
  "thiserror 2.0.21",
 ]
 

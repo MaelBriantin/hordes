@@ -6,7 +6,7 @@ use std::error::Error;
 
 use axoupdater::AxoUpdater;
 
-const APP: &str = "hordes";
+use super::APP;
 /// A GitHub token to ask for releases with, if set: for tests, which might hit the rate limit
 /// of anonymous requests.
 const TOKEN_VARIABLE: &str = "HORDES_GITHUB_TOKEN";
