@@ -26,6 +26,8 @@ use super::weather::{self, Weather};
 use super::{Facing, Map, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 #[cfg(test)]
+mod balance;
+#[cfg(test)]
 mod tests;
 
 /// The player's speed, in tiles per second.
