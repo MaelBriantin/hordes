@@ -7,7 +7,7 @@ pub mod update;
 
 use std::fs;
 use std::io::{self, BufRead, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The game's name, as the installer and its receipt know it.
 const APP: &str = "hordes";
@@ -32,6 +32,21 @@ fn erase_data(folder: &Path) -> io::Result<()> {
     // Gone with them only if it is empty now.
     let _ = fs::remove_dir(folder);
     Ok(())
+}
+
+/// Where the installer left its receipt: the folder `XDG_CONFIG_HOME` names if it holds one,
+/// else `~/.config/hordes` (`%LOCALAPPDATA%\hordes` on Windows), as the updater looks for it.
+fn receipt_path() -> Option<PathBuf> {
+    let file = format!("{APP}-receipt.json");
+    let xdg = std::env::var_os("XDG_CONFIG_HOME")
+        .map(|home| PathBuf::from(home).join(APP).join(&file))
+        .filter(|path| path.exists());
+    let home = if cfg!(windows) {
+        std::env::var_os("LOCALAPPDATA").map(|home| PathBuf::from(home).join(APP))
+    } else {
+        dirs::home_dir().map(|home| home.join(".config").join(APP))
+    };
+    xdg.or_else(|| home.map(|folder| folder.join(&file)))
 }
 
 /// Asks a yes-or-no question in the terminal: yes only if the answer says so.

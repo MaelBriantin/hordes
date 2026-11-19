@@ -4,11 +4,10 @@
 
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
 
 use axoupdater::AxoUpdater;
 
-use super::{APP, confirm, erase_data, holds_data};
+use super::{APP, confirm, erase_data, holds_data, receipt_path};
 use crate::app::data_folder;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -45,19 +44,4 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         "The line the installer may have added to your shell's profile, for your PATH, stays: it does no harm."
     );
     Ok(())
-}
-
-/// Where the installer left its receipt: the folder `XDG_CONFIG_HOME` names if it holds one,
-/// else `~/.config/hordes` (`%LOCALAPPDATA%\hordes` on Windows), as the updater looks for it.
-fn receipt_path() -> Option<PathBuf> {
-    let file = format!("{APP}-receipt.json");
-    let xdg = std::env::var_os("XDG_CONFIG_HOME")
-        .map(|home| PathBuf::from(home).join(APP).join(&file))
-        .filter(|path| path.exists());
-    let home = if cfg!(windows) {
-        std::env::var_os("LOCALAPPDATA").map(|home| PathBuf::from(home).join(APP))
-    } else {
-        dirs::home_dir().map(|home| home.join(".config").join(APP))
-    };
-    xdg.or_else(|| home.map(|folder| folder.join(&file)))
 }

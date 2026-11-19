@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### Changed
+- The game installs in `~/.local/bin` now, rather than `~/.cargo/bin`, a Rust programmer's folder; `hordes update` offers to move a game installed in the old place.
+
 ## v0.6.0 · November 19, 2026
 Fire, and a crowbar.
 
