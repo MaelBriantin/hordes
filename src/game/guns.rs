@@ -37,8 +37,9 @@ pub struct Gun {
     pub range: f32,
 }
 
-/// The ticks the machine gun waits between two shots: a shot every 5 ticks, a sixth of a second.
-const MACHINE_GUN_INTERVAL: u32 = 4;
+/// The ticks the machine gun waits between two shots of a burst (its wait, then the shot): a
+/// shot every 3 ticks, a tenth of a second.
+const MACHINE_GUN_INTERVAL: u32 = 2;
 
 /// How much faster or slower than its gun a pellet may fly, as a share of the gun's speed.
 const PELLET_PACE: f32 = 0.2;
@@ -70,9 +71,14 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         }),
         Weapon::MachineGun => Some(Gun {
             weapon,
-            magazine: if level >= 2 { 30 } else { 20 },
+            // Short bursts, a magazine each: longer with the levels.
+            magazine: match level {
+                0 | 1 => 8,
+                2..=4 => 12,
+                _ => 16,
+            },
             interval: MACHINE_GUN_INTERVAL,
-            reload: if level >= 4 { tenths(20) } else { tenths(30) },
+            reload: if level >= 4 { tenths(18) } else { tenths(25) },
             damage: if level >= 3 { 5 } else { 3 },
             bullets: 1,
             pellets: 1,
@@ -214,10 +220,14 @@ mod tests {
     }
 
     #[test]
-    fn the_machine_gun_shoots_fast_and_pierces_at_the_top() {
+    fn the_machine_gun_shoots_short_bursts_longer_with_the_levels() {
         let first = gun(Weapon::MachineGun, 1).unwrap();
-        assert_eq!((first.interval, first.magazine, first.pierce), (4, 20, 0));
-        assert_eq!(gun(Weapon::MachineGun, 5).unwrap().pierce, 1);
+        assert_eq!(
+            (first.interval, first.magazine, first.reload, first.pierce),
+            (2, 8, 75, 0)
+        );
+        let last = gun(Weapon::MachineGun, 5).unwrap();
+        assert_eq!((last.magazine, last.reload, last.pierce), (16, 54, 1));
     }
 
     #[test]

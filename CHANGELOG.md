@@ -17,6 +17,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A new rare passive, Glare: the enemies in the torch's light go 10% slower per level, while it is lit.
 
 ### Changed
+- The machine gun shoots short bursts: 8 rounds at level 1, a shot every 0.1 s, then a 2.5-second reload, rather than 20 rounds; 12 from level 2, 16 at level 5, the reload 1.8 s from level 4. About a quarter less damage at first, as strong as before at the top.
 - In the gear, each card's level is written on its icon's corner, MAX at the last, rather than as a row of pixels under it.
 - The gear can show as a list, a setting: each card's name, its level, its gauge.
 - The gear shows the cards in the order they were picked, weapons and passives mixed.

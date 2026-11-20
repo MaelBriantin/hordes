@@ -174,11 +174,11 @@ A gun shoots at the **nearest enemies within its range**, a bullet per enemy, wh
 
 | Level | Pistol | Machine gun |
 |---|---|---|
-| 1 | 6 rounds, a shot every 0.5 s, 10 damage, a 2-second reload, range 12, 20 tiles/s | 20 rounds, a shot every 0.17 s, 3 damage, a 3-second reload, range 10, 22 tiles/s |
-| 2 | 9 rounds | 30 rounds |
+| 1 | 6 rounds, a shot every 0.5 s, 10 damage, a 2-second reload, range 12, 20 tiles/s | bursts of 8 rounds, a shot every 0.1 s, 3 damage, a 2.5-second reload, range 10, 22 tiles/s |
+| 2 | 9 rounds | bursts of 12 |
 | 3 | a 1.5-second reload | 5 damage |
-| 4 | 2 bullets a shot, at the 2 nearest | a 2-second reload |
-| 5 | 12 rounds, 15 damage | bullets pierce 1 enemy |
+| 4 | 2 bullets a shot, at the 2 nearest | a 1.8-second reload |
+| 5 | 12 rounds, 15 damage | bursts of 16, bullets pierce 1 enemy |
 
 ### Shotgun
 

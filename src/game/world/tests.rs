@@ -580,14 +580,14 @@ fn the_machine_gun_fires_a_burst_of_its_magazine() {
         .push(enemy(EnemyKind::Abomination, Vec2::new(109.0, 50.0)));
     world.enemies[0].hp = 100_000;
     let rounds = |world: &World| world.ammo()[0].1.rounds;
-    // A shot every 5 ticks (its wait, then the shot): the 20 rounds in 100 ticks, then a
-    // 3-second reload.
+    // A shot every 3 ticks (its wait, then the shot): the 8 rounds in 24 ticks, then the
+    // reload.
     wait(&mut world, 1);
-    assert_eq!(rounds(&world), 19);
-    wait(&mut world, 5 * 18);
+    assert_eq!(rounds(&world), 7);
+    wait(&mut world, 3 * 6);
     assert_eq!(rounds(&world), 1);
     assert_eq!(world.ammo()[0].1.reloading, 0);
-    wait(&mut world, 5);
+    wait(&mut world, 3);
     assert!(world.ammo()[0].1.reloading > 0);
 }
 
