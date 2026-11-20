@@ -494,6 +494,13 @@ impl App {
                 .map(|digit| digit - 1)
                 .filter(|index| *index < count),
             KeyCode::Enter | KeyCode::Char(' ') => Some(self.selected),
+            // Dealt again, if the run has a reroll left.
+            KeyCode::Char('r' | 'R') if self.world.rerolls > 0 => {
+                self.world.reroll();
+                self.selected = 0;
+                self.dealt_at = Some(Instant::now());
+                None
+            }
             _ => None,
         };
         if let Some(index) = take {

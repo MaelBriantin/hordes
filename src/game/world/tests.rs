@@ -354,6 +354,20 @@ fn a_level_up_opens_an_offer_and_the_world_waits() {
 }
 
 #[test]
+fn a_run_deals_the_cards_again_once() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    world.gems.push(Gem::new(Vec2::new(100.2, 50.0), 5));
+    wait(&mut world, 1);
+    assert_eq!(world.rerolls, 1);
+    world.reroll();
+    assert_eq!(world.rerolls, 0);
+    assert_eq!(world.offer.as_ref().map(Vec::len), Some(3));
+    let dealt = world.offer.clone();
+    world.reroll();
+    assert_eq!(world.offer, dealt, "none left");
+}
+
+#[test]
 fn choosing_takes_the_choice_and_the_world_goes_on() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     world.gems.push(Gem::new(Vec2::new(100.2, 50.0), 5));

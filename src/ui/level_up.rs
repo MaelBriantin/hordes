@@ -14,7 +14,9 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
 use super::{Blank, DARK_GREY};
-use crate::game::{Choice, Legendary, MAX_LEVEL, Passive, Rarity, Weapon, World};
+use crate::game::{
+    Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon, World,
+};
 
 const CARD_WIDTH: u16 = 24;
 const CARD_HEIGHT: u16 = 14;
@@ -58,7 +60,16 @@ pub fn render(
         .flex(Flex::Center)
         .areas(row);
     frame.render_widget(Blank, area);
-    let block = Block::bordered()
+    // Under the cards, the room left for weapons and passives; and the rerolls left, if any.
+    let (weapons, passives) = world.player.build.counts();
+    let room = fl!(
+        "level-up-room",
+        weapons = weapons,
+        most_weapons = MAX_WEAPONS,
+        passives = passives,
+        most_passives = MAX_PASSIVES
+    );
+    let mut block = Block::bordered()
         .padding(Padding::new(GAP, GAP, 1, 1))
         .title(
             Line::from(format!(
@@ -67,7 +78,12 @@ pub fn render(
             ))
             .bold()
             .centered(),
-        );
+        )
+        .title_bottom(Line::from(format!(" {room} ")).left_aligned());
+    if world.rerolls > 0 {
+        let reroll = fl!("level-up-reroll", left = world.rerolls);
+        block = block.title_bottom(Line::from(format!(" {reroll} ")).right_aligned());
+    }
     let inside = block.inner(area);
     frame.render_widget(block, area);
 
@@ -141,10 +157,20 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
     } else {
         Style::new().fg(rarity_colour)
     };
+    // Its number on its top border, and whether it is a weapon or a passive, as plainly.
+    let kind = match card.choice {
+        Choice::Weapon(_) => Some(fl!("card-weapon")),
+        Choice::Passive(_) => Some(fl!("card-passive")),
+        Choice::Legendary(_) | Choice::Heal => None,
+    };
+    let title = match kind {
+        Some(word) => Line::from(format!(" {} · {word} ", card.index + 1)),
+        None => Line::from(format!(" {} ", card.index + 1)),
+    };
     let block = Block::bordered()
         .border_style(border)
         .padding(Padding::new(2, 2, 1, 0))
-        .title(Line::from(format!(" {} ", card.index + 1)).centered());
+        .title(title.centered());
     let block = match rarity {
         Some(rarity) => block.title_bottom(
             Line::styled(

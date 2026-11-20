@@ -91,6 +91,10 @@ over-score = Niveau { $level } · { $kills } tués
 ## Montée de niveau
 
 level-up-title = Niveau { $level }
+level-up-room = Armes { $weapons }/{ $most_weapons } · Passifs { $passives }/{ $most_passives }
+card-weapon = ARME
+card-passive = PASSIF
+level-up-reroll = R : relancer ({ $left })
 card-new = NOUVEAU
 card-rare = RARE
 card-legendary = LÉGENDAIRE
@@ -200,7 +204,7 @@ keys-title = Commandes
 keys-move = Flèches / ZQSD / WASD  bouger
 keys-torch = F                      lampe
 keys-dash = Maj                    dash (sa carte) : rien ne blesse
-keys-cards = ← → / 1 2 3 · Entrée   prendre une carte
+keys-cards = ← → / 1 2 3 · Entrée   prendre une carte (R : relancer)
 keys-gear = I                      afficher l'équipement
 keys-ping = E                      une flèche sur le héros, 2 s
 keys-pause = P / Échap              pause

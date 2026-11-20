@@ -52,6 +52,8 @@ const SEPARATION_CELL: f32 = 2.0;
 /// second at its start.
 const ARCADE_GROWTH: f32 = 1.07;
 const ARCADE_RATE: f32 = 1.5;
+/// The cards a run can deal again on a level-up, R on the cards.
+const REROLLS: u8 = 1;
 /// The seconds into the run the torch lights up of itself at, the night falling.
 const TORCH_SECONDS: u32 = 26;
 
@@ -237,6 +239,10 @@ pub struct World {
     /// deal, their cards rarer.
     horde_levels_due: Vec<u32>,
     rare_levels: u32,
+    /// How rare the cards on offer were dealt, in percent: dealt again as rare.
+    offer_rare: u32,
+    /// The times left this run the cards on offer can be dealt again.
+    pub rerolls: u8,
     ticks: u32,
     rng: StdRng,
     /// Enemies owed: grows with the rate they appear at, one appears per whole unit.
@@ -331,6 +337,8 @@ impl World {
             without_legendary: 0,
             horde_levels_due: Vec::new(),
             rare_levels: 0,
+            offer_rare: RARE_PERCENT,
+            rerolls: REROLLS,
             ticks: 0,
             rng,
             spawn_debt: 0.0,
@@ -576,18 +584,33 @@ impl World {
         self.offer = (self.pending_levels > 0).then(|| self.deal());
     }
 
-    /// The cards of a level-up. The longer without a legendary, the likelier one: a point of
-    /// percent more for each level-up without, from the first chance on.
+    /// The cards on offer dealt again, as rare as they were, if the run has a reroll left.
+    pub fn reroll(&mut self) {
+        if self.offer.is_none() || self.rerolls == 0 {
+            return;
+        }
+        self.rerolls -= 1;
+        self.offer = Some(self.deal_as(self.offer_rare));
+    }
+
+    /// The cards of a level-up: rarer for a level a horde brought.
     fn deal(&mut self) -> Vec<Choice> {
-        let dusk = self.weather() == Weather::Dusk;
-        let percent = LEGENDARY_PERCENT + self.without_legendary;
-        // A level a horde brought deals rarer cards.
         let rare = if self.rare_levels > 0 {
             self.rare_levels -= 1;
             HORDE_RARE_PERCENT
         } else {
             RARE_PERCENT
         };
+        self.offer_rare = rare;
+        self.deal_as(rare)
+    }
+
+    /// Cards, each a rare one `rare` percent of the time. The longer without a legendary, the
+    /// likelier one: a point of percent more for each level-up without, from the first chance
+    /// on.
+    fn deal_as(&mut self, rare: u32) -> Vec<Choice> {
+        let dusk = self.weather() == Weather::Dusk;
+        let percent = LEGENDARY_PERCENT + self.without_legendary;
         let offer = self.player.build.offers(&mut self.rng, dusk, rare, percent);
         if offer
             .iter()

@@ -91,6 +91,10 @@ over-score = Level { $level } · { $kills } kills
 ## Level-up
 
 level-up-title = Level { $level }
+card-weapon = WEAPON
+card-passive = PASSIVE
+level-up-room = Weapons { $weapons }/{ $most_weapons } · Passives { $passives }/{ $most_passives }
+level-up-reroll = R: deal again ({ $left })
 card-new = NEW
 card-rare = RARE
 card-legendary = LEGENDARY
@@ -200,7 +204,7 @@ keys-title = Keys
 keys-move = Arrows / WASD / ZQSD   move
 keys-torch = F                      torch on or off
 keys-dash = Shift                  dash (its card): nothing hurts
-keys-cards = ← → / 1 2 3 · Enter    take a card
+keys-cards = ← → / 1 2 3 · Enter    take a card (R: deal again)
 keys-gear = I                      show or hide the gear
 keys-ping = E                      an arrow over the hero, 2 s
 keys-pause = P / Esc                pause

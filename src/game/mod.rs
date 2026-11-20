@@ -26,7 +26,7 @@ mod weather;
 mod world;
 
 pub use announce::{News, WeatherNews};
-pub use build::{Choice, Legendary, MAX_LEVEL, Passive, Rarity, Weapon};
+pub use build::{Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use guns::Bullet;

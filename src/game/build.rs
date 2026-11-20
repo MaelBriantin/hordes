@@ -4,8 +4,8 @@
 use rand::{Rng, RngExt};
 
 pub const MAX_LEVEL: u8 = 5;
-const MAX_WEAPONS: usize = 4;
-const MAX_PASSIVES: usize = 4;
+pub const MAX_WEAPONS: usize = 4;
+pub const MAX_PASSIVES: usize = 4;
 /// How many choices a level-up offers.
 const CHOICES: usize = 3;
 /// The chance, in percent, that a card of a level-up is a rare one, when there are rare ones to
@@ -162,6 +162,11 @@ impl Build {
             passives: Vec::new(),
             legendaries: Vec::new(),
         }
+    }
+
+    /// How many weapons and passives the player has: against `MAX_WEAPONS` and `MAX_PASSIVES`.
+    pub fn counts(&self) -> (usize, usize) {
+        (self.weapons.len(), self.passives.len())
     }
 
     /// The weapons the player has, with their levels, in the order picked.
