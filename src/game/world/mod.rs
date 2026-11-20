@@ -898,8 +898,8 @@ impl World {
         }
     }
 
-    /// A strike of lightning falls at `at`, hurting the enemies around it, and the player, if
-    /// `hurts`.
+    /// A strike of lightning falls at `at`, hurting the enemies around it and setting them on
+    /// fire, and hurting the player, if `hurts`.
     fn strike(&mut self, at: Vec2, hurts: bool) {
         self.lightning = Some(Lightning {
             tick: self.ticks,
@@ -913,6 +913,7 @@ impl World {
         for enemy in &mut self.enemies {
             if (enemy.position - at).length() <= weather::STRIKE_RADIUS {
                 enemy.hit(weather::STRIKE_DAMAGE);
+                enemy.ignite();
             }
         }
         if (self.player.position - at).length() <= weather::STRIKE_RADIUS

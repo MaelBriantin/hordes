@@ -15,6 +15,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Progress: achievements, reached once and kept from one run to the next, each unlocking a card or a reroll, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
 
 ### Changed
+- A strike of lightning sets on fire the enemies it hurts.
 - The title screen: the mode is the game's subtitle, in small pixel letters, Survive the night in gold or Arcade in the weathers' colours; Tab changes it, ←→ no more; the title stays in place from one mode to the other.
 - A horde comes out of the other side from the enemies about the player, catching them between, rather than a side at random.
 - Tougher enemies: a zombie has 15 HP rather than 10, a Shadow 40 rather than 25; and the weather toughens them more, +15% in the drizzle, +30% in the rain, +50% in the storm, +100% in the tempest (rather than none, +10%, +25%, +50%).

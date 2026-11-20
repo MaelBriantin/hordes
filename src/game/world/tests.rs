@@ -713,7 +713,7 @@ fn lightning_strikes_from_the_storm_on_and_not_in_the_rain() {
 }
 
 #[test]
-fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
+fn a_storms_lightning_hurts_the_enemies_it_falls_among_and_sets_them_on_fire() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.ticks = 30 * 480;
@@ -725,6 +725,8 @@ fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
         .push(enemy(EnemyKind::Abomination, Vec2::new(120.0, 50.0)));
     world.strike(Vec2::new(111.0, 50.0), world.weather().strikes_hurt());
     assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 30, 40));
+    assert!(world.enemies[0].burning > 0, "on fire");
+    assert_eq!(world.enemies[1].burning, 0, "out of its ring");
 }
 
 #[test]
