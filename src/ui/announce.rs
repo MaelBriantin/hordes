@@ -31,39 +31,74 @@ const SHADE: f32 = 0.65;
 /// big where it fits, and a line under it, the map dimmed. At daybreak, the dawn's word, the
 /// world going on under it.
 pub fn render(frame: &mut Frame, map: Rect, world: &World, sprites: &Sprites) {
-    let Some(announcement) = world.announcement else {
-        if world.daybreak() && !world.is_over() {
-            tell(frame, map, sprites, &fl!("dawn-title"), DAWN_COLORS, None);
-        } else if world.weather_news == WeatherNews::Big
-            && let Some((news, at)) = world.told
-            && world.ticks().saturating_sub(at) < BIG_NEWS_SECONDS * u32::from(TICKS_PER_SECOND)
-        {
-            // News in big letters, the run going on.
-            let (title, colors, line) = words(news);
-            tell(frame, map, sprites, &title, colors, line.as_deref());
-        } else if let Some((at, bonus)) = world.horde_cleared
-            && world.ticks().saturating_sub(at) < CLEARED_SECONDS * u32::from(TICKS_PER_SECOND)
-        {
-            // A level, and in arcade the points too.
-            let line = if bonus > 0 {
-                fl!("horde-cleared-points", points = bonus)
-            } else {
-                fl!("horde-cleared-level")
-            };
-            tell(
-                frame,
-                map,
-                sprites,
-                &fl!("horde-cleared"),
-                CLEARED_COLORS,
-                Some(&line),
-            );
-        }
+    let Some(Title {
+        text,
+        colors,
+        line,
+        dimmed,
+    }) = title(world)
+    else {
         return;
     };
-    dim(frame.buffer_mut(), map);
-    let (title, colors, line) = words(announcement.news);
-    tell(frame, map, sprites, &title, colors, line.as_deref());
+    if dimmed {
+        dim(frame.buffer_mut(), map);
+    }
+    tell(frame, map, sprites, &text, colors, line.as_deref());
+}
+
+/// Whether a word in big letters shows over the map.
+pub fn showing(world: &World) -> bool {
+    title(world).is_some()
+}
+
+/// A word in big letters over the map: its colours, the line under it, and whether the map
+/// dims under it, the world standing still.
+struct Title {
+    text: String,
+    colors: (Color, Color),
+    line: Option<String>,
+    dimmed: bool,
+}
+
+/// The word in big letters the map shows now, if any.
+fn title(world: &World) -> Option<Title> {
+    let going_on = |(text, colors, line): (String, (Color, Color), Option<String>)| Title {
+        text,
+        colors,
+        line,
+        dimmed: false,
+    };
+    if let Some(announcement) = world.announcement {
+        let (text, colors, line) = words(announcement.news);
+        return Some(Title {
+            text,
+            colors,
+            line,
+            dimmed: true,
+        });
+    }
+    if world.daybreak() && !world.is_over() {
+        return Some(going_on((fl!("dawn-title"), DAWN_COLORS, None)));
+    }
+    if world.weather_news == WeatherNews::Big
+        && let Some((news, at)) = world.told
+        && world.ticks().saturating_sub(at) < BIG_NEWS_SECONDS * u32::from(TICKS_PER_SECOND)
+    {
+        // News in big letters, the run going on.
+        return Some(going_on(words(news)));
+    }
+    if let Some((at, bonus)) = world.horde_cleared
+        && world.ticks().saturating_sub(at) < CLEARED_SECONDS * u32::from(TICKS_PER_SECOND)
+    {
+        // A level, and in arcade the points too.
+        let line = if bonus > 0 {
+            fl!("horde-cleared-points", points = bonus)
+        } else {
+            fl!("horde-cleared-level")
+        };
+        return Some(going_on((fl!("horde-cleared"), CLEARED_COLORS, Some(line))));
+    }
+    None
 }
 
 /// A word in big letters in the middle of the map, twice as big where it fits, and a line under

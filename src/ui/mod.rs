@@ -216,6 +216,18 @@ pub fn render(
         menu::render_death(frame, map, sprites, view, world, leaderboard, name);
     } else {
         render_status(frame, areas.top, world, leaderboard, view.frame);
+        // Under a word in big letters, the player isn't picked out: the arrow and the bar
+        // would cross it.
+        let view = if announce::showing(world) {
+            ViewState {
+                arrow: Arrow::Off,
+                pinged: false,
+                mini_bars: false,
+                ..view
+            }
+        } else {
+            view
+        };
         pixels::render_map(frame.buffer_mut(), map, world, sprites, view);
         render_hurt(frame.buffer_mut(), map, world);
         if let Some(healing) = world.compass() {
