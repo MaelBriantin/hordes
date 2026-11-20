@@ -14,6 +14,31 @@ const KILLS_GOAL: u64 = 1_000;
 const SHADOWS_GOAL: u64 = 50;
 const RUNS_GOAL: u32 = 10;
 
+/// Every card, and the reroll, as the collection shows them: those there from the start, then
+/// those unlocked, from the easiest to the hardest to unlock. Not the drones, dealt no more, nor
+/// the heal, no card of a build.
+pub const COLLECTION: [Unlock; 19] = [
+    Unlock::Card(Choice::Weapon(Weapon::Crowbar)),
+    Unlock::Card(Choice::Weapon(Weapon::Machete)),
+    Unlock::Card(Choice::Weapon(Weapon::Pistol)),
+    Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
+    Unlock::Card(Choice::Passive(Passive::Vitality)),
+    Unlock::Card(Choice::Passive(Passive::Swiftness)),
+    Unlock::Card(Choice::Passive(Passive::Magnet)),
+    Unlock::Card(Choice::Passive(Passive::Flashlight)),
+    Unlock::Card(Choice::Passive(Passive::Loot)),
+    Unlock::Card(Choice::Passive(Passive::Might)),
+    Unlock::Card(Choice::Passive(Passive::Haste)),
+    Unlock::Card(Choice::Passive(Passive::Wisdom)),
+    Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
+    Unlock::Card(Choice::Weapon(Weapon::Molotov)),
+    Unlock::Card(Choice::Passive(Passive::Dash)),
+    Unlock::Reroll,
+    Unlock::Card(Choice::Passive(Passive::Glare)),
+    Unlock::Card(Choice::Passive(Passive::Regeneration)),
+    Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+];
+
 /// A goal reached once, kept from one run to the next.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Achievement {
@@ -68,10 +93,24 @@ impl Achievement {
 
     /// How rare it is: as the card it unlocks; a reroll, rare.
     pub fn rarity(self) -> Rarity {
-        match self.unlocks() {
+        self.unlocks().rarity()
+    }
+}
+
+impl Unlock {
+    /// How rare it is: as its card; a reroll, rare.
+    pub fn rarity(self) -> Rarity {
+        match self {
             Unlock::Card(choice) => choice.rarity(),
             Unlock::Reroll => Rarity::Rare,
         }
+    }
+
+    /// The achievement that unlocks it; none for what is there from the start.
+    pub fn achievement(self) -> Option<Achievement> {
+        Achievement::ALL
+            .into_iter()
+            .find(|achievement| achievement.unlocks() == self)
     }
 }
 
@@ -106,6 +145,23 @@ impl Progress {
             .into_iter()
             .find(|achievement| achievement.unlocks() == Unlock::Card(choice))
             .is_none_or(|achievement| self.achieved.contains(&achievement))
+    }
+
+    /// Whether it is there to be had: from the start, or its achievement reached.
+    pub fn has(&self, unlock: Unlock) -> bool {
+        unlock
+            .achievement()
+            .is_none_or(|achievement| self.achieved.contains(&achievement))
+    }
+
+    /// Where an achievement counted over every run stands: its count so far, and its goal.
+    pub fn count_of(&self, achievement: Achievement) -> Option<(u64, u64)> {
+        match achievement {
+            Achievement::ThousandDown => Some((self.kills, KILLS_GOAL)),
+            Achievement::Shadows => Some((self.shadows, SHADOWS_GOAL)),
+            Achievement::Regular => Some((u64::from(self.runs), u64::from(RUNS_GOAL))),
+            _ => None,
+        }
     }
 
     /// Reaches an achievement, if not yet.
@@ -188,6 +244,22 @@ mod tests {
         assert_eq!(Achievement::ThousandDown.rarity(), Rarity::Rare);
         assert_eq!(Achievement::Regular.rarity(), Rarity::Rare);
         assert_eq!(Achievement::Dawn.rarity(), Rarity::Legendary);
+    }
+
+    #[test]
+    fn the_collection_holds_every_card_dealt_and_the_reroll() {
+        let progress = Progress::default();
+        let from_start = COLLECTION
+            .iter()
+            .filter(|unlock| progress.has(**unlock))
+            .count();
+        assert_eq!(from_start, COLLECTION.len() - Achievement::ALL.len());
+        for achievement in Achievement::ALL {
+            assert!(COLLECTION.contains(&achievement.unlocks()));
+        }
+        assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(Weapon::Drones))));
+        assert!(!COLLECTION.contains(&Unlock::Card(Choice::Heal)));
+        assert!(Progress::everything().has(Unlock::Reroll));
     }
 
     #[test]

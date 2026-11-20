@@ -23,7 +23,8 @@ use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
 use crate::game::{
-    Achievement, Entry, Leaderboard, Mode, Progress, TICKS_PER_SECOND, WeatherNews, World,
+    Achievement, COLLECTION, Entry, Leaderboard, Mode, Progress, TICKS_PER_SECOND, WeatherNews,
+    World,
 };
 use crate::ui::{
     self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
@@ -42,6 +43,12 @@ pub struct App {
     /// The achievements reached and still to be told, the first being told since a frame.
     toasts: VecDeque<Achievement>,
     toast_since: Option<u32>,
+    /// The collection's tile the arrows are on, on the title screen. And how many tiles a row of
+    /// it holds, as the screen is wide.
+    picked: usize,
+    collection_row: usize,
+    /// Whether the collection shows: the screen big enough for it.
+    collection_shows: bool,
     /// Whether the run over has been weighed against the leaderboard.
     scored: bool,
     /// The run's place on the leaderboard, if it made it.
@@ -75,6 +82,9 @@ impl App {
             progress: progress::load(),
             toasts: VecDeque::new(),
             toast_since: None,
+            picked: 0,
+            collection_row: 1,
+            collection_shows: false,
             scored: false,
             highlight: None,
             last_name: *b"AAA",
@@ -111,6 +121,8 @@ impl App {
         let mut next_tick = Instant::now() + tick;
         while !self.should_quit {
             self.world.set_view(ui::view(terminal.size()?.into()));
+            self.collection_row = ui::collection_row(terminal.size()?.into());
+            self.collection_shows = ui::collection_shows(terminal.size()?.into());
             let view =
                 ViewState {
                     selected: self.selected,
@@ -135,6 +147,8 @@ impl App {
                     toast: self.toasts.front().zip(self.toast_since).map(
                         |(&achievement, since)| (achievement, self.frames.wrapping_sub(since)),
                     ),
+                    picked: (self.settings.mode == Mode::Standard && self.collection_shows)
+                        .then_some(self.picked),
                 };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
@@ -143,6 +157,7 @@ impl App {
                     &self.world,
                     &self.sprites,
                     &self.leaderboard,
+                    &self.progress,
                     self.screen,
                     view,
                 );
@@ -213,10 +228,11 @@ impl App {
     }
 
     fn on_title(&mut self, code: KeyCode) {
+        let collection = self.settings.mode == Mode::Standard && self.collection_shows;
         match code {
             // A new run, in the mode chosen.
             KeyCode::Enter | KeyCode::Char(' ') => self.new_run(),
-            KeyCode::Left | KeyCode::Right | KeyCode::Char('a' | 'A' | 'q' | 'Q' | 'd' | 'D') => {
+            KeyCode::Tab | KeyCode::BackTab => {
                 self.settings.mode = self.settings.mode.other();
                 self.keep_settings();
             }
@@ -227,8 +243,21 @@ impl App {
                     from_pause: false,
                 };
             }
+            _ if collection => self.on_collection(code),
             _ => {}
         }
+    }
+
+    /// On the collection, in standard: the arrows go from tile to tile.
+    fn on_collection(&mut self, code: KeyCode) {
+        let (at, last, row) = (self.picked, COLLECTION.len() - 1, self.collection_row);
+        self.picked = match code {
+            KeyCode::Left | KeyCode::Char('a' | 'A' | 'q' | 'Q') => at.saturating_sub(1),
+            KeyCode::Right | KeyCode::Char('d' | 'D') => (at + 1).min(last),
+            KeyCode::Down | KeyCode::Char('s' | 'S') if at + row <= last => at + row,
+            KeyCode::Up | KeyCode::Char('w' | 'W' | 'z' | 'Z') if at >= row => at - row,
+            _ => at,
+        };
     }
 
     /// Changes how blood shows, and keeps the choice for the next runs.

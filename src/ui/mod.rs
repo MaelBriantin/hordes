@@ -4,6 +4,7 @@
 
 mod achievement;
 mod announce;
+mod collection;
 mod debug;
 mod font;
 mod horde;
@@ -24,7 +25,7 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Widget};
 
-use crate::game::{Achievement, Leaderboard, Vec2, World, xp_to_next};
+use crate::game::{Achievement, Leaderboard, Progress, Vec2, World, xp_to_next};
 use crate::game::{Mode, Weather, WeatherNews};
 pub use achievement::TOAST_FRAMES;
 pub use debug::DebugAction;
@@ -140,6 +141,16 @@ fn areas(screen: Rect) -> Areas {
     Areas { top, field, help }
 }
 
+/// How many tiles a row of the collection holds on a screen of that size.
+pub fn collection_row(screen: Rect) -> usize {
+    collection::in_a_row(Block::bordered().inner(areas(screen).field).width)
+}
+
+/// Whether the collection shows on the title screen, on a screen of that size.
+pub fn collection_shows(screen: Rect) -> bool {
+    menu::collection_shows(Block::bordered().inner(areas(screen).field))
+}
+
 /// Half of the map a screen of that size shows each way, in tiles.
 pub fn view(screen: Rect) -> Vec2 {
     pixels::view(Block::bordered().inner(areas(screen).field))
@@ -182,6 +193,9 @@ pub struct ViewState {
     pub highlight: Option<usize>,
     /// The achievement being told, and the frames since it started to show.
     pub toast: Option<(Achievement, u32)>,
+    /// The collection's tile the arrows are on, on the title screen; none without a collection
+    /// showing.
+    pub picked: Option<usize>,
 }
 
 pub fn render(
@@ -189,6 +203,7 @@ pub fn render(
     world: &World,
     sprites: &Sprites,
     leaderboard: &Leaderboard,
+    progress: &Progress,
     screen: Screen,
     view: ViewState,
 ) {
@@ -212,7 +227,7 @@ pub fn render(
             }
     );
     if on_title {
-        menu::render_title(frame, map, sprites, view, leaderboard);
+        menu::render_title(frame, map, sprites, view, leaderboard, progress);
     } else if dead {
         let name = match screen {
             Screen::NameEntry { letters, cursor } => Some((letters, cursor)),
@@ -238,7 +253,8 @@ pub fn render(
     }
     // The keys below, but for the run going on: its XP bar, all along the screen.
     let help = match screen {
-        Screen::Title => Some(fl!("help-title")),
+        Screen::Title if view.picked.is_some() => Some(fl!("help-title")),
+        Screen::Title => Some(fl!("help-title-arcade")),
         Screen::Paused { .. } => Some(fl!("help-paused")),
         Screen::Options { .. } => Some(fl!("help-options")),
         Screen::NameEntry { .. } => Some(fl!("help-name")),

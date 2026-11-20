@@ -1161,7 +1161,10 @@ pub fn render_sprite_scaled(
 ) {
     let mut canvas = Canvas::new(sprites, area, (0, 0));
     let picture = sprites.get(sprite);
-    let (left, top) = (-picture.width() * scale / 2, -picture.height() * scale / 2);
+    // Its top on a cell's top row, for its rows not to straddle the cells' halves.
+    let height = i32::from(area.height) * 2;
+    let top = ((height - picture.height() * scale) / 2).max(0) / 2 * 2 - height / 2;
+    let left = -picture.width() * scale / 2;
     for (x, y, color) in picture.pixels(false) {
         for dy in 0..scale {
             for dx in 0..scale {

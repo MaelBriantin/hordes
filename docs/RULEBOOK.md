@@ -5,7 +5,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## Controls
 
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
-- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with ←→, A, Q or D (see Modes).
+- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in gold, or **Arcade** in the weathers' colours, from the dusk's to the tempest's, going along it. At the bottom left, the key and the other mode it changes to.
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes.
 - **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
@@ -71,7 +71,7 @@ In arcade, every run is played for its score.
 - Times the **weather's multiplier**: ×1 at dusk and in the night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows the score and the multiplier of the moment (the weather's times the combo's) on a gold badge, the score's thousands apart. While the run is ahead of the best one kept, its score gleams.
-- **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in a box under its tagline, the best run in gold; the settings are on its last line.
+- **Leaderboard**: the 10 best runs, kept in `scores.txt` in the game's data folder. A run that makes it asks for three letters on the death screen (a **new high score** only when it beats the best; otherwise its place), where it shows in its place as they are typed: ↑↓ turn a letter or type it, ←→ move, Enter keeps the run, Esc leaves it off. The leaderboard shows on the title screen too, in arcade, in a box under the mode, the best run in gold.
 
 ## The night
 
@@ -256,6 +256,7 @@ Up to **4 passives**, each up to **level 5**.
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
 - The **drones** are dealt no more, until they are made worth taking.
+- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination); in colour once the player has it, grey until then. Neither the drones nor the heal. The arrows go from tile to tile; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour; available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a bar and the count so far; a green check once the player has it. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience

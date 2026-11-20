@@ -39,7 +39,7 @@ pub use level::xp_to_next;
 pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
-pub use progress::{Achievement, Progress, Unlock};
+pub use progress::{Achievement, COLLECTION, Progress, Unlock};
 
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;

@@ -127,6 +127,19 @@ fn rows_shown(since: u32) -> u16 {
     u16::try_from(u32::from(HEIGHT) * part / RISE).unwrap_or(HEIGHT)
 }
 
+/// What an achievement asks.
+pub fn goal(achievement: Achievement) -> String {
+    match achievement {
+        Achievement::Rain => fl!("achievement-rain-goal"),
+        Achievement::Storm => fl!("achievement-storm-goal"),
+        Achievement::Struck => fl!("achievement-struck-goal"),
+        Achievement::ThousandDown => fl!("achievement-thousand-goal"),
+        Achievement::Shadows => fl!("achievement-shadows-goal"),
+        Achievement::Dawn => fl!("achievement-dawn-goal"),
+        Achievement::Regular => fl!("achievement-regular-goal"),
+    }
+}
+
 /// An achievement's name.
 pub fn name(achievement: Achievement) -> String {
     match achievement {

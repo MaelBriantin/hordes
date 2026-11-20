@@ -61,6 +61,7 @@ s 90 90 95      ashes
 2 40 44 62      a dash's silhouette, far
 3 70 78 108     a dash's silhouette, near
 4 175 220 150   a parasite's wet shine
+5 110 200 110   a check's green
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -434,6 +435,44 @@ icon_heal
 .errrre.
 ..eeee..
 ........
+
+# A reroll, for now: a round arrow, the cards dealt again.
+
+icon_reroll
+..jjjj..
+.j....j.
+j......j
+j....jjj
+j.....j.
+.j......
+..jjjj..
+........
+
+# Arrows, 3 × 6: where more of the collection lies, left and right.
+
+arrow_left
+..w
+.ww
+www
+www
+.ww
+..w
+
+arrow_right
+w..
+ww.
+www
+www
+ww.
+w..
+
+# A check, 5 × 4: what the collection shows as unlocked.
+
+check
+....5
+...5.
+5.5..
+.5...
 
 # The game's name on the title screen, 35 × 7, drawn twice as big.
 

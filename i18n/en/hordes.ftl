@@ -3,7 +3,8 @@
 
 ## Keys, on the last line of the screen
 
-help-title = Enter start · ←→ mode · O / Esc options
+help-title = Enter start · Tab mode · Arrows collection · O / Esc options
+help-title-arcade = Enter start · Tab mode · O / Esc options
 help-options = ↑↓ choose · ←→ / Enter change · Esc back
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
 help-over = R new run · Esc quit
@@ -11,10 +12,10 @@ help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
 
 ## Title screen
 
-title-tagline = Survive the night.
 title-start = Press Enter to start
-mode-standard = Standard: hold out until dawn
-mode-arcade = Arcade: endless, for the score
+mode-standard = SURVIVE THE NIGHT
+mode-arcade = ARCADE
+key-tab = Tab
 dusk-played = played
 dusk-skipped = skipped
 
@@ -230,3 +231,8 @@ achievement-dawn = Dawn
 achievement-dawn-goal = Hold out until dawn
 achievement-regular = A regular
 achievement-regular-goal = Play 10 runs
+
+collection-title = COLLECTION
+collection-from-start = Available from the start
+collection-achievement = Achievement “{ $name }”
+collection-reroll = One more reroll

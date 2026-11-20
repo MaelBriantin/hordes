@@ -7,13 +7,17 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph};
 
 use super::clock;
+use super::collection;
 use super::font;
 use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
-use super::{Arrow, Blank, BloodLook, DARK_GREY, GREY, RainDisplay, Skin, ViewState};
-use crate::game::{Entry, Leaderboard, Mode, WeatherNews, World};
+use super::{
+    Arrow, Blank, BloodLook, DARK_GREY, GREY, RainDisplay, Skin, ViewState, WEATHERS,
+    weather_colour,
+};
+use crate::game::{Entry, Leaderboard, Mode, Progress, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
@@ -233,19 +237,15 @@ pub fn render_title(
     sprites: &Sprites,
     view: ViewState,
     leaderboard: &Leaderboard,
+    progress: &Progress,
 ) {
     let frames = view.frame;
     night::render_storm(frame.buffer_mut(), area, sprites, frames);
-    // Twice as big where it fits: 70 columns, 7 rows.
-    let scale = if area.width >= 74 && area.height >= 14 {
-        2
-    } else {
-        1
-    };
+    let (scale, collection_rows) = title_sizes(area);
     let name_rows = u16::try_from(4 * scale).unwrap_or(4);
-    // The leaderboard's box under the title, as many of its runs as the screen has room for;
-    // the settings on the last line.
-    // The leaderboard, the arcade's: its room kept in either mode, the title staying in place.
+    // Under the title, the arcade's leaderboard, as many of its runs as the screen has room
+    // for; in standard, the collection in its place. The room of the taller kept in either
+    // mode, the title staying in place.
     let runs = leaderboard.entries().len();
     let room = usize::from(area.height.saturating_sub(name_rows + 15));
     let shown = runs.min(room);
@@ -254,38 +254,39 @@ pub fn render_title(
     } else {
         u16::try_from(shown).unwrap_or(0) + 2
     };
-    let [_, name, _, line, _, mode, _, start, _, board, _, _, last] = Layout::vertical([
+    let [_, name, _, mode, _, start, _, board, _, _, last] = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Length(name_rows),
+        Constraint::Length(1),
+        Constraint::Length(MODE_ROWS),
         Constraint::Length(2),
         Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
         Constraint::Length(2),
-        Constraint::Length(board_rows),
+        Constraint::Length(board_rows.max(collection_rows)),
         Constraint::Fill(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
     .areas(area);
-    if shown > 0 && view.mode == Mode::Arcade {
-        render_board(frame, board, &leaderboard.entries()[..shown], frames);
+    match view.mode {
+        Mode::Arcade if shown > 0 => {
+            let board = Rect {
+                height: board_rows,
+                ..board
+            };
+            render_board(frame, board, &leaderboard.entries()[..shown], frames);
+        }
+        Mode::Arcade => {}
+        Mode::Standard => {
+            let board = Rect {
+                height: collection_rows,
+                ..board
+            };
+            collection::render(frame.buffer_mut(), board, sprites, progress, view.picked);
+        }
     }
     pixels::render_sprite_scaled(frame.buffer_mut(), name, sprites, SpriteId::Title, scale);
-    centred(frame, &fl!("title-tagline"), Style::new().fg(GREY), line);
-    // The mode the run will be played in, changed with ←→.
-    let mode_words = match view.mode {
-        Mode::Standard => fl!("mode-standard"),
-        Mode::Arcade => fl!("mode-arcade"),
-    };
-    centred(
-        frame,
-        &format!("◀  {mode_words}  ▶"),
-        Style::new().fg(GOLD).add_modifier(Modifier::BOLD),
-        mode,
-    );
+    render_mode(frame, mode, sprites, view.mode, frames);
     // Blinking, as on an arcade cabinet: shown two thirds of each second.
     if frames % 30 < 20 {
         centred(
@@ -295,10 +296,127 @@ pub fn render_title(
             start,
         );
     }
+    render_mode_key(frame, last, view.mode);
     frame.render_widget(
         Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
         last,
     );
+}
+
+/// The rows the mode takes on the title screen, under the game's name: its name in small
+/// letters.
+const MODE_ROWS: u16 = 3;
+/// The standard's name in gold, lighter on top, down to its row; the
+/// arcade's in the weathers' colours, from the dusk to the tempest, going along it, so many
+/// pixels to the whole round and so many frames a pixel.
+const STANDARD_COLORS: (Color, Color) = (Color::Rgb(240, 200, 60), Color::Rgb(190, 140, 40));
+const STANDARD_SHADE_FROM: i32 = 3;
+const WEATHER_ROUND: f32 = 40.0;
+const WEATHER_FRAMES: f32 = 6.0;
+/// The key drawn as a cap.
+const KEY_CAP: Style = Style::new()
+    .fg(Color::Rgb(12, 12, 18))
+    .bg(Color::Rgb(140, 145, 160));
+
+/// The mode the run will be played in, `frames` frames in: its name in small letters.
+fn render_mode(frame: &mut Frame, area: Rect, sprites: &Sprites, mode: Mode, frames: u32) {
+    let buffer = frame.buffer_mut();
+    match mode {
+        Mode::Standard => {
+            let shade = |_, y| {
+                if y < STANDARD_SHADE_FROM {
+                    STANDARD_COLORS.0
+                } else {
+                    STANDARD_COLORS.1
+                }
+            };
+            font::render_small_with(buffer, area, sprites, &fl!("mode-standard"), shade);
+        }
+        Mode::Arcade => {
+            #[allow(clippy::cast_precision_loss, reason = "a few frames and pixels")]
+            let weathers = |x: i32, _| {
+                let along = x as f32 / WEATHER_ROUND
+                    - (frames % 100_000) as f32 / WEATHER_FRAMES / WEATHER_ROUND;
+                weather_along(along)
+            };
+            font::render_small_with(buffer, area, sprites, &fl!("mode-arcade"), weathers);
+        }
+    }
+}
+
+/// The weathers' colours one after the other, `along` the way round them, from the dusk's to
+/// the tempest's, then the dusk's again.
+fn weather_along(along: f32) -> Color {
+    let last = WEATHERS.len() - 1;
+    #[allow(clippy::cast_precision_loss, reason = "six weathers")]
+    let place = along.rem_euclid(1.0) * last as f32;
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a place among six weathers"
+    )]
+    let index = (place.floor() as usize).min(last - 1);
+    #[allow(clippy::cast_precision_loss, reason = "six weathers")]
+    let share = place - index as f32;
+    let rgb = |weather| match weather_colour(weather) {
+        Color::Rgb(red, green, blue) => (red, green, blue),
+        _ => (0, 0, 0),
+    };
+    mix(rgb(WEATHERS[index]), rgb(WEATHERS[index + 1]), share)
+}
+
+/// The key changing the mode, and the other mode it changes to, at the start of `area`.
+fn render_mode_key(frame: &mut Frame, area: Rect, mode: Mode) {
+    let other = match mode.other() {
+        Mode::Standard => fl!("mode-standard"),
+        Mode::Arcade => fl!("mode-arcade"),
+    };
+    let line = Line::from(vec![
+        Span::raw(" "),
+        Span::styled(format!(" {} ", fl!("key-tab")), KEY_CAP),
+        Span::styled(format!("  {other}"), Style::new().fg(GREY)),
+    ]);
+    frame.render_widget(line, area);
+}
+
+/// A colour between two, `share` of the way from the first.
+fn mix(from: (u8, u8, u8), to: (u8, u8, u8), share: f32) -> Color {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a channel, 0 to 255"
+    )]
+    let channel =
+        |a: u8, b: u8| (f32::from(a) + (f32::from(b) - f32::from(a)) * share).round() as u8;
+    Color::Rgb(
+        channel(from.0, to.0),
+        channel(from.1, to.1),
+        channel(from.2, to.2),
+    )
+}
+
+/// Whether the game's name fits twice as big: 70 columns, 7 rows.
+fn fits_big(area: Rect) -> bool {
+    area.width >= 74 && area.height >= 14
+}
+
+/// On a title screen `area` big, in standard: how big the game's name is drawn, and the rows the
+/// collection takes. Twice as big where it fits, but as it is if that would leave the
+/// collection out.
+fn title_sizes(area: Rect) -> (i32, u16) {
+    // The rows the title screen keeps for itself, its name apart.
+    let collection =
+        |name_rows: u16| collection::height(area.width, area.height.saturating_sub(name_rows + 13));
+    match (fits_big(area), collection(8), collection(4)) {
+        (true, rows, _) if rows > 0 => (2, rows),
+        (true, _, 0) => (2, 0),
+        (_, _, rows) => (1, rows),
+    }
+}
+
+/// Whether the collection shows on a title screen `area` big.
+pub fn collection_shows(area: Rect) -> bool {
+    title_sizes(area).1 > 0
 }
 
 /// The game's version, as the title screen and the pause menu show it: `v0.3.0`.

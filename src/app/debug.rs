@@ -31,6 +31,7 @@ pub fn handle_key(world: &mut World, code: KeyCode, selected: usize) -> Screen {
                 DebugAction::Heal => world.debug_heal(),
                 DebugAction::Campfire => world.debug_campfire(),
                 DebugAction::Fire => world.debug_fire(),
+                DebugAction::UnlockAll => world.debug_unlock_all(),
                 DebugAction::Unhurt => {
                     world.unhurt = !world.unhurt;
                     return Screen::Debug { selected };

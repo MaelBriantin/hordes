@@ -3,7 +3,8 @@
 
 ## Touches, sur la dernière ligne de l'écran
 
-help-title = Entrée jouer · ←→ mode · O / Échap options
+help-title = Entrée jouer · Tab mode · Flèches collection · O / Échap options
+help-title-arcade = Entrée jouer · Tab mode · O / Échap options
 help-options = ↑↓ choisir · ←→ / Entrée changer · Échap retour
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
 help-over = R nouvelle partie · Échap quitter
@@ -11,10 +12,10 @@ help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
 
 ## Écran titre
 
-title-tagline = Survis à la nuit.
 title-start = Appuie sur Entrée pour jouer
-mode-standard = Standard : tenir jusqu'à l'aube
-mode-arcade = Arcade : sans fin, pour le score
+mode-standard = SURVIS À LA NUIT
+mode-arcade = ARCADE
+key-tab = Tab
 dusk-played = joué
 dusk-skipped = passé
 
@@ -230,3 +231,8 @@ achievement-dawn = L'aube
 achievement-dawn-goal = Tenir jusqu'à l'aube
 achievement-regular = Habitué
 achievement-regular-goal = Jouer 10 parties
+
+collection-title = COLLECTION
+collection-from-start = Disponible dès le départ
+collection-achievement = Succès « { $name } »
+collection-reroll = Une relance de plus

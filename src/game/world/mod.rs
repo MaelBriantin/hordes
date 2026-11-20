@@ -1312,6 +1312,13 @@ impl World {
         self.burnt.remove(&tile);
     }
 
+    /// A debug tool: every achievement reached, every card unlocked, from the next run on.
+    pub fn debug_unlock_all(&mut self) {
+        for achievement in Achievement::ALL {
+            self.progress.reach(achievement);
+        }
+    }
+
     /// A debug tool: the player's HP all back.
     pub fn debug_heal(&mut self) {
         self.player.hp = self.player.max_hp();
