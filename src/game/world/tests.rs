@@ -931,11 +931,43 @@ fn a_horde_wiped_out_brings_a_level() {
     disarm(&mut world);
     let count = wipe_out_a_horde(&mut world);
     assert!(count > 0);
-    assert_eq!(world.horde_cleared.map(|(_, bonus)| bonus), Some(0));
+    assert_eq!(world.horde_cleared.map(|(_, bonus, _)| bonus), Some(0));
     // Once told, two seconds on.
     assert_eq!(world.player.level, 1);
     wait(&mut world, 30 * 2);
     assert_eq!(world.player.level, 2);
+}
+
+#[test]
+fn hordes_standing_together_are_counted_apart_and_told_apart_once_wiped_out() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.set_view(Vec2::new(30.0, 12.0));
+    for (number, side) in [(0, Facing::Right), (1, Facing::Left)] {
+        world.bring_horde(Warning {
+            arrives_at: 0,
+            side: Some(side),
+            number,
+        });
+    }
+    let hordes = world.hordes_left();
+    assert_eq!(
+        hordes.iter().map(|&(number, _)| number).collect::<Vec<_>>(),
+        [0, 1]
+    );
+    for enemy in world
+        .enemies
+        .iter_mut()
+        .filter(|enemy| enemy.horde == Some(0))
+    {
+        enemy.hp = 0;
+    }
+    world.fell_enemies();
+    assert_eq!(world.hordes_left(), [hordes[1]]);
+    assert_eq!(
+        world.horde_cleared.map(|(_, _, number)| number),
+        Some(Some(0))
+    );
 }
 
 #[test]
@@ -944,7 +976,7 @@ fn in_arcade_a_horde_wiped_out_doubles_its_kills_too() {
     disarm(&mut world);
     world.mode = Mode::Arcade;
     let count = wipe_out_a_horde(&mut world);
-    let (_, bonus) = world.horde_cleared.expect("wiped out");
+    let (_, bonus, _) = world.horde_cleared.expect("wiped out");
     assert_eq!(world.score, 2 * bonus);
     assert!(bonus >= 10 * u64::try_from(count).unwrap());
     wait(&mut world, 30 * 2);

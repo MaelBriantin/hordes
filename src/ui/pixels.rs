@@ -145,7 +145,7 @@ const BOTTLE: Color = Color::Rgb(70, 160, 80);
 const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
 const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
 const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
-const MUZZLE_HALO: ((u8, u8, u8), f32, i32) = ((255, 210, 130), 0.42, 8);
+const MUZZLE_HALO: ((u8, u8, u8), f32, i32) = ((255, 210, 130), 0.25, 5);
 /// How dim a fire's halo gets as it flickers, every other look of its flame.
 const FIRE_FLICKER: f32 = 0.85;
 /// The ticks a gun's flash lasts, a shot just fired; and how far ahead of where it was shot

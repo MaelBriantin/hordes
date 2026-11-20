@@ -195,8 +195,9 @@ pub struct World {
     hordes_come: u32,
     /// The hordes come and not yet wiped out, by number.
     tallies: HashMap<u32, Tally>,
-    /// The last horde wiped out: when, and the points it was worth (none in a standard run).
-    pub horde_cleared: Option<(u32, u64)>,
+    /// The last horde wiped out: when, the points it was worth (none in a standard run), and
+    /// its number if another horde still stood then, to tell them apart.
+    pub horde_cleared: Option<(u32, u64, Option<u32>)>,
     /// The news the world stands still for, while it shows.
     pub announcement: Option<Announcement>,
     /// What reaching the dawn added to the score, once the run has: the run is won, and over.
@@ -491,6 +492,18 @@ impl World {
     /// How many enemies of the hordes come are still standing.
     pub fn horde_left(&self) -> u32 {
         self.tallies.values().map(|tally| tally.left).sum()
+    }
+
+    /// The hordes come and still standing, in the order they came: each one's number, and how
+    /// many of it still stand.
+    pub fn hordes_left(&self) -> Vec<(u32, u32)> {
+        let mut hordes: Vec<(u32, u32)> = self
+            .tallies
+            .iter()
+            .map(|(&number, tally)| (number, tally.left))
+            .collect();
+        hordes.sort_unstable();
+        hordes
     }
 
     /// Whether the player has fallen: the world no longer moves on.
@@ -1063,8 +1076,9 @@ impl World {
                         0
                     };
                     self.score += bonus;
-                    self.horde_cleared = Some((self.ticks, bonus));
                     self.tallies.remove(&number);
+                    let others = !self.tallies.is_empty();
+                    self.horde_cleared = Some((self.ticks, bonus, others.then_some(number)));
                     wiped_out += 1;
                 }
             }

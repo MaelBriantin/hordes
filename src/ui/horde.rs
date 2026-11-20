@@ -23,7 +23,7 @@ const BANNER_SECONDS: u32 = 3;
 pub fn render(frame: &mut Frame, map: Rect, world: &World, frames: u32) {
     let left = world.horde_left();
     if left > 0 && world.announcement.is_none() {
-        count(frame, map, left);
+        count(frame, map, &world.hordes_left());
     }
     // News told on a banner: a new weather's name on the top row a while, the horde's count
     // over it; a horde on its way, in red.
@@ -85,9 +85,20 @@ fn banner(frame: &mut Frame, map: Rect, words: &str, colour: Color) {
 }
 
 /// How many of the hordes still stand, on the top row of the map, white on red: they are told
-/// from the other enemies at a glance.
-fn count(frame: &mut Frame, map: Rect, left: u32) {
-    let words = format!(" {} ", fl!("horde-left", left = left));
+/// from the other enemies at a glance. Each horde its own count, by its number, while several
+/// stand.
+fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)]) {
+    let counts: Vec<String> = match hordes {
+        &[(_, left)] => vec![fl!("horde-left", left = left)],
+        _ => hordes
+            .iter()
+            .map(|&(number, left)| {
+                let shown = number + 1;
+                fl!("horde-left-of", number = shown, left = left)
+            })
+            .collect(),
+    };
+    let words = format!(" {} ", counts.join(" │ "));
     let width = u16::try_from(words.chars().count()).unwrap_or(map.width);
     let [row] = Layout::vertical([Constraint::Length(1)]).areas(map);
     let [ground] = Layout::horizontal([Constraint::Length(width)])

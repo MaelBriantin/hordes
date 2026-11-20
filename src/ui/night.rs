@@ -210,7 +210,7 @@ pub const GEM_GLOW_STRENGTH: f32 = 0.2;
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
 const GEM_GLOW_REACH: i32 = 4;
 /// How far a gun's flash lights, in tiles: fully, then fading.
-const MUZZLE_LIGHT: (f32, f32) = (1.0, 3.0);
+const MUZZLE_LIGHT: (f32, f32) = (0.5, 1.5);
 /// How far a bottle bursting lights at first, in tiles: fully, then fading.
 const BURST_LIGHT: (f32, f32) = (6.0, 4.0);
 const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);

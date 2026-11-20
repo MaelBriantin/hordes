@@ -87,15 +87,19 @@ fn title(world: &World) -> Option<Title> {
         // News in big letters, the run going on.
         return Some(going_on(words(news)));
     }
-    if let Some((at, bonus)) = world.horde_cleared
+    if let Some((at, bonus, number)) = world.horde_cleared
         && world.ticks().saturating_sub(at) < CLEARED_SECONDS * u32::from(TICKS_PER_SECOND)
     {
-        // A level, and in arcade the points too.
-        let line = if bonus > 0 {
+        // A level, and in arcade the points too; which horde, while another still stands.
+        let mut line = if bonus > 0 {
             fl!("horde-cleared-points", points = bonus)
         } else {
             fl!("horde-cleared-level")
         };
+        if let Some(number) = number {
+            let shown = number + 1;
+            line = format!("{} · {line}", fl!("horde-number", number = shown));
+        }
         return Some(going_on((fl!("horde-cleared"), CLEARED_COLORS, Some(line))));
     }
     None
