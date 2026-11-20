@@ -8,15 +8,19 @@ help-title-standard = Entrée jouer · Flèches collection · O / Échap options
 help-title-arcade = Entrée jouer · Tab mode · O / Échap options
 help-options = ↑↓ choisir · ←→ / Entrée changer · Échap retour
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
-help-over = R nouvelle partie · Échap quitter
+help-over = R nouvelle partie · Échap menu principal
 help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
 
 ## Écran titre
 
-title-start = Appuie sur Entrée pour jouer
+title-start-before = Appuie sur
+title-start-after = pour jouer
 mode-standard = SURVIS À LA NUIT
 mode-arcade = ARCADE
 key-tab = Tab
+key-enter = Entrée
+key-r = R
+key-esc = Échap
 key-space = Espace
 key-shift = Maj
 key-shift-kitty = Maj (terminaux kitty seulement)
@@ -91,7 +95,8 @@ weather-tempest = Tempête
 dawn-title = AUBE
 dawn-line = Bravo, tu as survécu. Cette fois.
 death-title = MORT
-death-again = Appuie sur R pour rejouer
+death-again = rejouer
+death-menu = menu principal
 over-survived = Tu as survécu { $time }
 over-score = Niveau { $level } · { $kills } tués
 

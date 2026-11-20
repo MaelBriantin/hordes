@@ -8,15 +8,19 @@ help-title-standard = Enter start · Arrows collection · O / Esc options
 help-title-arcade = Enter start · Tab mode · O / Esc options
 help-options = ↑↓ choose · ←→ / Enter change · Esc back
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
-help-over = R new run · Esc quit
+help-over = R new run · Esc main menu
 help-level-up = ←→ / 1 2 3 choose · Enter take · Esc pause
 
 ## Title screen
 
-title-start = Press Enter to start
+title-start-before = Press
+title-start-after = to start
 mode-standard = SURVIVE THE NIGHT
 mode-arcade = ARCADE
 key-tab = Tab
+key-enter = Enter
+key-r = R
+key-esc = Esc
 key-space = Space
 key-shift = Shift
 key-shift-kitty = Shift (kitty terminals only)
@@ -91,7 +95,8 @@ weather-tempest = Tempest
 dawn-title = DAWN
 dawn-line = Congratulations, you survived. This time.
 death-title = DEAD
-death-again = Press R for a new run
+death-again = new run
+death-menu = main menu
 over-survived = You survived { $time }
 over-score = Level { $level } · { $kills } kills
 

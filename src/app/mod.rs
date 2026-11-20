@@ -427,13 +427,15 @@ impl App {
         }
     }
 
-    /// In the run: P or Esc pause it, F switches the torch, the action key plays the action card, or once it is over, R starts anew and
-    /// Esc quits; on a level-up, the cards.
+    /// In the run: P or Esc pause it, F switches the torch, the action key plays the action card,
+    /// or once it is over, R starts anew and Esc goes back to the title screen; on a level-up,
+    /// the cards.
     fn on_run(&mut self, code: KeyCode) {
         if self.world.is_over() {
             match code {
                 KeyCode::Char('r' | 'R') => self.new_run(),
-                KeyCode::Esc => self.should_quit = true,
+                // Back to the title screen, where the game is quit too.
+                KeyCode::Esc => self.screen = Screen::Title,
                 _ => {}
             }
             return;

@@ -12,7 +12,7 @@ use super::font;
 use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
-use super::text::{centred, centred_as_is, centred_spans, shimmer};
+use super::text::{centred_as_is, centred_spans, shimmer};
 use super::{
     ActionKey, Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, Skin, ViewState,
     faded, weather_colour,
@@ -300,12 +300,19 @@ pub fn render_title(
     render_mode(frame, mode, sprites, view.mode, frames);
     // Blinking, as on an arcade cabinet: shown two thirds of each second.
     if frames % 30 < 20 {
-        centred(
-            frame,
-            &fl!("title-start").to_uppercase(),
-            Style::new().add_modifier(Modifier::BOLD),
-            start,
-        );
+        let bold = Style::new().add_modifier(Modifier::BOLD);
+        let spans = vec![
+            Span::styled(
+                format!("{} ", fl!("title-start-before").to_uppercase()),
+                bold,
+            ),
+            Span::styled(format!(" {} ", fl!("key-enter").to_uppercase()), KEY_CAP),
+            Span::styled(
+                format!(" {}", fl!("title-start-after").to_uppercase()),
+                bold,
+            ),
+        ];
+        centred_spans(frame, spans, start);
     }
     // The key changing the mode, once the arcade can be chosen.
     if view.arcade {
@@ -596,19 +603,26 @@ pub fn render_death(
     ]
     .join(" · ");
     label(frame, &line, Style::new().fg(GREY), summary);
-    match name {
-        Some((letters, cursor)) => {
-            let place = highlight.unwrap_or(0);
-            render_name_prompt(frame, prompt, letters, cursor, place, view.frame);
-        }
-        // Blinking, as on the title screen.
-        None if view.frame % 30 < 20 => label(
-            frame,
-            &fl!("death-again"),
-            Style::new().add_modifier(Modifier::BOLD),
-            prompt,
-        ),
-        None => {}
+    if let Some((letters, cursor)) = name {
+        let place = highlight.unwrap_or(0);
+        render_name_prompt(frame, prompt, letters, cursor, place, view.frame);
+    } else {
+        // Each key as a cap, what it does after it; steady, two choices side by side.
+        let bold = Style::new().add_modifier(Modifier::BOLD);
+        let spans = vec![
+            Span::styled(format!(" {} ", fl!("key-r")), KEY_CAP),
+            Span::styled(format!(" {}   ", fl!("death-again").to_uppercase()), bold),
+            Span::styled(format!(" {} ", fl!("key-esc")), KEY_CAP),
+            Span::styled(format!(" {}", fl!("death-menu").to_uppercase()), bold),
+        ];
+        let width = spans.iter().map(Span::width).sum::<usize>() + 2;
+        let [ground] = Layout::horizontal([Constraint::Length(
+            u16::try_from(width).unwrap_or(prompt.width),
+        )])
+        .flex(Flex::Center)
+        .areas(prompt);
+        frame.render_widget(Blank, ground);
+        centred_spans(frame, spans, ground);
     }
     if runs.is_empty() {
         return;
