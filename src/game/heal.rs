@@ -6,7 +6,7 @@ use super::TICKS_PER_SECOND;
 /// What a herb gives back, in HP.
 pub const HERB_HP: u32 = 20;
 /// How near a herb's middle the player picks it up, in tiles.
-pub const HERB_REACH: f32 = 0.9;
+pub const HERB_REACH: f32 = 2.0;
 /// All the HP a campfire gives before it dies out: 8 seconds of healing.
 pub const CAMPFIRE_HP: u32 = 24;
 /// How far a campfire lights the night fully at its brightest, in tiles, its light fading over

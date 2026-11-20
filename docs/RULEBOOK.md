@@ -50,7 +50,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## Healing
 
 - A heal shows: small green crosses rise around the player.
-- **Herbs**: a hurt player within reach of a herb, as far as gems fly to them (2 tiles of its middle, more with Magnet), picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs don't glow: only the torch or a strike of lightning shows them.
+- **Herbs**: a hurt player within **2 tiles** of a herb's middle picks it up and gets back **20 HP**. In full health, the herb is left for later. Herbs don't glow: only the torch or a strike of lightning shows them.
 - **Campfires**: a hurt player as far as a burning campfire's light shows (its full light and its fading, 12 tiles at its brightest, shrinking as it gives) gets back **3 HP a second**. A campfire gives **24 HP** in all (8 seconds of healing), then dies out, leaving its logs. It lights the night around it, warm and swaying, apart from the torch's white, **6 tiles** at its brightest, less and less as it gives (never under a tile and a half while it burns).
 
 ## Hordes
@@ -218,7 +218,7 @@ Up to **4 passives**, each up to **level 5**.
 |---|---|
 | Vitality | +20 max HP, and heals as much |
 | Swiftness | +8% speed |
-| Magnet | Gems fly in, and herbs are picked up, from 1 tile further (2 tiles at first) |
+| Magnet | Gems fly in from 1 tile further (2 tiles at first) |
 | Might | +10% damage of every weapon |
 | Haste | −8% to every weapon's cooldown, the drones' repair included |
 | Flashlight | +2 tiles of light around the player (9 at first) |

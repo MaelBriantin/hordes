@@ -816,23 +816,20 @@ fn a_hurt_player_picks_up_a_herb_and_heals() {
 }
 
 #[test]
-fn the_magnet_reaches_the_herbs_as_the_gems() {
+fn a_herb_is_picked_up_within_two_tiles_magnet_or_not() {
     let mut map = Map::empty();
     map.put_feature((100, 50), Feature::Herb);
-    map.put_feature((110, 50), Feature::Herb);
-    // 1.8 tiles from the first: within the gems' reach, 2 tiles.
-    let mut world = on(map, Vec2::new(102.3, 50.5));
+    // 2.5 tiles from it: out of reach, even with Magnet.
+    let mut world = on(map, Vec2::new(103.0, 50.5));
     disarm(&mut world);
     world.player.hp = 50;
-    wait(&mut world, 1);
-    assert_eq!(world.player.hp, 50 + HERB_HP);
-    // 3.5 tiles from the second: out of reach, but for two levels of Magnet.
-    world.player.hp = 50;
-    world.player.position = Vec2::new(107.0, 50.5);
+    for _ in 0..3 {
+        world.player.build.take(Choice::Passive(Passive::Magnet));
+    }
     wait(&mut world, 1);
     assert_eq!(world.player.hp, 50);
-    world.player.build.take(Choice::Passive(Passive::Magnet));
-    world.player.build.take(Choice::Passive(Passive::Magnet));
+    // 1.8 tiles from it: picked up.
+    world.player.position = Vec2::new(102.3, 50.5);
     wait(&mut world, 1);
     assert_eq!(world.player.hp, 50 + HERB_HP);
 }
