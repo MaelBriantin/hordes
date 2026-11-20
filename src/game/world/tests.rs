@@ -1,10 +1,11 @@
 use super::super::Obstacle;
 use super::super::announce::{News, WeatherNews};
-use super::super::build::{BASE_HP, Build, Choice, Legendary, Passive, Weapon};
+use super::super::build::{Action, BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::burst;
 use super::super::gem::Gem;
 use super::super::mode::Mode;
 use super::super::progress::{Achievement, Progress};
+use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
@@ -970,6 +971,94 @@ fn a_horde_wiped_out_brings_a_level() {
 }
 
 #[test]
+fn a_horde_wiped_out_is_the_hunters_achievement() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    wipe_out_a_horde(&mut world);
+    assert!(world.progress.achieved.contains(&Achievement::Hunter));
+    assert!(world.progress.deals(Choice::Passive(Passive::HordeHunter)));
+}
+
+#[test]
+fn horde_hunter_veils_more_of_a_horde_with_its_levels() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.set_view(Vec2::new(30.0, 12.0));
+    world.bring_horde(Warning {
+        arrives_at: 0,
+        side: Some(Facing::Right),
+        number: 0,
+    });
+    let first = world.enemies[0].clone();
+    assert_eq!(world.horde_veil(&first), None, "not without the card");
+    world
+        .player
+        .build
+        .take(Choice::Passive(Passive::HordeHunter));
+    assert_eq!(
+        world.horde_veil(&first),
+        None,
+        "the whole horde still stands"
+    );
+    // Down to its last one: it pulses.
+    let size = world.enemies.len();
+    for enemy in &mut world.enemies[1..] {
+        enemy.hp = 0;
+    }
+    world.fell_enemies();
+    assert_eq!(world.enemies.len(), 1);
+    assert_eq!(world.horde_veil(&world.enemies[0]), Some(Veil::Pulsing));
+    assert!(size > 1);
+}
+
+#[test]
+fn at_its_last_level_horde_hunter_veils_the_whole_horde_and_shows_it_in_the_dark() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.set_view(Vec2::new(30.0, 12.0));
+    for _ in 0..5 {
+        world
+            .player
+            .build
+            .take(Choice::Passive(Passive::HordeHunter));
+    }
+    world.bring_horde(Warning {
+        arrives_at: 0,
+        side: Some(Facing::Right),
+        number: 0,
+    });
+    assert!(world.player.build.horde_veil_in_dark());
+    assert_eq!(world.horde_veil(&world.enemies[0]), Some(Veil::Steady));
+}
+
+#[test]
+fn horde_hunter_hurts_a_hordes_enemies_more() {
+    let mut world = armed_with(Weapon::Crowbar, 1);
+    world
+        .player
+        .build
+        .take(Choice::Passive(Passive::HordeHunter));
+    world
+        .player
+        .build
+        .take(Choice::Passive(Passive::HordeHunter));
+    world.player.facing = Facing::Right;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.5)));
+    world.enemies[0].hp = 1_000;
+    world.enemies[1].hp = 1_000;
+    world.enemies[1].horde = Some(0);
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 18);
+    assert_eq!(world.enemies[1].hp, 1_000 - 18 * 120 / 100);
+}
+
+#[test]
 fn hordes_standing_together_are_counted_apart_and_told_apart_once_wiped_out() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
@@ -1385,7 +1474,7 @@ fn with_the_card_a_dash_goes_the_way_the_player_faces_nothing_hurting_them() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.next_horde = u32::MAX;
-    world.player.build.take(Choice::Passive(Passive::Dash));
+    world.player.build.take(Choice::Action(Action::Dash));
     world.update(moving(1.0, 0.0));
     let start = world.player.position.x;
     world

@@ -14,10 +14,10 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred, centred_as_is, centred_spans, shimmer};
 use super::{
-    Arrow, Blank, BloodLook, DARK_GREY, GREY, RainDisplay, Skin, ViewState, WEATHERS,
-    weather_colour,
+    ActionKey, Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, Skin, ViewState,
+    faded, weather_colour,
 };
-use crate::game::{Entry, Leaderboard, Mode, Progress, WeatherNews, World};
+use crate::game::{Entry, Leaderboard, Mode, Progress, Weather, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
@@ -75,6 +75,8 @@ pub enum OptionItem {
     Arrow,
     /// How the hero looks.
     Skin,
+    /// The key the action card is played with.
+    ActionKey,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
     Announcements,
     /// Whether runs open on the dusk or on the night.
@@ -94,11 +96,12 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 12] = [
+    const ALL: [OptionItem; 13] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
         OptionItem::Skin,
+        OptionItem::ActionKey,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
@@ -171,6 +174,14 @@ impl OptionItem {
                     fl!("ground-plain")
                 }
             ),
+            // Shift alone only reaches the game through kitty's keyboard protocol: said here.
+            OptionItem::ActionKey => {
+                let key = match view.action_key {
+                    ActionKey::Space => fl!("key-space"),
+                    ActionKey::Shift => fl!("key-shift-kitty"),
+                };
+                fl!("option-action-key", value = key)
+            }
             OptionItem::Language => fl!("pause-language", value = view.language),
             OptionItem::Back => fl!("option-back"),
             OptionItem::Quit => fl!("pause-quit"),
@@ -296,7 +307,10 @@ pub fn render_title(
             start,
         );
     }
-    render_mode_key(frame, last, view.mode);
+    // The key changing the mode, once the arcade can be chosen.
+    if view.arcade {
+        render_mode_key(frame, last, view.mode);
+    }
     frame.render_widget(
         Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
         last,
@@ -306,63 +320,54 @@ pub fn render_title(
 /// The rows the mode takes on the title screen, under the game's name: its name in small
 /// letters.
 const MODE_ROWS: u16 = 3;
-/// The standard's name in gold, lighter on top, down to its row; the
-/// arcade's in the weathers' colours, from the dusk to the tempest, going along it, so many
-/// pixels to the whole round and so many frames a pixel.
-const STANDARD_COLORS: (Color, Color) = (Color::Rgb(240, 200, 60), Color::Rgb(190, 140, 40));
+/// The standard's name in the clear night's colour, as its word says it, darker from its row
+/// down; the arcade's in gold, a gleam sweeping across it, so many pixels wide each side of its
+/// brightest, so many frames a pixel, and resting so many pixels' time between two sweeps.
 const STANDARD_SHADE_FROM: i32 = 3;
-const WEATHER_ROUND: f32 = 40.0;
-const WEATHER_FRAMES: f32 = 6.0;
-/// The key drawn as a cap.
-const KEY_CAP: Style = Style::new()
-    .fg(Color::Rgb(12, 12, 18))
-    .bg(Color::Rgb(140, 145, 160));
+const NIGHT_SHADE: f32 = 0.65;
+const ARCADE_COLORS: (Color, Color) = (Color::Rgb(240, 200, 60), Color::Rgb(190, 140, 40));
+const GLEAM: (u8, u8, u8) = (255, 245, 200);
+const GLEAM_WIDTH: i32 = 4;
+const GLEAM_FRAMES: u32 = 2;
+const GLEAM_REST: i32 = 40;
 
 /// The mode the run will be played in, `frames` frames in: its name in small letters.
 fn render_mode(frame: &mut Frame, area: Rect, sprites: &Sprites, mode: Mode, frames: u32) {
     let buffer = frame.buffer_mut();
     match mode {
         Mode::Standard => {
+            let night = weather_colour(Weather::Clear);
             let shade = |_, y| {
                 if y < STANDARD_SHADE_FROM {
-                    STANDARD_COLORS.0
+                    night
                 } else {
-                    STANDARD_COLORS.1
+                    faded(night, NIGHT_SHADE)
                 }
             };
             font::render_small_with(buffer, area, sprites, &fl!("mode-standard"), shade);
         }
         Mode::Arcade => {
-            #[allow(clippy::cast_precision_loss, reason = "a few frames and pixels")]
-            let weathers = |x: i32, _| {
-                let along = x as f32 / WEATHER_ROUND
-                    - (frames % 100_000) as f32 / WEATHER_FRAMES / WEATHER_ROUND;
-                weather_along(along)
+            let word = fl!("mode-arcade");
+            let course = font::small_width(&word) + 2 * GLEAM_WIDTH + GLEAM_REST;
+            let step = i32::try_from(frames % 100_000 / GLEAM_FRAMES).unwrap_or(0);
+            let gleam = step.rem_euclid(course.max(1)) - GLEAM_WIDTH;
+            let gold = |x: i32, y| {
+                let near = (GLEAM_WIDTH - (x - gleam).abs()).max(0);
+                #[allow(clippy::cast_precision_loss, reason = "a few pixels")]
+                let light = near as f32 / GLEAM_WIDTH as f32;
+                let base = if y < STANDARD_SHADE_FROM {
+                    ARCADE_COLORS.0
+                } else {
+                    ARCADE_COLORS.1
+                };
+                match base {
+                    Color::Rgb(red, green, blue) => mix((red, green, blue), GLEAM, light),
+                    other => other,
+                }
             };
-            font::render_small_with(buffer, area, sprites, &fl!("mode-arcade"), weathers);
+            font::render_small_with(buffer, area, sprites, &word, gold);
         }
     }
-}
-
-/// The weathers' colours one after the other, `along` the way round them, from the dusk's to
-/// the tempest's, then the dusk's again.
-fn weather_along(along: f32) -> Color {
-    let last = WEATHERS.len() - 1;
-    #[allow(clippy::cast_precision_loss, reason = "six weathers")]
-    let place = along.rem_euclid(1.0) * last as f32;
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        reason = "a place among six weathers"
-    )]
-    let index = (place.floor() as usize).min(last - 1);
-    #[allow(clippy::cast_precision_loss, reason = "six weathers")]
-    let share = place - index as f32;
-    let rgb = |weather| match weather_colour(weather) {
-        Color::Rgb(red, green, blue) => (red, green, blue),
-        _ => (0, 0, 0),
-    };
-    mix(rgb(WEATHERS[index]), rgb(WEATHERS[index + 1]), share)
 }
 
 /// The key changing the mode, and the other mode it changes to, at the start of `area`.
@@ -424,12 +429,17 @@ fn version() -> String {
     format!("v{}", env!("CARGO_PKG_VERSION"))
 }
 
+/// The width of the keys' column, before what each does.
+const KEYS_COLUMN: usize = 23;
+
 /// Every key of a run, in a box over the map, the run standing still.
-pub fn render_keys(frame: &mut Frame, map: Rect) {
+pub fn render_keys(frame: &mut Frame, map: Rect, action: ActionKey) {
+    // The action key as the settings have it, in the keys' column.
+    let action = format!("{:<KEYS_COLUMN$}{}", action.name(), fl!("keys-action"));
     let lines = [
         fl!("keys-move"),
         fl!("keys-torch"),
-        fl!("keys-dash"),
+        action,
         fl!("keys-cards"),
         fl!("keys-gear"),
         fl!("keys-ping"),

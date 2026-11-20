@@ -190,7 +190,8 @@ fn paint<const ROWS: usize>(
     let height = i32::from(area.height) * 2;
     // From the canvas's middle, the top row: on an even pixel of the area.
     let top = ((height - tall) / 2).max(0) / 2 * 2 - height / 2;
-    let left = -wide * scale / 2;
+    // Odd, its spare column on the right, as the game's name has it.
+    let left = (-wide * scale).div_euclid(2);
     let mut x = left;
     for rows in letters {
         for (y, row) in (0..).zip(rows) {
@@ -213,6 +214,12 @@ fn paint<const ROWS: usize>(
 
 /// A small letter's width, in pixels; its height is 5, then a pixel of space after it.
 const SMALL_WIDTH: i32 = 3;
+
+/// How wide a word is in small letters, in pixels.
+pub fn small_width(word: &str) -> i32 {
+    let letters = word.chars().filter(|c| small_glyph(*c).is_some()).count();
+    (i32::try_from(letters).unwrap_or(0) * (SMALL_WIDTH + 1) - 1).max(0)
+}
 
 /// A small letter's pixels, row by row; none for a character the font lacks.
 fn small_glyph(letter: char) -> Option<[&'static str; 5]> {

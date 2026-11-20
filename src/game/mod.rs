@@ -28,7 +28,9 @@ mod weather;
 mod world;
 
 pub use announce::{News, WeatherNews};
-pub use build::{Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon};
+pub use build::{
+    Action, Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon,
+};
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
@@ -44,7 +46,7 @@ pub use progress::{Achievement, COLLECTION, Progress, Unlock};
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
 pub use weather::{STRIKE_RADIUS, STRIKE_WARNING_TICKS, Weather};
-pub use world::{Input, Lightning, TORCH_FADE, World};
+pub use world::{Input, Lightning, TORCH_FADE, Veil, World};
 
 /// How many ticks the world moves on per second.
 pub const TICKS_PER_SECOND: u16 = 30;

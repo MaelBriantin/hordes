@@ -6,6 +6,8 @@ use rand::{Rng, RngExt};
 pub const MAX_LEVEL: u8 = 5;
 pub const MAX_WEAPONS: usize = 4;
 pub const MAX_PASSIVES: usize = 4;
+/// The action cards a run can hold: one, played with the action key.
+pub const MAX_ACTIONS: usize = 1;
 /// How many choices a level-up offers.
 const CHOICES: usize = 3;
 /// The chance, in percent, that a card of a level-up is a rare one, when there are rare ones to
@@ -66,8 +68,8 @@ pub enum Passive {
     Regeneration,
     /// The enemies in the torch's light slowed, 10% per level.
     Glare,
-    /// Shift dashes; a second dash at level 3, each back sooner and sooner.
-    Dash,
+    /// +10% damage to the hordes per level; their last ones veiled in red, more with the levels.
+    HordeHunter,
 }
 
 impl Passive {
@@ -82,8 +84,19 @@ impl Passive {
         Passive::Loot,
         Passive::Regeneration,
         Passive::Glare,
-        Passive::Dash,
+        Passive::HordeHunter,
     ];
+}
+
+/// A card played with the action key, when the player wants: one a run, no more.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Action {
+    /// A dash; a second at level 3, each back sooner and sooner.
+    Dash,
+}
+
+impl Action {
+    pub const ALL: [Action; 1] = [Action::Dash];
 }
 
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the
@@ -110,7 +123,9 @@ impl Choice {
                 | Passive::Glare,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
-            Choice::Weapon(_) | Choice::Passive(_) | Choice::Heal => Rarity::Common,
+            Choice::Weapon(_) | Choice::Passive(_) | Choice::Action(_) | Choice::Heal => {
+                Rarity::Common
+            }
         }
     }
 }
@@ -123,11 +138,12 @@ pub enum Rarity {
     Legendary,
 }
 
-/// What a level-up offers: a weapon or passive, new or its next level; or a heal.
+/// What a level-up offers: a weapon, passive or action, new or its next level; or a heal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Choice {
     Weapon(Weapon),
     Passive(Passive),
+    Action(Action),
     Legendary(Legendary),
     Heal,
 }
@@ -137,8 +153,9 @@ pub enum Choice {
 pub struct Build {
     weapons: Vec<(Weapon, u8)>,
     passives: Vec<(Passive, u8)>,
+    actions: Vec<(Action, u8)>,
     legendaries: Vec<Legendary>,
-    /// Every weapon, passive and legendary, in the order first picked.
+    /// Every weapon, passive, action and legendary, in the order first picked.
     picked: Vec<Choice>,
 }
 
@@ -148,6 +165,7 @@ impl Build {
         Self {
             weapons: vec![(Weapon::Crowbar, 1)],
             passives: Vec::new(),
+            actions: Vec::new(),
             legendaries: Vec::new(),
             picked: vec![Choice::Weapon(Weapon::Crowbar)],
         }
@@ -159,6 +177,7 @@ impl Build {
         Self {
             weapons: Vec::new(),
             passives: Vec::new(),
+            actions: Vec::new(),
             legendaries: Vec::new(),
             picked: Vec::new(),
         }
@@ -189,12 +208,18 @@ impl Build {
         level_of(&self.passives, passive)
     }
 
+    /// An action's level, 0 without it.
+    pub fn action_level(&self, action: Action) -> u8 {
+        level_of(&self.actions, action)
+    }
+
     /// The level a choice brings its weapon or passive to: 1 for a new one or a legendary, 0
     /// for a heal.
     pub fn next_level(&self, choice: Choice) -> u8 {
         match choice {
             Choice::Weapon(weapon) => self.weapon_level(weapon) + 1,
             Choice::Passive(passive) => self.passive_level(passive) + 1,
+            Choice::Action(action) => self.action_level(action) + 1,
             Choice::Legendary(_) => 1,
             Choice::Heal => 0,
         }
@@ -224,6 +249,12 @@ impl Build {
             }
             if can_pick(&self.passives, passive, MAX_PASSIVES) && deals(Choice::Passive(passive)) {
                 pool.push(Choice::Passive(passive));
+            }
+        }
+        // An action once the run has none, or the next level of the one it has.
+        for action in Action::ALL {
+            if can_pick(&self.actions, action, MAX_ACTIONS) && deals(Choice::Action(action)) {
+                pool.push(Choice::Action(action));
             }
         }
         if pool.is_empty() {
@@ -264,6 +295,7 @@ impl Build {
         match choice {
             Choice::Weapon(weapon) => raise(&mut self.weapons, weapon),
             Choice::Passive(passive) => raise(&mut self.passives, passive),
+            Choice::Action(action) => raise(&mut self.actions, action),
             Choice::Legendary(legendary) => {
                 if !self.has(legendary) {
                     self.legendaries.push(legendary);
@@ -314,6 +346,23 @@ impl Build {
         base * (100 + 10 * u32::from(self.passive_level(Passive::Might))) / 100
     }
 
+    /// How much more the weapons hurt an enemy of a horde, in percent: 10 per level of Horde
+    /// Hunter.
+    pub fn horde_bonus(&self) -> u32 {
+        10 * u32::from(self.passive_level(Passive::HordeHunter))
+    }
+
+    /// The share of a horde, its last ones still standing, veiled in red, in percent: none
+    /// without Horde Hunter, then a tenth, a quarter, a half, three quarters, all of it.
+    pub fn horde_veil_percent(&self) -> u32 {
+        [0, 10, 25, 50, 75, 100][usize::from(self.passive_level(Passive::HordeHunter).min(5))]
+    }
+
+    /// Whether the veiled show in the dark too: from level 3 of Horde Hunter.
+    pub fn horde_veil_in_dark(&self) -> bool {
+        self.passive_level(Passive::HordeHunter) >= 3
+    }
+
     /// How much slower the enemies in the torch's light go, in percent: 10 per level of Glare.
     pub fn glare_percent(&self) -> u32 {
         10 * u32::from(self.passive_level(Passive::Glare))
@@ -322,7 +371,7 @@ impl Build {
     /// How many dashes the player can have ready: none without the Dash card, one from its
     /// level 1, two from its level 3, no more.
     pub fn dashes(&self) -> u8 {
-        match self.passive_level(Passive::Dash) {
+        match self.action_level(Action::Dash) {
             0 => 0,
             1 | 2 => 1,
             _ => 2,
@@ -331,7 +380,7 @@ impl Build {
 
     /// How long a dash takes to come back, in ticks, by the Dash card's level.
     pub fn dash_recharge(&self) -> u32 {
-        let level = usize::from(self.passive_level(Passive::Dash).max(1));
+        let level = usize::from(self.action_level(Action::Dash).max(1));
         DASH_RECHARGES[(level - 1).min(DASH_RECHARGES.len() - 1)]
     }
 
@@ -429,6 +478,33 @@ mod tests {
     }
 
     #[test]
+    fn one_action_card_a_run_its_levels_alone_dealt_once_taken() {
+        let mut build = Build::new();
+        let actions = |build: &Build| {
+            (0..200)
+                .flat_map(|seed| {
+                    build.offers(
+                        &mut StdRng::seed_from_u64(seed),
+                        false,
+                        RARE_PERCENT,
+                        0,
+                        |_| true,
+                    )
+                })
+                .filter(|choice| matches!(choice, Choice::Action(_)))
+                .collect::<Vec<_>>()
+        };
+        assert!(actions(&build).contains(&Choice::Action(Action::Dash)));
+        build.take(Choice::Action(Action::Dash));
+        assert!(
+            actions(&build)
+                .iter()
+                .all(|choice| *choice == Choice::Action(Action::Dash))
+        );
+        assert_eq!(build.action_level(Action::Dash), 1);
+    }
+
+    #[test]
     fn with_everything_at_the_top_a_heal_is_offered() {
         let mut build = Build::new();
         for _ in 0..MAX_LEVEL {
@@ -438,6 +514,7 @@ mod tests {
             for passive in &Passive::ALL[..4] {
                 build.take(Choice::Passive(*passive));
             }
+            build.take(Choice::Action(Action::Dash));
         }
         assert_eq!(
             build.offers(&mut rng(), false, RARE_PERCENT, 5, |_| true),
@@ -501,7 +578,7 @@ mod tests {
         assert_eq!(build.dashes(), 0);
         let mut levels = Vec::new();
         for _ in 0..5 {
-            build.take(Choice::Passive(Passive::Dash));
+            build.take(Choice::Action(Action::Dash));
             levels.push((build.dashes(), build.dash_recharge()));
         }
         assert_eq!(levels, [(1, 240), (1, 180), (2, 180), (2, 135), (2, 90)]);

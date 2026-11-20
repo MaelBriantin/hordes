@@ -5,7 +5,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## Controls
 
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
-- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in gold, or **Arcade** in the weathers' colours, from the dusk's to the tempest's, going along it. At the bottom left, the key and the other mode it changes to.
+- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in the clear night's grey, as its word is told, or **Arcade** in gold, a gleam sweeping across it now and then. At the bottom left, the key and the other mode it changes to.
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes.
 - **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
@@ -13,6 +13,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
+  - **Action key**: the key the action card is played with: Space (at first) or Shift, Shift alone only reaching the game in terminals with kitty's keyboard protocol (Rex, kitty, Ghostty, WezTerm…).
   - **Rain**: how it shows (full, reduced to half its drops, or off). The weather itself is the same whatever the choice.
   - **Arrow**: a small arrow over the player's head, bouncing, to see them at once in the crowd: off, white, yellow or red. Whatever the setting, **E** shows the arrow for **2 s** (white, if off): the player found again in the crowd.
   - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). Big, no pause, at first. The opening is always told big, with a pause.
@@ -29,8 +30,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 ## Modes
 
-- **Standard**: from dusk to dawn, as below; no score, no leaderboard: the death screen tells the time survived, the level and the kills. *(planned: trophies for goals reached.)*
-- **Arcade**: endless, for the score. The stages of weather last **3 minutes** and go up to the tempest and back down to the night, again and again (night, drizzle, rain, storm, tempest, storm, rain, drizzle, night…), with no dawn. The run grows harder with the time, **7% a minute**, compounded (×2 at 10 minutes, ×3.9 at 20): as many more enemies appear (1.5 a second at first), as many more HP they have, and the score's weather multiplier is that pressure. The leaderboard is the arcade's.
+- **Standard**: from dusk to dawn, as below; no score, no leaderboard: the death screen tells the time survived, the level and the kills. The only mode at first.
+- **Arcade**: unlocked by an achievement, every weather seen once (see Progress); until then, no Tab on the title screen, the standard alone. Endless, for the score. The stages of weather last **3 minutes** and go up to the tempest and back down to the night, again and again (night, drizzle, rain, storm, tempest, storm, rain, drizzle, night…), with no dawn. The run grows harder with the time, **7% a minute**, compounded (×2 at 10 minutes, ×3.9 at 20): as many more enemies appear (1.5 a second at first), as many more HP they have, and the score's weather multiplier is that pressure. The leaderboard is the arcade's.
 
 ## The run
 
@@ -62,6 +63,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - While some of a horde still stands, a count shows on the top of the map, white on red: how many are left. While several hordes stand, each its own count, by its number, side by side (HORDE 3 · 1, HORDE 4 · 20); one of them wiped out is told with its number under the big letters.
 - **Wiped out** to the last, a horde brings **a level**, 2 s on (once told), its cards rarer (**60%** of rare ones); in arcade, it **doubles** the points its kills were worth too. It is told in big gold letters, what it brought under them, the run going on.
 - Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
+- With **Horde Hunter**, its last ones still standing are veiled in red: the very last tenth (the last one at least) pulsing once a second, the others of the share veiled faint and steady (see Passives).
 
 ## Score
 
@@ -114,7 +116,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | HP | 100 (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
 | Dashes | None at first: the Dash card brings them (see Passives). One, ready as the card is taken, back 8 s after it is taken (6 s from level 2, 4.5 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
-| Dash | Shift: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
+| Dash | The action key: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
 
 ## Enemies
 
@@ -227,14 +229,22 @@ Up to **4 passives**, each up to **level 5**.
 | Flashlight | +2 tiles of light around the player (9 at first) |
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
+| Horde Hunter | +10% damage from the weapons to an enemy of a horde, per level (+50% at level 5). A horde's last ones veiled in red: its last tenth at level 1, a quarter at 2, a half at 3, three quarters at 4, the whole horde at 5; as far as the light shows, then from level 3 in the dark too |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
-| Dash | Shift dashes (see The player): back in 8 s, then sooner and sooner; a second dash at level 3 |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
+
+## Actions
+
+Cards played with the **action key** (see Options), when the player wants. A run holds **one**: once taken, no other action card is dealt, only its next levels. A card says ACTION on its top border, as others say WEAPON or PASSIVE.
+
+| Action | What it does |
+|---|---|
+| Dash | A dash (see The player): back in 8 s, then sooner and sooner; a second dash at level 3 |
 
 ## Legendaries
 
 - A level-up offers a **legendary** **5%** of the time, while one is left to find: on a **golden card**, in place of its last choice. Each level-up without one raises the chance by a point (6%, 7%…), back to 5% once one is offered.
-- A legendary has **one level**, and takes no room among the passives; once found, it is never offered again. It shows in the gear with no level written.
+- A legendary has **one level**, and takes no room among the passives; once found, it is never offered again. Its card says PASSIVE on its top border, "takes no slot" in its text. It shows in the gear with no level written.
 
 | Legendary | What it does |
 |---|---|
@@ -246,17 +256,19 @@ Up to **4 passives**, each up to **level 5**.
 
 | Achievement | Goal | Unlocks |
 |---|---|---|
+| Hunter | Wipe out a horde to the last | Horde Hunter |
 | Rain of lead | Hold out until the rain | Machine gun |
 | In the eye | Hold out until the storm | Molotov |
 | Struck | Struck by lightning, and standing | Dash |
-| A thousand down | 1,000 enemies down, every run counted | Regeneration |
-| Raw light | 50 Shadows down, every run counted | Glare |
+| A thousand down | 1,000 enemies down, in all (every run counted) | Regeneration |
+| Raw light | 50 Shadows down, in all (every run counted) | Glare |
 | Dawn | Hold out until dawn | Illumination |
 | A regular | 10 runs played | A second reroll a run |
+| Come rain or shine | Every weather seen once, every run counted, even one lost in it | The arcade mode (legendary) |
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
 - The **drones** are dealt no more, until they are made worth taking.
-- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination); in colour once the player has it, grey until then. Neither the drones nor the heal. The arrows go from tile to tile; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour; available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a bar as the XP bar, across the box, the count in its middle; a green check once the player has it. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
+- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination), and last the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. The arrows go from tile to tile; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience

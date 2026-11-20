@@ -10,6 +10,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- Action cards, a third kind beside the weapons and the passives: played with the action key, set in the options (Space at first, or Shift in kitty terminals); one a run. The Dash is the first.
+- The arcade mode is unlocked by an achievement, Come rain or shine: every weather seen once, every run counted; until then, the standard alone.
+- A new passive, Horde Hunter, unlocked by wiping out a horde (achievement Hunter): +10% damage to the hordes per level, and their last ones veiled in red, more with the levels, the whole horde at the last; from level 3, seen in the dark too.
 - The collection, on the title screen in standard mode: every card and the reroll, in colour once had, grey until then, from the easiest to unlock to the hardest; the arrows go over them, the one picked framed, a box telling it: available from the start, or the achievement that unlocks it and how far along it is.
 - An abomination felled swells, blinking white, for 0.6 s, then bursts: a disc of green bile out to 3 tiles, costing everything it reaches 10 HP, the player and the enemies alike, and pushing it back 2 tiles. Out of it come 4 parasites, small green worms hopping, fast (12 HP, 4.5 tiles/s, 3 damage), that always find the player; worth a point and no gem.
 - Progress: achievements, reached once and kept from one run to the next, each unlocking a card or a reroll, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
@@ -18,7 +21,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A darker night: what the light doesn't reach keeps 10% of its brightness rather than 14%.
 - A strike of lightning sets on fire the enemies it hurts.
 - The line under the big letters (a weather, a horde, the dawn) in white capitals.
-- The title screen: the mode is the game's subtitle, in small pixel letters, Survive the night in gold or Arcade in the weathers' colours; Tab changes it, ←→ no more; the title stays in place from one mode to the other.
+- The title screen: the mode is the game's subtitle, in small pixel letters, Survive the night in the night's grey or Arcade in gleaming gold; Tab changes it, ←→ no more; the title stays in place from one mode to the other.
 - A horde comes out of the other side from the enemies about the player, catching them between, rather than a side at random.
 - Tougher enemies: a zombie has 15 HP rather than 10, a Shadow 40 rather than 25; and the weather toughens them more, +15% in the drizzle, +30% in the rain, +50% in the storm, +100% in the tempest (rather than none, +10%, +25%, +50%).
 - The drones are dealt no more, until they are made worth taking.

@@ -30,12 +30,23 @@ pub struct Warning {
     pub number: u32,
 }
 
-/// What became of a horde come: how many of its enemies still stand, and the points its kills
-/// have been worth so far.
+/// The share of a horde, in percent, its very last ones: the veil pulses on them.
+pub const LAST_PERCENT: u32 = 10;
+
+/// What became of a horde come: how many of its enemies came, how many still stand, and the
+/// points its kills have been worth so far.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Tally {
+    pub size: u32,
     pub left: u32,
     pub points: u64,
+}
+
+impl Tally {
+    /// Whether those still standing are its last `percent` of it, the last one at least.
+    pub fn last(&self, percent: u32) -> bool {
+        self.left <= (self.size * percent / 100).max(1)
+    }
 }
 
 /// The side a horde comes out of: the other side from the enemies about the player, `view`
@@ -216,6 +227,20 @@ mod tests {
         let far = [Vec2::new(500.0, 0.0)];
         let side = pincer(&mut rng, Vec2::ZERO, view, far.into_iter());
         assert!([Facing::Up, Facing::Down, Facing::Left, Facing::Right].contains(&side));
+    }
+
+    #[test]
+    fn the_last_tenth_of_a_horde_or_its_last_one_are_its_last_ones() {
+        let tally = |size, left| Tally {
+            size,
+            left,
+            points: 0,
+        };
+        assert!(!tally(30, 4).last(LAST_PERCENT));
+        assert!(tally(30, 3).last(LAST_PERCENT));
+        assert!(!tally(5, 2).last(LAST_PERCENT));
+        assert!(tally(5, 1).last(LAST_PERCENT));
+        assert!(tally(30, 30).last(100));
     }
 
     #[test]

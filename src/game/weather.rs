@@ -37,7 +37,9 @@ pub const STRIKE_PLAYER_DAMAGE: u32 = 20;
 /// time enough to run out of it from its middle.
 pub const STRIKE_WARNING_TICKS: u32 = 15;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub enum Weather {
     Dusk,
     Clear,

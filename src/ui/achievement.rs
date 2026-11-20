@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style};
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
 use super::pixels;
-use super::sprites::Sprites;
+use super::sprites::{SpriteId, Sprites};
 use crate::game::{Achievement, Rarity, Unlock};
 
 /// The frames the box takes to rise, stays up, takes to go down: all of them, its time on screen.
@@ -59,6 +59,11 @@ pub fn render(
             Some(level_up::icon(choice)),
         ),
         Unlock::Reroll => (fl!("achievement-unlocked"), fl!("achievement-reroll"), None),
+        Unlock::Arcade => (
+            fl!("achievement-unlocked"),
+            fl!("achievement-arcade"),
+            Some(SpriteId::IconArcade),
+        ),
     };
     let width_of = |text: &str| u16::try_from(text.chars().count()).unwrap_or(u16::MAX);
     let words = [&header, &name]
@@ -130,6 +135,7 @@ fn rows_shown(since: u32) -> u16 {
 /// What an achievement asks.
 pub fn goal(achievement: Achievement) -> String {
     match achievement {
+        Achievement::Hunter => fl!("achievement-hunter-goal"),
         Achievement::Rain => fl!("achievement-rain-goal"),
         Achievement::Storm => fl!("achievement-storm-goal"),
         Achievement::Struck => fl!("achievement-struck-goal"),
@@ -137,12 +143,14 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Shadows => fl!("achievement-shadows-goal"),
         Achievement::Dawn => fl!("achievement-dawn-goal"),
         Achievement::Regular => fl!("achievement-regular-goal"),
+        Achievement::Weathers => fl!("achievement-weathers-goal"),
     }
 }
 
 /// An achievement's name.
 pub fn name(achievement: Achievement) -> String {
     match achievement {
+        Achievement::Hunter => fl!("achievement-hunter"),
         Achievement::Rain => fl!("achievement-rain"),
         Achievement::Storm => fl!("achievement-storm"),
         Achievement::Struck => fl!("achievement-struck"),
@@ -150,6 +158,7 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Shadows => fl!("achievement-shadows"),
         Achievement::Dawn => fl!("achievement-dawn"),
         Achievement::Regular => fl!("achievement-regular"),
+        Achievement::Weathers => fl!("achievement-weathers"),
     }
 }
 

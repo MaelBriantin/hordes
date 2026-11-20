@@ -5,8 +5,11 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use super::build::{Choice, Legendary, Passive, Rarity, Weapon};
+use super::build::{Action, Choice, Legendary, Passive, Rarity, Weapon};
+use super::weather::Weather;
 
+/// How many weathers a run goes through, from the dusk to the tempest.
+const WEATHERS: usize = 6;
 /// The rerolls of a run before any achievement.
 const REROLLS: u8 = 1;
 /// The goals counted over every run: the enemies down, the Shadows down, the runs played.
@@ -17,7 +20,7 @@ const RUNS_GOAL: u32 = 10;
 /// Every card, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock. Not the drones, dealt no more, nor
 /// the heal, no card of a build.
-pub const COLLECTION: [Unlock; 19] = [
+pub const COLLECTION: [Unlock; 21] = [
     Unlock::Card(Choice::Weapon(Weapon::Crowbar)),
     Unlock::Card(Choice::Weapon(Weapon::Machete)),
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
@@ -30,18 +33,22 @@ pub const COLLECTION: [Unlock; 19] = [
     Unlock::Card(Choice::Passive(Passive::Might)),
     Unlock::Card(Choice::Passive(Passive::Haste)),
     Unlock::Card(Choice::Passive(Passive::Wisdom)),
+    Unlock::Card(Choice::Passive(Passive::HordeHunter)),
     Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
     Unlock::Card(Choice::Weapon(Weapon::Molotov)),
-    Unlock::Card(Choice::Passive(Passive::Dash)),
+    Unlock::Card(Choice::Action(Action::Dash)),
     Unlock::Reroll,
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+    Unlock::Arcade,
 ];
 
 /// A goal reached once, kept from one run to the next.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Achievement {
+    /// Hunter: a horde wiped out to the last.
+    Hunter,
     /// Rain of lead: hold out until the rain.
     Rain,
     /// In the eye: hold out until the storm.
@@ -56,6 +63,8 @@ pub enum Achievement {
     Dawn,
     /// A regular: 10 runs played.
     Regular,
+    /// Come rain or shine: every weather seen once, every run counted, even one lost in it.
+    Weathers,
 }
 
 /// What an achievement unlocks.
@@ -65,10 +74,13 @@ pub enum Unlock {
     Card(Choice),
     /// One more reroll a run.
     Reroll,
+    /// The arcade mode, to be played from then on.
+    Arcade,
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 7] = [
+    pub const ALL: [Achievement; 9] = [
+        Achievement::Hunter,
         Achievement::Rain,
         Achievement::Storm,
         Achievement::Struck,
@@ -76,18 +88,21 @@ impl Achievement {
         Achievement::Shadows,
         Achievement::Dawn,
         Achievement::Regular,
+        Achievement::Weathers,
     ];
 
     /// What it unlocks.
     pub fn unlocks(self) -> Unlock {
         match self {
+            Achievement::Hunter => Unlock::Card(Choice::Passive(Passive::HordeHunter)),
             Achievement::Rain => Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
             Achievement::Storm => Unlock::Card(Choice::Weapon(Weapon::Molotov)),
-            Achievement::Struck => Unlock::Card(Choice::Passive(Passive::Dash)),
+            Achievement::Struck => Unlock::Card(Choice::Action(Action::Dash)),
             Achievement::ThousandDown => Unlock::Card(Choice::Passive(Passive::Regeneration)),
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
             Achievement::Dawn => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
             Achievement::Regular => Unlock::Reroll,
+            Achievement::Weathers => Unlock::Arcade,
         }
     }
 
@@ -98,11 +113,12 @@ impl Achievement {
 }
 
 impl Unlock {
-    /// How rare it is: as its card; a reroll, rare.
+    /// How rare it is: as its card; a reroll, rare; the arcade, legendary.
     pub fn rarity(self) -> Rarity {
         match self {
             Unlock::Card(choice) => choice.rarity(),
             Unlock::Reroll => Rarity::Rare,
+            Unlock::Arcade => Rarity::Legendary,
         }
     }
 
@@ -124,6 +140,8 @@ pub struct Progress {
     pub shadows: u64,
     /// The runs played to their end.
     pub runs: u32,
+    /// The weathers seen, every run counted.
+    pub weathers: BTreeSet<Weather>,
 }
 
 impl Progress {
@@ -169,6 +187,18 @@ impl Progress {
         self.achieved.insert(achievement);
     }
 
+    /// A weather seen: once every one has, the achievement it makes.
+    pub fn see(&mut self, weather: Weather) {
+        if self.weathers.insert(weather) && self.weathers.len() == WEATHERS {
+            self.reach(Achievement::Weathers);
+        }
+    }
+
+    /// Whether the arcade mode can be played: its achievement reached.
+    pub fn arcade(&self) -> bool {
+        self.has(Unlock::Arcade)
+    }
+
     /// Reaches the achievements counted over every run, once their counts are.
     pub fn count(&mut self) {
         if self.kills >= KILLS_GOAL {
@@ -207,7 +237,7 @@ mod tests {
         assert!(progress.deals(Choice::Heal));
         assert!(!progress.deals(Choice::Weapon(Weapon::MachineGun)));
         assert!(!progress.deals(Choice::Passive(Passive::Regeneration)));
-        assert!(!progress.deals(Choice::Passive(Passive::Dash)));
+        assert!(!progress.deals(Choice::Action(Action::Dash)));
         assert!(!progress.deals(Choice::Legendary(Legendary::Illumination)));
         assert_eq!(progress.rerolls(), 1);
     }
@@ -260,6 +290,25 @@ mod tests {
         assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(Weapon::Drones))));
         assert!(!COLLECTION.contains(&Unlock::Card(Choice::Heal)));
         assert!(Progress::everything().has(Unlock::Reroll));
+    }
+
+    #[test]
+    fn every_weather_seen_over_the_runs_unlocks_the_arcade() {
+        let mut progress = Progress::default();
+        assert!(!progress.arcade());
+        for weather in [
+            Weather::Clear,
+            Weather::Drizzle,
+            Weather::Rain,
+            Weather::Storm,
+        ] {
+            progress.see(weather);
+        }
+        // Another run, the dusk and the tempest at last.
+        progress.see(Weather::Dusk);
+        assert!(!progress.arcade());
+        progress.see(Weather::Tempest);
+        assert!(progress.arcade());
     }
 
     #[test]

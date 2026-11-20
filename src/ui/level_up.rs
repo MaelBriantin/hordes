@@ -15,7 +15,7 @@ use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
 use super::{Blank, DARK_GREY};
 use crate::game::{
-    Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon, World,
+    Action, Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon, World,
 };
 
 const CARD_WIDTH: u16 = 24;
@@ -160,8 +160,10 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
     // Its number on its top border, and whether it is a weapon or a passive, as plainly.
     let kind = match card.choice {
         Choice::Weapon(_) => Some(fl!("card-weapon")),
-        Choice::Passive(_) => Some(fl!("card-passive")),
-        Choice::Legendary(_) | Choice::Heal => None,
+        // A legendary is a passive to the player: one taking no room.
+        Choice::Passive(_) | Choice::Legendary(_) => Some(fl!("card-passive")),
+        Choice::Action(_) => Some(fl!("card-action")),
+        Choice::Heal => None,
     };
     let title = match kind {
         Some(word) => Line::from(format!(" {} · {word} ", card.index + 1)),
@@ -250,8 +252,9 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Loot => SpriteId::IconLoot,
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
-            Passive::Dash => SpriteId::IconDash,
+            Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
+        Choice::Action(Action::Dash) => SpriteId::IconDash,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -271,8 +274,9 @@ pub fn name(choice: Choice) -> String {
             Passive::Loot => fl!("passive-loot"),
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
-            Passive::Dash => fl!("passive-dash"),
+            Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
+        Choice::Action(Action::Dash) => fl!("passive-dash"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -348,11 +352,11 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Vitality => 100 + 20 * level,
                 Passive::Swiftness | Passive::Haste => 8 * level,
                 Passive::Magnet => 2 + level,
-                Passive::Might | Passive::Wisdom | Passive::Loot | Passive::Glare => 10 * level,
-                // In tenths of a second, the dash's recharge.
-                Passive::Dash => {
-                    [80, 60, 60, 45, 30][usize::try_from(level.clamp(1, 5) - 1).unwrap_or(0)]
-                }
+                Passive::Might
+                | Passive::Wisdom
+                | Passive::Loot
+                | Passive::Glare
+                | Passive::HordeHunter => 10 * level,
                 // In tenths of HP a second.
                 Passive::Regeneration => 4 * level,
                 Passive::Flashlight => 9 + 2 * level,
@@ -371,11 +375,23 @@ fn gain_of(choice: Choice, level: u8) -> String {
                     fl!("gain-regeneration", whole = whole, tenth = tenth)
                 }
                 Passive::Glare => fl!("gain-glare", total = total),
-                Passive::Dash if level <= 1 => fl!("gain-dash"),
-                // Level 3 brings the second dash.
-                Passive::Dash if level == 3 => fl!("gain-dash-second"),
-                Passive::Dash => {
-                    let (whole, tenth) = (total / 10, total % 10);
+                Passive::HordeHunter => match level {
+                    1 => fl!("gain-horde-hunter-1"),
+                    2 => fl!("gain-horde-hunter-2", total = total),
+                    3 => fl!("gain-horde-hunter-3", total = total),
+                    4 => fl!("gain-horde-hunter-4", total = total),
+                    _ => fl!("gain-horde-hunter-5", total = total),
+                },
+            }
+        }
+        // The dash: level 3 brings the second; the others, sooner back, in tenths of a second.
+        Choice::Action(Action::Dash) => {
+            let tenths: u32 = [80, 60, 60, 45, 30][usize::from(level.clamp(1, 5) - 1)];
+            match level {
+                0 | 1 => fl!("gain-dash"),
+                3 => fl!("gain-dash-second"),
+                _ => {
+                    let (whole, tenth) = (tenths / 10, tenths % 10);
                     fl!("gain-dash-sooner", whole = whole, tenth = tenth)
                 }
             }

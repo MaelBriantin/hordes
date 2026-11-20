@@ -62,6 +62,25 @@ const TORCH_SECONDS: u32 = 26;
 /// How far the torch's light fades into the dark beyond its radius, in tiles.
 pub const TORCH_FADE: f32 = 6.0;
 
+/// How an enemy of a horde is veiled in red, as Horde Hunter has it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Veil {
+    /// One of the very last of its horde: the veil pulses.
+    Pulsing,
+    /// One of the others of the share veiled: the veil stays, faint.
+    Steady,
+}
+
+/// A weapon's `damage` to `enemy`: more to one of a horde, by `hunter` percent, as Horde Hunter
+/// has it.
+fn against(damage: u32, enemy: &Enemy, hunter: u32) -> u32 {
+    if enemy.horde.is_some() {
+        damage * (100 + hunter) / 100
+    } else {
+        damage
+    }
+}
+
 /// Where a body ends up pushed `by` from `from`, step by step, sliding along what stands in
 /// its way.
 fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: bool) -> Vec2 {
@@ -536,6 +555,20 @@ impl World {
         hordes
     }
 
+    /// How an enemy of a horde shows veiled in red, as Horde Hunter has it: pulsing for the very
+    /// last ones of its horde, steady for the others of its share veiled; none otherwise.
+    pub fn horde_veil(&self, enemy: &Enemy) -> Option<Veil> {
+        let percent = self.player.build.horde_veil_percent();
+        let tally = self.tallies.get(&enemy.horde?)?;
+        if percent > 0 && tally.last(horde::LAST_PERCENT.min(percent)) {
+            Some(Veil::Pulsing)
+        } else if percent > 0 && tally.last(percent) {
+            Some(Veil::Steady)
+        } else {
+            None
+        }
+    }
+
     /// Whether the player has fallen: the world no longer moves on.
     pub fn is_over(&self) -> bool {
         self.player.hp == 0 || self.survived()
@@ -610,6 +643,7 @@ impl World {
     /// counted over every run. The cards they unlock are dealt at once.
     fn reach_goals(&mut self) {
         let weather = self.weather();
+        self.progress.see(weather);
         if matches!(weather, Weather::Rain | Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Rain);
         }
@@ -822,6 +856,7 @@ impl World {
         };
         let ahead = swing.facing.way();
         let damage = self.player.build.damage(stats.damage);
+        let hunter = self.player.build.horde_bonus();
         for enemy in &mut self.enemies {
             let offset = enemy.position - player;
             let enemy_stats = enemy.kind.stats();
@@ -835,7 +870,7 @@ impl World {
             if !hit {
                 continue;
             }
-            enemy.hit(damage);
+            enemy.hit(against(damage, enemy, hunter));
             enemy.stunned = enemy.stunned.max(stats.stun);
             if stats.knockback > 0.0 {
                 let away = offset.normalized() * stats.knockback;
@@ -987,6 +1022,7 @@ impl World {
     /// many as they can, or flown their range.
     fn move_bullets(&mut self) {
         let enemies = &mut self.enemies;
+        let hunter = self.player.build.horde_bonus();
         self.bullets.retain_mut(|bullet| {
             if !bullet.advance() {
                 return false;
@@ -1001,7 +1037,7 @@ impl World {
                 if enemy.hp == 0 || !touched || bullet.hit.contains(&enemy.id) {
                     continue;
                 }
-                enemy.hit(bullet.damage);
+                enemy.hit(against(bullet.damage, enemy, hunter));
                 bullet.hit.push(enemy.id);
                 if bullet.pierce == 0 {
                     return false;
@@ -1053,6 +1089,7 @@ impl World {
         self.drone_angle =
             (self.drone_angle + drones::turn_per_tick(level)) % std::f32::consts::TAU;
         let damage = build.damage(drones::damage(level));
+        let hunter = build.horde_bonus();
         let repair = build.cooldown(drones::repair());
         let player = self.player.position;
         let drones = self.drones();
@@ -1075,7 +1112,7 @@ impl World {
                 continue;
             };
             let stats = enemy.kind.stats();
-            enemy.hit(damage);
+            enemy.hit(against(damage, enemy, hunter));
             let away = (enemy.position - player).normalized() * drones::KNOCKBACK;
             enemy.position = slide(
                 &self.map,
@@ -1130,6 +1167,7 @@ impl World {
                 tally.points += worth;
                 tally.left -= 1;
                 if tally.left == 0 {
+                    self.progress.reach(Achievement::Hunter);
                     let bonus = if self.mode == Mode::Arcade {
                         tally.points
                     } else {
@@ -1521,6 +1559,7 @@ impl World {
             self.next_enemy_id += 1;
             tally.left += 1;
         }
+        tally.size = tally.left;
         if tally.left > 0 {
             self.tallies.insert(warning.number, tally);
         }

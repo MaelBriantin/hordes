@@ -10,7 +10,7 @@ use ratatui::text::Line;
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
 use super::sprites::{SpriteId, Sprites};
 use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, thousands};
-use crate::game::{COLLECTION, Progress, Rarity, Unlock};
+use crate::game::{COLLECTION, Choice, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
 /// rows, a corner's row.
@@ -22,20 +22,25 @@ const ARROW: (u16, u16) = (3, 4);
 /// The most tiles in a row, however wide the screen.
 const MOST_IN_A_ROW: usize = 10;
 /// The box telling the tile picked: its size, its ground, its words, its bar.
-const BOX_WIDTH: u16 = 58;
+const BOX_WIDTH: u16 = 30;
 const BOX_HEIGHT: u16 = 7;
 const BOX: Color = Color::Rgb(28, 30, 38);
 const WHITE: Color = Color::Rgb(225, 225, 230);
 const GREY: Color = Color::Rgb(140, 145, 160);
 /// The room on each side of the box's words and bar.
 const BOX_PADDING: u16 = 3;
+/// The word telling a card the player has.
+const UNLOCKED: Color = Color::Rgb(110, 200, 110);
 /// How dark a tile the player doesn't have is.
 const LOCKED_SHARE: f32 = 0.4;
 
-/// How many tiles a row holds, `width` wide: room kept on its sides for the arrows.
+/// How many tiles a row holds, `width` wide: room kept on its sides for the arrows; the rows
+/// as even as can be, none left with a few tiles alone.
 pub fn in_a_row(width: u16) -> usize {
     let room = width.saturating_sub(2 * (ARROW.0 + 1));
-    (usize::from(room) / usize::from(TILE_WIDTH)).clamp(1, MOST_IN_A_ROW)
+    let fit = (usize::from(room) / usize::from(TILE_WIDTH)).clamp(1, MOST_IN_A_ROW);
+    let rows = COLLECTION.len().div_ceil(fit);
+    COLLECTION.len().div_ceil(rows)
 }
 
 /// The rows the collection takes, `rows` rows of tiles shown: its title and a row of room, the
@@ -121,7 +126,7 @@ pub fn render(
     }
     y += 1;
     if let Some(index) = picked {
-        tell(buffer, area, sprites, progress, COLLECTION[index], y);
+        tell(buffer, area, progress, COLLECTION[index], y);
     }
 }
 
@@ -197,18 +202,32 @@ fn grey(colour: Color) -> Color {
 
 /// The box under the tiles, at row `y`, a row of room above and below its words, telling
 /// `unlock`: its name; there from the start, or the achievement unlocking it, its goal and, a
-/// row apart, how far along on a bar; a check if the player has it.
-fn tell(
-    buffer: &mut Buffer,
-    area: Rect,
-    sprites: &Sprites,
-    progress: &Progress,
-    unlock: Unlock,
-    y: u16,
-) {
-    let width = BOX_WIDTH.min(area.width);
-    let x = area.x + (area.width - width) / 2;
+/// row apart, unlocked, how far along on a bar, or not yet.
+fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, unlock: Unlock, y: u16) {
     let has = progress.has(unlock);
+    let achievement = unlock.achievement();
+    let reached = achievement.is_none_or(|achievement| progress.achieved.contains(&achievement));
+    let counted = achievement
+        .and_then(|achievement| progress.count_of(achievement))
+        .filter(|_| !reached);
+    // What it says, line by line: its name, then where it comes from.
+    let lines = words(unlock);
+    let status = if has {
+        fl!("collection-unlocked")
+    } else {
+        fl!("collection-locked")
+    }
+    .to_uppercase();
+    // The same width whatever the tile: as wide as the longest any of them says.
+    let longest = COLLECTION
+        .iter()
+        .flat_map(|unlock| words(*unlock))
+        .chain([fl!("collection-unlocked"), fl!("collection-locked")])
+        .map(|line| u16::try_from(line.chars().count()).unwrap_or(u16::MAX))
+        .max()
+        .unwrap_or(0);
+    let width = BOX_WIDTH.max(longest + 2 * BOX_PADDING).min(area.width);
+    let x = area.x + (area.width - width) / 2;
     let colour = colour(unlock);
     let ground = Style::new().bg(BOX);
     for row in y..y + BOX_HEIGHT {
@@ -228,38 +247,47 @@ fn tell(
         name(unlock),
         ground.fg(name_colour).add_modifier(Modifier::BOLD),
     );
+    // Its kind on the same row, on the right.
+    let kind = kind(unlock);
+    let kind_width = u16::try_from(kind.chars().count()).unwrap_or(0);
+    buffer.set_string(
+        x + width.saturating_sub(BOX_PADDING + kind_width),
+        top,
+        kind,
+        ground.fg(GREY),
+    );
+    for (row, line) in (1..).zip(&lines[1..]) {
+        let fg = if row == 1 && reached { WHITE } else { GREY };
+        buffer.set_string(left, top + row, line, ground.fg(fg));
+    }
+    // A row apart: how far along on a bar; or, in capitals in the middle of the box, unlocked
+    // or locked.
+    let wide = width.saturating_sub(2 * BOX_PADDING);
+    let last = Rect::new(left, top + 4, wide, 1);
+    if let Some((count, of)) = counted {
+        bar(buffer, (left, last.y), wide, count, of);
+    } else {
+        let fg = if has { UNLOCKED } else { GREY };
+        let style = ground.fg(fg).add_modifier(Modifier::BOLD);
+        centred(buffer, last, last.y, &status, style);
+    }
+}
+
+/// What the box says of a tile, but for its last row: its name, then where it comes from.
+fn words(unlock: Unlock) -> Vec<String> {
+    // Its name, its kind after it, a couple of cells apart: as wide as both.
+    let mut lines = vec![format!("{}  {}", name(unlock), kind(unlock))];
     match unlock.achievement() {
-        None => {
-            buffer.set_string(left, top + 1, fl!("collection-from-start"), ground.fg(GREY));
-        }
+        None => lines.push(fl!("collection-from-start")),
         Some(achievement) => {
-            let reached = progress.achieved.contains(&achievement);
-            let named = fl!(
+            lines.push(fl!(
                 "collection-achievement",
                 name = achievement::name(achievement)
-            );
-            buffer.set_string(
-                left,
-                top + 1,
-                named,
-                ground.fg(if reached { WHITE } else { GREY }),
-            );
-            buffer.set_string(
-                left,
-                top + 2,
-                achievement::goal(achievement),
-                ground.fg(GREY),
-            );
-            if let Some((count, of)) = progress.count_of(achievement).filter(|_| !reached) {
-                let wide = width.saturating_sub(2 * BOX_PADDING);
-                bar(buffer, (left, top + 4), wide, count, of);
-            }
+            ));
+            lines.push(achievement::goal(achievement));
         }
     }
-    if has {
-        let check = Rect::new(x + width.saturating_sub(8), y + 2, 5, 2);
-        pixels::render_sprite(buffer, check, sprites, SpriteId::Check);
-    }
+    lines
 }
 
 /// A bar `wide` cells wide, as full as `count` is of `of`, the count in its middle: the XP
@@ -290,6 +318,20 @@ fn icon(unlock: Unlock) -> SpriteId {
     match unlock {
         Unlock::Card(choice) => level_up::icon(choice),
         Unlock::Reroll => SpriteId::IconReroll,
+        Unlock::Arcade => SpriteId::IconArcade,
+    }
+}
+
+/// What kind a tile is: a weapon, a passive (the legendary too), an action; the reroll, a
+/// bonus; the arcade, a mode.
+fn kind(unlock: Unlock) -> String {
+    match unlock {
+        Unlock::Card(Choice::Weapon(_)) => fl!("card-weapon"),
+        Unlock::Card(Choice::Passive(_) | Choice::Legendary(_)) => fl!("card-passive"),
+        Unlock::Card(Choice::Action(_)) => fl!("card-action"),
+        Unlock::Card(Choice::Heal) => fl!("heal"),
+        Unlock::Reroll => fl!("collection-kind-bonus"),
+        Unlock::Arcade => fl!("collection-kind-mode"),
     }
 }
 
@@ -298,6 +340,7 @@ fn name(unlock: Unlock) -> String {
     match unlock {
         Unlock::Card(choice) => level_up::name(choice),
         Unlock::Reroll => fl!("collection-reroll"),
+        Unlock::Arcade => fl!("collection-arcade"),
     }
 }
 
@@ -316,9 +359,9 @@ mod tests {
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
-        assert_eq!(in_a_row(108), 10);
+        assert_eq!(in_a_row(108), 7, "three even rows rather than 10, 10 and 1");
         assert_eq!(in_a_row(63), 5);
-        assert_eq!(height(108, 40), height_of(2));
+        assert_eq!(height(108, 40), height_of(3));
         assert_eq!(height(108, 20), height_of(1));
         assert_eq!(height(108, 10), 0);
     }

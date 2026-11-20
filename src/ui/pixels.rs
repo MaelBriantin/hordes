@@ -10,14 +10,20 @@ use super::level_up;
 use super::night;
 use super::sprites::{self, Look, Skin, SpriteId, Sprites};
 use crate::game::{
-    BURST_REACH, Blast, Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle,
-    Passive, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Weapon, World, campfire_light,
+    Action, BURST_REACH, Blast, Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE,
+    Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Veil, Weapon, World, campfire_light,
 };
 
 /// The Shadows' eyes, the red of the sprites' palette, and the darker red they shine with in the
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
+/// The hordes' veiled, as Horde Hunter has it: the red, at most how much on the very last ones,
+/// pulsing, the ticks it takes to pulse once; how much, steady, on the others.
+const HUNTER_VEIL: (u8, u8, u8) = (230, 40, 40);
+const VEIL_MOST: f32 = 0.5;
+const VEIL_PULSE: u32 = 30;
+const VEIL_STEADY: f32 = 0.2;
 /// An abomination's burst: the bile its disc tints the ground with, more towards its edge.
 const BILE: (u8, u8, u8) = (150, 205, 60);
 const BILE_MIDDLE: f32 = 0.35;
@@ -563,6 +569,10 @@ impl<'a> Canvas<'a> {
         for (position, look) in figures {
             self.paint_at(look, position);
         }
+        // The hordes' veiled, under the night but in the dark: as far as the light shows.
+        if !world.player.build.horde_veil_in_dark() {
+            self.paint_veils(world);
+        }
         ground.map_or_else(Vec::new, |ground| {
             ground
                 .iter()
@@ -570,6 +580,35 @@ impl<'a> Canvas<'a> {
                 .map(|(under, now)| under != now)
                 .collect()
         })
+    }
+
+    /// The enemies of a horde veiled in red, as Horde Hunter has it: the very last ones of
+    /// their horde pulsing, the others of the share veiled faint and steady. An enemy just hit
+    /// stays white.
+    fn paint_veils(&mut self, world: &World) {
+        let pulse = night::share(world.ticks() % VEIL_PULSE, VEIL_PULSE);
+        let pulsing = VEIL_MOST * (1.0 - (pulse * std::f32::consts::TAU).cos()) / 2.0;
+        for enemy in &world.enemies {
+            let look = sprites::enemy(enemy, world.ticks());
+            let share = match world.horde_veil(enemy) {
+                _ if look.tint.is_some() => continue,
+                Some(Veil::Pulsing) => pulsing,
+                Some(Veil::Steady) => VEIL_STEADY,
+                None => continue,
+            };
+            let centre = pixel(enemy.position);
+            let sprite = self.sprites.get(look.sprite);
+            let (left, top) = (
+                centre.0 - sprite.width() / 2,
+                centre.1 - sprite.height() / 2,
+            );
+            for (x, y, colour) in sprite.pixels(look.mirrored) {
+                self.set(
+                    (left + x, top + y),
+                    super::redden(colour, HUNTER_VEIL, share),
+                );
+            }
+        }
     }
 
     /// A sprite with its top-left pixel at a pixel of the map.
@@ -852,6 +891,10 @@ pub fn render_map(
     }
     canvas.mark(world, view);
     canvas.paint_shadow_eyes(world);
+    // With Horde Hunter from its level 3, the hordes' veiled show in the dark too.
+    if world.player.build.horde_veil_in_dark() {
+        canvas.paint_veils(world);
+    }
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
     // Each gem on screen glows its colour around it, then shows over its glow.
@@ -949,7 +992,12 @@ fn gear_slots(world: &World) -> Vec<GearSlot> {
             Choice::Passive(passive) => GearSlot {
                 choice,
                 level: Some(build.passive_level(passive)),
-                gauge: (passive == Passive::Dash).then_some(dashes),
+                gauge: None,
+            },
+            Choice::Action(action) => GearSlot {
+                choice,
+                level: Some(build.action_level(action)),
+                gauge: (action == Action::Dash).then_some(dashes),
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {
                 choice,

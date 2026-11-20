@@ -27,7 +27,8 @@ use crate::game::{
     World,
 };
 use crate::ui::{
-    self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
+    self, ActionKey, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites,
+    ViewState,
 };
 use keys::Keys;
 use settings::Settings;
@@ -135,7 +136,9 @@ impl App {
                         .pinged_at
                         .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
                     skin: self.settings.skin,
-                    mode: self.settings.mode,
+                    action_key: self.settings.action_key,
+                    mode: self.mode(),
+                    arcade: self.progress.arcade(),
                     skip_dusk: self.settings.skip_dusk,
                     gear: self.settings.gear,
                     gear_list: self.settings.gear_list,
@@ -147,7 +150,7 @@ impl App {
                     toast: self.toasts.front().zip(self.toast_since).map(
                         |(&achievement, since)| (achievement, self.frames.wrapping_sub(since)),
                     ),
-                    picked: (self.settings.mode == Mode::Standard && self.collection_shows)
+                    picked: (self.mode() == Mode::Standard && self.collection_shows)
                         .then_some(self.picked),
                 };
             self.frames = self.frames.wrapping_add(1);
@@ -228,11 +231,11 @@ impl App {
     }
 
     fn on_title(&mut self, code: KeyCode) {
-        let collection = self.settings.mode == Mode::Standard && self.collection_shows;
+        let collection = self.mode() == Mode::Standard && self.collection_shows;
         match code {
             // A new run, in the mode chosen.
             KeyCode::Enter | KeyCode::Char(' ') => self.new_run(),
-            KeyCode::Tab | KeyCode::BackTab => {
+            KeyCode::Tab | KeyCode::BackTab if self.progress.arcade() => {
                 self.settings.mode = self.settings.mode.other();
                 self.keep_settings();
             }
@@ -397,6 +400,10 @@ impl App {
                 self.settings.skin = self.settings.skin.next();
                 self.keep_settings();
             }
+            OptionItem::ActionKey => {
+                self.settings.action_key = self.settings.action_key.next();
+                self.keep_settings();
+            }
             // Hidden, as icons, as a list, and round again.
             OptionItem::Gear => {
                 let settings = &mut self.settings;
@@ -420,7 +427,7 @@ impl App {
         }
     }
 
-    /// In the run: P or Esc pause it, F switches the torch, Shift dashes, or once it is over, R starts anew and
+    /// In the run: P or Esc pause it, F switches the torch, the action key plays the action card, or once it is over, R starts anew and
     /// Esc quits; on a level-up, the cards.
     fn on_run(&mut self, code: KeyCode) {
         if self.world.is_over() {
@@ -456,14 +463,20 @@ impl App {
             self.world.switch_torch();
             return;
         }
-        // Shift dashes: alone with kitty's protocol; elsewhere, Shift only shows on the keys it
-        // changes, a way in capitals.
-        let shift = match code {
-            KeyCode::Modifier(ModifierKeyCode::LeftShift | ModifierKeyCode::RightShift) => true,
-            KeyCode::Char('W' | 'A' | 'S' | 'D' | 'Z' | 'Q') => !self.keys.reports_release(),
+        // The action key plays the action card, as the settings have it: Space; or Shift, alone
+        // with kitty's protocol, elsewhere only seen on the keys it changes, a way in capitals.
+        let action = match (self.settings.action_key, code) {
+            (ActionKey::Space, KeyCode::Char(' '))
+            | (
+                ActionKey::Shift,
+                KeyCode::Modifier(ModifierKeyCode::LeftShift | ModifierKeyCode::RightShift),
+            ) => true,
+            (ActionKey::Shift, KeyCode::Char('W' | 'A' | 'S' | 'D' | 'Z' | 'Q')) => {
+                !self.keys.reports_release()
+            }
             _ => false,
         };
-        if shift && self.world.offer.is_none() {
+        if action && self.world.offer.is_none() {
             self.world.dash();
             return;
         }
@@ -554,13 +567,23 @@ impl App {
         self.screen = Screen::NameEntry { letters, cursor };
     }
 
+    /// The mode the next run is played in: the one chosen, but the standard while the arcade
+    /// is still locked.
+    fn mode(&self) -> Mode {
+        if self.progress.arcade() {
+            self.settings.mode
+        } else {
+            Mode::Standard
+        }
+    }
+
     /// A new run on a new map, started at once.
     fn new_run(&mut self) {
         self.scored = false;
         self.highlight = None;
         self.world = World::with(
             rand::random(),
-            self.settings.mode,
+            self.mode(),
             self.settings.skip_dusk,
             self.progress.clone(),
         );
