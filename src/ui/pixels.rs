@@ -18,8 +18,6 @@ use crate::game::{
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
-/// How strong the halo around a Shadow's eyes, against a gem's.
-const EYES_GLOW_STRENGTH: f32 = 0.3;
 /// The silhouettes a dashing player leaves behind: how far behind, in tiles, and their colour,
 /// fading.
 const AFTERIMAGES: [(f32, Color); 2] = [
@@ -134,13 +132,11 @@ const LIST_GAUGE: i32 = 6;
 const PUDDLE_LIGHT: f32 = 2.25;
 const BOTTLE_ARC: f32 = 1.5;
 const BOTTLE: Color = Color::Rgb(70, 160, 80);
-/// What shines, its halo: its colour, how strong at its middle, how far it reaches in pixels.
-/// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames; a gun's
-/// flash at its mouth.
+/// What burns, its halo: its colour, how strong at its middle, how far it reaches in pixels.
+/// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames.
 const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
 const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
 const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
-const MUZZLE_HALO: ((u8, u8, u8), f32, i32) = ((255, 210, 130), 0.25, 5);
 /// How dim a fire's halo gets as it flickers, every other look of its flame.
 const FIRE_FLICKER: f32 = 0.85;
 /// The ticks a gun's flash lasts, a shot just fired; and how far ahead of where it was shot
@@ -344,9 +340,9 @@ impl<'a> Canvas<'a> {
         muzzles
     }
 
-    /// What shines besides the torch and the campfires: the guns' flashes, the bottles bursting,
-    /// the puddles of fire and the enemies burning; their lights, and the halos of all that
-    /// burns or flashes, the `campfires` lit included.
+    /// What burns besides the campfires: the bottles bursting, the puddles of fire and the
+    /// enemies burning; their lights, and the halos of all that burns, the `campfires` lit
+    /// included.
     fn shines(
         world: &World,
         campfires: &[night::Light],
@@ -366,10 +362,6 @@ impl<'a> Canvas<'a> {
         };
         let mut lights = Vec::new();
         let mut halos = Vec::new();
-        for (at, _) in Self::muzzles(world) {
-            lights.push(night::Light::muzzle(pixel(at)));
-            halos.push(halo(pixel(at), MUZZLE_HALO));
-        }
         for puddle in &world.puddles {
             let centre = pixel(puddle.centre);
             let age = puddle.age();
@@ -434,27 +426,6 @@ impl<'a> Canvas<'a> {
             .gems
             .iter()
             .map(|gem| (pixel(gem.position), gem_glow(gem.value)))
-            .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
-            .collect()
-    }
-
-    /// Once the night has fallen, the Shadows' eyes the canvas shows, or nearly, each with its
-    /// halo's colour.
-    fn eye_glows(&self, world: &World) -> Vec<night::Glow> {
-        let Color::Rgb(red, green, blue) = SHADOW_EYES else {
-            return Vec::new();
-        };
-        if world.torch_on().is_none() {
-            return Vec::new();
-        }
-        world
-            .enemies
-            .iter()
-            .filter(|enemy| enemy.kind == EnemyKind::Shadow)
-            .map(|enemy| {
-                let (x, y) = pixel(enemy.position);
-                ((x, y - 1), (red, green, blue))
-            })
             .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
             .collect()
     }
@@ -872,14 +843,11 @@ pub fn render_map(
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
     canvas.mark(world, view);
-    // The Shadows' eyes glow around them, then show over their glow.
-    let eye_glows = canvas.eye_glows(world);
-    night::paint_glows(&mut canvas, &eye_glows, EYES_GLOW_STRENGTH);
     canvas.paint_shadow_eyes(world);
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
     // Each gem on screen glows its colour around it, then shows over its glow.
-    night::paint_glows(&mut canvas, &glows, night::GEM_GLOW_STRENGTH);
+    night::paint_glows(&mut canvas, &glows);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
     }

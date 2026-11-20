@@ -204,13 +204,11 @@ const IMPACT_STEPS: u8 = 32;
 const LIGHT_FADE: f32 = crate::game::TORCH_FADE;
 /// An XP gem's glow: how strong at the gem, how far it reaches, in pixels; and the
 /// screen's ground it shows on where nothing is drawn.
-pub const GEM_GLOW_STRENGTH: f32 = 0.2;
+const GEM_GLOW_STRENGTH: f32 = 0.2;
 /// The light of a gem on what is drawn around it: full within this many tiles, fading over
 /// that many more.
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
 const GEM_GLOW_REACH: i32 = 4;
-/// How far a gun's flash lights, in tiles: fully, then fading.
-const MUZZLE_LIGHT: (f32, f32) = (0.5, 1.5);
 /// How far a bottle bursting lights at first, in tiles: fully, then fading.
 const BURST_LIGHT: (f32, f32) = (6.0, 4.0);
 const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
@@ -471,16 +469,6 @@ impl Light {
         }
     }
 
-    /// A gun's flash at its mouth: a blink of light, a little warm.
-    pub fn muzzle(centre: (i32, i32)) -> Self {
-        Self {
-            centre,
-            radius: MUZZLE_LIGHT.0,
-            fade: MUZZLE_LIGHT.1,
-            warmth: 0.4,
-        }
-    }
-
     /// A bottle bursting into flames: a blaze, as much of it `left` as is still to fade, from 1
     /// down to 0.
     pub fn burst(centre: (i32, i32), left: f32) -> Self {
@@ -561,9 +549,9 @@ fn warmed(color: Color, warm: f32) -> Color {
 /// A glow on the map: the pixel it shines from, and its colour.
 pub type Glow = ((i32, i32), (u8, u8, u8));
 
-/// A glow around each gem or Shadow's eyes, in its colour, added to what is there, the bare ground
-/// included: as strong as `strength` at its middle, fading out over `GEM_GLOW_REACH` pixels.
-pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow], strength: f32) {
+/// A glow around each gem or cell, in its colour, added to what is there, the bare ground included:
+/// strongest at the gem, fading out over `GEM_GLOW_REACH` pixels.
+pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
     let (left, top) = canvas.origin;
     let (width, height) = (canvas.width, canvas.height);
     let reach = GEM_GLOW_REACH;
@@ -573,7 +561,7 @@ pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow], strength: f32) {
             for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
                 let distance = f32::from(i16::try_from(x - cx).unwrap_or(i16::MAX))
                     .hypot(f32::from(i16::try_from(y - cy).unwrap_or(i16::MAX)));
-                let strength = strength
+                let strength = GEM_GLOW_STRENGTH
                     * (1.0 - distance / (f32::from(i16::try_from(reach).unwrap_or(1)) + 1.0))
                         .max(0.0);
                 if strength <= 0.0 {

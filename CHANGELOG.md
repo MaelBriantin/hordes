@@ -10,8 +10,7 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
-- The Shadows' eyes glow red in the dark, a halo around them.
-- A gun's shot flashes at its mouth, lighting around it a blink.
+- A gun's shot flashes at its mouth, a blink.
 - A Molotov bottle bursts in a flash of fire, lighting all around a moment.
 
 ### Changed
