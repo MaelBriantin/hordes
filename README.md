@@ -32,7 +32,7 @@ The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfon
 | `?` | Every key of a run |
 | `P` / `Esc` | Pause: resume, options, new run, main menu, quit |
 | `←` `→` / `A` `D` | On the title screen: the mode, standard (until dawn) or arcade (endless, for the score) |
-| `O` / `Esc` | On the title screen: the options (blood, rain, the arrow over the player, the hero's look, announcements, dusk, gear, bars over the hero, the coloured ground, language), and quit |
+| `O` / `Esc` | On the title screen: the options (blood, rain, the arrow over the player, the hero's look, announcements, dusk, gear, HP over the hero, the coloured ground, language), and quit |
 | `R` | After a death: a new run |
 | `Ctrl` `C` | Quit at once |
 

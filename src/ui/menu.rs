@@ -77,7 +77,7 @@ pub enum OptionItem {
     Dusk,
     /// Whether the gear shows over the top left of the map.
     Gear,
-    /// Whether the player's HP and battery show in small bars over their head.
+    /// Whether the player's HP shows in a small bar over their head.
     MiniBars,
     /// Whether the ground is coloured: an experiment.
     Ground,

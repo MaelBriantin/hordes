@@ -59,12 +59,12 @@ pub enum Passive {
     Compass,
     /// +10% XP from the gems.
     Wisdom,
-    /// +25% to the torch's battery: it lasts longer, and charges faster.
-    Batteries,
     /// +10% chance for an enemy to leave a gem.
     Loot,
     /// +0.4 HP a second, of itself.
     Regeneration,
+    /// The enemies in the torch's light slowed, 10% per level.
+    Glare,
 }
 
 impl Passive {
@@ -77,9 +77,9 @@ impl Passive {
         Passive::Flashlight,
         Passive::Compass,
         Passive::Wisdom,
-        Passive::Batteries,
         Passive::Loot,
         Passive::Regeneration,
+        Passive::Glare,
     ];
 }
 
@@ -104,8 +104,8 @@ impl Choice {
                 | Passive::Haste
                 | Passive::Compass
                 | Passive::Wisdom
-                | Passive::Batteries
-                | Passive::Regeneration,
+                | Passive::Regeneration
+                | Passive::Glare,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Heal => Rarity::Common,
@@ -201,7 +201,7 @@ impl Build {
 
     /// Three choices at random among what can still be picked, all different; a heal if
     /// nothing can. Each card is a rare one `rare_percent` of the time, a common one otherwise (or
-    /// the other, if none is left of its rarity). At `dusk`, no Flashlight nor Batteries: there is still light enough.
+    /// the other, if none is left of its rarity). At `dusk`, no Flashlight nor Glare: the torch isn't lit yet.
     /// `legendary_percent` of the time, the last is a legendary not found yet.
     pub fn offers(
         &self,
@@ -217,7 +217,7 @@ impl Build {
             }
         }
         for passive in Passive::ALL {
-            if dusk && matches!(passive, Passive::Flashlight | Passive::Batteries) {
+            if dusk && matches!(passive, Passive::Flashlight | Passive::Glare) {
                 continue;
             }
             if can_pick(&self.passives, passive, MAX_PASSIVES) {
@@ -297,12 +297,6 @@ impl Build {
         }
     }
 
-    /// The torch's battery, against its own, in percent: how long it lasts, and how fast it
-    /// charges; 25 more per level of Batteries.
-    pub fn battery_percent(&self) -> u32 {
-        100 + 25 * u32::from(self.passive_level(Passive::Batteries))
-    }
-
     /// The HP the player gets back of themselves each second, in tenths: 4 per level of
     /// Regeneration.
     pub fn regeneration_tenths(&self) -> u32 {
@@ -322,6 +316,11 @@ impl Build {
     /// A weapon's damage, with Might.
     pub fn damage(&self, base: u32) -> u32 {
         base * (100 + 10 * u32::from(self.passive_level(Passive::Might))) / 100
+    }
+
+    /// How much slower the enemies in the torch's light go, in percent: 10 per level of Glare.
+    pub fn glare_percent(&self) -> u32 {
+        10 * u32::from(self.passive_level(Passive::Glare))
     }
 
     /// A weapon's cooldown in ticks, with Haste.

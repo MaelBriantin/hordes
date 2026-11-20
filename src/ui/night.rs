@@ -201,7 +201,7 @@ const BOLT_GLOW: Color = Color::Rgb(170, 180, 255);
 /// The pixels around the ring of a hurting strike's impact.
 const IMPACT_STEPS: u8 = 32;
 /// How far the player's light fades into the night, past its full reach, in tiles.
-const LIGHT_FADE: f32 = 6.0;
+const LIGHT_FADE: f32 = crate::game::TORCH_FADE;
 /// An XP gem's glow: how strong at the gem, how far it reaches, in pixels; and the
 /// screen's ground it shows on where nothing is drawn.
 const GEM_GLOW_STRENGTH: f32 = 0.2;

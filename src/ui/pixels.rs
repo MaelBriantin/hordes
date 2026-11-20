@@ -18,7 +18,7 @@ use crate::game::{
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
-/// The glow of a gem, by what it is worth, as its colour; and of an energy cell.
+/// The glow of a gem, by what it is worth, as its colour.
 fn gem_glow(value: u32) -> (u8, u8, u8) {
     match value {
         0 | 1 => (150, 180, 230),
@@ -26,7 +26,6 @@ fn gem_glow(value: u32) -> (u8, u8, u8) {
         _ => (245, 190, 60),
     }
 }
-const CELL_GLOW: (u8, u8, u8) = (80, 215, 110);
 /// How far off the canvas a gem still lights it, in pixels: its halo's reach.
 const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.
@@ -58,8 +57,8 @@ const EARTH_SHARE: u32 = 90;
 const ARROW: [&str; 2] = ["####", ".##."];
 const ARROW_GAP: i32 = 2;
 const ARROW_BOUNCE: u32 = 15;
-/// The small HP and battery bars over the player's head: their width, the pixels between them
-/// and the head, or the arrow when it shows.
+/// The small HP bar over the player's head: its width, the pixels between it and the head, or
+/// the arrow when it shows.
 const MINI_BAR: i32 = 6;
 const MINI_BAR_GAP: i32 = 1;
 /// The arrow over the player's head, to see them at once in the crowd, in its colour: a setting,
@@ -211,7 +210,7 @@ impl<'a> Canvas<'a> {
     }
 
     /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
-    /// moment once pinged; and their HP and battery in small bars over it all, if they show.
+    /// moment once pinged; and their HP in a small bar over it all, if it shows.
     fn mark(&mut self, world: &World, view: ViewState) {
         let player = &world.player;
         let look = sprites::hero(player.facing, view.skin);
@@ -224,8 +223,8 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The player's HP over their battery, in two small bars over the head of their sprite as
-    /// `paint_at` would place it; over the arrow if it shows, out of its way.
+    /// The player's HP in a small bar over the head of their sprite as `paint_at` would place
+    /// it; over the arrow if it shows, out of its way.
     fn mini_bars(&mut self, world: &World, look: Look, over_arrow: bool) {
         let player = &world.player;
         let centre = pixel(player.position);
@@ -235,28 +234,29 @@ impl<'a> Canvas<'a> {
         } else {
             0
         };
-        let battery = head - MINI_BAR_GAP - 1 - arrow;
+        let row = head - MINI_BAR_GAP - 1 - arrow;
         let hp = f32::from(u16::try_from(player.hp).unwrap_or(u16::MAX))
             / f32::from(u16::try_from(player.max_hp().max(1)).unwrap_or(u16::MAX));
         let left = centre.0 - MINI_BAR / 2;
-        for (row, share, colour) in [
-            (battery - 1, hp, super::HP_COLOR),
-            (battery, world.battery, super::torch_colour(world)),
-        ] {
-            #[allow(
-                clippy::cast_possible_truncation,
-                reason = "a share of a few pixels, clamped"
-            )]
-            let full = (share.clamp(0.0, 1.0) * f32::from(u8::try_from(MINI_BAR).unwrap_or(0)))
-                .round() as i32;
-            for x in 0..MINI_BAR {
-                let shade = if x < full {
-                    colour
-                } else {
-                    super::faded(colour, super::BAR_EMPTY)
-                };
-                self.set((left + x, row), shade);
-            }
+        self.mini_bar((left, row), MINI_BAR, hp, super::HP_COLOR);
+    }
+
+    /// A small bar of `width` pixels from `start`, `filled` of it (from 0 to 1) in `colour`, the
+    /// rest faded.
+    fn mini_bar(&mut self, start: (i32, i32), width: i32, filled: f32, colour: Color) {
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "a share of a few pixels, clamped"
+        )]
+        let full =
+            (filled.clamp(0.0, 1.0) * f32::from(u8::try_from(width).unwrap_or(0))).round() as i32;
+        for x in 0..width {
+            let shade = if x < full {
+                colour
+            } else {
+                super::faded(colour, super::BAR_EMPTY)
+            };
+            self.set((start.0 + x, start.1), shade);
         }
     }
 
@@ -318,18 +318,12 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The gems and cells the canvas shows, or nearly, each with its glow's colour.
+    /// The gems the canvas shows, or nearly, each with its glow's colour.
     fn glows(&self, world: &World) -> Vec<night::Glow> {
         world
             .gems
             .iter()
             .map(|gem| (pixel(gem.position), gem_glow(gem.value)))
-            .chain(
-                world
-                    .cells
-                    .iter()
-                    .map(|cell| (pixel(cell.position), CELL_GLOW)),
-            )
             .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
             .collect()
     }
@@ -753,13 +747,10 @@ pub fn render_map(
     canvas.paint_shadow_eyes(world);
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
-    // Each gem and cell on screen glows its colour around it, then shows over its glow.
+    // Each gem on screen glows its colour around it, then shows over its glow.
     night::paint_glows(&mut canvas, &glows);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
-    }
-    for cell in &world.cells {
-        canvas.paint_at(Look::plain(SpriteId::Cell), cell.position);
     }
     if let Some(swing) = &world.swing {
         canvas.paint_swing(swing, player.position);

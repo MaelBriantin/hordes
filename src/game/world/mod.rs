@@ -51,15 +51,11 @@ const SEPARATION_CELL: f32 = 2.0;
 /// second at its start.
 const ARCADE_GROWTH: f32 = 1.07;
 const ARCADE_RATE: f32 = 1.5;
-/// How long a full battery keeps the torch lit, and charges back from empty, the torch out, in
-/// seconds, before Batteries; how low it lets the torch flicker, dying, and how full it has to
-/// be for the torch to light again, from 0 to 1.
-const BATTERY_SECONDS: u32 = 120;
-const CHARGE_SECONDS: u32 = 60;
-const BATTERY_DYING: f32 = 0.025;
-const BATTERY_TO_LIGHT: f32 = 0.1;
 /// The seconds into the run the torch lights up of itself at, the night falling.
 const TORCH_SECONDS: u32 = 26;
+
+/// How far the torch's light fades into the dark beyond its radius, in tiles.
+pub const TORCH_FADE: f32 = 6.0;
 
 /// The tick the torch lights up of itself at.
 fn torch_lights_up() -> u32 {
@@ -85,10 +81,6 @@ const LEGENDARY_PERCENT: u32 = 5;
 const DEBUG_FIRE_REACH: f32 = 8.0;
 /// The ticks an enemy flashes white before it burns at daybreak.
 const BURN_FLASH: u32 = 6;
-/// What an energy cell gives the torch's battery, in percent; how far beside a Shadow's gem it
-/// falls, in tiles.
-const CELL_PERCENT: u32 = 15;
-const CELL_OFFSET: f32 = 0.6;
 /// The weapons that are guns, in the order they show.
 const GUNS: [Weapon; 3] = [Weapon::Pistol, Weapon::MachineGun, Weapon::Shotgun];
 /// A melee weapon's swing as it goes: the ticks before it can swing again; the slashes of the
@@ -161,9 +153,6 @@ pub struct World {
     next_enemy_id: u32,
     pub bullets: Vec<Bullet>,
     pub gems: Vec<Gem>,
-    /// The energy cells lying around, for the torch's battery: each gives its value, in
-    /// percent of the battery.
-    pub cells: Vec<Gem>,
     /// Where blood was spilt lately, oldest first.
     pub stains: Vec<Stain>,
     /// The enemies the player has felled.
@@ -217,8 +206,6 @@ pub struct World {
     torch_switch: bool,
     pub(super) torch_steady_at: u32,
     torch_luck: u32,
-    /// The torch's battery, from 0 (empty) to 1 (full).
-    pub battery: f32,
     /// Nothing hurts the player: a debug tool.
     pub unhurt: bool,
     /// The herbs picked, by tile.
@@ -293,7 +280,6 @@ impl World {
             next_enemy_id: 0,
             bullets: Vec::new(),
             gems: Vec::new(),
-            cells: Vec::new(),
             stains: Vec::new(),
             kills: 0,
             score: 0,
@@ -323,7 +309,6 @@ impl World {
             torch_switch: true,
             torch_steady_at: 0,
             torch_luck: 0,
-            battery: 1.0,
             unhurt: false,
             picked: HashSet::new(),
             burnt: HashMap::new(),
@@ -415,15 +400,21 @@ impl World {
         (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
     }
 
+    /// Where Glare slows the enemies, and how much, in percent: around the player, as far as
+    /// their torch's light shows, fading included, as a campfire heals; none without Glare, or
+    /// the torch not lit.
+    fn glare(&self) -> Option<(f32, u32)> {
+        let percent = self.player.build.glare_percent();
+        (percent > 0 && self.torch_lit()).then(|| (self.light_radius() + TORCH_FADE, percent))
+    }
+
     /// Whether the player's torch is lit, and holds: not at dusk; it lights up of itself as the
     /// night falls, and when the player lights it again, after flickering a while.
     pub fn torch_lit(&self) -> bool {
         let Some(true) = self.torch_on() else {
             return false;
         };
-        // Its battery nearly empty, it flickers, then dies out.
-        let dying = self.battery < BATTERY_DYING && (self.ticks / 4).is_multiple_of(3);
-        !dying && self.ticks >= self.torch_steady_at
+        self.ticks >= self.torch_steady_at
     }
 
     /// Whether the torch shines now: lit, or flickering as it lights up, on and off as luck has
@@ -458,33 +449,10 @@ impl World {
         match self.torch_on() {
             None => {}
             Some(true) => self.torch_switch = false,
-            // Not on a battery too low.
-            Some(false) if self.battery < BATTERY_TO_LIGHT => {}
             Some(false) => {
                 self.torch_switch = true;
                 self.light_up_torch();
             }
-        }
-    }
-
-    /// The torch's battery runs down while it is on, and charges while it is out, Batteries
-    /// making it last longer and charge faster; empty, the torch goes out.
-    fn run_battery(&mut self) {
-        let Some(on) = self.torch_on() else {
-            return;
-        };
-        let percent =
-            f32::from(u16::try_from(self.player.build.battery_percent()).unwrap_or(100)) / 100.0;
-        let per_second = |seconds: u32| {
-            1.0 / (f32::from(u16::try_from(seconds).unwrap_or(1)) * f32::from(TICKS_PER_SECOND))
-        };
-        if on {
-            self.battery = (self.battery - per_second(BATTERY_SECONDS) / percent).max(0.0);
-            if self.battery <= 0.0 {
-                self.torch_switch = false;
-            }
-        } else {
-            self.battery = (self.battery + per_second(CHARGE_SECONDS) * percent).min(1.0);
         }
     }
 
@@ -548,7 +516,6 @@ impl World {
             self.tell(News::Weather(self.weather()));
         }
         self.move_player(input);
-        self.run_battery();
         self.spawn();
         self.hordes();
         self.move_enemies();
@@ -1041,11 +1008,6 @@ impl World {
             if self.rng.random_range(0..100) < drop {
                 self.gems.push(Gem::new(enemy.position, stats.xp));
             }
-            // A Shadow leaves an energy cell, for the torch's battery, by its gem.
-            if enemy.kind == EnemyKind::Shadow {
-                let beside = enemy.position + Vec2::new(CELL_OFFSET, 0.0);
-                self.cells.push(Gem::new(beside, CELL_PERCENT));
-            }
             self.stains.push(Stain {
                 position: enemy.position,
                 tick: self.ticks,
@@ -1145,17 +1107,6 @@ impl World {
             !picked
         });
         self.give_xp(gathered * self.player.build.xp_percent());
-        // Energy cells fly in as gems do, and charge the torch's battery.
-        let mut charge = 0;
-        self.cells.retain_mut(|cell| {
-            let picked = cell.update(position, magnet);
-            if picked {
-                charge += cell.value;
-            }
-            !picked
-        });
-        let charge = f32::from(u16::try_from(charge).unwrap_or(u16::MAX)) / 100.0;
-        self.battery = (self.battery + charge).min(1.0);
     }
 
     /// The levels hordes wiped out have brought, once due: each its cards, rarer.
@@ -1336,6 +1287,8 @@ impl World {
         let fires = if seen { Vec::new() } else { self.fires_near() };
         // At night, whether Shadows hunt: with the torch out; lit, they shun it.
         let dark_hunt = self.torch_on().map(|_| !self.torch_lit());
+        // With Glare, those in the torch's light go slower.
+        let glare = self.glare();
         let ticks = self.ticks;
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
@@ -1392,7 +1345,12 @@ impl World {
                 (enemy.heading(target), 1.0)
             };
             enemy.facing = enemy.facing.after(heading);
-            let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace;
+            let slowed = match glare {
+                Some((reach, percent)) if apart <= reach => percent,
+                _ => 0,
+            };
+            let glared = f32::from(u16::try_from(100 - slowed.min(100)).unwrap_or(100)) / 100.0;
+            let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace * glared;
             let step = (heading * (speed * tick_seconds()) + push).clamp_length(MAX_STEP);
             enemy.position = slide(
                 &self.map,

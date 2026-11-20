@@ -79,7 +79,7 @@ pub struct Settings {
     pub skip_dusk: bool,
     /// Whether the gear shows over the top left of the map.
     pub gear: bool,
-    /// Whether the player's HP and battery show in small bars over their head.
+    /// Whether the player's HP shows in a small bar over their head.
     pub mini_bars: bool,
     /// Whether the ground is coloured, grass speckled with earth: an experiment, off at first.
     pub ground: bool,

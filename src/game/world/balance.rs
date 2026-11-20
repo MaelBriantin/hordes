@@ -5,8 +5,8 @@
 //! cargo test --release balance -- --ignored --nocapture
 //! ```
 //!
-//! The bot flees the enemies near it, goes for the gems when none is close, lights the torch
-//! again once the battery allows, and takes a card at random.
+//! The bot flees the enemies near it, goes for the gems when none is close, keeps the torch lit,
+//! and takes a card at random.
 
 #![allow(
     clippy::cast_precision_loss,
@@ -28,8 +28,6 @@ const FLEE: f32 = 6.0;
 const GREED: f32 = 12.0;
 /// The ticks the bot keeps a way out once stuck against an obstacle.
 const UNSTUCK_TICKS: u32 = 20;
-/// The battery from which the bot lights the torch again.
-const RELIGHT: f32 = 0.5;
 
 /// How a run is set up.
 #[derive(Debug, Clone, Copy)]
@@ -79,9 +77,6 @@ fn play(seed: u64, setup: Setup, limit: u32) -> Outcome {
                 }
             }
             continue;
-        }
-        if world.torch_on() == Some(false) && world.battery >= RELIGHT {
-            world.switch_torch();
         }
         let input = bot.steer(&world);
         world.update(input);

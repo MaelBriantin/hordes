@@ -1077,59 +1077,66 @@ fn shadows_hunt_in_the_dark_and_shun_the_torch() {
     assert!(world.enemies[0].position.x > at, "away from the light");
 }
 
+/// How far a zombie 8 tiles off comes towards the player in a second, the torch lit, with
+/// `glare` levels of Glare.
+fn zombie_step(glare: u8) -> f32 {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.unhurt = true;
+    world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
+    world.ticks = 30 * 40;
+    world.torch_steady_at = 0;
+    for _ in 0..glare {
+        world.player.build.take(Choice::Passive(Passive::Glare));
+    }
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(108.0, 50.0)));
+    wait(&mut world, 30);
+    108.0 - world.enemies[0].position.x
+}
+
 #[test]
-fn the_battery_runs_down_lit_and_charges_out() {
+fn glare_slows_the_enemies_in_the_torch_light() {
+    let free = zombie_step(0);
+    let glared = zombie_step(2);
+    // Two levels: 20% slower.
+    assert!(
+        (glared / free - 0.8).abs() < 0.02,
+        "{glared} against {free}"
+    );
+}
+
+#[test]
+fn glare_reaches_as_far_as_the_light_shows_while_it_is_lit() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    world.ticks = 30 * 40;
+    world.torch_steady_at = 0;
+    assert_eq!(world.glare(), None, "not without Glare");
+    world.player.build.take(Choice::Passive(Passive::Glare));
+    // Its 9 tiles of light, and the 6 it fades over.
+    assert_eq!(world.glare(), Some((15.0, 10)));
+    world.switch_torch();
+    assert_eq!(world.glare(), None, "the torch out");
+}
+
+#[test]
+fn the_torch_stays_lit_and_lights_again_at_will() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.next_horde = u32::MAX;
     world.next_strike_in = Some(u32::MAX);
     world.ticks = 30 * 40;
     world.unhurt = true;
-    // Two minutes lit, and the torch dies out.
-    wait(&mut world, 30 * 60);
-    assert!((world.battery - 0.5).abs() < 0.01, "{}", world.battery);
-    // A minute more, and the 2 seconds the drizzle is told the while.
-    wait(&mut world, 30 * 63);
-    assert_eq!(world.torch_on(), Some(false));
-    // Too low to light again; out, it charges: full in a minute.
+    // Five minutes lit, and still on.
+    wait(&mut world, 30 * 300);
+    assert_eq!(world.torch_on(), Some(true));
+    // Out, then on again at once.
     world.switch_torch();
     assert_eq!(world.torch_on(), Some(false));
-    wait(&mut world, 30 * 6);
     world.switch_torch();
     assert_eq!(world.torch_on(), Some(true));
-    world.switch_torch();
-    wait(&mut world, 30 * 60);
-    assert!((world.battery - 1.0).abs() < f32::EPSILON);
-}
-
-#[test]
-fn batteries_make_the_battery_last_longer() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    disarm(&mut world);
-    world.next_horde = u32::MAX;
-    world.next_strike_in = Some(u32::MAX);
-    world.ticks = 30 * 40;
-    for _ in 0..4 {
-        world.player.build.take(Choice::Passive(Passive::Batteries));
-    }
-    // Twice as long: after two minutes, half of it left.
-    wait(&mut world, 30 * 120);
-    assert!((world.battery - 0.5).abs() < 0.01, "{}", world.battery);
-}
-
-#[test]
-fn a_fallen_shadow_leaves_a_cell_that_charges_the_battery() {
-    let mut world = in_the_dark();
-    world.battery = 0.5;
-    world
-        .enemies
-        .push(enemy(EnemyKind::Shadow, Vec2::new(101.0, 50.0)));
-    world.enemies[0].hp = 0;
-    wait(&mut world, 1);
-    assert_eq!(world.cells.len(), 1);
-    wait(&mut world, 30);
-    assert_eq!(world.cells, []);
-    assert!(world.battery > 0.6, "{}", world.battery);
 }
 
 #[test]

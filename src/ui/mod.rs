@@ -91,14 +91,9 @@ const XP_COLOR: Color = Color::Rgb(115, 138, 178);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
 /// The text on the score's gold badge.
 const BADGE_TEXT: Color = Color::Rgb(30, 22, 8);
-/// The torch's battery, the torch on, green as the energy cells; and below what share of it the
-/// battery shows red.
+/// The torch's bulb, on and out.
 const TORCH_COLOR: Color = Color::Rgb(80, 215, 110);
-/// The torch's battery, the torch out and the battery charging.
-const CHARGING_COLOR: Color = Color::Rgb(120, 140, 170);
-const BATTERY_LOW: f32 = 0.2;
-/// The battery's gauge, its inside, in cells: as the HP's.
-const BATTERY_CELLS: usize = 12;
+const TORCH_OUT_COLOR: Color = Color::Rgb(120, 140, 170);
 /// How long the edges of the map flush red after a blow, in ticks; how deep, in cells; how red
 /// at most, and in which red.
 const HURT_TICKS: u32 = 15;
@@ -165,7 +160,7 @@ pub struct ViewState {
     /// The arrow over the player, always, in its colour; or a moment, once pinged.
     pub arrow: Arrow,
     pub pinged: bool,
-    /// Whether the player's HP and battery show in small bars over their head.
+    /// Whether the player's HP shows in a small bar over their head.
     pub mini_bars: bool,
     /// Whether the ground is coloured: grass speckled with earth, rather than the screen's dark.
     pub ground: bool,
@@ -346,18 +341,6 @@ fn render_status(
     frame.render_widget(run(world, leaderboard, frames).right_aligned(), area);
 }
 
-/// The battery's colour: green while the torch is on, grey-blue while it is out and charging,
-/// red when nearly empty.
-fn torch_colour(world: &World) -> Color {
-    if world.battery < BATTERY_LOW {
-        HP_COLOR
-    } else if world.torch_on().unwrap_or(false) {
-        TORCH_COLOR
-    } else {
-        CHARGING_COLOR
-    }
-}
-
 /// The player's HP and the weather, as gauges.
 fn survival(world: &World, frames: u32) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
@@ -376,18 +359,14 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
     labelled(&mut hp_bar, &hp.to_string(), hp_color);
     spans.extend(hp_bar);
     spans.push(Span::raw("   "));
-    // The torch, on or out, and its battery, from the start (out at dusk, the torch lighting up
-    // of itself as the night falls): green while it is on, grey-blue while it is out and
-    // charging, red when nearly empty.
-    let on = world.torch_on().unwrap_or(false);
-    let colour = torch_colour(world);
-    let icon = if on {
-        icons::TORCH_ON
+    // The torch, on or out, from the start (out at dusk, the torch lighting up of itself as the
+    // night falls): green while it is on, grey-blue while it is out.
+    let (icon, colour) = if world.torch_on().unwrap_or(false) {
+        (icons::TORCH_ON, TORCH_COLOR)
     } else {
-        icons::TORCH_OFF
+        (icons::TORCH_OFF, TORCH_OUT_COLOR)
     };
-    spans.push(Span::styled(format!("{icon} "), bold.fg(colour)));
-    spans.extend(battery(world.battery, colour));
+    spans.push(Span::styled(icon.to_string(), bold.fg(colour)));
     spans.push(Span::raw("   "));
     spans.extend(weather_track(world));
     spans.push(Span::styled(
@@ -572,19 +551,6 @@ fn embossed(bar: &str, color: Color) -> Vec<Span<'static>> {
             _ => Span::styled(cell.to_string(), color),
         })
         .collect()
-}
-
-/// The torch's battery as a gauge in relief, as the HP's, its percent in the middle.
-fn battery(charge: f32, color: Color) -> Vec<Span<'static>> {
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        reason = "a share of a hundred, clamped"
-    )]
-    let percent = (charge.clamp(0.0, 1.0) * 100.0).round() as u32;
-    let mut gauge = embossed(&bar_of(percent, 100, BATTERY_CELLS), color);
-    labelled(&mut gauge, &format!("{percent}%"), color);
-    gauge
 }
 
 /// A number in the middle of a bar, in white on whatever part of the bar is there, a space each

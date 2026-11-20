@@ -42,8 +42,6 @@ M 70 150 255    blue gem
 O 175 220 255   blue gem's shine
 U 240 185 50    gold gem
 I 255 235 160   gold gem's shine
-h 80 215 110    energy cell
-1 225 255 230   energy cell's shine
 r 220 45 65     heart, potion
 o 255 150 160   heart's shine
 u 150 100 60    leather, wood
@@ -171,12 +169,6 @@ MM
 gem_gold
 IU
 UU
-
-# An energy cell, a Shadow leaves it, for the torch's battery: 2 × 2.
-
-cell
-1h
-hh
 
 # Obstacles, 4 × 4: each covers 2 × 2 tiles.
 
@@ -378,16 +370,6 @@ ibbbbbb.
 ..bbb...
 ...b....
 
-icon_batteries
-...jj...
-.nnnnnn.
-.nyyyyn.
-.nyyyyn.
-.nyWyyn.
-.nyyyyn.
-.nyyyyn.
-.nnnnnn.
-
 icon_loot
 ...uu...
 ..u..u..
@@ -407,6 +389,16 @@ llWWWlll
 .llWlll.
 ..llll..
 ...ll...
+
+icon_glare
+.y.yy.y.
+..y..y..
+........
+.jjjjjj.
+jWWqqWWj
+.jjjjjj.
+........
+........
 
 # The legendaries, on their golden cards.
 

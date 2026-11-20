@@ -9,6 +9,12 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- A new rare passive, Glare: the enemies in the torch's light go 10% slower per level, while it is lit.
+
+### Changed
+- The torch has no battery any more: lit or out as the player wants, it is a choice, seen or unseen, rather than a gauge to watch. The Batteries card and the Shadows' energy cells go with it; the bar over the hero shows the HP alone.
+
 ## v0.6.1 · November 19, 2026
 A new home.
 
