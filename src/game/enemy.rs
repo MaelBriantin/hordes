@@ -14,6 +14,14 @@ fn burn_ticks() -> u32 {
 /// How many ticks an enemy flashes white when hit.
 const FLASH_TICKS: u32 = 3;
 
+/// A Shadow hunting in the dark goes faster the longer it hunts: up to this much faster, in
+/// percent, after so many ticks (5 seconds).
+const HUNT_MOST_PERCENT: u16 = 50;
+const HUNT_RAMP_TICKS: u32 = 150;
+/// Caught in the torch's light, a Shadow bolts out of it: so many ticks, so many times its pace.
+pub const BOLT_TICKS: u32 = 10;
+pub const BOLT_PACE: f32 = 2.5;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EnemyKind {
     Zombie,
@@ -103,6 +111,10 @@ pub struct Enemy {
     pub burning: u32,
     /// Ticks left it stands stunned, not moving; 0 when it isn't.
     pub stunned: u32,
+    /// Ticks it has hunted the player in the dark, without a break: a Shadow's.
+    pub hunting: u32,
+    /// Ticks left it bolts out of the torch's light: a Shadow's.
+    pub bolting: u32,
 }
 
 impl Enemy {
@@ -120,7 +132,16 @@ impl Enemy {
             wander: phase,
             burning: 0,
             stunned: 0,
+            hunting: 0,
+            bolting: 0,
         }
+    }
+
+    /// Its pace going for the player: faster the longer it has hunted in the dark.
+    pub fn hunt_pace(&self) -> f32 {
+        let ramped = u16::try_from(self.hunting.min(HUNT_RAMP_TICKS)).unwrap_or(0);
+        let ramp = u16::try_from(HUNT_RAMP_TICKS).unwrap_or(u16::MAX);
+        1.0 + f32::from(ramped) / f32::from(ramp) * f32::from(HUNT_MOST_PERCENT) / 100.0
     }
 
     /// Catches fire, or burns anew: as long again as a fire burns, never longer.

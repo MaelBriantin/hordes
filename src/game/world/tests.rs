@@ -1200,6 +1200,47 @@ fn shadows_hunt_in_the_dark_and_shun_the_torch() {
     assert!(world.enemies[0].position.x > at, "away from the light");
 }
 
+#[test]
+fn a_shadow_hunting_in_the_dark_goes_faster_and_faster() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(160.0, 50.0)));
+    wait(&mut world, 1);
+    let at = world.enemies[0].position.x;
+    wait(&mut world, 10);
+    let first = at - world.enemies[0].position.x;
+    wait(&mut world, 150);
+    let at = world.enemies[0].position.x;
+    wait(&mut world, 10);
+    let later = at - world.enemies[0].position.x;
+    assert!(
+        (later / first - 1.5).abs() < 0.05,
+        "{later} against {first}"
+    );
+}
+
+#[test]
+fn a_shadow_caught_in_the_light_bolts_out_of_it() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(110.0, 50.0)));
+    wait(&mut world, 1);
+    world.switch_torch();
+    // The light holds after its flicker: the Shadow, lit, bolts.
+    while !world.torch_lit() {
+        wait(&mut world, 1);
+    }
+    let at = world.enemies[0].position.x;
+    wait(&mut world, 10);
+    let bolted = world.enemies[0].position.x - at;
+    let at = world.enemies[0].position.x;
+    wait(&mut world, 10);
+    let fled = world.enemies[0].position.x - at;
+    assert!(bolted > fled * 2.0, "{bolted} against {fled}");
+}
+
 /// How far a zombie 8 tiles off comes towards the player in a second, the torch lit, with
 /// `glare` levels of Glare.
 fn zombie_step(glare: u8) -> f32 {

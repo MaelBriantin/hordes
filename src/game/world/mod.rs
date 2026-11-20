@@ -10,7 +10,7 @@ use super::build::{
 };
 use super::dash::{Dash, Dashes};
 use super::drones;
-use super::enemy::{Enemy, EnemyKind};
+use super::enemy::{BOLT_PACE, BOLT_TICKS, Enemy, EnemyKind};
 use super::gem::Gem;
 use super::guns::{self, Bullet, Magazine};
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
@@ -1445,8 +1445,14 @@ impl World {
             if enemy.horde.is_some() {
                 enemy.noticed = true;
             } else if enemy.kind == EnemyKind::Shadow && dark_hunt.is_some() {
-                // Shadows hunt in the dark, and keep away from the torch's light.
-                enemy.noticed = dark_hunt == Some(true);
+                // Shadows hunt in the dark, faster and faster; caught in the torch's light, they
+                // bolt out of it.
+                let hunts = dark_hunt == Some(true);
+                if enemy.noticed && !hunts {
+                    enemy.bolting = BOLT_TICKS;
+                }
+                enemy.hunting = if hunts { enemy.hunting + 1 } else { 0 };
+                enemy.noticed = hunts;
             } else if seen || apart <= NOTICE_REACH {
                 enemy.noticed = true;
             } else if apart > LOSE_REACH {
@@ -1468,8 +1474,14 @@ impl World {
                 ((enemy.position - target).normalized(), 1.0)
             } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)
             {
-                // Away from the light, at their speed.
-                ((enemy.position - target).normalized(), 1.0)
+                // Away from the light, at their speed: bolting, at first.
+                let pace = if enemy.bolting > 0 {
+                    enemy.bolting -= 1;
+                    BOLT_PACE
+                } else {
+                    1.0
+                };
+                ((enemy.position - target).normalized(), pace)
             } else if !enemy.noticed {
                 match fire {
                     Some(fire) if (fire - enemy.position).length() > 1.0 => {
@@ -1490,7 +1502,7 @@ impl World {
             } else if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
                 (Vec2::ZERO, 1.0)
             } else {
-                (enemy.heading(target), 1.0)
+                (enemy.heading(target), enemy.hunt_pace())
             };
             enemy.facing = enemy.facing.after(heading);
             let slowed = match glare {

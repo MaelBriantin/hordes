@@ -16,6 +16,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A horde comes out of the other side from the enemies about the player, catching them between, rather than a side at random.
 - Tougher enemies: a zombie has 15 HP rather than 10, a Shadow 40 rather than 25; and the weather toughens them more, +15% in the drizzle, +30% in the rain, +50% in the storm, +100% in the tempest (rather than none, +10%, +25%, +50%).
 - The drones are dealt no more, until they are made worth taking.
+- Shadows hunt faster the longer they hunt in the dark, up to 50% after 5 seconds, and bolt out of the torch's light as it catches them: lighting it at the last moment no longer leaves them to be shot.
 
 ## v0.7.0 · November 20, 2026
 In a flash.
