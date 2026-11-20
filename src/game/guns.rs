@@ -184,12 +184,6 @@ impl Bullet {
         self.velocity.normalized()
     }
 
-    /// Where it was shot from, while it has just left: for `ticks` ticks of flight.
-    pub fn shot_from(&self, ticks: u8) -> Option<Vec2> {
-        let step = self.velocity.length();
-        (self.flown <= step * f32::from(ticks)).then(|| self.position - self.way() * self.flown)
-    }
-
     /// Moves it on by one tick. Whether it is still flying.
     pub fn advance(&mut self) -> bool {
         self.position += self.velocity;

@@ -139,16 +139,6 @@ const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
 const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
 /// How dim a fire's halo gets as it flickers, every other look of its flame.
 const FIRE_FLICKER: f32 = 0.85;
-/// The ticks a gun's flash lasts, a shot just fired; and how far ahead of where it was shot
-/// from, in tiles: the gun's mouth.
-const MUZZLE_TICKS: u8 = 2;
-const MUZZLE_AHEAD: f32 = 1.0;
-/// A gun's flash: its heart, the pixel ahead of it, the pixels on its sides.
-const MUZZLE_FLASH: [Color; 3] = [
-    Color::Rgb(255, 250, 220),
-    Color::Rgb(255, 220, 140),
-    Color::Rgb(255, 200, 110),
-];
 /// The ticks a bottle's burst lights, before its puddle's own light alone.
 const BURST_TICKS: u32 = 8;
 /// An enemy on fire: how far its flames light, in tiles; where they flicker, from the middle of
@@ -325,21 +315,6 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The guns' flashes the canvas shows: where each bullet just shot was shot from, a tile
-    /// ahead, its way. Pellets of a shot share one.
-    fn muzzles(world: &World) -> Vec<(Vec2, Vec2)> {
-        let mut muzzles: Vec<(Vec2, Vec2)> = Vec::new();
-        for bullet in &world.bullets {
-            if let Some(from) = bullet.shot_from(MUZZLE_TICKS) {
-                let at = from + bullet.way() * MUZZLE_AHEAD;
-                if !muzzles.iter().any(|&(other, _)| pixel(other) == pixel(at)) {
-                    muzzles.push((at, bullet.way()));
-                }
-            }
-        }
-        muzzles
-    }
-
     /// What burns besides the campfires: the bottles bursting, the puddles of fire and the
     /// enemies burning; their lights, and the halos of all that burns, the `campfires` lit
     /// included.
@@ -387,17 +362,6 @@ impl<'a> Canvas<'a> {
             halos.push(halo((x, y - 2), BURNING_HALO));
         }
         (lights, halos)
-    }
-
-    /// The guns' flashes, at their mouths: a bright heart, a pixel ahead, a pixel each side.
-    fn paint_muzzles(&mut self, world: &World) {
-        for (at, way) in Self::muzzles(world) {
-            let side = Vec2::new(-way.y, way.x) * 0.5;
-            self.set(pixel(at), MUZZLE_FLASH[0]);
-            self.set(pixel(at + way * 0.5), MUZZLE_FLASH[1]);
-            self.set(pixel(at + side), MUZZLE_FLASH[2]);
-            self.set(pixel(at - side), MUZZLE_FLASH[2]);
-        }
     }
 
     /// Small green crosses rising around the player at `centre`, `since` ticks after they were
@@ -854,7 +818,6 @@ pub fn render_map(
     if let Some(swing) = &world.swing {
         canvas.paint_swing(swing, player.position);
     }
-    canvas.paint_muzzles(world);
     for bullet in &world.bullets {
         canvas.paint_bullet(bullet);
     }

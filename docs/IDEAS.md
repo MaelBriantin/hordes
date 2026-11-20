@@ -67,8 +67,8 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 The game's strength: a black night, lit here and there. The rule: **a light makes a halo**, around it, on what is there; what isn't a light doesn't glow.
 
-- **Muzzle flashes**: each shot lights the gun's mouth a blink, a halo around it, the enemies near it lit out of the dark a frame.
-- **The Molotov's burst**: a flash where a bottle bursts, lighting all around a moment, before its puddle's light.
+- **Shooting in the dark**: the guns fire on with the torch out, each shot flashing at the gun's mouth, a small halo of light a blink, which the enemies see and come to. Better in Godot, with finer lights and shadows.
+- Tried, and dropped: **muzzle flashes** in the terminal, a few pixels at the gun's mouth, with a light and a halo, then without: too many lights, and ugly at this size.
 - Tried, and dropped: **glowing bullets**, a light and a halo each: the torch lights enough, and they aren't lights.
 - Tried, and dropped: **glowing ghouls**, the horde's skin lit green with a halo. Together, their halos melt into a green fog, harder to read than before.
 
