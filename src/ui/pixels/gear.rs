@@ -43,7 +43,7 @@ impl Canvas<'_> {
             let y = top + GEAR_PAD;
             self.paint(Look::plain(level_up::icon(card.choice)), (x, y));
             if let Some((part, whole, colour)) = card.gauge {
-                let lit = share_of(part, whole, size);
+                let lit = share_of(part, whole, size, colour != GEAR_RELOADING);
                 for pixel in 0..size {
                     self.set(
                         (x + pixel, y + size),
@@ -178,7 +178,7 @@ pub(super) fn draw_gear_list(buffer: &mut Buffer, area: Rect, gear: &[GearSlot])
         }
         x += 3 + 2;
         if let Some((part, whole, colour)) = card.gauge {
-            let lit = share_of(part, whole, LIST_GAUGE);
+            let lit = share_of(part, whole, LIST_GAUGE, colour != GEAR_RELOADING);
             for cell in 0..LIST_GAUGE {
                 let shade = if cell < lit { colour } else { GEAR_EMPTY };
                 buffer.set_string(

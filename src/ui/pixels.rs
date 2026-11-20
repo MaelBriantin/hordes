@@ -577,11 +577,16 @@ pub fn view(area: Rect) -> Vec2 {
     Vec2::new(f32::from(area.width) / 4.0, f32::from(area.height) / 2.0)
 }
 
-/// How many of `pixels` a share of `part` in `whole` lights, rounded up: one round left shows.
-fn share_of(part: u32, whole: u32, pixels: i32) -> i32 {
+/// How many of `pixels` a share of `part` in `whole` lights: rounded up, for one round left to
+/// show; or down, for a reload to start empty and fill.
+fn share_of(part: u32, whole: u32, pixels: i32, up: bool) -> i32 {
     let pixels_u32 = u32::try_from(pixels).unwrap_or(0);
-    let lit = (part * pixels_u32).div_ceil(whole.max(1)).min(pixels_u32);
-    i32::try_from(lit).unwrap_or(0)
+    let lit = if up {
+        (part * pixels_u32).div_ceil(whole.max(1))
+    } else {
+        part * pixels_u32 / whole.max(1)
+    };
+    i32::try_from(lit.min(pixels_u32)).unwrap_or(0)
 }
 
 /// The pixel a point of the map falls on.
@@ -630,9 +635,12 @@ mod tests {
 
     #[test]
     fn a_share_lights_its_pixels_one_round_left_showing() {
-        assert_eq!(share_of(0, 6, 8), 0);
-        assert_eq!(share_of(1, 20, 8), 1);
-        assert_eq!(share_of(3, 6, 8), 4);
-        assert_eq!(share_of(9, 9, 8), 8);
+        assert_eq!(share_of(0, 6, 8, true), 0);
+        assert_eq!(share_of(1, 20, 8, true), 1);
+        assert_eq!(share_of(3, 6, 8, true), 4);
+        assert_eq!(share_of(9, 9, 8, true), 8);
+        // A reload just started shows empty.
+        assert_eq!(share_of(1, 20, 8, false), 0);
+        assert_eq!(share_of(20, 20, 8, false), 8);
     }
 }
