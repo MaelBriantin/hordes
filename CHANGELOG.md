@@ -28,6 +28,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Shadows hunt faster the longer they hunt in the dark, up to 50% after 5 seconds, and bolt out of the torch's light as it catches them: lighting it at the last moment no longer leaves them to be shot.
 
 ### Fixed
+- The arrow over the player, and their HP bar, show over everything on the map: gems, rain, lightning; they went under the gems.
 - A gun's gauge empties as its last round goes, its reload filling back from nothing, rather than starting again at once from a pixel.
 - The night's announcement no longer names a key for the torch: it said Space, the torch long on F.
 

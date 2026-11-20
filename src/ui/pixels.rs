@@ -390,7 +390,6 @@ pub fn render_map(
     if let Some(healed_at) = world.healed_at {
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
-    canvas.mark(world, view);
     canvas.paint_shadow_eyes(world);
     // With Horde Hunter from its level 3, the hordes' veiled show in the dark too.
     if world.player.build.horde_veil_in_dark() {
@@ -425,6 +424,8 @@ pub fn render_map(
             night::paint_impact(&mut canvas, strike, STRIKE_RADIUS);
         }
     }
+    // The player picked out over everything of the map: gems, rain, lightning.
+    canvas.mark(world, view);
     let gear = if view.gear {
         gear_slots(world)
     } else {
