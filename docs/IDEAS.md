@@ -34,6 +34,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## Level-ups
 
 - **Evolutions**: a weapon at level 5 may later be offered a legendary card that transforms it. Drones → Swarm: the drones fire bullets in a spiral around the player. Shotgun → Dragon's breath: the pellets set the enemies they hit on fire (needs fire). Pistol → Akimbo: two pistols, two targets a shot, twice the rounds. Machine gun → Gatling: twice the rate, a 60-round magazine. Machete → Whirlwind: the swing turns all the way round the player.
+- **A horde passive** (a Hunter?): bonuses against the hordes. Its last ones, veiled in red, seen in the dark too, not only in the light; more damage while a horde hunts the player; and so on.
 - **Rare upgrades of common passives**: a rare Vitality that regenerates HP over time, and so on.
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
