@@ -16,6 +16,7 @@ pub fn points(kind: EnemyKind) -> u64 {
         EnemyKind::Zombie => 10,
         EnemyKind::Shadow => 30,
         EnemyKind::Abomination => 100,
+        EnemyKind::Parasite => 1,
     }
 }
 

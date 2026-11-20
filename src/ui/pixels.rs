@@ -10,14 +10,18 @@ use super::level_up;
 use super::night;
 use super::sprites::{self, Look, Skin, SpriteId, Sprites};
 use crate::game::{
-    Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle, Passive, STRIKE_RADIUS,
-    SWING_TICKS, Stain, Swing, Vec2, Weapon, World, campfire_light,
+    BURST_REACH, Blast, Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle,
+    Passive, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Weapon, World, campfire_light,
 };
 
 /// The Shadows' eyes, the red of the sprites' palette, and the darker red they shine with in the
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
+/// An abomination's burst: the bile its disc tints the ground with, more towards its edge.
+const BILE: (u8, u8, u8) = (150, 205, 60);
+const BILE_MIDDLE: f32 = 0.35;
+const BILE_EDGE: f32 = 0.85;
 /// The silhouettes a dashing player leaves behind: how far behind, in tiles, and their colour,
 /// fading.
 const AFTERIMAGES: [(f32, Color); 2] = [
@@ -437,9 +441,10 @@ impl<'a> Canvas<'a> {
     /// Flames over each enemy on fire: a few pixels above its head, flickering.
     fn paint_flames(&mut self, world: &World, frame: u32) {
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
-            let look = sprites::enemy(enemy);
+            let look = sprites::enemy(enemy, world.ticks());
             let height = self.sprites.get(look.sprite).height();
-            let (x, y) = pixel(enemy.position);
+            let (x, y) =
+                pixel(enemy.position - Vec2::new(0.0, sprites::lift(enemy, world.ticks())));
             let top = y - height / 2;
             // Its own flicker, never quite the same as a neighbour's.
             let luck = (frame / 3).wrapping_add(enemy.id.wrapping_mul(7));
@@ -449,6 +454,30 @@ impl<'a> Canvas<'a> {
                 }
                 let shade = usize::try_from((index + luck) % 3).unwrap_or(0);
                 self.set((x + dx, top + dy), FLAME_COLOURS[shade]);
+            }
+        }
+    }
+
+    /// An abomination's burst: a disc of bile spreading over the ground, then fading.
+    fn paint_blast(&mut self, blast: &Blast) {
+        let centre = pixel(blast.centre);
+        let reach = burst_pixels(BURST_REACH);
+        let radius = burst_pixels(blast.radius());
+        let strength = blast.strength();
+        for y in -radius..=radius {
+            for x in -radius..=radius {
+                let apart = (x * x + y * y).isqrt();
+                if apart > radius {
+                    continue;
+                }
+                let Some(index) = self.index((centre.0 + x, centre.1 + y)) else {
+                    continue;
+                };
+                let edge = night::share(apart.unsigned_abs(), reach.unsigned_abs());
+                let by = strength * (BILE_MIDDLE + (BILE_EDGE - BILE_MIDDLE) * edge);
+                if let Some(colour) = self.pixels[index] {
+                    self.pixels[index] = Some(super::redden(colour, BILE, by));
+                }
             }
         }
     }
@@ -464,7 +493,7 @@ impl<'a> Canvas<'a> {
             .filter(|enemy| enemy.kind == EnemyKind::Shadow)
         {
             self.repaint(
-                sprites::enemy(enemy),
+                sprites::enemy(enemy, world.ticks()),
                 enemy.position,
                 SHADOW_EYES,
                 SHADOW_EYES_GLOW,
@@ -496,7 +525,19 @@ impl<'a> Canvas<'a> {
         let mut figures: Vec<(Vec2, Look)> = world
             .enemies
             .iter()
-            .map(|enemy| (enemy.position, sprites::enemy(enemy)))
+            .map(|enemy| {
+                let lift = sprites::lift(enemy, world.ticks());
+                (
+                    enemy.position - Vec2::new(0.0, lift),
+                    sprites::enemy(enemy, world.ticks()),
+                )
+            })
+            .chain(
+                world
+                    .swellings
+                    .iter()
+                    .map(|swelling| (swelling.position, sprites::swelling(swelling))),
+            )
             .collect();
         // Blinking while nothing can hurt them.
         let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
@@ -769,6 +810,9 @@ pub fn render_map(
     let mut canvas = Canvas::new(sprites, area, centre);
     canvas.paint_map(world, view.ground);
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
+    for blast in &world.blasts {
+        canvas.paint_blast(blast);
+    }
 
     let covered = canvas.paint_figures(world, view.skin);
     if let Some(hurt_at) = world.hurt_at {
@@ -1042,7 +1086,13 @@ pub fn render_death_scene(
     let mut figures: Vec<(Vec2, Look)> = world
         .enemies
         .iter()
-        .map(|enemy| (enemy.position, sprites::enemy(enemy)))
+        .map(|enemy| {
+            let lift = sprites::lift(enemy, world.ticks());
+            (
+                enemy.position - Vec2::new(0.0, lift),
+                sprites::enemy(enemy, world.ticks()),
+            )
+        })
         .collect();
     if dawn {
         figures.push((player.position, sprites::hero(player.facing, view.skin)));
@@ -1142,6 +1192,17 @@ fn share_of(part: u32, whole: u32, pixels: i32) -> i32 {
 }
 
 /// The pixel a point of the map falls on.
+/// A length of the map, in tiles, in pixels, rounded.
+fn burst_pixels(tiles: f32) -> i32 {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
+        reason = "a burst's reach, a few tiles"
+    )]
+    let pixels = (tiles * TILE_PIXELS as f32).round() as i32;
+    pixels
+}
+
 pub fn pixel(point: Vec2) -> (i32, i32) {
     #[allow(clippy::cast_precision_loss, reason = "2 is exact")]
     let scale = TILE_PIXELS as f32;

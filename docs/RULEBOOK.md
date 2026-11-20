@@ -67,7 +67,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 In arcade, every run is played for its score.
 
-- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**.
+- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**, parasite **1**.
 - Times the **weather's multiplier**: ×1 at dusk and in the night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows the score and the multiplier of the moment (the weather's times the combo's) on a gold badge, the score's thousands apart. While the run is ahead of the best one kept, its score gleams.
@@ -123,12 +123,14 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | Zombie | 15 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
 | Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
+| Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
 
 - Every enemy is slower than the player: they can always be outrun.
-- **Obstacles** stop zombies and abominations, which slide along them; Shadows pass through.
+- A felled abomination **swells**, blinking white, for **0.6 s**, then **bursts**: a disc of green bile, out to **3 tiles**, that costs everything it reaches **10 HP**, the player and the enemies alike, and pushes it back **2 tiles**. Out of it, **4 parasites** are thrown, 2.5 tiles away each its own way, as tough as the weather makes every enemy.
+- **Obstacles** stop zombies, abominations and parasites, which slide along them; Shadows pass through.
 - **Touching** the player costs them the damage of the hardest-hitting enemy touching them; then nothing hurts them for 0.5 s.
 - Enemies that overlap **push each other apart**; one touching the player stops there.
-- A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and Shadows 3 times in 4, abominations always.
+- A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and Shadows 3 times in 4, abominations always, parasites never.
 
 ## Waves
 

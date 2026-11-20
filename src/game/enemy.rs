@@ -27,6 +27,8 @@ pub enum EnemyKind {
     Zombie,
     Shadow,
     Abomination,
+    /// Out of a felled abomination: small, fast, frail; it always finds the player.
+    Parasite,
 }
 
 /// What a kind of enemy is like.
@@ -50,6 +52,7 @@ pub struct Stats {
 }
 
 impl EnemyKind {
+    /// The kinds that appear of themselves: parasites come out of abominations alone.
     pub const ALL: [EnemyKind; 3] = [EnemyKind::Zombie, EnemyKind::Shadow, EnemyKind::Abomination];
 
     pub fn stats(self) -> Stats {
@@ -82,6 +85,16 @@ impl EnemyKind {
                 speed: 2.0,
                 damage: 15,
                 half_width: 0.8,
+                flies: false,
+            },
+            EnemyKind::Parasite => Stats {
+                hp: 12,
+                xp: 0,
+                drop_percent: 0,
+                stain: 1,
+                speed: 4.5,
+                damage: 3,
+                half_width: 0.3,
                 flies: false,
             },
         }

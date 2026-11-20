@@ -8,6 +8,7 @@ use super::body::{fits, slide, touch};
 use super::build::{
     BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
 };
+use super::burst::{self, Blast, Swelling};
 use super::dash::{Dash, Dashes};
 use super::drones;
 use super::enemy::{BOLT_PACE, BOLT_TICKS, Enemy, EnemyKind};
@@ -61,6 +62,13 @@ const TORCH_SECONDS: u32 = 26;
 /// How far the torch's light fades into the dark beyond its radius, in tiles.
 pub const TORCH_FADE: f32 = 6.0;
 
+/// Where a body ends up pushed `by` from `from`, step by step, sliding along what stands in
+/// its way.
+fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: bool) -> Vec2 {
+    let step = by * (1.0 / f32::from(PUSH_STEPS));
+    (0..PUSH_STEPS).fold(from, |at, _| slide(map, at, step, half_width, flies))
+}
+
 /// The tick the torch lights up of itself at.
 fn torch_lights_up() -> u32 {
     TORCH_SECONDS * u32::from(TICKS_PER_SECOND)
@@ -73,6 +81,10 @@ const NOTICE_REACH: f32 = 6.0;
 const LOSE_REACH: f32 = 8.0;
 const LURE_REACH: f32 = 20.0;
 const WANDER_PACE: f32 = 0.5;
+/// The parasites a felled abomination lets out.
+const PARASITES: u16 = 4;
+/// The steps a burst pushes in, each shorter than the longest a body moves in a tick.
+const PUSH_STEPS: u16 = 3;
 /// The most ticks the torch flickers as it lights up, before it holds: a second and a half.
 const TORCH_FLICKER_MOST: u32 = 45;
 /// The seconds a horde wiped out waits before its level comes, for the news to be read first;
@@ -185,6 +197,9 @@ pub struct World {
     pub bottles: Vec<Bottle>,
     pub puddles: Vec<Puddle>,
     molotov_wait: u32,
+    /// The abominations felled, swelling before they burst; and their bursts, as they show.
+    pub swellings: Vec<Swelling>,
+    pub blasts: Vec<Blast>,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
     /// The strikes coming, their ring showing where they will fall: where, and since when.
@@ -321,6 +336,8 @@ impl World {
             strikes_coming: Vec::new(),
             bottles: Vec::new(),
             puddles: Vec::new(),
+            swellings: Vec::new(),
+            blasts: Vec::new(),
             molotov_wait: 0,
             horde_warning: None,
             next_horde: horde::first(Mode::Standard),
@@ -575,6 +592,7 @@ impl World {
         self.fire_guns();
         self.move_bullets();
         self.turn_drones();
+        self.burst_abominations();
         self.fell_enemies();
         self.gather_gems();
         self.give_horde_levels();
@@ -1124,7 +1142,7 @@ impl World {
                 }
             }
             let drop = (stats.drop_percent + self.player.build.drop_bonus()).min(100);
-            if self.rng.random_range(0..100) < drop {
+            if stats.xp > 0 && self.rng.random_range(0..100) < drop {
                 self.gems.push(Gem::new(enemy.position, stats.xp));
             }
             self.stains.push(Stain {
@@ -1146,9 +1164,96 @@ impl World {
             self.horde_levels_due
                 .push(self.ticks + HORDE_LEVEL_DELAY * u32::from(TICKS_PER_SECOND));
         }
+        let swelling = self
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.hp == 0 && enemy.kind == EnemyKind::Abomination)
+            .map(|enemy| Swelling {
+                position: enemy.position,
+                facing: enemy.facing,
+                left: burst::SWELL_TICKS,
+            });
+        self.swellings.extend(swelling.collect::<Vec<_>>());
         self.enemies.retain(|enemy| enemy.hp > 0);
         if self.gems.len() > MAX_GEMS {
             self.gems.drain(..self.gems.len() - MAX_GEMS);
+        }
+    }
+
+    /// The felled abominations swell on, and burst once they have: a disc of bile that hurts
+    /// and pushes back everything within its reach, the parasites thrown out of it.
+    fn burst_abominations(&mut self) {
+        for blast in &mut self.blasts {
+            blast.age += 1;
+        }
+        self.blasts.retain(Blast::shows);
+        let mut bursting = Vec::new();
+        self.swellings.retain_mut(|swelling| {
+            swelling.left = swelling.left.saturating_sub(1);
+            if swelling.left == 0 {
+                bursting.push(swelling.position);
+            }
+            swelling.left > 0
+        });
+        for at in bursting {
+            self.burst(at);
+        }
+    }
+
+    /// An abomination bursts at `at`.
+    fn burst(&mut self, at: Vec2) {
+        self.blasts.push(Blast { centre: at, age: 0 });
+        for enemy in &mut self.enemies {
+            let away = enemy.position - at;
+            if away.length() > burst::REACH {
+                continue;
+            }
+            enemy.hit(burst::DAMAGE);
+            let stats = enemy.kind.stats();
+            enemy.position = shove(
+                &self.map,
+                enemy.position,
+                away.normalized() * burst::PUSH,
+                stats.half_width,
+                stats.flies,
+            );
+        }
+        let away = self.player.position - at;
+        let dashing = self.player.dash.is_some();
+        if away.length() <= burst::REACH && !dashing {
+            if !self.unhurt && !self.daybreak() && self.player.invincible == 0 {
+                self.wound_player(burst::DAMAGE);
+            }
+            self.player.position = shove(
+                &self.map,
+                self.player.position,
+                away.normalized() * burst::PUSH,
+                PLAYER_HALF_WIDTH,
+                false,
+            );
+        }
+        self.let_out_parasites(at);
+    }
+
+    /// A burst abomination's parasites, thrown out around it, each its own way, as tough as the
+    /// weather makes them; nearer where an obstacle stands in the way.
+    fn let_out_parasites(&mut self, at: Vec2) {
+        let stats = EnemyKind::Parasite.stats();
+        let first = spawn::phase(&mut self.rng);
+        for index in 0..PARASITES {
+            let angle = first + std::f32::consts::TAU * f32::from(index) / f32::from(PARASITES);
+            let way = Vec2::new(angle.cos(), angle.sin());
+            let spot = shove(
+                &self.map,
+                at,
+                way * burst::THROW,
+                stats.half_width,
+                stats.flies,
+            );
+            let mut parasite = Enemy::new(self.next_enemy_id, EnemyKind::Parasite, spot, angle);
+            parasite.hp = self.toughened(parasite.hp);
+            self.enemies.push(parasite);
+            self.next_enemy_id += 1;
         }
     }
 
@@ -1442,7 +1547,7 @@ impl World {
             enemy.flash = enemy.flash.saturating_sub(1);
             let stats = enemy.kind.stats();
             let apart = (target - enemy.position).length();
-            if enemy.horde.is_some() {
+            if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
                 enemy.noticed = true;
             } else if enemy.kind == EnemyKind::Shadow && dark_hunt.is_some() {
                 // Shadows hunt in the dark, faster and faster; caught in the torch's light, they

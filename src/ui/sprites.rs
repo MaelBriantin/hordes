@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use ratatui::style::Color;
 use thiserror::Error;
 
-use crate::game::{Enemy, EnemyKind, Facing};
+use crate::game::{Enemy, EnemyKind, Facing, Swelling};
 
 const SOURCE: &str = include_str!("../../assets/sprites.txt");
 const PALETTE: &str = "palette";
@@ -32,6 +32,9 @@ pub enum SpriteId {
     Shadow,
     /// Facing right.
     Abomination,
+    /// Facing right: in the air, and squashed as it lands.
+    Parasite,
+    ParasiteLanded,
     Bullet,
     Drone,
     Gem,
@@ -69,7 +72,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 46] = [
+    const ALL: [SpriteId; 48] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -82,6 +85,8 @@ impl SpriteId {
         SpriteId::GhoulFront,
         SpriteId::Shadow,
         SpriteId::Abomination,
+        SpriteId::Parasite,
+        SpriteId::ParasiteLanded,
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
@@ -132,6 +137,8 @@ impl SpriteId {
             SpriteId::GhoulFront => "ghoul_front",
             SpriteId::Shadow => "shadow",
             SpriteId::Abomination => "abomination",
+            SpriteId::Parasite => "parasite",
+            SpriteId::ParasiteLanded => "parasite_landed",
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
@@ -283,8 +290,43 @@ pub fn gem(value: u32) -> SpriteId {
 /// The colour of an enemy just hit.
 const FLASH: Color = Color::Rgb(255, 255, 255);
 
-/// An enemy as it shows: turned the way it faces, white when just hit.
-pub fn enemy(enemy: &Enemy) -> Look {
+/// The ticks a swelling abomination blinks slowly, before it blinks fast.
+const SWELL_SLOW_TICKS: u32 = 10;
+
+/// A parasite's hops: the ticks each takes, how high it goes, in tiles, and the ticks it lies
+/// squashed as it lands.
+const HOP_TICKS: u32 = 12;
+const HOP_HEIGHT: f32 = 1.5;
+const HOP_LANDED: u32 = 2;
+
+/// Where an enemy is in its hop, `ticks` into the run: each its own, never quite as a
+/// neighbour's.
+fn hop_tick(enemy: &Enemy, ticks: u32) -> u32 {
+    ticks.wrapping_add(enemy.id.wrapping_mul(5)) % HOP_TICKS
+}
+
+/// How high an enemy shows above where it stands, in tiles: a parasite hops, the rest don't.
+pub fn lift(enemy: &Enemy, ticks: u32) -> f32 {
+    if enemy.kind != EnemyKind::Parasite {
+        return 0.0;
+    }
+    let hop = u16::try_from(hop_tick(enemy, ticks)).unwrap_or(0);
+    let ticks = u16::try_from(HOP_TICKS).unwrap_or(u16::MAX);
+    HOP_HEIGHT * (std::f32::consts::PI * f32::from(hop) / f32::from(ticks)).sin()
+}
+
+/// A felled abomination swelling: blinking white, faster as it is about to burst.
+pub fn swelling(swelling: &Swelling) -> Look {
+    let age = swelling.age();
+    let every = if age < SWELL_SLOW_TICKS { 4 } else { 2 };
+    Look {
+        tint: (age / every).is_multiple_of(2).then_some(FLASH),
+        ..Look::sideways(SpriteId::Abomination, swelling.facing)
+    }
+}
+
+/// An enemy as it shows, `ticks` into the run: turned the way it faces, white when just hit.
+pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
     let look = match enemy.kind {
         // A zombie come with a horde shows as a ghoul.
         EnemyKind::Zombie => {
@@ -300,6 +342,14 @@ pub fn enemy(enemy: &Enemy) -> Look {
         }
         EnemyKind::Shadow => Look::sideways(SpriteId::Shadow, enemy.facing),
         EnemyKind::Abomination => Look::sideways(SpriteId::Abomination, enemy.facing),
+        EnemyKind::Parasite => {
+            let shape = if hop_tick(enemy, ticks) < HOP_LANDED {
+                SpriteId::ParasiteLanded
+            } else {
+                SpriteId::Parasite
+            };
+            Look::sideways(shape, enemy.facing)
+        }
     };
     Look {
         tint: (enemy.flash > 0).then_some(FLASH),

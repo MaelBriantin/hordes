@@ -1,6 +1,7 @@
 use super::super::Obstacle;
 use super::super::announce::{News, WeatherNews};
 use super::super::build::{BASE_HP, Build, Choice, Legendary, Passive, Weapon};
+use super::super::burst;
 use super::super::gem::Gem;
 use super::super::mode::Mode;
 use super::super::progress::{Achievement, Progress};
@@ -685,6 +686,7 @@ fn a_fallen_enemy_and_a_hit_player_leave_stains_that_fade() {
     let sizes: Vec<u8> = world.stains.iter().map(|stain| stain.size).collect();
     assert_eq!(sizes, [6, 1]);
     world.enemies.clear();
+    world.swellings.clear();
     wait(&mut world, stain::lasts());
     assert_eq!(world.stains.len(), 0);
 }
@@ -1239,6 +1241,79 @@ fn a_shadow_caught_in_the_light_bolts_out_of_it() {
     wait(&mut world, 10);
     let fled = world.enemies[0].position.x - at;
     assert!(bolted > fled * 2.0, "{bolted} against {fled}");
+}
+
+#[test]
+fn a_felled_abomination_swells_then_bursts_into_parasites_worth_no_gem() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.unhurt = true;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(110.0, 50.0)));
+    world.enemies[0].hp = 0;
+    wait(&mut world, 1);
+    world.gems.clear();
+    assert_eq!(world.enemies, []);
+    assert_eq!(world.swellings.len(), 1, "it swells first");
+    wait(&mut world, burst::SWELL_TICKS);
+    assert_eq!(world.swellings, []);
+    assert_eq!(world.blasts.len(), 1);
+    assert_eq!(world.enemies.len(), 4);
+    for parasite in &world.enemies {
+        assert_eq!(parasite.kind, EnemyKind::Parasite);
+        let out = (parasite.position - Vec2::new(110.0, 50.0)).length();
+        assert!(out > 2.0, "thrown out of it: {out}");
+    }
+    for parasite in &mut world.enemies {
+        parasite.hp = 0;
+    }
+    wait(&mut world, 1);
+    assert_eq!(world.enemies, []);
+    assert_eq!(world.gems, []);
+}
+
+#[test]
+fn a_burst_hurts_and_pushes_back_all_around() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(103.5, 50.0)));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    world.enemies[0].hp = 0;
+    // The zombies stand still, for the player to be hurt by the burst alone.
+    for zombie in &mut world.enemies[1..] {
+        zombie.stunned = 100;
+    }
+    let (near, far) = (world.enemies[1].id, world.enemies[2].id);
+    let hp = world.player.hp;
+    // Its gem taken away, for no level to stop the world.
+    wait(&mut world, 1);
+    world.gems.clear();
+    wait(&mut world, burst::SWELL_TICKS);
+    assert_eq!(world.player.hp, hp - burst::DAMAGE);
+    assert!(world.player.position.x < 99.0, "pushed back");
+    let zombie = |id| world.enemies.iter().find(|enemy| enemy.id == id).unwrap();
+    let full = EnemyKind::Zombie.stats().hp;
+    assert_eq!(zombie(near).hp, full - burst::DAMAGE);
+    assert!(zombie(near).position.x > 104.5, "pushed back");
+    assert_eq!(zombie(far).hp, full, "out of its reach");
+}
+
+#[test]
+fn in_the_dark_a_parasite_finds_the_player_from_afar() {
+    let mut world = in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Parasite, Vec2::new(125.0, 50.0)));
+    wait(&mut world, 1);
+    assert!(world.enemies[0].noticed);
 }
 
 /// How far a zombie 8 tiles off comes towards the player in a second, the torch lit, with

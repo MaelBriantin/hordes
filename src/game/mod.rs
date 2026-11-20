@@ -4,6 +4,7 @@
 mod announce;
 mod body;
 mod build;
+mod burst;
 mod dash;
 mod drones;
 mod enemy;
@@ -28,6 +29,7 @@ mod world;
 
 pub use announce::{News, WeatherNews};
 pub use build::{Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon};
+pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use guns::Bullet;
