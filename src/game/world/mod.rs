@@ -635,6 +635,7 @@ impl World {
                     centre: bottle.to,
                     radius: bottle.radius,
                     left: bottle.lasts,
+                    lasts: bottle.lasts,
                 });
             }
             bottle.left > 0

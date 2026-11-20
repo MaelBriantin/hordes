@@ -204,11 +204,15 @@ const IMPACT_STEPS: u8 = 32;
 const LIGHT_FADE: f32 = crate::game::TORCH_FADE;
 /// An XP gem's glow: how strong at the gem, how far it reaches, in pixels; and the
 /// screen's ground it shows on where nothing is drawn.
-const GEM_GLOW_STRENGTH: f32 = 0.2;
+pub const GEM_GLOW_STRENGTH: f32 = 0.2;
 /// The light of a gem on what is drawn around it: full within this many tiles, fading over
 /// that many more.
 const GEM_LIGHT: (f32, f32) = (0.5, 1.5);
 const GEM_GLOW_REACH: i32 = 4;
+/// How far a gun's flash lights, in tiles: fully, then fading.
+const MUZZLE_LIGHT: (f32, f32) = (1.0, 3.0);
+/// How far a bottle bursting lights at first, in tiles: fully, then fading.
+const BURST_LIGHT: (f32, f32) = (6.0, 4.0);
 const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
 /// What an enemy burnt to death leaves: ash, two greys.
 const ASH: [Color; 2] = [Color::Rgb(60, 58, 56), Color::Rgb(95, 92, 88)];
@@ -467,6 +471,27 @@ impl Light {
         }
     }
 
+    /// A gun's flash at its mouth: a blink of light, a little warm.
+    pub fn muzzle(centre: (i32, i32)) -> Self {
+        Self {
+            centre,
+            radius: MUZZLE_LIGHT.0,
+            fade: MUZZLE_LIGHT.1,
+            warmth: 0.4,
+        }
+    }
+
+    /// A bottle bursting into flames: a blaze, as much of it `left` as is still to fade, from 1
+    /// down to 0.
+    pub fn burst(centre: (i32, i32), left: f32) -> Self {
+        Self {
+            centre,
+            radius: BURST_LIGHT.0 * left,
+            fade: BURST_LIGHT.1,
+            warmth: 1.0,
+        }
+    }
+
     /// How lit it leaves a pixel `(dx, dy)` pixels from its centre, from 0 to 1.
     fn on(&self, (dx, dy): (i32, i32)) -> f32 {
         let distance = tiles_apart((dx, dy));
@@ -536,9 +561,9 @@ fn warmed(color: Color, warm: f32) -> Color {
 /// A glow on the map: the pixel it shines from, and its colour.
 pub type Glow = ((i32, i32), (u8, u8, u8));
 
-/// A glow around each gem or cell, in its colour, added to what is there, the bare ground included:
-/// strongest at the gem, fading out over `GEM_GLOW_REACH` pixels.
-pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
+/// A glow around each gem or Shadow's eyes, in its colour, added to what is there, the bare ground
+/// included: as strong as `strength` at its middle, fading out over `GEM_GLOW_REACH` pixels.
+pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow], strength: f32) {
     let (left, top) = canvas.origin;
     let (width, height) = (canvas.width, canvas.height);
     let reach = GEM_GLOW_REACH;
@@ -548,7 +573,7 @@ pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
             for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
                 let distance = f32::from(i16::try_from(x - cx).unwrap_or(i16::MAX))
                     .hypot(f32::from(i16::try_from(y - cy).unwrap_or(i16::MAX)));
-                let strength = GEM_GLOW_STRENGTH
+                let strength = strength
                     * (1.0 - distance / (f32::from(i16::try_from(reach).unwrap_or(1)) + 1.0))
                         .max(0.0);
                 if strength <= 0.0 {
@@ -569,6 +594,66 @@ pub fn paint_glows(canvas: &mut Canvas, glows: &[Glow]) {
                 ));
             }
         }
+    }
+}
+
+/// A halo around something that shines, a fire or a gun's flash: its colour added to what is
+/// around it, the bare ground included, as strong as `strength` at its middle, fading out over
+/// `reach` pixels.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Halo {
+    pub centre: (i32, i32),
+    pub colour: (u8, u8, u8),
+    pub strength: f32,
+    pub reach: i32,
+}
+
+/// The halos over the canvas: where several meet, the strongest of each colour, not their sum,
+/// lest a crowd on fire turn into a fog.
+pub fn paint_halos(canvas: &mut Canvas, halos: &[Halo]) {
+    if halos.is_empty() {
+        return;
+    }
+    let (left, top) = canvas.origin;
+    let (width, height) = (canvas.width, canvas.height);
+    let mut added = vec![(0_u8, 0_u8, 0_u8); canvas.pixels.len()];
+    for halo in halos {
+        let (cx, cy) = (halo.centre.0 - left, halo.centre.1 - top);
+        let reach = halo.reach;
+        let span = f32::from(i16::try_from(reach).unwrap_or(1)) + 1.0;
+        for y in (cy - reach).max(0)..(cy + reach + 1).min(height) {
+            for x in (cx - reach).max(0)..(cx + reach + 1).min(width) {
+                // In pixels: twice the tiles apart.
+                let distance = tiles_apart((x - cx, y - cy)) * 2.0;
+                let share = halo.strength * (1.0 - distance / span).max(0.0);
+                if share <= 0.0 {
+                    continue;
+                }
+                let Ok(index) = usize::try_from(y * width + x) else {
+                    continue;
+                };
+                let (red, green, blue) = added[index];
+                added[index] = (
+                    red.max(scale_channel(halo.colour.0, share)),
+                    green.max(scale_channel(halo.colour.1, share)),
+                    blue.max(scale_channel(halo.colour.2, share)),
+                );
+            }
+        }
+    }
+    for (pixel, (red, green, blue)) in canvas.pixels.iter_mut().zip(added) {
+        if (red, green, blue) == (0, 0, 0) {
+            continue;
+        }
+        let (r, g, b) = match *pixel {
+            Some(Color::Rgb(r, g, b)) => (r, g, b),
+            _ => SCREEN_GROUND,
+        };
+        *pixel = Some(Color::Rgb(
+            r.saturating_add(red),
+            g.saturating_add(green),
+            b.saturating_add(blue),
+        ));
     }
 }
 
@@ -600,7 +685,7 @@ pub fn paint_stains(canvas: &mut Canvas, stains: &[Stain], now: u32, look: Blood
 }
 
 /// `part` as a share of `whole`, from 0 to 1.
-fn share(part: u32, whole: u32) -> f32 {
+pub fn share(part: u32, whole: u32) -> f32 {
     f32::from(u16::try_from(part.min(whole)).unwrap_or(u16::MAX))
         / f32::from(u16::try_from(whole.max(1)).unwrap_or(u16::MAX))
 }

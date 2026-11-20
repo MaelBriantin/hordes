@@ -18,6 +18,8 @@ use crate::game::{
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
+/// How strong the halo around a Shadow's eyes, against a gem's.
+const EYES_GLOW_STRENGTH: f32 = 0.3;
 /// The silhouettes a dashing player leaves behind: how far behind, in tiles, and their colour,
 /// fading.
 const AFTERIMAGES: [(f32, Color); 2] = [
@@ -134,12 +136,33 @@ const GEAR_NAME: Color = Color::Rgb(200, 200, 210);
 const LIST_GAUGE: i32 = 6;
 /// A Molotov's puddle: how far it lights against its own radius; a bottle: how high its arc
 /// rises, in tiles, and its green.
-const PUDDLE_LIGHT: f32 = 1.5;
+const PUDDLE_LIGHT: f32 = 2.25;
 const BOTTLE_ARC: f32 = 1.5;
 const BOTTLE: Color = Color::Rgb(70, 160, 80);
+/// What shines, its halo: its colour, how strong at its middle, how far it reaches in pixels.
+/// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames; a gun's
+/// flash at its mouth.
+const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
+const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
+const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
+const MUZZLE_HALO: ((u8, u8, u8), f32, i32) = ((255, 210, 130), 0.42, 8);
+/// How dim a fire's halo gets as it flickers, every other look of its flame.
+const FIRE_FLICKER: f32 = 0.85;
+/// The ticks a gun's flash lasts, a shot just fired; and how far ahead of where it was shot
+/// from, in tiles: the gun's mouth.
+const MUZZLE_TICKS: u8 = 2;
+const MUZZLE_AHEAD: f32 = 1.0;
+/// A gun's flash: its heart, the pixel ahead of it, the pixels on its sides.
+const MUZZLE_FLASH: [Color; 3] = [
+    Color::Rgb(255, 250, 220),
+    Color::Rgb(255, 220, 140),
+    Color::Rgb(255, 200, 110),
+];
+/// The ticks a bottle's burst lights, before its puddle's own light alone.
+const BURST_TICKS: u32 = 8;
 /// An enemy on fire: how far its flames light, in tiles; where they flicker, from the middle of
 /// the top of its sprite, in pixels; their colours.
-const BURNING_LIGHT: f32 = 1.0;
+const BURNING_LIGHT: f32 = 1.5;
 const FLAMES: [(i32, i32); 4] = [(0, -1), (-1, 0), (1, -1), (0, -2)];
 const FLAME_COLOURS: [Color; 3] = [
     Color::Rgb(255, 210, 80),
@@ -311,6 +334,85 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// The guns' flashes the canvas shows: where each bullet just shot was shot from, a tile
+    /// ahead, its way. Pellets of a shot share one.
+    fn muzzles(world: &World) -> Vec<(Vec2, Vec2)> {
+        let mut muzzles: Vec<(Vec2, Vec2)> = Vec::new();
+        for bullet in &world.bullets {
+            if let Some(from) = bullet.shot_from(MUZZLE_TICKS) {
+                let at = from + bullet.way() * MUZZLE_AHEAD;
+                if !muzzles.iter().any(|&(other, _)| pixel(other) == pixel(at)) {
+                    muzzles.push((at, bullet.way()));
+                }
+            }
+        }
+        muzzles
+    }
+
+    /// What shines besides the torch and the campfires: the guns' flashes, the bottles bursting,
+    /// the puddles of fire and the enemies burning; their lights, and the halos of all that
+    /// burns or flashes, the `campfires` lit included.
+    fn shines(
+        world: &World,
+        campfires: &[night::Light],
+        frame: u32,
+    ) -> (Vec<night::Light>, Vec<night::Halo>) {
+        let halo =
+            |at: (i32, i32), (colour, strength, reach): ((u8, u8, u8), f32, i32)| night::Halo {
+                centre: at,
+                colour,
+                strength,
+                reach,
+            };
+        let flicker = if (frame / FLICKER).is_multiple_of(2) {
+            1.0
+        } else {
+            FIRE_FLICKER
+        };
+        let mut lights = Vec::new();
+        let mut halos = Vec::new();
+        for (at, _) in Self::muzzles(world) {
+            lights.push(night::Light::muzzle(pixel(at)));
+            halos.push(halo(pixel(at), MUZZLE_HALO));
+        }
+        for puddle in &world.puddles {
+            let centre = pixel(puddle.centre);
+            let age = puddle.age();
+            if age < BURST_TICKS {
+                let left = 1.0 - night::share(age, BURST_TICKS);
+                lights.push(night::Light::burst(centre, left));
+                let (colour, strength, reach) = BURST_HALO;
+                halos.push(halo(centre, (colour, strength * left, reach)));
+            }
+            // It lights around it, warm.
+            lights.push(night::Light::fire(centre, puddle.radius * PUDDLE_LIGHT));
+            let (colour, strength, reach) = FIRE_HALO;
+            halos.push(halo(centre, (colour, strength * flicker, reach)));
+        }
+        for light in campfires {
+            let (colour, strength, reach) = FIRE_HALO;
+            halos.push(halo(light.centre, (colour, strength * flicker, reach)));
+        }
+        // An enemy on fire lights a little around it, warm.
+        for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
+            let (x, y) = pixel(enemy.position);
+            lights.push(night::Light::fire((x, y), BURNING_LIGHT));
+            halos.push(halo((x, y - 2), BURNING_HALO));
+        }
+        (lights, halos)
+    }
+
+    /// The guns' flashes, at their mouths: a bright heart, a pixel ahead, a pixel each side.
+    fn paint_muzzles(&mut self, world: &World) {
+        for (at, way) in Self::muzzles(world) {
+            let side = Vec2::new(-way.y, way.x) * 0.5;
+            self.set(pixel(at), MUZZLE_FLASH[0]);
+            self.set(pixel(at + way * 0.5), MUZZLE_FLASH[1]);
+            self.set(pixel(at + side), MUZZLE_FLASH[2]);
+            self.set(pixel(at - side), MUZZLE_FLASH[2]);
+        }
+    }
+
     /// Small green crosses rising around the player at `centre`, `since` ticks after they were
     /// healed, darker as they go: healed, it shows.
     fn paint_heal(&mut self, centre: (i32, i32), since: u32) {
@@ -337,6 +439,27 @@ impl<'a> Canvas<'a> {
             .gems
             .iter()
             .map(|gem| (pixel(gem.position), gem_glow(gem.value)))
+            .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
+            .collect()
+    }
+
+    /// Once the night has fallen, the Shadows' eyes the canvas shows, or nearly, each with its
+    /// halo's colour.
+    fn eye_glows(&self, world: &World) -> Vec<night::Glow> {
+        let Color::Rgb(red, green, blue) = SHADOW_EYES else {
+            return Vec::new();
+        };
+        if world.torch_on().is_none() {
+            return Vec::new();
+        }
+        world
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.kind == EnemyKind::Shadow)
+            .map(|enemy| {
+                let (x, y) = pixel(enemy.position);
+                ((x, y - 1), (red, green, blue))
+            })
             .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
             .collect()
     }
@@ -736,25 +859,14 @@ pub fn render_map(
     if world.torch_shines() {
         lights.push(night::Light::torch(centre, world.light_radius()));
     }
-    lights.extend(canvas.paint_healing(world, frame));
-    // A puddle of fire lights around it, warm and swaying.
-    lights.extend(
-        world
-            .puddles
-            .iter()
-            .map(|puddle| night::Light::fire(pixel(puddle.centre), puddle.radius * PUDDLE_LIGHT)),
-    );
-    // An enemy on fire lights a little around it, warm.
-    lights.extend(
-        world
-            .enemies
-            .iter()
-            .filter(|enemy| enemy.burning > 0)
-            .map(|enemy| night::Light::fire(pixel(enemy.position), BURNING_LIGHT)),
-    );
+    let campfires = canvas.paint_healing(world, frame);
+    let (shining, halos) = Canvas::shines(world, &campfires, frame);
+    lights.extend(campfires);
+    lights.extend(shining);
     let glows = canvas.glows(world);
     lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
+    night::paint_halos(&mut canvas, &halos);
     // Where lightning will strike, a moment before: its ring on the ground, blinking, under the
     // figures.
     for coming in &world.strikes_coming {
@@ -765,17 +877,21 @@ pub fn render_map(
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
     canvas.mark(world, view);
+    // The Shadows' eyes glow around them, then show over their glow.
+    let eye_glows = canvas.eye_glows(world);
+    night::paint_glows(&mut canvas, &eye_glows, EYES_GLOW_STRENGTH);
     canvas.paint_shadow_eyes(world);
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
     // Each gem on screen glows its colour around it, then shows over its glow.
-    night::paint_glows(&mut canvas, &glows);
+    night::paint_glows(&mut canvas, &glows, night::GEM_GLOW_STRENGTH);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
     }
     if let Some(swing) = &world.swing {
         canvas.paint_swing(swing, player.position);
     }
+    canvas.paint_muzzles(world);
     for bullet in &world.bullets {
         canvas.paint_bullet(bullet);
     }

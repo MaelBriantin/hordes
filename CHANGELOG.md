@@ -9,6 +9,14 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The Shadows' eyes glow red in the dark, a halo around them.
+- A gun's shot flashes at its mouth, lighting around it a blink.
+- A Molotov bottle bursts in a flash of fire, lighting all around a moment.
+
+### Changed
+- Fire lights further, the puddles of fire and the enemies burning half again as far, and all that burns casts a flickering orange halo, the campfires included.
+
 ## v0.7.0 · November 20, 2026
 In a flash.
 

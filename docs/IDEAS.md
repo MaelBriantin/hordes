@@ -37,6 +37,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Rare upgrades of common passives**: a rare Vitality that regenerates HP over time, and so on.
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
+- **Drones that shoot**: the drones as they are do next to nothing, and nobody takes them: a blow now and then, then broken for 2 s. They should shoot around the player, each at the enemies near its side of the circle (the Swarm's spiral of bullets, from the first level?), or go until they do.
 - **Rare drones**: other kinds of drones, found on rare cards. Missile drones, for one: circling the player like the drones, each fires a missile in turn, so salvos streak across the screen.
 
 ## Healing
@@ -60,6 +61,15 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Trophies**, in the standard mode (which keeps no leaderboard): goals reached in a run, kept from one run to the next. Hold out until dawn; wipe out every horde of a run; reach dawn without lighting the torch again once it is out; and so on.
 
 - Show the run's **seed** on the game over, to play the same map again.
+
+## Light
+
+The game's strength: a black night, lit here and there. The rule: **a light makes a halo**, around it, on what is there; what isn't a light doesn't glow.
+
+- **Muzzle flashes**: each shot lights the gun's mouth a blink, a halo around it, the enemies near it lit out of the dark a frame.
+- **The Molotov's burst**: a flash where a bottle bursts, lighting all around a moment, before its puddle's light.
+- Tried, and dropped: **glowing bullets**, a light and a halo each: the torch lights enough, and they aren't lights.
+- Tried, and dropped: **glowing ghouls**, the horde's skin lit green with a halo. Together, their halos melt into a green fog, harder to read than before.
 
 ## Engine
 

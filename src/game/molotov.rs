@@ -58,8 +58,16 @@ impl Bottle {
 pub struct Puddle {
     pub centre: Vec2,
     pub radius: f32,
-    /// Ticks left it burns.
+    /// Ticks left it burns, out of how many in all.
     pub left: u32,
+    pub lasts: u32,
+}
+
+impl Puddle {
+    /// The ticks since it burst.
+    pub fn age(&self) -> u32 {
+        self.lasts.saturating_sub(self.left)
+    }
 }
 
 #[cfg(test)]
