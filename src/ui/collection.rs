@@ -5,10 +5,11 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::Line;
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
 use super::sprites::{SpriteId, Sprites};
-use super::{achievement, pixels, thousands};
+use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, thousands};
 use crate::game::{COLLECTION, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
@@ -26,9 +27,8 @@ const BOX_HEIGHT: u16 = 7;
 const BOX: Color = Color::Rgb(28, 30, 38);
 const WHITE: Color = Color::Rgb(225, 225, 230);
 const GREY: Color = Color::Rgb(140, 145, 160);
-/// The bar: its width, and its track, the part not yet full.
-const BAR_WIDTH: u16 = 30;
-const TRACK: Color = Color::Rgb(45, 47, 60);
+/// The room on each side of the box's words and bar.
+const BOX_PADDING: u16 = 3;
 /// How dark a tile the player doesn't have is.
 const LOCKED_SHARE: f32 = 0.4;
 
@@ -220,7 +220,7 @@ fn tell(
             ground.fg(if has { colour } else { grey(colour) }),
         );
     }
-    let (left, top) = (x + 3, y + 1);
+    let (left, top) = (x + BOX_PADDING, y + 1);
     let name_colour = if has { colour } else { GREY };
     buffer.set_string(
         left,
@@ -251,9 +251,8 @@ fn tell(
                 ground.fg(GREY),
             );
             if let Some((count, of)) = progress.count_of(achievement).filter(|_| !reached) {
-                bar(buffer, (left, top + 4), count, of, colour);
-                let counted = format!("{} / {}", thousands(count.min(of)), thousands(of));
-                buffer.set_string(left + BAR_WIDTH + 2, top + 4, counted, ground.fg(GREY));
+                let wide = width.saturating_sub(2 * BOX_PADDING);
+                bar(buffer, (left, top + 4), wide, count, of);
             }
         }
     }
@@ -263,18 +262,16 @@ fn tell(
     }
 }
 
-/// A bar of `BAR_WIDTH` cells, as full as `count` is of `of`.
-fn bar(buffer: &mut Buffer, at: (u16, u16), count: u64, of: u64, colour: Color) {
-    let full = count.min(of) * u64::from(BAR_WIDTH) / of.max(1);
-    for cell in 0..BAR_WIDTH {
-        let lit = u64::from(cell) < full;
-        buffer.set_string(
-            at.0 + cell,
-            at.1,
-            "█",
-            Style::new().fg(if lit { colour } else { TRACK }).bg(BOX),
-        );
-    }
+/// A bar `wide` cells wide, as full as `count` is of `of`, the count in its middle: the XP
+/// bar's, in its colour and relief.
+fn bar(buffer: &mut Buffer, at: (u16, u16), wide: u16, count: u64, of: u64) {
+    let cells = usize::from(wide.saturating_sub(2));
+    let (part, whole) = (count.min(of), of);
+    let fit = |value: u64| u32::try_from(value).unwrap_or(u32::MAX);
+    let mut spans = embossed(&bar_of(fit(part), fit(whole), cells), XP_COLOR);
+    let counted = format!("{} / {}", thousands(part), thousands(whole));
+    labelled(&mut spans, &counted, XP_COLOR);
+    buffer.set_line(at.0, at.1, &Line::from(spans), wide);
 }
 
 /// A line of `area` with `text` in its middle.
