@@ -13,6 +13,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - Progress: achievements, reached once and kept from one run to the next, each unlocking a card or a reroll, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
 
 ### Changed
+- A horde comes out of the other side from the enemies about the player, catching them between, rather than a side at random.
 - The drones are dealt no more, until they are made worth taking.
 
 ## v0.7.0 · November 20, 2026

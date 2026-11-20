@@ -38,6 +38,39 @@ pub struct Tally {
     pub points: u64,
 }
 
+/// The side a horde comes out of: the other side from the enemies about the player, `view`
+/// around them, to catch the player between; at random while none is about.
+pub fn pincer(
+    rng: &mut impl Rng,
+    player: Vec2,
+    view: Vec2,
+    enemies: impl Iterator<Item = Vec2>,
+) -> Facing {
+    let (reach_x, reach_y) = (view.x + MARGIN, view.y + MARGIN);
+    // Where the enemies about lie, all together, each side as wide as the view is.
+    let mut lean = Vec2::ZERO;
+    for enemy in enemies {
+        let apart = enemy - player;
+        if apart.x.abs() <= reach_x && apart.y.abs() <= reach_y {
+            lean += Vec2::new(apart.x / reach_x, apart.y / reach_y);
+        }
+    }
+    if lean.x == 0.0 && lean.y == 0.0 {
+        return [Facing::Up, Facing::Down, Facing::Left, Facing::Right][rng.random_range(0..4)];
+    }
+    if lean.x.abs() >= lean.y.abs() {
+        if lean.x > 0.0 {
+            Facing::Left
+        } else {
+            Facing::Right
+        }
+    } else if lean.y > 0.0 {
+        Facing::Up
+    } else {
+        Facing::Down
+    }
+}
+
 /// The tick the first horde comes at: in the middle of the first night, once it has fallen.
 pub fn first(mode: Mode) -> u32 {
     (weather::DUSK_SECONDS + weather::stage_seconds(mode) / 2) * u32::from(TICKS_PER_SECOND)
@@ -163,6 +196,26 @@ mod tests {
         assert!(spots.iter().any(|spot| spot.x < -30.0));
         assert!(spots.iter().any(|spot| spot.y > 12.0));
         assert!(spots.iter().any(|spot| spot.y < -12.0));
+    }
+
+    #[test]
+    fn a_horde_comes_from_the_other_side_than_the_enemies_about() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let view = Vec2::new(30.0, 12.0);
+        let below = [Vec2::new(2.0, 8.0), Vec2::new(-3.0, 10.0)];
+        assert_eq!(
+            pincer(&mut rng, Vec2::ZERO, view, below.into_iter()),
+            Facing::Up
+        );
+        let right = [Vec2::new(20.0, 1.0), Vec2::new(25.0, -2.0)];
+        assert_eq!(
+            pincer(&mut rng, Vec2::ZERO, view, right.into_iter()),
+            Facing::Left
+        );
+        // Far off, they count for nothing.
+        let far = [Vec2::new(500.0, 0.0)];
+        let side = pincer(&mut rng, Vec2::ZERO, view, far.into_iter());
+        assert!([Facing::Up, Facing::Down, Facing::Left, Facing::Right].contains(&side));
     }
 
     #[test]

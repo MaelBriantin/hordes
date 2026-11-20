@@ -1350,13 +1350,16 @@ impl World {
             return;
         }
         if self.horde_warning.is_none() && self.ticks + horde::warning() >= self.next_horde {
+            // Out of the other side from the enemies about: the player caught between.
             let side = if horde::rings(self.weather()) {
                 None
             } else {
-                Some(
-                    [Facing::Up, Facing::Down, Facing::Left, Facing::Right]
-                        [self.rng.random_range(0..4)],
-                )
+                Some(horde::pincer(
+                    &mut self.rng,
+                    self.player.position,
+                    self.view,
+                    self.enemies.iter().map(|enemy| enemy.position),
+                ))
             };
             self.horde_warning = Some(Warning {
                 arrives_at: self.next_horde,
