@@ -1588,8 +1588,9 @@ impl World {
         CAMPFIRE_HP - self.burnt.get(&tile).copied().unwrap_or(0).min(CAMPFIRE_HP)
     }
 
-    /// A hurt player picks up the herbs they walk over, and is healed by a burning campfire they
-    /// stay by, which gives of itself as it does.
+    /// A hurt player picks up the herbs within their reach, as far as gems fly to them (Magnet
+    /// included), and is healed by a burning campfire they stay by, which gives of itself as it
+    /// does.
     fn heal_player(&mut self) {
         let player = self.player.position;
         let (x, y) = player.tile();
@@ -1599,6 +1600,7 @@ impl World {
             reason = "a campfire's light, a few tiles"
         )]
         let around = (2.0 * CAMPFIRE_LIGHT).ceil() as i32 + 1;
+        let herb_reach = HERB_REACH.max(self.player.build.magnet_radius());
         let mut fire = None;
         for (tile, feature) in self.features_in((x - around, y - around), (x + around, y + around))
         {
@@ -1606,7 +1608,7 @@ impl World {
             let apart = (middle - player).length();
             let hurt = self.player.hp < self.player.max_hp();
             match feature {
-                Feature::Herb if hurt && apart <= HERB_REACH => {
+                Feature::Herb if hurt && apart <= herb_reach => {
                     self.player.hp = (self.player.hp + HERB_HP).min(self.player.max_hp());
                     self.picked.insert(tile);
                     self.healed_at = Some(self.ticks);
