@@ -9,6 +9,12 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- Progress: achievements, reached once and kept from one run to the next, each unlocking a card or a reroll, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
+
+### Changed
+- The drones are dealt no more, until they are made worth taking.
+
 ## v0.7.0 · November 20, 2026
 In a flash.
 

@@ -16,7 +16,7 @@ On Windows (PowerShell):
 powershell -ExecutionPolicy Bypass -c "irm https://github.com/MaelBriantin/hordes/releases/latest/download/hordes-installer.ps1 | iex"
 ```
 
-The game installs in `~/.local/bin` (`%USERPROFILE%\.local\bin` on Windows). Then run `hordes`. To update to the latest version, run `hordes update`. `hordes reset` erases your settings and your leaderboard; `hordes uninstall` removes the game, and asks whether to erase them too.
+The game installs in `~/.local/bin` (`%USERPROFILE%\.local\bin` on Windows). Then run `hordes`. To update to the latest version, run `hordes update`. `hordes reset` erases your settings, your leaderboard and your progress; `hordes uninstall` removes the game, and asks whether to erase them too.
 
 The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfonts.com) (for instance JetBrains Mono Nerd Font) for the icons of its status line: without one, they show as empty boxes. A terminal with kitty's keyboard protocol (Ghostty, kitty, WezTerm, iTerm2…) knows when a key is let go: the hero stops the moment you do.
 
@@ -49,7 +49,7 @@ cargo test
 cargo clippy   # the project lints with clippy::pedantic
 ```
 
-Set `HORDES_DATA_DIR` to keep the settings and the leaderboard somewhere else, to try things without touching your own:
+Set `HORDES_DATA_DIR` to keep the settings, the leaderboard and the progress somewhere else, to try things without touching your own:
 
 ```sh
 HORDES_DATA_DIR=/tmp/hordes cargo run

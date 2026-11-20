@@ -5,6 +5,8 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 ## Characters
 
 - **Unlockable characters**, each with a speciality of its own: a starting weapon, different stats. A werewolf could be one of them.
+- **Characters by achievement**: a character, its own look and its own starting weapon, unlocked by an achievement fitting it. The Cleaner (every horde of a run wiped out) could bring a cleaner in overalls, starting with the flamethrower.
+- **A nod to Dungeon Crawler Carl**: a character called Carl, a look of his own that recalls the book's hero (boxers, a jacket, bare feet) in the few colours at hand; and a card to go with him, a cat thrown that whirls through the enemies, a nod to Princess Donut. A nod, not a copy: our own pixels, our own words.
 - **Found on the map**: a character to unlock is met during a run (a survivor to reach, to rescue); once found, it can be played in the next runs. With the weapons to unlock (see Weapons), the game's progression from one run to the next.
 
 ## Enemies

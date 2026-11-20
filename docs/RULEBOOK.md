@@ -238,6 +238,24 @@ Up to **4 passives**, each up to **level 5**.
 |---|---|
 | Illumination | **+1 XP every second**, of itself |
 
+## Progress
+
+- **Achievements**: goals reached once, kept from one run to the next, in both modes; each unlocks a card, dealt from then on, or a reroll more a run. At first, the cards dealt are four weapons, the **crowbar**, the **machete**, the **pistol** and the **shotgun**; Vitality, Swiftness, Magnet, Might, Haste, Flashlight, Wisdom, Loot; and the heal.
+
+| Achievement | Goal | Unlocks |
+|---|---|---|
+| Rain of lead | Hold out until the rain | Machine gun |
+| In the eye | Hold out until the storm | Molotov |
+| Struck | Struck by lightning, and standing | Dash |
+| A thousand down | 1,000 enemies down, every run counted | Regeneration |
+| Raw light | 50 Shadows down, every run counted | Glare |
+| Dawn | Hold out until dawn | Illumination |
+| A regular | 10 runs played | A second reroll a run |
+
+- **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
+- The **drones** are dealt no more, until they are made worth taking.
+- The progress is kept in `progress.ron`, in the game's data folder.
+
 ## Experience
 
 - Fallen enemies may leave an XP gem (see Enemies). A gem covers one tile. A gem within **2 tiles** (more with Magnet) flies to the player (12 tiles/s) and keeps on until picked up.

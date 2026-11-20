@@ -12,8 +12,8 @@ use std::path::{Path, PathBuf};
 /// The game's name, as the installer and its receipt know it.
 const APP: &str = "hordes";
 
-/// The files the game keeps in its data folder: the settings and the leaderboard.
-const DATA_FILES: [&str; 2] = ["settings.txt", "scores.txt"];
+/// The files the game keeps in its data folder: the settings, the leaderboard and the progress.
+const DATA_FILES: [&str; 3] = ["settings.txt", "scores.txt", "progress.ron"];
 
 /// Whether the game keeps any of its files in `folder`.
 fn holds_data(folder: &Path) -> bool {

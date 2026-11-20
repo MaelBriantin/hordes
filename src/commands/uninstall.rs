@@ -35,10 +35,10 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("{APP} is removed.");
 
     if let Some(folder) = data_folder().filter(|folder| holds_data(folder))
-        && confirm("Erase your settings and your leaderboard too?")?
+        && confirm("Erase your settings, your leaderboard and your progress too?")?
     {
         erase_data(&folder)?;
-        println!("Your settings and your leaderboard are erased.");
+        println!("Your settings, your leaderboard and your progress are erased.");
     }
     println!(
         "The line the installer may have added to your shell's profile, for your PATH, stays: it does no harm."

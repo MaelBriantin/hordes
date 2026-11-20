@@ -2,6 +2,7 @@
 //! player in a frame, the keys below it; over the map, the title screen, the pause menu, the
 //! level-up's cards or the game over.
 
+mod achievement;
 mod announce;
 mod debug;
 mod font;
@@ -23,8 +24,9 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Widget};
 
-use crate::game::{Leaderboard, Vec2, World, xp_to_next};
+use crate::game::{Achievement, Leaderboard, Vec2, World, xp_to_next};
 use crate::game::{Mode, Weather, WeatherNews};
+pub use achievement::TOAST_FRAMES;
 pub use debug::DebugAction;
 pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
@@ -178,6 +180,8 @@ pub struct ViewState {
     pub language: &'static str,
     /// The leaderboard's place of the run just over, if it made it.
     pub highlight: Option<usize>,
+    /// The achievement being told, and the frames since it started to show.
+    pub toast: Option<(Achievement, u32)>,
 }
 
 pub fn render(
@@ -278,6 +282,9 @@ pub fn render(
         horde::render(frame, map, world, view.frame);
         announce::render(frame, map, world, sprites);
         level_up::render(frame, map, world, sprites, view.selected, view.shown);
+    }
+    if let Some((achievement, since)) = view.toast {
+        achievement::render(frame.buffer_mut(), map, sprites, achievement, since);
     }
 }
 

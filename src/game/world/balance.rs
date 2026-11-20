@@ -17,7 +17,9 @@
 
 use std::thread;
 
-use super::{Build, Choice, Input, Mode, TICKS_PER_SECOND, Vec2, Weapon, Weather, World, weather};
+use super::{
+    Build, Choice, Input, Mode, Progress, TICKS_PER_SECOND, Vec2, Weapon, Weather, World, weather,
+};
 
 /// Half the map a terminal of 160 × 40 cells shows, in tiles: where the enemies come in from.
 const VIEW: Vec2 = Vec2::new(40.0, 20.0);
@@ -54,7 +56,7 @@ struct Outcome {
 
 /// A run of `seed` as `setup` says, played by the bot until it is over or `limit` ticks in.
 fn play(seed: u64, setup: Setup, limit: u32) -> Outcome {
-    let mut world = World::with(seed, Mode::Standard, false);
+    let mut world = World::with(seed, Mode::Standard, false, Progress::everything());
     world.set_view(VIEW);
     if let Setup::Alone { weapon, level, .. } = setup {
         let mut build = Build::unarmed();

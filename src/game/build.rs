@@ -210,10 +210,11 @@ impl Build {
         dusk: bool,
         rare_percent: u32,
         legendary_percent: u32,
+        deals: impl Fn(Choice) -> bool,
     ) -> Vec<Choice> {
         let mut pool: Vec<Choice> = Vec::new();
         for weapon in Weapon::ALL {
-            if can_pick(&self.weapons, weapon, MAX_WEAPONS) {
+            if can_pick(&self.weapons, weapon, MAX_WEAPONS) && deals(Choice::Weapon(weapon)) {
                 pool.push(Choice::Weapon(weapon));
             }
         }
@@ -221,7 +222,7 @@ impl Build {
             if dusk && matches!(passive, Passive::Flashlight | Passive::Glare) {
                 continue;
             }
-            if can_pick(&self.passives, passive, MAX_PASSIVES) {
+            if can_pick(&self.passives, passive, MAX_PASSIVES) && deals(Choice::Passive(passive)) {
                 pool.push(Choice::Passive(passive));
             }
         }
@@ -244,7 +245,7 @@ impl Build {
         }
         let missing: Vec<Legendary> = Legendary::ALL
             .into_iter()
-            .filter(|legendary| !self.has(*legendary))
+            .filter(|legendary| !self.has(*legendary) && deals(Choice::Legendary(*legendary)))
             .collect();
         if !missing.is_empty() && rng.random_range(0..100) < legendary_percent {
             let legendary = missing[rng.random_range(0..missing.len())];
@@ -388,7 +389,7 @@ mod tests {
         let build = Build::new();
         let mut rng = rng();
         for _ in 0..50 {
-            let offers = build.offers(&mut rng, false, RARE_PERCENT, 5);
+            let offers = build.offers(&mut rng, false, RARE_PERCENT, 5, |_| true);
             assert_eq!(offers.len(), 3);
             assert!(offers[0] != offers[1] && offers[1] != offers[2] && offers[0] != offers[2]);
         }
@@ -405,7 +406,7 @@ mod tests {
         for _ in 0..50 {
             assert!(
                 !build
-                    .offers(&mut rng, false, RARE_PERCENT, 5)
+                    .offers(&mut rng, false, RARE_PERCENT, 5, |_| true)
                     .contains(&Choice::Weapon(Weapon::Crowbar))
             );
         }
@@ -421,7 +422,7 @@ mod tests {
         for _ in 0..50 {
             assert!(
                 !build
-                    .offers(&mut rng, false, RARE_PERCENT, 5)
+                    .offers(&mut rng, false, RARE_PERCENT, 5, |_| true)
                     .contains(&Choice::Passive(Passive::Haste))
             );
         }
@@ -439,7 +440,7 @@ mod tests {
             }
         }
         assert_eq!(
-            build.offers(&mut rng(), false, RARE_PERCENT, 5),
+            build.offers(&mut rng(), false, RARE_PERCENT, 5, |_| true),
             [Choice::Heal]
         );
     }
@@ -466,7 +467,7 @@ mod tests {
         for _ in 0..200 {
             assert!(
                 !build
-                    .offers(&mut rng, true, RARE_PERCENT, 5)
+                    .offers(&mut rng, true, RARE_PERCENT, 5, |_| true)
                     .contains(&Choice::Passive(Passive::Flashlight))
             );
         }
@@ -480,7 +481,7 @@ mod tests {
         let found = (0..1_000)
             .filter(|_| {
                 build
-                    .offers(&mut rng, false, RARE_PERCENT, 5)
+                    .offers(&mut rng, false, RARE_PERCENT, 5, |_| true)
                     .contains(&legendary)
             })
             .count();
@@ -489,7 +490,7 @@ mod tests {
         assert!(build.has(Legendary::Illumination));
         assert!((0..500).all(|_| {
             !build
-                .offers(&mut rng, false, RARE_PERCENT, 5)
+                .offers(&mut rng, false, RARE_PERCENT, 5, |_| true)
                 .contains(&legendary)
         }));
     }
@@ -520,7 +521,7 @@ mod tests {
         let build = Build::new();
         let mut rng = rng();
         let cards: Vec<Choice> = (0..1_000)
-            .flat_map(|_| build.offers(&mut rng, false, RARE_PERCENT, 0))
+            .flat_map(|_| build.offers(&mut rng, false, RARE_PERCENT, 0, |_| true))
             .collect();
         let rare = cards
             .iter()

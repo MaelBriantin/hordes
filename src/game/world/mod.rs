@@ -20,6 +20,7 @@ use super::machete::{self, Melee, Swing};
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{self, Bottle, Puddle};
+use super::progress::{Achievement, Progress};
 use super::score;
 use super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::stain::{self, MAX_STAINS, Stain};
@@ -244,6 +245,10 @@ pub struct World {
     offer_rare: u32,
     /// The times left this run the cards on offer can be dealt again.
     pub rerolls: u8,
+    /// What the player has reached, this run counted; and what they had as it started: the
+    /// cards it deals, set for the whole run.
+    pub progress: Progress,
+    dealt: Progress,
     ticks: u32,
     rng: StdRng,
     /// Enemies owed: grows with the rate they appear at, one appears per whole unit.
@@ -255,16 +260,22 @@ pub struct World {
 impl World {
     /// A new run, all its luck from `seed`: the map, and the enemies that appear.
     pub fn new(seed: u64) -> Self {
-        Self::with(seed, Mode::Standard, false)
+        Self::with(seed, Mode::Standard, false, Progress::everything())
     }
 
     /// A new run in a mode on a map drawn from `seed`, from the dusk, or from the night if
     /// `skip_dusk`, the torch lit.
-    pub fn with(seed: u64, mode: Mode, skip_dusk: bool) -> Self {
+    pub fn with(seed: u64, mode: Mode, skip_dusk: bool, progress: Progress) -> Self {
         let start = Vec2::new(0.5, 0.5);
         let map = Map::new(seed, start.tile());
         let mut world = Self::on(map, start, StdRng::seed_from_u64(seed));
         world.mode = mode;
+        // One more run played.
+        world.progress = progress;
+        world.progress.runs += 1;
+        world.progress.count();
+        world.rerolls = world.progress.rerolls();
+        world.dealt = world.progress.clone();
         world.next_horde = horde::first(mode);
         // A run opens on the dusk, told; or on the night, the dusk skipped.
         let opening = if skip_dusk {
@@ -340,6 +351,8 @@ impl World {
             rare_levels: 0,
             offer_rare: RARE_PERCENT,
             rerolls: REROLLS,
+            progress: Progress::everything(),
+            dealt: Progress::everything(),
             ticks: 0,
             rng,
             spawn_debt: 0.0,
@@ -541,6 +554,7 @@ impl World {
             let bonus = self.score * score::DAWN_BONUS_PERCENT / 100;
             self.score += bonus;
             self.dawn_bonus = Some(bonus);
+            self.progress.reach(Achievement::Dawn);
             return;
         }
         if self.weather() != weather {
@@ -568,9 +582,23 @@ impl World {
         self.regenerate();
         self.heal_player();
         self.hurt_player();
+        self.reach_goals();
         if self.pending_levels > 0 && !self.is_over() {
             self.offer = Some(self.deal());
         }
+    }
+
+    /// The achievements of the run reached so far: the weather held out until, and those
+    /// counted over every run. The cards they unlock are dealt at once.
+    fn reach_goals(&mut self) {
+        let weather = self.weather();
+        if matches!(weather, Weather::Rain | Weather::Storm | Weather::Tempest) {
+            self.progress.reach(Achievement::Rain);
+        }
+        if matches!(weather, Weather::Storm | Weather::Tempest) {
+            self.progress.reach(Achievement::Storm);
+        }
+        self.progress.count();
     }
 
     /// Picks the choice at `index` of the offer: then the next level's offer, or the world
@@ -624,7 +652,13 @@ impl World {
     fn deal_as(&mut self, rare: u32) -> Vec<Choice> {
         let dusk = self.weather() == Weather::Dusk;
         let percent = LEGENDARY_PERCENT + self.without_legendary;
-        let offer = self.player.build.offers(&mut self.rng, dusk, rare, percent);
+        let progress = &self.dealt;
+        let offer = self
+            .player
+            .build
+            .offers(&mut self.rng, dusk, rare, percent, |choice| {
+                progress.deals(choice)
+            });
         if offer
             .iter()
             .any(|choice| matches!(choice, Choice::Legendary(_)))
@@ -869,6 +903,9 @@ impl World {
             && self.player.dash.is_none()
         {
             self.wound_player(weather::STRIKE_PLAYER_DAMAGE);
+            if self.player.hp > 0 {
+                self.progress.reach(Achievement::Struck);
+            }
         }
     }
 
@@ -1058,6 +1095,10 @@ impl World {
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
             // Worth the combo as it stood before this kill.
             let worth = score::worth(enemy.kind, weather, self.combo);
+            self.progress.kills += 1;
+            if enemy.kind == EnemyKind::Shadow {
+                self.progress.shadows += 1;
+            }
             self.score += worth;
             self.combo += 1;
             self.last_kill = self.ticks;

@@ -26,14 +26,14 @@ const GAP: u16 = 2;
 const PICTURE: (u16, u16) = (8, 4);
 const NEW: Color = Color::Rgb(80, 200, 90);
 /// A rare card's blue and a legendary card's gold: their frame, and the word on it.
-const RARE: Color = Color::Rgb(90, 150, 255);
-const LEGENDARY: Color = Color::Rgb(255, 200, 60);
+pub const RARE: Color = Color::Rgb(90, 150, 255);
+pub const LEGENDARY: Color = Color::Rgb(255, 200, 60);
 const BACK: Color = Color::Rgb(70, 80, 120);
 /// How much of its colour a card's frame keeps when not selected: the selected one stands out,
 /// bright, in the same colour.
 const UNSELECTED: f32 = 0.55;
 /// A common card's frame, selected.
-const COMMON: Color = Color::Rgb(235, 235, 240);
+pub const COMMON: Color = Color::Rgb(235, 235, 240);
 /// How long a card takes to turn over.
 const FLIP: Duration = Duration::from_millis(240);
 /// How long after one card the next one starts to turn.

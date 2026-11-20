@@ -9,7 +9,7 @@ mod ui;
 
 const USAGE: &str = "Usage: hordes            play
        hordes update     install the latest version
-       hordes reset      erase your settings and your leaderboard
+       hordes reset      erase your settings, your leaderboard and your progress
        hordes uninstall  remove the game from this computer
        hordes --version  show this version";
 

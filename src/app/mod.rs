@@ -3,11 +3,13 @@
 
 mod debug;
 mod keys;
+mod progress;
 mod scores;
 mod settings;
 
 pub use settings::data_folder;
 
+use std::collections::VecDeque;
 use std::io;
 use std::time::{Duration, Instant};
 
@@ -20,7 +22,9 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
 
-use crate::game::{Entry, Leaderboard, Mode, TICKS_PER_SECOND, WeatherNews, World};
+use crate::game::{
+    Achievement, Entry, Leaderboard, Mode, Progress, TICKS_PER_SECOND, WeatherNews, World,
+};
 use crate::ui::{
     self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
 };
@@ -33,6 +37,11 @@ pub struct App {
     screen: Screen,
     settings: Settings,
     leaderboard: Leaderboard,
+    /// What the player has reached so far, every run counted.
+    progress: Progress,
+    /// The achievements reached and still to be told, the first being told since a frame.
+    toasts: VecDeque<Achievement>,
+    toast_since: Option<u32>,
     /// Whether the run over has been weighed against the leaderboard.
     scored: bool,
     /// The run's place on the leaderboard, if it made it.
@@ -63,6 +72,9 @@ impl App {
             screen: Screen::Title,
             settings,
             leaderboard: scores::load(),
+            progress: progress::load(),
+            toasts: VecDeque::new(),
+            toast_since: None,
             scored: false,
             highlight: None,
             last_name: *b"AAA",
@@ -84,6 +96,8 @@ impl App {
         execute!(io::stdout(), EnableFocusChange)?;
         self.keys = Keys::new(reports_release);
         let result = self.game_loop(terminal);
+        // The counts of the run left unfinished kept too.
+        let _ = progress::save(&self.progress);
         execute!(io::stdout(), DisableFocusChange)?;
         if reports_release {
             execute!(io::stdout(), PopKeyboardEnhancementFlags)?;
@@ -97,27 +111,31 @@ impl App {
         let mut next_tick = Instant::now() + tick;
         while !self.should_quit {
             self.world.set_view(ui::view(terminal.size()?.into()));
-            let view = ViewState {
-                selected: self.selected,
-                shown: self.dealt_at.map_or(Duration::ZERO, |at| at.elapsed()),
-                frame: self.frames,
-                blood: self.settings.blood,
-                rain: self.settings.rain,
-                arrow: self.settings.arrow,
-                pinged: self
-                    .pinged_at
-                    .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
-                skin: self.settings.skin,
-                mode: self.settings.mode,
-                skip_dusk: self.settings.skip_dusk,
-                gear: self.settings.gear,
-                gear_list: self.settings.gear_list,
-                mini_bars: self.settings.mini_bars,
-                ground: self.settings.ground,
-                weather_news: self.settings.weather_news,
-                language: self.settings.language.name(),
-                highlight: self.highlight,
-            };
+            let view =
+                ViewState {
+                    selected: self.selected,
+                    shown: self.dealt_at.map_or(Duration::ZERO, |at| at.elapsed()),
+                    frame: self.frames,
+                    blood: self.settings.blood,
+                    rain: self.settings.rain,
+                    arrow: self.settings.arrow,
+                    pinged: self
+                        .pinged_at
+                        .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
+                    skin: self.settings.skin,
+                    mode: self.settings.mode,
+                    skip_dusk: self.settings.skip_dusk,
+                    gear: self.settings.gear,
+                    gear_list: self.settings.gear_list,
+                    mini_bars: self.settings.mini_bars,
+                    ground: self.settings.ground,
+                    weather_news: self.settings.weather_news,
+                    language: self.settings.language.name(),
+                    highlight: self.highlight,
+                    toast: self.toasts.front().zip(self.toast_since).map(
+                        |(&achievement, since)| (achievement, self.frames.wrapping_sub(since)),
+                    ),
+                };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
                 ui::render(
@@ -141,6 +159,8 @@ impl App {
             // The run stands still on the title screen and in the pause menu.
             if self.screen == Screen::Playing {
                 self.world.update(self.keys.input(now));
+                self.note_progress();
+                self.tell_achievements();
             }
             if self.world.is_over() && !self.scored {
                 self.weigh_score();
@@ -421,9 +441,42 @@ impl App {
         self.choose(code);
     }
 
+    /// Takes in what the run has reached: the achievements new, to be told and kept at once; the
+    /// counts, kept as the run ends.
+    fn note_progress(&mut self) {
+        if self.world.progress == self.progress {
+            return;
+        }
+        let new: Vec<Achievement> = self
+            .world
+            .progress
+            .achieved
+            .difference(&self.progress.achieved)
+            .copied()
+            .collect();
+        self.progress = self.world.progress.clone();
+        if !new.is_empty() {
+            self.toasts.extend(new);
+            let _ = progress::save(&self.progress);
+        }
+    }
+
+    /// The achievements told one after the other, each its time on screen.
+    fn tell_achievements(&mut self) {
+        match self.toast_since {
+            None if !self.toasts.is_empty() => self.toast_since = Some(self.frames),
+            Some(since) if self.frames.wrapping_sub(since) >= ui::TOAST_FRAMES => {
+                self.toasts.pop_front();
+                self.toast_since = None;
+            }
+            _ => {}
+        }
+    }
+
     /// The run is over: if its score makes the leaderboard, three letters to type in.
     fn weigh_score(&mut self) {
         self.scored = true;
+        let _ = progress::save(&self.progress);
         // A standard run keeps no score.
         if self.world.mode == Mode::Arcade && self.leaderboard.qualifies(self.world.score) {
             self.screen = Screen::NameEntry {
@@ -476,7 +529,12 @@ impl App {
     fn new_run(&mut self) {
         self.scored = false;
         self.highlight = None;
-        self.world = World::with(rand::random(), self.settings.mode, self.settings.skip_dusk);
+        self.world = World::with(
+            rand::random(),
+            self.settings.mode,
+            self.settings.skip_dusk,
+            self.progress.clone(),
+        );
         self.world.weather_news = self.settings.weather_news;
         self.selected = 0;
         self.dealt_at = None;

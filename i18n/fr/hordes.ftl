@@ -209,3 +209,24 @@ keys-gear = I                      afficher l'équipement
 keys-ping = E                      une flèche sur le héros, 2 s
 keys-pause = P / Échap              pause
 keys-keys = ?                      ces commandes
+
+## Succès : dits quand ils tombent, un encadré en bas à droite de la carte.
+achievement-new = NOUVEAU SUCCÈS !
+achievement-new-rare = NOUVEAU SUCCÈS RARE !
+achievement-new-legendary = NOUVEAU SUCCÈS LÉGENDAIRE !
+achievement-unlocked = Débloqué :
+achievement-reroll = une relance de plus par partie
+achievement-rain = Pluie de plomb
+achievement-rain-goal = Tenir jusqu'à la pluie
+achievement-storm = Dans l'œil
+achievement-storm-goal = Tenir jusqu'à l'orage
+achievement-struck = Paratonnerre
+achievement-struck-goal = Survivre à un coup de foudre
+achievement-thousand = Mille morts
+achievement-thousand-goal = 1 000 ennemis abattus, toutes parties confondues
+achievement-shadows = Lumière crue
+achievement-shadows-goal = 50 Ombres abattues, toutes parties confondues
+achievement-dawn = L'aube
+achievement-dawn-goal = Tenir jusqu'à l'aube
+achievement-regular = Habitué
+achievement-regular-goal = Jouer 10 parties

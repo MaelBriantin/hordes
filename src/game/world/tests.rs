@@ -3,6 +3,7 @@ use super::super::announce::{News, WeatherNews};
 use super::super::build::{BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::gem::Gem;
 use super::super::mode::Mode;
+use super::super::progress::{Achievement, Progress};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
@@ -754,6 +755,45 @@ fn a_strike_spares_the_player_out_of_its_ring() {
 }
 
 #[test]
+fn reaching_the_rain_unlocks_the_machine_gun_for_the_next_runs() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    world.next_horde = u32::MAX;
+    world.ticks = (weather::DUSK_SECONDS + 3 * weather::stage_seconds(Mode::Standard)) * 30 - 1;
+    assert!(!world.progress.deals(Choice::Weapon(Weapon::MachineGun)));
+    wait(&mut world, 1);
+    assert!(world.progress.achieved.contains(&Achievement::Rain));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::MachineGun)));
+    // Dealt from the next run on, not this one.
+    world.dealt = Progress::default();
+    let next = World::with(2, Mode::Standard, false, world.progress.clone());
+    assert!(next.dealt.deals(Choice::Weapon(Weapon::MachineGun)));
+}
+
+#[test]
+fn struck_by_lightning_and_standing_is_an_achievement() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    world.ticks = 30 * 480;
+    world.strike(Vec2::new(100.5, 50.0), true);
+    assert!(world.player.hp > 0);
+    assert!(world.progress.achieved.contains(&Achievement::Struck));
+}
+
+#[test]
+fn a_run_counts_itself_and_its_kills_in_the_progress() {
+    let world = World::with(1, Mode::Standard, false, Progress::default());
+    assert_eq!(world.progress.runs, 1);
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    let count = wipe_out_a_horde(&mut world);
+    assert_eq!(world.progress.kills, u64::try_from(count).unwrap());
+}
+
+#[test]
 fn enemies_appearing_later_are_tougher() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
@@ -1252,7 +1292,7 @@ fn loot_makes_gems_likelier() {
 
 #[test]
 fn skipping_the_dusk_opens_on_the_night_the_torch_lit() {
-    let world = World::with(1, Mode::Standard, true);
+    let world = World::with(1, Mode::Standard, true, Progress::everything());
     assert_eq!(world.weather(), Weather::Clear);
     assert_eq!(
         world.announcement.map(|told| told.news),
@@ -1263,7 +1303,7 @@ fn skipping_the_dusk_opens_on_the_night_the_torch_lit() {
 
 #[test]
 fn in_arcade_there_is_no_dawn_and_the_pressure_grows() {
-    let mut world = World::with(1, Mode::Arcade, false);
+    let mut world = World::with(1, Mode::Arcade, false, Progress::everything());
     world.announcement = None;
     world.next_horde = u32::MAX;
     world.player.build = Build::unarmed();

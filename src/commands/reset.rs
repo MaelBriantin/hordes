@@ -1,4 +1,4 @@
-//! `hordes reset`: erases the settings and the leaderboard, after asking. The game itself stays.
+//! `hordes reset`: erases the settings, the leaderboard and the progress, after asking. The game itself stays.
 
 use std::error::Error;
 
@@ -11,7 +11,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         return Ok(());
     };
     println!(
-        "Your settings and your leaderboard are kept in {}.",
+        "Your settings, your leaderboard and your progress are kept in {}.",
         folder.display()
     );
     if !confirm("Erase them?")? {

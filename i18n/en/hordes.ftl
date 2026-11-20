@@ -209,3 +209,24 @@ keys-gear = I                      show or hide the gear
 keys-ping = E                      an arrow over the hero, 2 s
 keys-pause = P / Esc                pause
 keys-keys = ?                      these keys
+
+## Achievements: told as reached, a box on the bottom right of the map.
+achievement-new = NEW ACHIEVEMENT!
+achievement-new-rare = NEW RARE ACHIEVEMENT!
+achievement-new-legendary = NEW LEGENDARY ACHIEVEMENT!
+achievement-unlocked = Unlocked:
+achievement-reroll = a reroll more a run
+achievement-rain = Rain of lead
+achievement-rain-goal = Hold out until the rain
+achievement-storm = In the eye
+achievement-storm-goal = Hold out until the storm
+achievement-struck = Lightning rod
+achievement-struck-goal = Struck by lightning, and standing
+achievement-thousand = A thousand down
+achievement-thousand-goal = 1,000 enemies down, every run counted
+achievement-shadows = Raw light
+achievement-shadows-goal = 50 Shadows down, every run counted
+achievement-dawn = Dawn
+achievement-dawn-goal = Hold out until dawn
+achievement-regular = A regular
+achievement-regular-goal = Play 10 runs
