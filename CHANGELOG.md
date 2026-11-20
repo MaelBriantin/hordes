@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.7.0 · November 20, 2026
+In a flash.
+
 ### New
 - A reroll: once a run, R on a level-up deals its cards again.
 - Under the level-up's cards, the room left: weapons and passives out of 4 each.
