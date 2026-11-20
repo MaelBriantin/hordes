@@ -221,7 +221,7 @@ const FIRE_TINT: (f32, f32, f32) = (1.3, 0.95, 0.55);
 const WARNING_BLINK: (f32, f32) = (4.0, 2.0);
 const WARNING_RING: Color = Color::Rgb(95, 105, 160);
 /// How much of its brightness a thing keeps in the dark.
-const DARK: f32 = 0.14;
+const DARK: f32 = 0.10;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
 const SATURATION: f32 = 0.7;
 const TINT: (f32, f32, f32) = (0.85, 0.9, 1.05);
