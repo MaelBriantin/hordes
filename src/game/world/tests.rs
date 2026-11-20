@@ -1,10 +1,13 @@
 use super::super::Obstacle;
 use super::super::announce::{News, WeatherNews};
+use super::super::body::fits;
 use super::super::build::{Action, BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::burst;
+use super::super::enemy::EnemyKind;
 use super::super::gem::Gem;
 use super::super::mode::Mode;
 use super::super::progress::{Achievement, Progress};
+use super::super::spawn::{MARGIN, MAX_ENEMIES};
 use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
 

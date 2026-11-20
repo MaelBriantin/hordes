@@ -1,39 +1,22 @@
 //! The map in pixels: a tile is 2 × 2 pixels, a cell holds 2 pixels one above the other. The
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
+mod figures;
+mod fire;
+mod gear;
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Style};
 
 use super::ViewState;
-use super::level_up;
 use super::night;
-use super::sprites::{self, Look, Skin, SpriteId, Sprites};
+use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    Action, BURST_REACH, Blast, Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE,
-    Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Veil, Weapon, World, campfire_light,
+    Bullet, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Weapon, World,
 };
+use gear::{draw_gear_levels, draw_gear_list, gear_slots, list_size};
 
-/// The Shadows' eyes, the red of the sprites' palette, and the darker red they shine with in the
-/// dark.
-const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
-const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
-/// The hordes' veiled, as Horde Hunter has it: the red, at most how much on the very last ones,
-/// pulsing, the ticks it takes to pulse once; how much, steady, on the others.
-const HUNTER_VEIL: (u8, u8, u8) = (230, 40, 40);
-const VEIL_MOST: f32 = 0.5;
-const VEIL_PULSE: u32 = 30;
-const VEIL_STEADY: f32 = 0.2;
-/// An abomination's burst: the bile its disc tints the ground with, more towards its edge.
-const BILE: (u8, u8, u8) = (150, 205, 60);
-const BILE_MIDDLE: f32 = 0.35;
-const BILE_EDGE: f32 = 0.85;
-/// The silhouettes a dashing player leaves behind: how far behind, in tiles, and their colour,
-/// fading.
-const AFTERIMAGES: [(f32, Color); 2] = [
-    (1.6, Color::Rgb(40, 44, 62)),
-    (0.8, Color::Rgb(70, 78, 108)),
-];
 /// The glow of a gem, by what it is worth, as its colour.
 fn gem_glow(value: u32) -> (u8, u8, u8) {
     match value {
@@ -42,12 +25,8 @@ fn gem_glow(value: u32) -> (u8, u8, u8) {
         _ => (245, 190, 60),
     }
 }
-/// How far off the canvas a gem still lights it, in pixels: its halo's reach.
-const GEM_HALO_MARGIN: i32 = 4;
 /// Pixels per tile, each way.
 const TILE_PIXELS: i32 = 2;
-/// How much a campfire's light sways, as a share of its reach.
-const FIRE_SWAY: f32 = 0.12;
 
 /// A campfire's light swaying, `frame` frames in, from -1 to 1: two waves of its own, one slow,
 /// one quick, never quite the same as another fire's.
@@ -57,21 +36,10 @@ fn sway(frame: u32, (x, y): (i32, i32)) -> f32 {
     (time * 0.21 + seed).sin() * 0.6 + (time * 0.67 + seed * 1.7).sin() * 0.4
 }
 
-/// The frames a campfire's flame keeps one look before the other.
-const FLICKER: u32 = 6;
 /// The ground: dark grass, and the earth showing through it, out of 256 pixels.
 const GRASS: Color = Color::Rgb(32, 46, 28);
 const EARTH: Color = Color::Rgb(44, 38, 28);
 const EARTH_SHARE: u32 = 90;
-/// The arrow over the player's head, pointing down at them, as wide as they are; the pixels
-/// between it and their head, and the ticks it spends up, then down, bouncing.
-const ARROW: [&str; 2] = ["####", ".##."];
-const ARROW_GAP: i32 = 2;
-const ARROW_BOUNCE: u32 = 15;
-/// The small HP bar over the player's head: its width, the pixels between it and the head, or
-/// the arrow when it shows.
-const MINI_BAR: i32 = 6;
-const MINI_BAR_GAP: i32 = 1;
 /// The arrow over the player's head, to see them at once in the crowd, in its colour: a setting,
 /// off at first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,31 +94,6 @@ impl Arrow {
 /// badge, MAX in gold; the rounds under the icons.
 const VEIL: f32 = 0.55;
 const GEAR_GAP: i32 = 2;
-/// The rows of veil above the icons and under their gauges, in pixels.
-const GEAR_PAD: i32 = 1;
-const GEAR_LEVEL: Color = Color::Rgb(235, 235, 240);
-const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
-const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
-const GEAR_EMPTY: Color = Color::Rgb(70, 70, 80);
-const GEAR_MAX: Color = Color::Rgb(255, 200, 60);
-const GEAR_BADGE: Color = Color::Rgb(35, 35, 45);
-/// The gear as a list: the names' colour, and the gauges' width, in cells.
-const GEAR_NAME: Color = Color::Rgb(200, 200, 210);
-const LIST_GAUGE: i32 = 6;
-/// A Molotov's puddle: how far it lights against its own radius; a bottle: how high its arc
-/// rises, in tiles, and its green.
-const PUDDLE_LIGHT: f32 = 2.25;
-const BOTTLE_ARC: f32 = 1.5;
-const BOTTLE: Color = Color::Rgb(70, 160, 80);
-/// What burns, its halo: its colour, how strong at its middle, how far it reaches in pixels.
-/// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames.
-const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
-const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
-const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
-/// How dim a fire's halo gets as it flickers, every other look of its flame.
-const FIRE_FLICKER: f32 = 0.85;
-/// The ticks a bottle's burst lights, before its puddle's own light alone.
-const BURST_TICKS: u32 = 8;
 /// An enemy on fire: how far its flames light, in tiles; where they flicker, from the middle of
 /// the top of its sprite, in pixels; their colours.
 const BURNING_LIGHT: f32 = 1.5;
@@ -160,12 +103,6 @@ const FLAME_COLOURS: [Color; 3] = [
     Color::Rgb(245, 130, 40),
     Color::Rgb(220, 60, 30),
 ];
-/// A heal around the player: how long its crosses rise, in ticks; where they start from the
-/// player's middle, in pixels; their green, then darker.
-const HEAL_TICKS: u32 = 18;
-const HEAL_CROSSES: [(i32, i32); 3] = [(-5, 1), (5, -1), (0, -5)];
-const HEAL_BRIGHT: Color = Color::Rgb(110, 235, 120);
-const HEAL_DIM: Color = Color::Rgb(50, 140, 60);
 /// The crowbar's blow, iron grey, then as it fades.
 const CROWBAR_BLOW: (Color, Color) = (Color::Rgb(160, 165, 180), Color::Rgb(90, 92, 105));
 /// A shotgun's pellets, every other one: the gold and the red of its shells.
@@ -236,76 +173,6 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
-    /// moment once pinged; and their HP in a small bar over it all, if it shows.
-    fn mark(&mut self, world: &World, view: ViewState) {
-        let player = &world.player;
-        let look = sprites::hero(player.facing, view.skin);
-        let arrow = view.arrow != Arrow::Off || view.pinged;
-        if arrow {
-            self.arrow(look, player.position, world.ticks(), view.arrow.colour());
-        }
-        if view.mini_bars {
-            self.mini_bars(world, look, arrow);
-        }
-    }
-
-    /// The player's HP in a small bar over the head of their sprite as `paint_at` would place
-    /// it; over the arrow if it shows, out of its way.
-    fn mini_bars(&mut self, world: &World, look: Look, over_arrow: bool) {
-        let player = &world.player;
-        let centre = pixel(player.position);
-        let head = centre.1 - self.sprites.get(look.sprite).height() / 2;
-        let arrow = if over_arrow {
-            ARROW_GAP + i32::try_from(ARROW.len()).unwrap_or(0) + 1
-        } else {
-            0
-        };
-        let row = head - MINI_BAR_GAP - 1 - arrow;
-        let hp = f32::from(u16::try_from(player.hp).unwrap_or(u16::MAX))
-            / f32::from(u16::try_from(player.max_hp().max(1)).unwrap_or(u16::MAX));
-        let left = centre.0 - MINI_BAR / 2;
-        self.mini_bar((left, row), MINI_BAR, hp, super::HP_COLOR);
-    }
-
-    /// A small bar of `width` pixels from `start`, `filled` of it (from 0 to 1) in `colour`, the
-    /// rest faded.
-    fn mini_bar(&mut self, start: (i32, i32), width: i32, filled: f32, colour: Color) {
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "a share of a few pixels, clamped"
-        )]
-        let full =
-            (filled.clamp(0.0, 1.0) * f32::from(u8::try_from(width).unwrap_or(0))).round() as i32;
-        for x in 0..width {
-            let shade = if x < full {
-                colour
-            } else {
-                super::faded(colour, super::BAR_EMPTY)
-            };
-            self.set((start.0 + x, start.1), shade);
-        }
-    }
-
-    /// An arrow over the head of a sprite as `paint_at` would place it, pointing down at it,
-    /// bouncing a pixel up and down, `now` the run's tick, in `colour`.
-    fn arrow(&mut self, look: Look, position: Vec2, now: u32, colour: Color) {
-        let centre = pixel(position);
-        let sprite = self.sprites.get(look.sprite);
-        let width = i32::try_from(ARROW[0].len()).unwrap_or(0);
-        let height = i32::try_from(ARROW.len()).unwrap_or(0);
-        let up = i32::from((now / ARROW_BOUNCE).is_multiple_of(2));
-        let left = centre.0 - width / 2;
-        let top = centre.1 - sprite.height() / 2 - ARROW_GAP - height - up;
-        for (y, row) in (0..).zip(ARROW) {
-            for (x, key) in (0..).zip(row.chars()) {
-                if key == '#' {
-                    self.set((left + x, top + y), colour);
-                }
-            }
-        }
-    }
-
     /// A bullet: a pistol's, a white pixel; a machine gun's, a thin tracer, its trail fading
     /// behind it.
     fn paint_bullet(&mut self, bullet: &Bullet) {
@@ -322,292 +189,6 @@ impl<'a> Canvas<'a> {
         for (step, colour) in (0..).zip(TRACER) {
             let behind = bullet.position - way * (0.5 * f32::from(u8::try_from(step).unwrap_or(0)));
             self.set(pixel(behind), colour);
-        }
-    }
-
-    /// What burns besides the campfires: the bottles bursting, the puddles of fire and the
-    /// enemies burning; their lights, and the halos of all that burns, the `campfires` lit
-    /// included.
-    fn shines(
-        world: &World,
-        campfires: &[night::Light],
-        frame: u32,
-    ) -> (Vec<night::Light>, Vec<night::Halo>) {
-        let halo =
-            |at: (i32, i32), (colour, strength, reach): ((u8, u8, u8), f32, i32)| night::Halo {
-                centre: at,
-                colour,
-                strength,
-                reach,
-            };
-        let flicker = if (frame / FLICKER).is_multiple_of(2) {
-            1.0
-        } else {
-            FIRE_FLICKER
-        };
-        let mut lights = Vec::new();
-        let mut halos = Vec::new();
-        for puddle in &world.puddles {
-            let centre = pixel(puddle.centre);
-            let age = puddle.age();
-            if age < BURST_TICKS {
-                let left = 1.0 - night::share(age, BURST_TICKS);
-                lights.push(night::Light::burst(centre, left));
-                let (colour, strength, reach) = BURST_HALO;
-                halos.push(halo(centre, (colour, strength * left, reach)));
-            }
-            // It lights around it, warm.
-            lights.push(night::Light::fire(centre, puddle.radius * PUDDLE_LIGHT));
-            let (colour, strength, reach) = FIRE_HALO;
-            halos.push(halo(centre, (colour, strength * flicker, reach)));
-        }
-        for light in campfires {
-            let (colour, strength, reach) = FIRE_HALO;
-            halos.push(halo(light.centre, (colour, strength * flicker, reach)));
-        }
-        // An enemy on fire lights a little around it, warm.
-        for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
-            let (x, y) = pixel(enemy.position);
-            lights.push(night::Light::fire((x, y), BURNING_LIGHT));
-            halos.push(halo((x, y - 2), BURNING_HALO));
-        }
-        (lights, halos)
-    }
-
-    /// Small green crosses rising around the player at `centre`, `since` ticks after they were
-    /// healed, darker as they go: healed, it shows.
-    fn paint_heal(&mut self, centre: (i32, i32), since: u32) {
-        if since >= HEAL_TICKS {
-            return;
-        }
-        let colour = if since < HEAL_TICKS / 2 {
-            HEAL_BRIGHT
-        } else {
-            HEAL_DIM
-        };
-        let rise = i32::try_from(since / 3).unwrap_or(0);
-        for (dx, dy) in HEAL_CROSSES {
-            let (x, y) = (centre.0 + dx, centre.1 + dy - rise);
-            for (px, py) in [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)] {
-                self.set((x + px, y + py), colour);
-            }
-        }
-    }
-
-    /// The gems the canvas shows, or nearly, each with its glow's colour.
-    fn glows(&self, world: &World) -> Vec<night::Glow> {
-        world
-            .gems
-            .iter()
-            .map(|gem| (pixel(gem.position), gem_glow(gem.value)))
-            .filter(|&(at, _)| self.near(at, GEM_HALO_MARGIN))
-            .collect()
-    }
-
-    /// The Molotov's puddles of fire, flames flickering over them, and its bottles in the air,
-    /// arcing to where they burst.
-    fn paint_molotovs(&mut self, world: &World, frame: u32) {
-        for puddle in &world.puddles {
-            let (cx, cy) = pixel(puddle.centre);
-            #[allow(clippy::cast_possible_truncation, reason = "a puddle of a few tiles")]
-            let reach = (puddle.radius * 2.0).ceil() as i32;
-            for dy in -reach..=reach {
-                for dx in -reach..=reach {
-                    let distance = f32::from(i16::try_from(dx).unwrap_or(0))
-                        .hypot(f32::from(i16::try_from(dy).unwrap_or(0)));
-                    if distance > puddle.radius * 2.0 {
-                        continue;
-                    }
-                    // Each pixel its own flicker: some flames lit, others not, each frame.
-                    let luck = (cx + dx).cast_unsigned().wrapping_mul(73_856_093)
-                        ^ (cy + dy).cast_unsigned().wrapping_mul(19_349_663)
-                        ^ (frame / 3).wrapping_mul(83_492_791);
-                    if luck.is_multiple_of(3) {
-                        continue;
-                    }
-                    let shade = usize::try_from(luck % 3).unwrap_or(0);
-                    self.set((cx + dx, cy + dy), FLAME_COLOURS[shade]);
-                }
-            }
-        }
-        for bottle in &world.bottles {
-            let progress = bottle.progress();
-            let along = bottle.from + (bottle.to - bottle.from) * progress;
-            // An arc: up, then down to where it bursts.
-            let lift = 4.0 * progress * (1.0 - progress) * BOTTLE_ARC;
-            let (x, y) = pixel(along - Vec2::new(0.0, lift));
-            self.set((x, y), BOTTLE);
-            self.set(
-                (x, y - 1),
-                FLAME_COLOURS[usize::try_from(frame % 2).unwrap_or(0)],
-            );
-        }
-    }
-
-    /// Flames over each enemy on fire: a few pixels above its head, flickering.
-    fn paint_flames(&mut self, world: &World, frame: u32) {
-        for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
-            let look = sprites::enemy(enemy, world.ticks());
-            let height = self.sprites.get(look.sprite).height();
-            let (x, y) =
-                pixel(enemy.position - Vec2::new(0.0, sprites::lift(enemy, world.ticks())));
-            let top = y - height / 2;
-            // Its own flicker, never quite the same as a neighbour's.
-            let luck = (frame / 3).wrapping_add(enemy.id.wrapping_mul(7));
-            for (index, &(dx, dy)) in (0_u32..).zip(FLAMES.iter()) {
-                if index > 0 && (luck >> index) & 1 == 0 {
-                    continue;
-                }
-                let shade = usize::try_from((index + luck) % 3).unwrap_or(0);
-                self.set((x + dx, top + dy), FLAME_COLOURS[shade]);
-            }
-        }
-    }
-
-    /// An abomination's burst: a disc of bile spreading over the ground, then fading.
-    fn paint_blast(&mut self, blast: &Blast) {
-        let centre = pixel(blast.centre);
-        let reach = burst_pixels(BURST_REACH);
-        let radius = burst_pixels(blast.radius());
-        let strength = blast.strength();
-        for y in -radius..=radius {
-            for x in -radius..=radius {
-                let apart = (x * x + y * y).isqrt();
-                if apart > radius {
-                    continue;
-                }
-                let Some(index) = self.index((centre.0 + x, centre.1 + y)) else {
-                    continue;
-                };
-                let edge = night::share(apart.unsigned_abs(), reach.unsigned_abs());
-                let by = strength * (BILE_MIDDLE + (BILE_EDGE - BILE_MIDDLE) * edge);
-                if let Some(colour) = self.pixels[index] {
-                    self.pixels[index] = Some(super::redden(colour, BILE, by));
-                }
-            }
-        }
-    }
-
-    /// At night, the Shadows' eyes, shining red in the dark.
-    fn paint_shadow_eyes(&mut self, world: &World) {
-        if world.torch_on().is_none() {
-            return;
-        }
-        for enemy in world
-            .enemies
-            .iter()
-            .filter(|enemy| enemy.kind == EnemyKind::Shadow)
-        {
-            self.repaint(
-                sprites::enemy(enemy, world.ticks()),
-                enemy.position,
-                SHADOW_EYES,
-                SHADOW_EYES_GLOW,
-            );
-        }
-    }
-
-    /// Only the pixels of a sprite in one `colour`, placed as `paint_at` would, in another one,
-    /// `shown`: its eyes, say, shining in the dark.
-    fn repaint(&mut self, look: Look, position: Vec2, colour: Color, shown: Color) {
-        let centre = pixel(position);
-        let sprite = self.sprites.get(look.sprite);
-        let (left, top) = (
-            centre.0 - sprite.width() / 2,
-            centre.1 - sprite.height() / 2,
-        );
-        for (x, y, pixel) in sprite.pixels(look.mirrored) {
-            if pixel == colour {
-                self.set((left + x, top + y), shown);
-            }
-        }
-    }
-
-    /// The player and the enemies, the lowest on the map last: in front of those above them.
-    /// While lightning is about to strike, which pixels they cover, for its ring to show on the
-    /// ground under them; none otherwise.
-    fn paint_figures(&mut self, world: &World, skin: Skin) -> Vec<bool> {
-        let player = &world.player;
-        let mut figures: Vec<(Vec2, Look)> = world
-            .enemies
-            .iter()
-            .map(|enemy| {
-                let lift = sprites::lift(enemy, world.ticks());
-                (
-                    enemy.position - Vec2::new(0.0, lift),
-                    sprites::enemy(enemy, world.ticks()),
-                )
-            })
-            .chain(
-                world
-                    .swellings
-                    .iter()
-                    .map(|swelling| (swelling.position, sprites::swelling(swelling))),
-            )
-            .collect();
-        // Blinking while nothing can hurt them.
-        let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
-        if player.dash.is_some() || !blinks_out {
-            figures.push((player.position, sprites::hero(player.facing, skin)));
-        }
-        figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
-        // Dashing, the player leaves fading silhouettes of themselves behind.
-        if let Some(dash) = player.dash {
-            let look = sprites::hero(player.facing, skin);
-            for (behind, colour) in AFTERIMAGES {
-                let at = player.position - dash.way * behind;
-                self.paint_at(
-                    Look {
-                        tint: Some(colour),
-                        ..look
-                    },
-                    at,
-                );
-            }
-        }
-        let ground = (!world.strikes_coming.is_empty()).then(|| self.pixels.clone());
-        for (position, look) in figures {
-            self.paint_at(look, position);
-        }
-        // The hordes' veiled, under the night but in the dark: as far as the light shows.
-        if !world.player.build.horde_veil_in_dark() {
-            self.paint_veils(world);
-        }
-        ground.map_or_else(Vec::new, |ground| {
-            ground
-                .iter()
-                .zip(&self.pixels)
-                .map(|(under, now)| under != now)
-                .collect()
-        })
-    }
-
-    /// The enemies of a horde veiled in red, as Horde Hunter has it: the very last ones of
-    /// their horde pulsing, the others of the share veiled faint and steady. An enemy just hit
-    /// stays white.
-    fn paint_veils(&mut self, world: &World) {
-        let pulse = night::share(world.ticks() % VEIL_PULSE, VEIL_PULSE);
-        let pulsing = VEIL_MOST * (1.0 - (pulse * std::f32::consts::TAU).cos()) / 2.0;
-        for enemy in &world.enemies {
-            let look = sprites::enemy(enemy, world.ticks());
-            let share = match world.horde_veil(enemy) {
-                _ if look.tint.is_some() => continue,
-                Some(Veil::Pulsing) => pulsing,
-                Some(Veil::Steady) => VEIL_STEADY,
-                None => continue,
-            };
-            let centre = pixel(enemy.position);
-            let sprite = self.sprites.get(look.sprite);
-            let (left, top) = (
-                centre.0 - sprite.width() / 2,
-                centre.1 - sprite.height() / 2,
-            );
-            for (x, y, colour) in sprite.pixels(look.mirrored) {
-                self.set(
-                    (left + x, top + y),
-                    super::redden(colour, HUNTER_VEIL, share),
-                );
-            }
         }
     }
 
@@ -645,46 +226,6 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /// The player's gear as icons, over the top left of what the canvas shows, on a dark veil:
-    /// each card's icon, as on the level-up cards, its gauge right under it if it has one. Where
-    /// each one's level goes, written over the icon's bottom right corner once the canvas is
-    /// drawn.
-    fn paint_gear(&mut self, gear: &[GearSlot]) -> Vec<GearLevel> {
-        if gear.is_empty() {
-            return Vec::new();
-        }
-        let size = self.sprites.get(SpriteId::IconMachete).width();
-        let step = size + GEAR_GAP;
-        let width = GEAR_GAP + step * i32::try_from(gear.len()).unwrap_or(0);
-        // A row, the icon, its gauge, a row.
-        self.veil(width, GEAR_PAD + size + 1 + GEAR_PAD);
-        let (left, top) = self.origin;
-        let mut levels = Vec::new();
-        for (slot, card) in (0..).zip(gear) {
-            let x = left + GEAR_GAP + step * slot;
-            let y = top + GEAR_PAD;
-            self.paint(Look::plain(level_up::icon(card.choice)), (x, y));
-            if let Some((part, whole, colour)) = card.gauge {
-                let lit = share_of(part, whole, size);
-                for pixel in 0..size {
-                    self.set(
-                        (x + pixel, y + size),
-                        if pixel < lit { colour } else { GEAR_EMPTY },
-                    );
-                }
-            }
-            if let Some(level) = card.level {
-                levels.push(GearLevel {
-                    right: x - left + size,
-                    // The cell over the icon's last two rows but one: the gauge left clear.
-                    row: y - top + size - 2,
-                    level,
-                });
-            }
-        }
-        levels
-    }
-
     /// A machete's swing around `centre`: an arc of pixels, sweeping from one end to the other
     /// in the first half of its time, fading in the second.
     fn paint_swing(&mut self, swing: &Swing, centre: Vec2) {
@@ -716,46 +257,6 @@ impl<'a> Canvas<'a> {
                 }
             }
         }
-    }
-
-    /// The healing on the ground the canvas shows, before the night falls on it: herbs, which
-    /// only the player's torch or a strike of lightning shows, campfires, their flame flickering,
-    /// or their logs once out. The lights of the campfires still burning.
-    fn paint_healing(&mut self, world: &World, frame: u32) -> Vec<night::Light> {
-        let burning = if (frame / FLICKER).is_multiple_of(2) {
-            SpriteId::Campfire1
-        } else {
-            SpriteId::Campfire2
-        };
-        let mut lights = Vec::new();
-        for (tile, feature) in self.healing(world) {
-            let sprite = match feature {
-                Feature::Herb => SpriteId::Herb,
-                Feature::Campfire => {
-                    let left = world.campfire_left(tile);
-                    if left == 0 {
-                        SpriteId::Ashes
-                    } else {
-                        let centre = pixel(Vec2::middle_of(tile));
-                        let radius = campfire_light(left) * (1.0 + FIRE_SWAY * sway(frame, tile));
-                        lights.push(night::Light::fire(centre, radius));
-                        burning
-                    }
-                }
-            };
-            self.paint_at(Look::plain(sprite), Vec2::middle_of(tile));
-        }
-        lights
-    }
-
-    /// The healing on the ground within the canvas, and a little around it: a sprite may stick
-    /// out of its tile.
-    fn healing(&self, world: &World) -> Vec<((i32, i32), Feature)> {
-        let (columns, rows) = self.tiles();
-        world.features_in(
-            (columns.start - 2, rows.start - 2),
-            (columns.end + 1, rows.end + 1),
-        )
     }
 
     /// A sprite centred on a point of the map.
@@ -944,165 +445,6 @@ pub fn render_map(
         draw_gear_list(buffer, area, &gear);
     } else {
         draw_gear_levels(buffer, area, &levels);
-    }
-}
-
-/// A card the player has, as the gear shows it: its level, none for a legendary; its gauge, if
-/// it has one: a gun's rounds or reload, the Dash card's dashes.
-struct GearSlot {
-    choice: Choice,
-    level: Option<u8>,
-    gauge: Option<(u32, u32, Color)>,
-}
-
-/// The cards the player has, in the order first picked.
-fn gear_slots(world: &World) -> Vec<GearSlot> {
-    let player = &world.player;
-    let build = &player.build;
-    let ammo = world.ammo();
-    // The Dash card shows its dashes as a gun its rounds: full when all are ready, filling back
-    // as they come back.
-    let recharge = build.dash_recharge();
-    let most = u32::from(build.dashes());
-    let dashes = if u32::from(player.dashes.ready) >= most {
-        (1, 1, GEAR_ROUNDS)
-    } else {
-        (
-            u32::from(player.dashes.ready) * recharge + player.dashes.charging,
-            most * recharge,
-            GEAR_RELOADING,
-        )
-    };
-    build
-        .picked()
-        .iter()
-        .map(|&choice| match choice {
-            Choice::Weapon(weapon) => GearSlot {
-                choice,
-                level: Some(build.weapon_level(weapon)),
-                gauge: ammo.iter().find(|gun| gun.0 == weapon).map(|gun| {
-                    let (_, magazine, full, reload) = *gun;
-                    if magazine.reloading > 0 {
-                        (reload - magazine.reloading, reload, GEAR_RELOADING)
-                    } else {
-                        (magazine.rounds, full, GEAR_ROUNDS)
-                    }
-                }),
-            },
-            Choice::Passive(passive) => GearSlot {
-                choice,
-                level: Some(build.passive_level(passive)),
-                gauge: None,
-            },
-            Choice::Action(action) => GearSlot {
-                choice,
-                level: Some(build.action_level(action)),
-                gauge: (action == Action::Dash).then_some(dashes),
-            },
-            Choice::Legendary(_) | Choice::Heal => GearSlot {
-                choice,
-                level: None,
-                gauge: None,
-            },
-        })
-        .collect()
-}
-
-/// A card's level as the gear writes it: its number, or MAX in gold at the last.
-fn level_text(level: u8) -> (String, Color) {
-    if level >= MAX_LEVEL {
-        ("MAX".to_string(), GEAR_MAX)
-    } else {
-        (level.to_string(), GEAR_LEVEL)
-    }
-}
-
-/// The longest name in the gear, in cells.
-fn longest_name(gear: &[GearSlot]) -> usize {
-    gear.iter()
-        .map(|card| level_up::name(card.choice).chars().count())
-        .max()
-        .unwrap_or(0)
-}
-
-/// How much of the map the gear's list takes, in cells: a space, the longest name, a space, the
-/// level, two spaces, the gauge, a space across; a line a card, and one above and below.
-fn list_size(gear: &[GearSlot]) -> (u16, u16) {
-    let width = longest_name(gear) + 1 + 1 + 3 + 2 + 6 + 1;
-    (
-        u16::try_from(width).unwrap_or(u16::MAX),
-        u16::try_from(gear.len() + 2).unwrap_or(u16::MAX),
-    )
-}
-
-/// The gear as a list over the top left of the map, dimmed under it, a line a card: its name,
-/// its level, its gauge if it has one.
-fn draw_gear_list(buffer: &mut Buffer, area: Rect, gear: &[GearSlot]) {
-    let name_width = longest_name(gear);
-    let lines = list_size(gear).1.min(area.height);
-    let ground = Style::new();
-    for (row, card) in (1_u16..).zip(gear) {
-        if row + 1 >= lines {
-            break;
-        }
-        let y = area.y + row;
-        let name = level_up::name(card.choice).to_uppercase();
-        let mut x = area.x + 1;
-        buffer.set_string(x, y, &name, ground.fg(GEAR_NAME));
-        x += u16::try_from(name_width).unwrap_or(0) + 1;
-        if let Some(level) = card.level {
-            let (text, colour) = level_text(level);
-            buffer.set_string(
-                x,
-                y,
-                format!("{text:>3}"),
-                ground.fg(colour).add_modifier(Modifier::BOLD),
-            );
-        }
-        x += 3 + 2;
-        if let Some((part, whole, colour)) = card.gauge {
-            let lit = share_of(part, whole, LIST_GAUGE);
-            for cell in 0..LIST_GAUGE {
-                let shade = if cell < lit { colour } else { GEAR_EMPTY };
-                buffer.set_string(
-                    x + u16::try_from(cell).unwrap_or(0),
-                    y,
-                    "━",
-                    ground.fg(shade),
-                );
-            }
-        }
-    }
-}
-
-/// Where a card's level is written in the gear: the pixel column just right of its icon, and a
-/// pixel row of the cell it goes in, from the canvas' top left; and the level.
-struct GearLevel {
-    right: i32,
-    row: i32,
-    level: u8,
-}
-
-/// Each card's level in the gear, over its icon's bottom right corner, on a dark badge: its
-/// number, or MAX in gold once at the last.
-fn draw_gear_levels(buffer: &mut Buffer, area: Rect, levels: &[GearLevel]) {
-    for gear in levels {
-        let (text, colour) = level_text(gear.level);
-        let width = i32::try_from(text.len()).unwrap_or(0);
-        let (Ok(x), Ok(y)) = (
-            u16::try_from(gear.right - width),
-            u16::try_from(gear.row / 2),
-        ) else {
-            continue;
-        };
-        if x + 3 > area.width || y >= area.height {
-            continue;
-        }
-        let style = Style::new()
-            .fg(colour)
-            .bg(GEAR_BADGE)
-            .add_modifier(Modifier::BOLD);
-        buffer.set_string(area.x + x, area.y + y, text, style);
     }
 }
 
