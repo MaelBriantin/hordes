@@ -72,7 +72,7 @@ pause-quit = Quitter
 
 weather-dusk = Crépuscule
 announce-dusk = Tiens jusqu'à l'aube
-announce-night = La nuit est tombée · Espace : lampe
+announce-night = La nuit est tombée
 announce-worse = Le temps se gâte
 announce-last = L'aube dans deux minutes
 weather-clear = Nuit

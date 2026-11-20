@@ -563,8 +563,8 @@ pub fn render_death(
     if dawn {
         label(
             frame,
-            &fl!("dawn-line"),
-            Style::new().fg(DAWN_COLORS.0).add_modifier(Modifier::BOLD),
+            &fl!("dawn-line").to_uppercase(),
+            Style::new().add_modifier(Modifier::BOLD),
             under,
         );
     }

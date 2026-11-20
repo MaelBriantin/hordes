@@ -72,7 +72,7 @@ pause-quit = Quit
 
 weather-dusk = Dusk
 announce-dusk = Hold out until dawn
-announce-night = The night has fallen · Space: torch
+announce-night = The night has fallen
 announce-worse = The weather worsens
 announce-last = Dawn in two minutes
 weather-clear = Night

@@ -105,8 +105,11 @@ fn title(world: &World) -> Option<Title> {
     None
 }
 
-/// A word in big letters in the middle of the map, twice as big where it fits, and a line under
-/// it.
+/// The line under the big letters: white, the word above carrying the colour.
+const LINE: Color = Color::Rgb(235, 235, 240);
+
+/// A word in big letters in the middle of the map, twice as big where it fits, and a line in
+/// capitals under it, in white.
 fn tell(
     frame: &mut Frame,
     map: Rect,
@@ -130,8 +133,8 @@ fn tell(
     if let Some(line) = line {
         centred_as_is(
             frame,
-            line,
-            Style::new().fg(colors.0).add_modifier(Modifier::BOLD),
+            &line.to_uppercase(),
+            Style::new().fg(LINE).add_modifier(Modifier::BOLD),
             under,
         );
     }
