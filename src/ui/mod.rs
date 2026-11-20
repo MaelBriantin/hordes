@@ -295,25 +295,6 @@ fn render_hurt(buffer: &mut Buffer, map: Rect, world: &World) {
         f32::from(u16::try_from(part).unwrap_or(0)) / f32::from(u16::try_from(whole).unwrap_or(1))
     };
     let strength = HURT_STRENGTH * (1.0 - share(since, HURT_TICKS));
-    let redden = |color: Color, by: f32| match color {
-        Color::Rgb(red, green, blue) => {
-            #[allow(
-                clippy::cast_possible_truncation,
-                clippy::cast_sign_loss,
-                reason = "between two channels, 0 to 255"
-            )]
-            let mix = |from: u8, to: u8| {
-                let from = f32::from(from);
-                (from + (f32::from(to) - from) * by).round() as u8
-            };
-            Color::Rgb(
-                mix(red, HURT_RED.0),
-                mix(green, HURT_RED.1),
-                mix(blue, HURT_RED.2),
-            )
-        }
-        other => other,
-    };
     for y in map.top()..map.bottom() {
         for x in map.left()..map.right() {
             // In cells across, and in half cells down: a cell is twice as tall as wide.
@@ -326,9 +307,28 @@ fn render_hurt(buffer: &mut Buffer, map: Rect, world: &World) {
             }
             let by = strength * (1.0 - share(u32::from(edge), u32::from(HURT_EDGE)));
             let cell = &mut buffer[(x, y)];
-            cell.fg = redden(cell.fg, by);
-            cell.bg = redden(cell.bg, by);
+            cell.fg = redden(cell.fg, HURT_RED, by);
+            cell.bg = redden(cell.bg, HURT_RED, by);
         }
+    }
+}
+
+/// A colour drawn towards a `red`, as much as `by`, from 0 (none) to 1 (all red).
+fn redden(color: Color, red: (u8, u8, u8), by: f32) -> Color {
+    match color {
+        Color::Rgb(r, g, b) => {
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "between two channels, 0 to 255"
+            )]
+            let mix = |from: u8, to: u8| {
+                let from = f32::from(from);
+                (from + (f32::from(to) - from) * by).round() as u8
+            };
+            Color::Rgb(mix(r, red.0), mix(g, red.1), mix(b, red.2))
+        }
+        other => other,
     }
 }
 

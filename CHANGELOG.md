@@ -15,6 +15,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A Molotov bottle bursts in a flash of fire, lighting all around a moment.
 
 ### Changed
+- A horde's side shows as a red glow on the edge of the screen, pulsing slowly, rather than a band of arrows.
 - The Compass card goes: healing is found well enough without it, and nobody took it.
 - Two hordes standing at once are counted apart, each by its number, rather than together; the one wiped out is told with its number.
 - Fire lights further, the puddles of fire and the enemies burning half again as far, and all that burns casts a flickering orange halo, the campfires included.
