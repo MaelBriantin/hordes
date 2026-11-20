@@ -100,7 +100,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | 10:30 | Dawn | — | — | — | the run is won (see The run) |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
-- From the storm on, a strike takes **30 HP** from every enemy within **2.5 tiles** of where it falls (a ring shows it). It never hurts the player.
+- From the storm on, a strike is foretold: **half a second** before it falls, the ring of the ground it will hurt, **2.5 tiles** around, blinks where it will, faster and faster, dim. Falling, it takes **30 HP** from every enemy within those 2.5 tiles (the ring shows again), and **20 HP** from the player, if they are still in it (not at daybreak). A strike in three falls where the player stands as it is foretold, one in two in the tempest; the others, anywhere the player sees.
 - The light never falls under **4 tiles**.
 
 ## The player

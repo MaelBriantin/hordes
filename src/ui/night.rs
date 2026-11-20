@@ -8,7 +8,7 @@ use ratatui::style::Color;
 
 use super::pixels::{Canvas, pixel};
 use super::sprites::Sprites;
-use crate::game::{Lightning, Stain, Weather, stain_lasts};
+use crate::game::{Lightning, STRIKE_RADIUS, STRIKE_WARNING_TICKS, Stain, Weather, stain_lasts};
 
 /// The frames between two strikes of lightning: 5 seconds.
 const LIGHTNING_CYCLE: u32 = 150;
@@ -214,6 +214,10 @@ const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
 const ASH: [Color; 2] = [Color::Rgb(60, 58, 56), Color::Rgb(95, 92, 88)];
 /// A fire's light, against the torch's white: orange.
 const FIRE_TINT: (f32, f32, f32) = (1.3, 0.95, 0.55);
+/// How a strike's ring blinks while it foretells it: every so many ticks at first, and at the
+/// end; and its colour then, lightning's glow, dimmed.
+const WARNING_BLINK: (f32, f32) = (4.0, 2.0);
+const WARNING_RING: Color = Color::Rgb(95, 105, 160);
 /// How much of its brightness a thing keeps in the dark.
 const DARK: f32 = 0.14;
 /// How much of its colour the night leaves a thing, and the blue it casts over it.
@@ -371,6 +375,34 @@ pub fn paint_impact(canvas: &mut Canvas, strike: Strike, radius: f32) {
     let Some(target) = strike.target.filter(|_| strike.since < BOLT_FRAMES) else {
         return;
     };
+    paint_ring(canvas, target, radius, BOLT_GLOW, &[]);
+}
+
+/// Where a strike of lightning will fall, `since` ticks into its warning: the ring of the ground
+/// it will hurt, blinking faster and faster, on the ground: under the pixels `figured` says
+/// a figure covers.
+pub fn paint_warning(canvas: &mut Canvas, at: (i32, i32), since: u32, figured: &[bool]) {
+    let progress = share(since, STRIKE_WARNING_TICKS);
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a few ticks"
+    )]
+    let blink = (WARNING_BLINK.0 - (WARNING_BLINK.0 - WARNING_BLINK.1) * progress).round() as u32;
+    if (since / blink.max(1)).is_multiple_of(2) {
+        paint_ring(canvas, at, STRIKE_RADIUS, WARNING_RING, figured);
+    }
+}
+
+/// A ring `radius` tiles around the pixel `centre`, in `colour`, but for the pixels `covered`
+/// says something stands on.
+fn paint_ring(
+    canvas: &mut Canvas,
+    centre: (i32, i32),
+    radius: f32,
+    colour: Color,
+    covered: &[bool],
+) {
     let pixels = radius * 2.0;
     for step in 0..IMPACT_STEPS {
         let angle = std::f32::consts::TAU * f32::from(step) / f32::from(IMPACT_STEPS);
@@ -382,7 +414,13 @@ pub fn paint_impact(canvas: &mut Canvas, strike: Strike, radius: f32) {
             (angle.cos() * pixels).round() as i32,
             (angle.sin() * pixels).round() as i32,
         );
-        canvas.set((target.0 + offset.0, target.1 + offset.1), BOLT_GLOW);
+        let at = (centre.0 + offset.0, centre.1 + offset.1);
+        let under = canvas
+            .index(at)
+            .is_some_and(|index| covered.get(index).copied().unwrap_or(false));
+        if !under {
+            canvas.set(at, colour);
+        }
     }
 }
 

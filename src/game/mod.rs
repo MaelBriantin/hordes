@@ -38,7 +38,7 @@ pub use mode::Mode;
 
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use weather::{STRIKE_RADIUS, Weather};
+pub use weather::{STRIKE_RADIUS, STRIKE_WARNING_TICKS, Weather};
 pub use world::{Input, Lightning, TORCH_FADE, World};
 
 /// How many ticks the world moves on per second.

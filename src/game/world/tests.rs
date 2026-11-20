@@ -709,6 +709,37 @@ fn a_storms_lightning_hurts_the_enemies_it_falls_among() {
 }
 
 #[test]
+fn a_storms_strike_shows_its_ring_before_it_falls_on_the_player() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.next_strike_in = Some(u32::MAX);
+    world.ticks = 30 * 480;
+    world.strikes_coming.push(Lightning {
+        tick: world.ticks,
+        at: Vec2::new(101.0, 50.0),
+    });
+    // The ring shows; nothing falls yet.
+    wait(&mut world, weather::STRIKE_WARNING_TICKS - 1);
+    assert_eq!(world.player.hp, BASE_HP);
+    assert!(world.lightning.is_none());
+    // Half a second on, it falls: the player, still in the ring, is hurt.
+    wait(&mut world, 1);
+    assert!(world.lightning.is_some());
+    assert_eq!(world.strikes_coming, []);
+    assert_eq!(world.player.hp, BASE_HP - weather::STRIKE_PLAYER_DAMAGE);
+}
+
+#[test]
+fn a_strike_spares_the_player_out_of_its_ring() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.ticks = 30 * 480;
+    world.strike(Vec2::new(103.0, 50.0), true);
+    assert_eq!(world.player.hp, BASE_HP);
+}
+
+#[test]
 fn enemies_appearing_later_are_tougher() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);

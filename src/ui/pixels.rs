@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style};
 use super::ViewState;
 use super::level_up;
 use super::night;
-use super::sprites::{self, Look, SpriteId, Sprites};
+use super::sprites::{self, Look, Skin, SpriteId, Sprites};
 use crate::game::{
     Bullet, Choice, EnemyKind, Feature, MAX_LEVEL, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS,
     SWING_TICKS, Stain, Swing, Vec2, Weapon, World, campfire_light,
@@ -422,6 +422,35 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// The player and the enemies, the lowest on the map last: in front of those above them.
+    /// While lightning is about to strike, which pixels they cover, for its ring to show on the
+    /// ground under them; none otherwise.
+    fn paint_figures(&mut self, world: &World, skin: Skin) -> Vec<bool> {
+        let player = &world.player;
+        let mut figures: Vec<(Vec2, Look)> = world
+            .enemies
+            .iter()
+            .map(|enemy| (enemy.position, sprites::enemy(enemy)))
+            .collect();
+        // Blinking while nothing can hurt them.
+        let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
+        if !blinks_out {
+            figures.push((player.position, sprites::hero(player.facing, skin)));
+        }
+        figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
+        let ground = (!world.strikes_coming.is_empty()).then(|| self.pixels.clone());
+        for (position, look) in figures {
+            self.paint_at(look, position);
+        }
+        ground.map_or_else(Vec::new, |ground| {
+            ground
+                .iter()
+                .zip(&self.pixels)
+                .map(|(under, now)| under != now)
+                .collect()
+        })
+    }
+
     /// A sprite with its top-left pixel at a pixel of the map.
     fn paint(&mut self, look: Look, (left, top): (i32, i32)) {
         let sprite = self.sprites.get(look.sprite);
@@ -688,21 +717,7 @@ pub fn render_map(
     canvas.paint_map(world, view.ground);
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
 
-    // The player and the enemies, the lowest on the map last: in front of those above them.
-    let mut figures: Vec<(Vec2, Look)> = world
-        .enemies
-        .iter()
-        .map(|enemy| (enemy.position, sprites::enemy(enemy)))
-        .collect();
-    // Blinking while nothing can hurt them.
-    let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
-    if !blinks_out {
-        figures.push((player.position, sprites::hero(player.facing, view.skin)));
-    }
-    figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
-    for (position, look) in figures {
-        canvas.paint_at(look, position);
-    }
+    let covered = canvas.paint_figures(world, view.skin);
     if let Some(hurt_at) = world.hurt_at {
         let since = world.ticks().saturating_sub(hurt_at);
         night::paint_spurt(&mut canvas, centre, since, hurt_at, blood);
@@ -740,6 +755,12 @@ pub fn render_map(
     let glows = canvas.glows(world);
     lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
+    // Where lightning will strike, a moment before: its ring on the ground, blinking, under the
+    // figures.
+    for coming in &world.strikes_coming {
+        let since = world.ticks().saturating_sub(coming.tick);
+        night::paint_warning(&mut canvas, pixel(coming.at), since, &covered);
+    }
     if let Some(healed_at) = world.healed_at {
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }

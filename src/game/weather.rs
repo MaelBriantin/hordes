@@ -29,8 +29,13 @@ const SUNRISE_SECONDS: u32 = 60;
 const DAYBREAK_SECONDS: u32 = 4;
 /// What a strike of lightning takes from each enemy near where it falls, in HP, from the storm.
 pub const STRIKE_DAMAGE: u32 = 30;
-/// How near where it falls a strike hurts enemies, in tiles.
+/// How near where it falls a strike hurts enemies, and the player, in tiles.
 pub const STRIKE_RADIUS: f32 = 2.5;
+/// What a strike of lightning takes from the player, in HP.
+pub const STRIKE_PLAYER_DAMAGE: u32 = 20;
+/// How long a strike's ring shows where it will fall before it does, in ticks: half a second,
+/// time enough to run out of it from its middle.
+pub const STRIKE_WARNING_TICKS: u32 = 15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Weather {
@@ -90,9 +95,19 @@ impl Weather {
         Some(seconds * u32::from(TICKS_PER_SECOND))
     }
 
-    /// Whether its strikes of lightning hurt the enemies they fall among.
+    /// Whether its strikes of lightning hurt the enemies they fall among, and the player.
     pub fn strikes_hurt(self) -> bool {
         self >= Weather::Storm
+    }
+
+    /// How often a strike that hurts falls where the player stands, in percent: the others fall
+    /// anywhere they see.
+    pub fn aimed_strike_percent(self) -> u32 {
+        match self {
+            Weather::Tempest => 50,
+            Weather::Storm => 33,
+            _ => 0,
+        }
     }
 
     /// How much less far the player's light reaches, in tiles.

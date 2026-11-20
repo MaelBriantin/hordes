@@ -179,6 +179,8 @@ pub struct World {
     molotov_wait: u32,
     /// The last strike of lightning, if any yet.
     pub lightning: Option<Lightning>,
+    /// The strikes coming, their ring showing where they will fall: where, and since when.
+    pub strikes_coming: Vec<Lightning>,
     /// The horde on its way, once announced.
     pub horde_warning: Option<Warning>,
     /// The tick the next horde comes at, and its number.
@@ -291,6 +293,7 @@ impl World {
             drone_angle: 0.0,
             drone_repairs: Vec::new(),
             lightning: None,
+            strikes_coming: Vec::new(),
             bottles: Vec::new(),
             puddles: Vec::new(),
             molotov_wait: 0,
@@ -753,9 +756,19 @@ impl World {
     }
 
     /// Lightning strikes now and then, as often as the weather has it, somewhere the player
-    /// sees; from the storm on, it hurts the enemies it falls among.
+    /// sees; from the storm on, it hurts the enemies it falls among, and the player: its ring
+    /// shows where a second before it falls, often where the player stands.
     fn storm(&mut self) {
         let weather = self.weather();
+        let due = self.ticks.saturating_sub(weather::STRIKE_WARNING_TICKS);
+        let (falling, coming): (Vec<_>, Vec<_>) = self
+            .strikes_coming
+            .iter()
+            .partition(|strike| strike.tick <= due);
+        self.strikes_coming = coming;
+        for strike in falling {
+            self.strike(strike.at, true);
+        }
         let rising = self.mode == Mode::Standard && self.ticks >= weather::sunrise();
         let Some(every) = weather.lightning_every().filter(|_| !rising) else {
             self.next_strike_in = None;
@@ -769,15 +782,28 @@ impl World {
         // Not like clockwork: between half and one and a half times the weather's wait.
         self.next_strike_in = Some(self.rng.random_range(every / 2..=every * 3 / 2));
         let (view, centre) = (self.view, self.player.position);
-        let at = centre
-            + Vec2::new(
-                self.rng.random_range(-view.x..=view.x),
-                self.rng.random_range(-view.y..=view.y),
-            );
-        self.strike(at, weather.strikes_hurt());
+        let aimed = self.rng.random_range(0..100) < weather.aimed_strike_percent();
+        let at = if aimed {
+            centre
+        } else {
+            centre
+                + Vec2::new(
+                    self.rng.random_range(-view.x..=view.x),
+                    self.rng.random_range(-view.y..=view.y),
+                )
+        };
+        if weather.strikes_hurt() {
+            self.strikes_coming.push(Lightning {
+                tick: self.ticks,
+                at,
+            });
+        } else {
+            self.strike(at, false);
+        }
     }
 
-    /// A strike of lightning falls at `at`, hurting the enemies around it if `hurts`.
+    /// A strike of lightning falls at `at`, hurting the enemies around it, and the player, if
+    /// `hurts`.
     fn strike(&mut self, at: Vec2, hurts: bool) {
         self.lightning = Some(Lightning {
             tick: self.ticks,
@@ -792,6 +818,12 @@ impl World {
             if (enemy.position - at).length() <= weather::STRIKE_RADIUS {
                 enemy.hit(weather::STRIKE_DAMAGE);
             }
+        }
+        if (self.player.position - at).length() <= weather::STRIKE_RADIUS
+            && !self.unhurt
+            && !self.daybreak()
+        {
+            self.wound_player(weather::STRIKE_PLAYER_DAMAGE);
         }
     }
 
@@ -1570,15 +1602,21 @@ impl World {
             .map(|enemy| enemy.kind.stats().damage)
             .max();
         if let Some(damage) = hit {
-            player.hp = player.hp.saturating_sub(damage);
-            player.invincible = u32::from(TICKS_PER_SECOND) / 2;
-            self.hurt_at = Some(self.ticks);
-            self.stains.push(Stain {
-                position: player.position,
-                tick: self.ticks,
-                size: 1,
-                ash: false,
-            });
+            self.wound_player(damage);
         }
+    }
+
+    /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second.
+    fn wound_player(&mut self, damage: u32) {
+        let player = &mut self.player;
+        player.hp = player.hp.saturating_sub(damage);
+        player.invincible = u32::from(TICKS_PER_SECOND) / 2;
+        self.hurt_at = Some(self.ticks);
+        self.stains.push(Stain {
+            position: player.position,
+            tick: self.ticks,
+            size: 1,
+            ash: false,
+        });
     }
 }
