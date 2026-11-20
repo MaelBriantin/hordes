@@ -1171,6 +1171,27 @@ fn the_torch_stays_lit_and_lights_again_at_will() {
 }
 
 #[test]
+fn with_the_card_a_dash_goes_the_way_the_player_faces_nothing_hurting_them() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.player.build.take(Choice::Passive(Passive::Dash));
+    world.update(moving(1.0, 0.0));
+    let start = world.player.position.x;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, world.player.position));
+    world.enemies[0].stunned = u32::MAX;
+    world.dash();
+    for _ in 0..8 {
+        world.update(Input::default());
+    }
+    assert_eq!(world.player.hp, BASE_HP);
+    assert!((world.player.position.x - start - 3.0).abs() < 1e-3);
+    assert!(world.player.dash.is_none());
+}
+
+#[test]
 fn loot_makes_gems_likelier() {
     let mut build = Build::new();
     assert_eq!(build.drop_bonus(), 0);

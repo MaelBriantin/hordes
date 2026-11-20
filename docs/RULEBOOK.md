@@ -8,7 +8,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with ←→, A, Q or D (see Modes).
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map; the choice is kept.
-- **Torch**: Space or F, once it has lit up of itself, at 0:26 (see The night).
+- **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
+- **Dash**: Shift, the way the player faces, once the Dash card is taken and a dash is ready (see The player). Without kitty's keyboard protocol, a terminal doesn't tell Shift alone: Shift with a way (a capital W, A, S, D, Z or Q) dashes.
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
@@ -76,7 +77,7 @@ In arcade, every run is played for its score.
 
 - Runs start at **dusk**, for half a minute, just enough to look around: for its first 24 s, the setting sun lights the whole map, warm, less and less, down to half its light; then the night falls all of a sudden, in **6 s**, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls. **Space** or **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
+- The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
 - **No battery**: the torch stays lit as long as the player wants, and lights again whenever they want. The status line shows the torch, on or out, as a bulb: green while it is on, grey-blue while it is out. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (14% of their brightness).
 - **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **12**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the machete and the drones still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
 - **Shadows** go the other way round, at night: they hunt the player in the dark, wherever they are, their eyes shining red; the torch lit, they keep away from it.
@@ -111,6 +112,8 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | Body | 0.9 × 0.9 tile, smaller than the sprite (2 × 2 tiles): brushing past an obstacle is forgiven |
 | HP | 100 (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
+| Dashes | None at first: the Dash card brings them (see Passives). One, ready as the card is taken, back 8 s after it is taken (6 s from level 2, 4.5 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
+| Dash | Shift: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
 
 ## Enemies
 
@@ -223,6 +226,7 @@ Up to **4 passives**, each up to **level 5**.
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
+| Dash | Shift dashes (see The player): back in 8 s, then sooner and sooner; a second dash at level 3 |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
 
 ## Legendaries
@@ -240,6 +244,6 @@ Up to **4 passives**, each up to **level 5**.
 - A gem shows by its worth: **silver** for a point, **blue** for 2 to 4 (a Shadow's), **gold** for 5 and more (an abomination's). Each glows its colour around it in the dark.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heal. Rare: Might, Haste, Compass, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, the heal. Rare: Might, Haste, Compass, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Choosing**: ←/→ (or Q/A and D) then Enter (or Space), or 1, 2, 3 straight away.

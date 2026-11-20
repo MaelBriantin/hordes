@@ -4,6 +4,7 @@
 mod announce;
 mod body;
 mod build;
+mod dash;
 mod drones;
 mod enemy;
 mod facing;

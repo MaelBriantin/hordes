@@ -14,7 +14,8 @@ use std::time::{Duration, Instant};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{
     self, DisableFocusChange, EnableFocusChange, Event, KeyCode, KeyEvent, KeyModifiers,
-    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    KeyboardEnhancementFlags, ModifierKeyCode, PopKeyboardEnhancementFlags,
+    PushKeyboardEnhancementFlags,
 };
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
@@ -360,7 +361,7 @@ impl App {
         }
     }
 
-    /// In the run: P or Esc pause it, Space or F switches the torch, or once it is over, R starts anew and
+    /// In the run: P or Esc pause it, F switches the torch, Shift dashes, or once it is over, R starts anew and
     /// Esc quits; on a level-up, the cards.
     fn on_run(&mut self, code: KeyCode) {
         if self.world.is_over() {
@@ -391,9 +392,20 @@ impl App {
             self.pinged_at = Some(self.world.ticks());
             return;
         }
-        // Space or F switches the torch, but for the cards of a level-up, where Space takes one.
-        if matches!(code, KeyCode::Char(' ' | 'f' | 'F')) && self.world.offer.is_none() {
+        // F switches the torch, but for the cards of a level-up.
+        if matches!(code, KeyCode::Char('f' | 'F')) && self.world.offer.is_none() {
             self.world.switch_torch();
+            return;
+        }
+        // Shift dashes: alone with kitty's protocol; elsewhere, Shift only shows on the keys it
+        // changes, a way in capitals.
+        let shift = match code {
+            KeyCode::Modifier(ModifierKeyCode::LeftShift | ModifierKeyCode::RightShift) => true,
+            KeyCode::Char('W' | 'A' | 'S' | 'D' | 'Z' | 'Q') => !self.keys.reports_release(),
+            _ => false,
+        };
+        if shift && self.world.offer.is_none() {
+            self.world.dash();
             return;
         }
         self.choose(code);

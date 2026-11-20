@@ -113,6 +113,7 @@ passive-compass = Boussole
 passive-flashlight = Lampe torche
 passive-regeneration = Régénération
 passive-glare = Éblouissement
+passive-dash = Dash
 passive-loot = Butin
 passive-wisdom = Savoir
 legendary-illumination = Illumination
@@ -162,6 +163,12 @@ gain-compass-more = Trouve le soin 50 cases plus loin (total { $total })
 gain-flashlight = +2 cases de lumière (total { $total })
 gain-regeneration = +0,4 PV par seconde (total { $whole },{ $tenth })
 gain-glare = -10 % de vitesse aux ennemis dans la lumière (total -{ $total } %)
+gain-dash = Maj : un dash, rien ne blesse pendant ; rechargé en 8 s
+gain-dash-second = Un deuxième dash
+gain-dash-sooner = Dash rechargé en { $tenth ->
+    [0] { $whole } s
+   *[other] { $whole },{ $tenth } s
+}
 gain-loot = +10 % de chances de gemme (total +{ $total } %)
 gain-wisdom = +10 % d'XP des gemmes (total +{ $total } %)
 gain-illumination = +1 XP chaque seconde
@@ -191,7 +198,8 @@ horde-cleared-level = +1 niveau
 
 keys-title = Commandes
 keys-move = Flèches / ZQSD / WASD  bouger
-keys-torch = Espace / F             lampe
+keys-torch = F                      lampe
+keys-dash = Maj                    dash (sa carte) : rien ne blesse
 keys-cards = ← → / 1 2 3 · Entrée   prendre une carte
 keys-gear = I                      afficher l'équipement
 keys-ping = E                      une flèche sur le héros, 2 s

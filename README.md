@@ -26,7 +26,8 @@ The game wants a terminal with true colour and a [Nerd Font](https://www.nerdfon
 |---|---|
 | `←` `↑` `↓` `→` / `WASD` / `ZQSD` | Move (the last key pressed wins) |
 | `Enter` | Start, take a card, confirm |
-| `Space` / `F` | Torch on or off, once the night falls |
+| `F` | Torch on or off, once the night falls |
+| `Shift` | Dash, once its card is taken: nothing hurts the hero meanwhile |
 | `I` | Show or hide the gear |
 | `E` | An arrow over the hero for 2 s: found again in the crowd |
 | `?` | Every key of a run |

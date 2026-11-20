@@ -8,6 +8,7 @@ use super::body::{fits, slide, touch};
 use super::build::{
     BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
 };
+use super::dash::{Dash, Dashes};
 use super::drones;
 use super::enemy::{Enemy, EnemyKind};
 use super::gem::Gem;
@@ -120,6 +121,10 @@ pub struct Player {
     pub hp: u32,
     /// Ticks left during which nothing hurts the player, after a hit.
     pub invincible: u32,
+    /// The dashes ready, and the next coming back.
+    pub dashes: Dashes,
+    /// A dash under way: nothing hurts the player meanwhile.
+    pub dash: Option<Dash>,
     pub level: u32,
     /// The XP gathered towards the next level.
     pub xp: u32,
@@ -274,6 +279,8 @@ impl World {
                 facing: Facing::default(),
                 hp: BASE_HP,
                 invincible: 0,
+                dashes: Dashes::new(),
+                dash: None,
                 level: 1,
                 xp: 0,
                 build: Build::new(),
@@ -822,6 +829,7 @@ impl World {
         if (self.player.position - at).length() <= weather::STRIKE_RADIUS
             && !self.unhurt
             && !self.daybreak()
+            && self.player.dash.is_none()
         {
             self.wound_player(weather::STRIKE_PLAYER_DAMAGE);
         }
@@ -1189,11 +1197,37 @@ impl World {
 
     fn move_player(&mut self, input: Input) {
         let player = &mut self.player;
+        let (most, recharge) = (player.build.dashes(), player.build.dash_recharge());
+        player.dashes.tick(most, recharge);
+        // Dashing, the player goes on the way they dash, whatever the keys say.
+        if let Some(dash) = &mut player.dash {
+            let step = dash.step();
+            dash.left -= 1;
+            if dash.left == 0 {
+                player.dash = None;
+            }
+            player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
+            return;
+        }
         player.facing = player.facing.after(input.direction);
         // Normalized, so a diagonal is no faster than a straight line.
         let speed = PLAYER_SPEED * f32::from(player.build.speed_percent()) / 100.0;
         let step = input.direction.normalized() * (speed * tick_seconds());
         player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
+    }
+
+    /// The player dashes the way they face, if they have the Dash card and a dash is ready:
+    /// nothing hurts them while they do.
+    pub fn dash(&mut self) {
+        let player = &mut self.player;
+        if self.announcement.is_some()
+            || player.dash.is_some()
+            || player.build.dashes() == 0
+            || !player.dashes.take()
+        {
+            return;
+        }
+        player.dash = Some(Dash::new(player.facing.way()));
     }
 
     /// New enemies, as many as the rate owes, up to the most at once.
@@ -1580,7 +1614,7 @@ impl World {
     /// The player loses the HP of the hardest-hitting enemy touching them, then nothing hurts
     /// them for half a second.
     fn hurt_player(&mut self) {
-        if self.unhurt || self.daybreak() {
+        if self.unhurt || self.daybreak() || self.player.dash.is_some() {
             return;
         }
         let player = &mut self.player;

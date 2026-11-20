@@ -113,6 +113,7 @@ passive-compass = Compass
 passive-flashlight = Flashlight
 passive-regeneration = Regeneration
 passive-glare = Glare
+passive-dash = Dash
 passive-loot = Loot
 passive-wisdom = Wisdom
 legendary-illumination = Illumination
@@ -162,6 +163,12 @@ gain-compass-more = Finds healing 50 tiles further (total { $total })
 gain-flashlight = +2 tiles of light (total { $total })
 gain-regeneration = +0.4 HP a second (total { $whole }.{ $tenth })
 gain-glare = -10% speed for the enemies in the light (total -{ $total }%)
+gain-dash = Shift: a dash, nothing hurts meanwhile; back in 8 s
+gain-dash-second = A second dash
+gain-dash-sooner = The dash back in { $tenth ->
+    [0] { $whole } s
+   *[other] { $whole }.{ $tenth } s
+}
 gain-loot = +10% chance of a gem (total +{ $total }%)
 gain-wisdom = +10% XP from gems (total +{ $total }%)
 gain-illumination = +1 XP every second
@@ -191,7 +198,8 @@ horde-cleared-level = +1 level
 
 keys-title = Keys
 keys-move = Arrows / WASD / ZQSD   move
-keys-torch = Space / F              torch on or off
+keys-torch = F                      torch on or off
+keys-dash = Shift                  dash (its card): nothing hurts
 keys-cards = ← → / 1 2 3 · Enter    take a card
 keys-gear = I                      show or hide the gear
 keys-ping = E                      an arrow over the hero, 2 s

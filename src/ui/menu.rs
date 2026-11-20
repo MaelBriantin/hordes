@@ -311,6 +311,7 @@ pub fn render_keys(frame: &mut Frame, map: Rect) {
     let lines = [
         fl!("keys-move"),
         fl!("keys-torch"),
+        fl!("keys-dash"),
         fl!("keys-cards"),
         fl!("keys-gear"),
         fl!("keys-ping"),

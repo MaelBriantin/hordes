@@ -225,6 +225,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Loot => SpriteId::IconLoot,
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
+            Passive::Dash => SpriteId::IconDash,
         },
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
@@ -246,6 +247,7 @@ fn name(choice: Choice) -> String {
             Passive::Loot => fl!("passive-loot"),
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
+            Passive::Dash => fl!("passive-dash"),
         },
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
@@ -323,6 +325,10 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Swiftness | Passive::Haste => 8 * level,
                 Passive::Magnet => 2 + level,
                 Passive::Might | Passive::Wisdom | Passive::Loot | Passive::Glare => 10 * level,
+                // In tenths of a second, the dash's recharge.
+                Passive::Dash => {
+                    [80, 60, 60, 45, 30][usize::try_from(level.clamp(1, 5) - 1).unwrap_or(0)]
+                }
                 // In tenths of HP a second.
                 Passive::Regeneration => 4 * level,
                 Passive::Flashlight => 9 + 2 * level,
@@ -344,6 +350,13 @@ fn gain_of(choice: Choice, level: u8) -> String {
                     fl!("gain-regeneration", whole = whole, tenth = tenth)
                 }
                 Passive::Glare => fl!("gain-glare", total = total),
+                Passive::Dash if level <= 1 => fl!("gain-dash"),
+                // Level 3 brings the second dash.
+                Passive::Dash if level == 3 => fl!("gain-dash-second"),
+                Passive::Dash => {
+                    let (whole, tenth) = (total / 10, total % 10);
+                    fl!("gain-dash-sooner", whole = whole, tenth = tenth)
+                }
             }
         }
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),

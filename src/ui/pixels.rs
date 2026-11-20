@@ -18,6 +18,12 @@ use crate::game::{
 /// dark.
 const SHADOW_EYES: Color = Color::Rgb(230, 40, 40);
 const SHADOW_EYES_GLOW: Color = Color::Rgb(160, 22, 26);
+/// The silhouettes a dashing player leaves behind: how far behind, in tiles, and their colour,
+/// fading.
+const AFTERIMAGES: [(f32, Color); 2] = [
+    (1.6, Color::Rgb(40, 44, 62)),
+    (0.8, Color::Rgb(70, 78, 108)),
+];
 /// The glow of a gem, by what it is worth, as its colour.
 fn gem_glow(value: u32) -> (u8, u8, u8) {
     match value {
@@ -434,10 +440,24 @@ impl<'a> Canvas<'a> {
             .collect();
         // Blinking while nothing can hurt them.
         let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
-        if !blinks_out {
+        if player.dash.is_some() || !blinks_out {
             figures.push((player.position, sprites::hero(player.facing, skin)));
         }
         figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
+        // Dashing, the player leaves fading silhouettes of themselves behind.
+        if let Some(dash) = player.dash {
+            let look = sprites::hero(player.facing, skin);
+            for (behind, colour) in AFTERIMAGES {
+                let at = player.position - dash.way * behind;
+                self.paint_at(
+                    Look {
+                        tint: Some(colour),
+                        ..look
+                    },
+                    at,
+                );
+            }
+        }
         let ground = (!world.strikes_coming.is_empty()).then(|| self.pixels.clone());
         for (position, look) in figures {
             self.paint_at(look, position);

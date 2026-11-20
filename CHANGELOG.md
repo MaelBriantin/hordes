@@ -10,6 +10,7 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- A new passive, Dash: Shift dashes, 3 tiles in a blink, nothing hurting the hero meanwhile, fading silhouettes of them left behind. Slow to come back at first (8 s), sooner with the levels (3 s at the last); a second dash at level 3, no more. The gear shows them under its icon, as a gun's rounds. The torch is F alone now.
 - A new rare passive, Glare: the enemies in the torch's light go 10% slower per level, while it is lit.
 
 ### Changed

@@ -58,6 +58,8 @@ Q 140 20 25     dark blood
 f 245 130 40    flame
 Y 255 225 100   flame's heart
 s 90 90 95      ashes
+2 40 44 62      a dash's silhouette, far
+3 70 78 108     a dash's silhouette, near
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -397,6 +399,16 @@ icon_glare
 .jjjjjj.
 jWWqqWWj
 .jjjjjj.
+........
+........
+
+icon_dash
+........
+........
+.2.3.SS.
+.2.3.SF.
+2.3.Jx..
+.2.3.zz.
 ........
 ........
 

@@ -13,6 +13,9 @@ const CHOICES: usize = 3;
 pub const RARE_PERCENT: u32 = 25;
 /// The player's HP before Vitality.
 pub const BASE_HP: u32 = 100;
+/// How long a dash takes to come back, in ticks, by the Dash card's level: 8 s, 6 s, 6 s,
+/// 4.5 s, 3 s.
+const DASH_RECHARGES: [u32; 5] = [240, 180, 180, 135, 90];
 /// The HP a heal gives back: the choice left when nothing else can be picked.
 pub const HEAL: u32 = 20;
 /// What each level of Vitality adds to the player's HP.
@@ -65,10 +68,12 @@ pub enum Passive {
     Regeneration,
     /// The enemies in the torch's light slowed, 10% per level.
     Glare,
+    /// Shift dashes; a second dash at level 3, each back sooner and sooner.
+    Dash,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 11] = [
+    pub const ALL: [Passive; 12] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -80,6 +85,7 @@ impl Passive {
         Passive::Loot,
         Passive::Regeneration,
         Passive::Glare,
+        Passive::Dash,
     ];
 }
 
@@ -323,6 +329,22 @@ impl Build {
         10 * u32::from(self.passive_level(Passive::Glare))
     }
 
+    /// How many dashes the player can have ready: none without the Dash card, one from its
+    /// level 1, two from its level 3, no more.
+    pub fn dashes(&self) -> u8 {
+        match self.passive_level(Passive::Dash) {
+            0 => 0,
+            1 | 2 => 1,
+            _ => 2,
+        }
+    }
+
+    /// How long a dash takes to come back, in ticks, by the Dash card's level.
+    pub fn dash_recharge(&self) -> u32 {
+        let level = usize::from(self.passive_level(Passive::Dash).max(1));
+        DASH_RECHARGES[(level - 1).min(DASH_RECHARGES.len() - 1)]
+    }
+
     /// A weapon's cooldown in ticks, with Haste.
     pub fn cooldown(&self, base: u32) -> u32 {
         base * (100 - 8 * u32::from(self.passive_level(Passive::Haste))) / 100
@@ -481,6 +503,18 @@ mod tests {
                 .offers(&mut rng, false, RARE_PERCENT, 5)
                 .contains(&legendary)
         }));
+    }
+
+    #[test]
+    fn the_dash_card_brings_a_dash_slow_to_come_back_then_two_at_most() {
+        let mut build = Build::new();
+        assert_eq!(build.dashes(), 0);
+        let mut levels = Vec::new();
+        for _ in 0..5 {
+            build.take(Choice::Passive(Passive::Dash));
+            levels.push((build.dashes(), build.dash_recharge()));
+        }
+        assert_eq!(levels, [(1, 240), (1, 180), (2, 180), (2, 135), (2, 90)]);
     }
 
     #[test]

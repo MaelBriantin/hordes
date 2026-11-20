@@ -83,6 +83,11 @@ impl Keys {
         }
     }
 
+    /// Whether the terminal says when a key is let go, and Shift alone: kitty's protocol.
+    pub fn reports_release(&self) -> bool {
+        self.reports_release
+    }
+
     /// Lets every key go: the terminal lost the focus, and won't say when they are released.
     pub fn release_all(&mut self) {
         self.held = [Hold::Released; 4];
