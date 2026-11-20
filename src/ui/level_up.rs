@@ -246,7 +246,6 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Might => SpriteId::IconMight,
             Passive::Haste => SpriteId::IconHaste,
             Passive::Flashlight => SpriteId::IconFlashlight,
-            Passive::Compass => SpriteId::IconCompass,
             Passive::Wisdom => SpriteId::IconWisdom,
             Passive::Loot => SpriteId::IconLoot,
             Passive::Regeneration => SpriteId::IconRegeneration,
@@ -268,7 +267,6 @@ pub fn name(choice: Choice) -> String {
             Passive::Might => fl!("passive-might"),
             Passive::Haste => fl!("passive-haste"),
             Passive::Flashlight => fl!("passive-flashlight"),
-            Passive::Compass => fl!("passive-compass"),
             Passive::Wisdom => fl!("passive-wisdom"),
             Passive::Loot => fl!("passive-loot"),
             Passive::Regeneration => fl!("passive-regeneration"),
@@ -358,7 +356,6 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 // In tenths of HP a second.
                 Passive::Regeneration => 4 * level,
                 Passive::Flashlight => 9 + 2 * level,
-                Passive::Compass => 100 + 50 * level,
             };
             match passive {
                 Passive::Vitality => fl!("gain-vitality", total = total),
@@ -367,8 +364,6 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 Passive::Might => fl!("gain-might", total = total),
                 Passive::Haste => fl!("gain-haste", total = total),
                 Passive::Flashlight => fl!("gain-flashlight", total = total),
-                Passive::Compass if level <= 1 => fl!("gain-compass"),
-                Passive::Compass => fl!("gain-compass-more", total = total),
                 Passive::Wisdom => fl!("gain-wisdom", total = total),
                 Passive::Loot => fl!("gain-loot", total = total),
                 Passive::Regeneration => {

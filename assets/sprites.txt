@@ -352,16 +352,6 @@ nnnnjyyy
 ......yy
 ........
 
-icon_compass
-..jjjj..
-.j....j.
-j...r..j
-j..rr..j
-j..ww..j
-j..w...j
-.j....j.
-..jjjj..
-
 icon_wisdom
 ......W.
 ...i.WWW

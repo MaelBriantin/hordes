@@ -231,15 +231,6 @@ pub fn render(
         };
         pixels::render_map(frame.buffer_mut(), map, world, sprites, view);
         render_hurt(frame.buffer_mut(), map, world);
-        if let Some(healing) = world.compass() {
-            pixels::render_compass(
-                frame.buffer_mut(),
-                map,
-                world.player.position,
-                healing,
-                view.frame,
-            );
-        }
     }
     // The keys below, but for the run going on: its XP bar, all along the screen.
     let help = match screen {

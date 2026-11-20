@@ -58,8 +58,6 @@ pub enum Passive {
     Haste,
     /// +2 tiles of light around the player.
     Flashlight,
-    /// Points to the nearest healing on the map.
-    Compass,
     /// +10% XP from the gems.
     Wisdom,
     /// +10% chance for an enemy to leave a gem.
@@ -73,14 +71,13 @@ pub enum Passive {
 }
 
 impl Passive {
-    pub const ALL: [Passive; 12] = [
+    pub const ALL: [Passive; 11] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
         Passive::Might,
         Passive::Haste,
         Passive::Flashlight,
-        Passive::Compass,
         Passive::Wisdom,
         Passive::Loot,
         Passive::Regeneration,
@@ -108,7 +105,6 @@ impl Choice {
             Choice::Passive(
                 Passive::Might
                 | Passive::Haste
-                | Passive::Compass
                 | Passive::Wisdom
                 | Passive::Regeneration
                 | Passive::Glare,
@@ -294,15 +290,6 @@ impl Build {
     /// Flashlight.
     pub fn light_radius(&self) -> f32 {
         9.0 + 2.0 * f32::from(self.passive_level(Passive::Flashlight))
-    }
-
-    /// How far the compass finds healing, in tiles: 150, and 50 more per level after the first;
-    /// none without it. Healing is rare: within 150 tiles, there is nearly always some.
-    pub fn compass_range(&self) -> Option<f32> {
-        match self.passive_level(Passive::Compass) {
-            0 => None,
-            level => Some(100.0 + 50.0 * f32::from(level)),
-        }
     }
 
     /// The HP the player gets back of themselves each second, in tenths: 4 per level of

@@ -223,7 +223,6 @@ Up to **4 passives**, each up to **level 5**.
 | Might | +10% damage of every weapon |
 | Haste | −8% to every weapon's cooldown, the drones' repair included |
 | Flashlight | +2 tiles of light around the player (9 at first) |
-| Compass | A red arrow on the edge of the screen, white on pulsing red cells, a healing cross beside it, points to the nearest healing (a herb, a burning campfire), while it is off screen: within 150 tiles, 50 more per level |
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
@@ -245,7 +244,7 @@ Up to **4 passives**, each up to **level 5**.
 - A gem shows by its worth: **silver** for a point, **blue** for 2 to 4 (a Shadow's), **gold** for 5 and more (an abomination's). Each glows its colour around it in the dark.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, the heal. Rare: Might, Haste, Compass, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, the heal. Rare: Might, Haste, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

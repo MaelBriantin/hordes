@@ -1579,25 +1579,6 @@ impl World {
         features
     }
 
-    /// Where the healing nearest to the player is, if they carry a compass and any lies within
-    /// its range: a herb not yet picked, or a campfire still burning.
-    pub fn compass(&self) -> Option<Vec2> {
-        let range = self.player.build.compass_range()?;
-        let player = self.player.position;
-        let (x, y) = player.tile();
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "a range of a few hundred tiles"
-        )]
-        let reach = range.ceil() as i32;
-        self.features_in((x - reach, y - reach), (x + reach, y + reach))
-            .into_iter()
-            .filter(|(tile, feature)| *feature == Feature::Herb || self.campfire_left(*tile) > 0)
-            .map(|(tile, _)| Vec2::middle_of(tile))
-            .filter(|healing| (*healing - player).length() <= range)
-            .min_by(|a, b| (*a - player).length().total_cmp(&(*b - player).length()))
-    }
-
     /// The HP a campfire still has to give: none once it is out.
     pub fn campfire_left(&self, tile: (i32, i32)) -> u32 {
         CAMPFIRE_HP - self.burnt.get(&tile).copied().unwrap_or(0).min(CAMPFIRE_HP)
