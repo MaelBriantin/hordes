@@ -7,7 +7,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
 - **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with ←→, A, Q or D (see Modes).
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
-- **Gear**: I shows or hides the gear over the top left of the map; the choice is kept.
+- **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes.
 - **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
 - **Dash**: Shift, the way the player faces, once the Dash card is taken and a dash is ready (see The player). Without kitty's keyboard protocol, a terminal doesn't tell Shift alone: Shift with a way (a capital W, A, S, D, Z or Q) dashes.
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
@@ -16,7 +16,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
   - **Rain**: how it shows (full, reduced to half its drops, or off). The weather itself is the same whatever the choice.
   - **Arrow**: a small arrow over the player's head, bouncing, to see them at once in the crowd: off, white, yellow or red. Whatever the setting, **E** shows the arrow for **2 s** (white, if off): the player found again in the crowd.
   - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). Big, no pause, at first. The opening is always told big, with a pause.
-  - **Gear**: shown or hidden over the top left of the map (I in a run does the same); hidden at first. The opening and the hordes are always told in big letters.
+  - **Gear**: hidden, as icons, or as a list over the top left of the map (I in a run shows or hides it); hidden at first. As a list, a line a card: its name, its level (MAX in gold at the last), its gauge if it has one. The opening and the hordes are always told in big letters.
   - **HP over the hero**: shown or hidden: the player's HP in a small bar over their head (over the arrow, when it shows).
   - **Coloured ground** (experimental): off or on: on, the bare ground is dark grass speckled with earth, lit as the rest, rather than the screen's dark. Off at first: it redraws most of the screen at every step, for a modern, fast terminal (Ghostty, kitty, WezTerm…).
   - **Dusk**: played or skipped: skipped, a run opens on the night, the torch lit.
@@ -232,7 +232,7 @@ Up to **4 passives**, each up to **level 5**.
 ## Legendaries
 
 - A level-up offers a **legendary** **5%** of the time, while one is left to find: on a **golden card**, in place of its last choice. Each level-up without one raises the chance by a point (6%, 7%…), back to 5% once one is offered.
-- A legendary has **one level**, and takes no room among the passives; once found, it is never offered again. It shows in the gear with a golden bar.
+- A legendary has **one level**, and takes no room among the passives; once found, it is never offered again. It shows in the gear with no level written.
 
 | Legendary | What it does |
 |---|---|

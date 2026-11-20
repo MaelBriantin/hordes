@@ -77,8 +77,9 @@ pub struct Settings {
     /// The mode runs are played in, and whether they skip the dusk.
     pub mode: Mode,
     pub skip_dusk: bool,
-    /// Whether the gear shows over the top left of the map.
+    /// Whether the gear shows over the top left of the map; as a list rather than icons.
     pub gear: bool,
+    pub gear_list: bool,
     /// Whether the player's HP shows in a small bar over their head.
     pub mini_bars: bool,
     /// Whether the ground is coloured, grass speckled with earth: an experiment, off at first.
@@ -98,6 +99,7 @@ impl Default for Settings {
             mode: Mode::Standard,
             skip_dusk: false,
             gear: false,
+            gear_list: false,
             mini_bars: false,
             ground: false,
             weather_news: WeatherNews::Big,
@@ -154,6 +156,8 @@ impl Settings {
                 ("dusk", "skipped") => settings.skip_dusk = true,
                 ("gear", "shown") => settings.gear = true,
                 ("gear", "hidden") => settings.gear = false,
+                ("gear_layout", "icons") => settings.gear_list = false,
+                ("gear_layout", "list") => settings.gear_list = true,
                 ("mini_bars", "shown") => settings.mini_bars = true,
                 ("mini_bars", "hidden") => settings.mini_bars = false,
                 ("ground", "coloured") => settings.ground = true,
@@ -172,7 +176,7 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
@@ -181,6 +185,7 @@ impl Settings {
             self.mode.id(),
             if self.skip_dusk { "skipped" } else { "played" },
             if self.gear { "shown" } else { "hidden" },
+            if self.gear_list { "list" } else { "icons" },
             if self.mini_bars { "shown" } else { "hidden" },
             if self.ground { "coloured" } else { "plain" },
             self.weather_news.id()
@@ -220,6 +225,7 @@ mod tests {
             mode: Mode::Arcade,
             skip_dusk: true,
             gear: false,
+            gear_list: false,
             mini_bars: true,
             ground: true,
             weather_news: WeatherNews::Big,

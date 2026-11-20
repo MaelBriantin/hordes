@@ -258,7 +258,7 @@ pub fn icon(choice: Choice) -> SpriteId {
     }
 }
 
-fn name(choice: Choice) -> String {
+pub fn name(choice: Choice) -> String {
     match choice {
         Choice::Weapon(weapon) => weapon_name(weapon),
         Choice::Passive(passive) => match passive {

@@ -17,6 +17,9 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A new rare passive, Glare: the enemies in the torch's light go 10% slower per level, while it is lit.
 
 ### Changed
+- In the gear, each card's level is written on its icon's corner, MAX at the last, rather than as a row of pixels under it.
+- The gear can show as a list, a setting: each card's name, its level, its gauge.
+- The gear shows the cards in the order they were picked, weapons and passives mixed.
 - From the storm on, lightning hurts the player too: a blinking ring shows where it will strike half a second before it does, often where the player stands; caught in it, they lose 20 HP.
 - The torch has no battery any more: lit or out as the player wants, it is a choice, seen or unseen, rather than a gauge to watch. The Batteries card and the Shadows' energy cells go with it; the bar over the hero shows the HP alone.
 

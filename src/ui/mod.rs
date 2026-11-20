@@ -169,8 +169,9 @@ pub struct ViewState {
     /// The mode the next run is played in, and whether it skips the dusk.
     pub mode: Mode,
     pub skip_dusk: bool,
-    /// Whether the gear shows over the top left of the map.
+    /// Whether the gear shows over the top left of the map; as a list rather than icons.
     pub gear: bool,
+    pub gear_list: bool,
     /// How a new weather is told.
     pub weather_news: WeatherNews,
     /// The language the game speaks, by its own name: `Français`.

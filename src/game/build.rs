@@ -142,6 +142,8 @@ pub struct Build {
     weapons: Vec<(Weapon, u8)>,
     passives: Vec<(Passive, u8)>,
     legendaries: Vec<Legendary>,
+    /// Every weapon, passive and legendary, in the order first picked.
+    picked: Vec<Choice>,
 }
 
 impl Build {
@@ -151,6 +153,7 @@ impl Build {
             weapons: vec![(Weapon::Crowbar, 1)],
             passives: Vec::new(),
             legendaries: Vec::new(),
+            picked: vec![Choice::Weapon(Weapon::Crowbar)],
         }
     }
 
@@ -161,6 +164,7 @@ impl Build {
             weapons: Vec::new(),
             passives: Vec::new(),
             legendaries: Vec::new(),
+            picked: Vec::new(),
         }
     }
 
@@ -169,19 +173,9 @@ impl Build {
         (self.weapons.len(), self.passives.len())
     }
 
-    /// The weapons the player has, with their levels, in the order picked.
-    pub fn weapons(&self) -> &[(Weapon, u8)] {
-        &self.weapons
-    }
-
-    /// The passives the player has, with their levels, in the order picked.
-    pub fn passives(&self) -> &[(Passive, u8)] {
-        &self.passives
-    }
-
-    /// The legendaries the player has found, in the order found.
-    pub fn legendaries(&self) -> &[Legendary] {
-        &self.legendaries
+    /// Every weapon, passive and legendary the player has, in the order first picked.
+    pub fn picked(&self) -> &[Choice] {
+        &self.picked
     }
 
     /// Whether the player has found a legendary.
@@ -267,6 +261,9 @@ impl Build {
 
     /// Takes a weapon or passive: new at level 1, or its next level. A heal changes nothing here.
     pub fn take(&mut self, choice: Choice) {
+        if choice != Choice::Heal && !self.picked.contains(&choice) {
+            self.picked.push(choice);
+        }
         match choice {
             Choice::Weapon(weapon) => raise(&mut self.weapons, weapon),
             Choice::Passive(passive) => raise(&mut self.passives, passive),

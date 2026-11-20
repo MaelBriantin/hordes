@@ -111,6 +111,7 @@ impl App {
                 mode: self.settings.mode,
                 skip_dusk: self.settings.skip_dusk,
                 gear: self.settings.gear,
+                gear_list: self.settings.gear_list,
                 mini_bars: self.settings.mini_bars,
                 ground: self.settings.ground,
                 weather_news: self.settings.weather_news,
@@ -347,7 +348,16 @@ impl App {
                 self.settings.skin = self.settings.skin.next();
                 self.keep_settings();
             }
-            OptionItem::Gear => self.switch_gear(),
+            // Hidden, as icons, as a list, and round again.
+            OptionItem::Gear => {
+                let settings = &mut self.settings;
+                (settings.gear, settings.gear_list) = match (settings.gear, settings.gear_list) {
+                    (false, _) => (true, false),
+                    (true, false) => (true, true),
+                    (true, true) => (false, false),
+                };
+                self.keep_settings();
+            }
             OptionItem::Ground => {
                 self.settings.ground = !self.settings.ground;
                 self.keep_settings();

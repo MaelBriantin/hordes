@@ -75,7 +75,7 @@ pub enum OptionItem {
     Announcements,
     /// Whether runs open on the dusk or on the night.
     Dusk,
-    /// Whether the gear shows over the top left of the map.
+    /// Whether the gear shows over the top left of the map, as icons or as a list.
     Gear,
     /// Whether the player's HP shows in a small bar over their head.
     MiniBars,
@@ -145,10 +145,10 @@ impl OptionItem {
             ),
             OptionItem::Gear => fl!(
                 "option-gear",
-                value = if view.gear {
-                    fl!("gear-shown")
-                } else {
-                    fl!("gear-hidden")
+                value = match (view.gear, view.gear_list) {
+                    (false, _) => fl!("gear-hidden"),
+                    (true, false) => fl!("gear-icons"),
+                    (true, true) => fl!("gear-list"),
                 }
             ),
             OptionItem::MiniBars => fl!(
