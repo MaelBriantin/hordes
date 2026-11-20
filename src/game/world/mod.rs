@@ -69,7 +69,7 @@ fn torch_lights_up() -> u32 {
 /// far a campfire lures those that haven't, and how fast they wander, against their speed, in
 /// tiles.
 const NOTICE_REACH: f32 = 6.0;
-const LOSE_REACH: f32 = 12.0;
+const LOSE_REACH: f32 = 8.0;
 const LURE_REACH: f32 = 20.0;
 const WANDER_PACE: f32 = 0.5;
 /// The most ticks the torch flickers as it lights up, before it holds: a second and a half.
