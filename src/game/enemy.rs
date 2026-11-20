@@ -47,7 +47,7 @@ impl EnemyKind {
     pub fn stats(self) -> Stats {
         match self {
             EnemyKind::Zombie => Stats {
-                hp: 10,
+                hp: 15,
                 xp: 1,
                 drop_percent: 75,
                 stain: 3,
@@ -57,7 +57,7 @@ impl EnemyKind {
                 flies: false,
             },
             EnemyKind::Shadow => Stats {
-                hp: 25,
+                hp: 40,
                 xp: 2,
                 drop_percent: 75,
                 stain: 2,

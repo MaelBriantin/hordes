@@ -123,10 +123,11 @@ impl Weather {
     /// The HP of the enemies appearing, against their own, in percent.
     pub fn hp_percent(self) -> u32 {
         match self {
-            Weather::Dusk | Weather::Clear | Weather::Drizzle => 100,
-            Weather::Rain => 110,
-            Weather::Storm => 125,
-            Weather::Tempest => 150,
+            Weather::Dusk | Weather::Clear => 100,
+            Weather::Drizzle => 115,
+            Weather::Rain => 130,
+            Weather::Storm => 150,
+            Weather::Tempest => 200,
         }
     }
 

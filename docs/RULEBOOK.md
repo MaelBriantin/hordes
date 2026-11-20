@@ -95,10 +95,10 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 |---|---|---|---|---|---|
 | 0:00 | Dusk | none | none | — | — |
 | 0:30 | Night | none | none | — | — |
-| 2:30 | Drizzle | 4 drops per 1000 pixels | none | — | — |
-| 4:30 | Rain | 8 | none | −1 tile | +10% HP |
-| 6:30 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +25% HP |
-| 8:30 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +50% HP, +10% speed |
+| 2:30 | Drizzle | 4 drops per 1000 pixels | none | — | +15% HP |
+| 4:30 | Rain | 8 | none | −1 tile | +30% HP |
+| 6:30 | Storm | 14 | every 3 s, **hurting** | −2 tiles | +50% HP |
+| 8:30 | Tempest | 20 | every 2 s, **hurting** | −3 tiles | +100% HP, +10% speed |
 | 10:30 | Dawn | — | — | — | the run is won (see The run) |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
@@ -120,8 +120,8 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 
 | Enemy | HP | XP | Speed | Damage | Body | Moves |
 |---|---|---|---|---|---|---|
-| Zombie | 10 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
-| Shadow | 25 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
+| Zombie | 15 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
+| Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 
 - Every enemy is slower than the player: they can always be outrun.

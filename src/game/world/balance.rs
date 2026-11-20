@@ -56,7 +56,12 @@ struct Outcome {
 
 /// A run of `seed` as `setup` says, played by the bot until it is over or `limit` ticks in.
 fn play(seed: u64, setup: Setup, limit: u32) -> Outcome {
-    let mut world = World::with(seed, Mode::Standard, false, Progress::everything());
+    // A whole run as a first one: the cards dealt at first alone.
+    let progress = match setup {
+        Setup::Free => Progress::default(),
+        Setup::Alone { .. } => Progress::everything(),
+    };
+    let mut world = World::with(seed, Mode::Standard, false, progress);
     world.set_view(VIEW);
     if let Setup::Alone { weapon, level, .. } = setup {
         let mut build = Build::unarmed();
@@ -264,7 +269,7 @@ fn balance_weapons_alone() {
 fn balance_whole_runs() {
     let runs = outcomes(Setup::Free, weather::dawn() + weather::daybreak());
     let dawn = runs.iter().filter(|run| run.dawn).count();
-    println!("\nWhole runs, {SEEDS} seeds, the cards at random\n");
+    println!("\nWhole runs, {SEEDS} seeds, as a first run: the cards dealt at first, at random\n");
     println!("dawn reached: {dawn} of {}", runs.len());
     println!(
         "time held out: {} on average",

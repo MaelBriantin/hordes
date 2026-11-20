@@ -544,12 +544,14 @@ fn the_pistol_empties_its_magazine_then_reloads() {
 }
 
 #[test]
-fn a_bullet_fells_a_zombie() {
+fn two_bullets_fell_a_zombie() {
     let mut world = armed_with(Weapon::Pistol, 1);
     world
         .enemies
         .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
     wait(&mut world, 15);
+    assert_eq!(world.enemies.len(), 1);
+    wait(&mut world, 20);
     assert_eq!(world.enemies.len(), 0);
     assert_eq!(world.kills, 1);
     assert_eq!(world.bullets.len(), 0);
@@ -802,7 +804,7 @@ fn enemies_appearing_later_are_tougher() {
         world.update(Input::default());
     }
     let enemy = &world.enemies[0];
-    assert_eq!(enemy.hp, enemy.kind.stats().hp * 150 / 100);
+    assert_eq!(enemy.hp, enemy.kind.stats().hp * 200 / 100);
 }
 
 #[test]
