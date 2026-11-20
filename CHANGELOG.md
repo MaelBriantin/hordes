@@ -9,15 +9,6 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
-### New
-- A Molotov bottle bursts in a flash of fire, lighting all around a moment.
-
-### Changed
-- A horde's side shows as a red glow on the edge of the screen, pulsing slowly, rather than a band of arrows.
-- The Compass card goes: healing is found well enough without it, and nobody took it.
-- Two hordes standing at once are counted apart, each by its number, rather than together; the one wiped out is told with its number.
-- Fire lights further, the puddles of fire and the enemies burning half again as far, and all that burns casts a flickering orange halo, the campfires included.
-
 ## v0.7.0 · November 20, 2026
 In a flash.
 
@@ -27,6 +18,7 @@ In a flash.
 - A card says whether it is a weapon or a passive, on its top border, by its number.
 - A new passive, Dash: Shift dashes, 3 tiles in a blink, nothing hurting the hero meanwhile, fading silhouettes of them left behind. Slow to come back at first (8 s), sooner with the levels (3 s at the last); a second dash at level 3, no more. The gear shows them under its icon, as a gun's rounds. The torch is F alone now.
 - A new rare passive, Glare: the enemies in the torch's light go 10% slower per level, while it is lit.
+- A Molotov bottle bursts in a flash of fire, lighting all around a moment.
 
 ### Changed
 - The torch out, an enemy loses the player past 8 tiles rather than 12: putting it out lets the player slip away.
@@ -38,6 +30,10 @@ In a flash.
 - From the storm on, lightning hurts the player too: a blinking ring shows where it will strike half a second before it does, often where the player stands; caught in it, they lose 20 HP.
 - The torch has no battery any more: lit or out as the player wants, it is a choice, seen or unseen, rather than a gauge to watch. The Batteries card and the Shadows' energy cells go with it; the bar over the hero shows the HP alone.
 - `hordes update` updates the game where it is, rather than offering to move one installed in `~/.cargo/bin`: such a copy stays there, as uv does; to have it in `~/.local/bin`, uninstall it and install it again.
+- A horde's side shows as a red glow on the edge of the screen, pulsing slowly, rather than a band of arrows.
+- The Compass card goes: healing is found well enough without it, and nobody took it.
+- Two hordes standing at once are counted apart, each by its number, rather than together; the one wiped out is told with its number.
+- Fire lights further, the puddles of fire and the enemies burning half again as far, and all that burns casts a flickering orange halo, the campfires included.
 
 ## v0.6.1 · November 19, 2026
 A new home.
