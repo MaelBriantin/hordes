@@ -77,6 +77,7 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
     let player = &world.player;
     let build = &player.build;
     let ammo = world.ammo();
+    let waits = world.waits();
     // The Dash card shows its dashes as a gun its rounds: full when all are ready, filling back
     // as they come back.
     let recharge = build.dash_recharge();
@@ -97,14 +98,30 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
             Choice::Weapon(weapon) => GearSlot {
                 choice,
                 level: Some(build.weapon_level(weapon)),
-                gauge: ammo.iter().find(|gun| gun.0 == weapon).map(|gun| {
-                    let (_, magazine, full, reload) = *gun;
-                    if magazine.reloading > 0 {
-                        (reload - magazine.reloading, reload, GEAR_RELOADING)
-                    } else {
-                        (magazine.rounds, full, GEAR_ROUNDS)
-                    }
-                }),
+                gauge: ammo
+                    .iter()
+                    .find(|gun| gun.0 == weapon)
+                    .map(|gun| {
+                        let (_, magazine, full, reload) = *gun;
+                        if magazine.reloading > 0 {
+                            (reload - magazine.reloading, reload, GEAR_RELOADING)
+                        } else {
+                            (magazine.rounds, full, GEAR_ROUNDS)
+                        }
+                    })
+                    // The other weapons fill between two blows, full once ready.
+                    .or_else(|| {
+                        waits
+                            .iter()
+                            .find(|wait| wait.0 == weapon)
+                            .map(|&(_, left, whole)| {
+                                if left > 0 {
+                                    (whole - left, whole, GEAR_RELOADING)
+                                } else {
+                                    (1, 1, GEAR_ROUNDS)
+                                }
+                            })
+                    }),
             },
             Choice::Passive(passive) => GearSlot {
                 choice,

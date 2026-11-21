@@ -265,6 +265,32 @@ impl World {
         });
     }
 
+    /// The weapons the player has that wait between two blows, the guns apart: the melee
+    /// weapons between two swings, the Molotov between two throws, the drones while one is
+    /// broken. Each with the ticks still to wait, out of a whole wait.
+    pub fn waits(&self) -> Vec<(Weapon, u32, u32)> {
+        let build = &self.player.build;
+        let mut waits = Vec::new();
+        for weapon in [Weapon::Crowbar, Weapon::Machete] {
+            let level = build.weapon_level(weapon);
+            if let Some(stats) = machete::melee(weapon, level).filter(|_| level > 0) {
+                let left = self.melee.get(&weapon).map_or(0, |swinging| swinging.wait);
+                waits.push((weapon, left, build.cooldown(stats.cooldown).max(1)));
+            }
+        }
+        let level = build.weapon_level(Weapon::Molotov);
+        if level > 0 {
+            let every = build.cooldown(molotov::at(level).every).max(1);
+            waits.push((Weapon::Molotov, self.molotov_wait.min(every), every));
+        }
+        if build.weapon_level(Weapon::Drones) > 0 {
+            let repair = build.cooldown(drones::repair()).max(1);
+            let left = self.drone_repairs.iter().copied().max().unwrap_or(0);
+            waits.push((Weapon::Drones, left.min(repair), repair));
+        }
+        waits
+    }
+
     /// The guns the player has, each with its magazine, how many rounds it holds full, and the
     /// ticks a whole reload takes.
     pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32, u32)> {

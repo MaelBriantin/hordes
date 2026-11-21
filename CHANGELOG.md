@@ -9,6 +9,12 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.8.2 · November 21, 2026
+Wind-up.
+
+### Changed
+- Every weapon shows its wait under its icon, not the guns alone: the crowbar and the machete between two swings, the Molotov between two throws, the drones while one is broken; the gauge filling, full once ready.
+
 ## v0.8.1 · November 21, 2026
 Fine print.
 

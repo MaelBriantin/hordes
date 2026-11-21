@@ -1641,6 +1641,22 @@ fn in_the_dark_no_molotov_is_thrown() {
 }
 
 #[test]
+fn a_melee_weapon_waits_between_two_swings_and_tells_how_long() {
+    let mut world = armed_with(Weapon::Crowbar, 1);
+    assert_eq!(world.waits()[0].1, 0, "ready");
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 1);
+    let (weapon, left, whole) = world.waits()[0];
+    assert_eq!(weapon, Weapon::Crowbar);
+    assert_eq!(left, whole, "just swung: all of it to wait");
+    wait(&mut world, 1);
+    assert_eq!(world.waits()[0].1, whole - 1);
+}
+
+#[test]
 fn the_crowbar_pushes_back_what_it_hits() {
     let mut world = armed_with(Weapon::Crowbar, 1);
     world.player.facing = Facing::Right;
