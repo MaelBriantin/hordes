@@ -3,13 +3,11 @@
 
 use std::collections::BTreeSet;
 
-use serde::{Deserialize, Serialize};
+use serde::de::IgnoredAny;
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::build::{Action, Choice, Legendary, Passive, Rarity, Weapon};
-use super::weather::Weather;
 
-/// How many weathers a run goes through, from the dusk to the tempest.
-const WEATHERS: usize = 6;
 /// The rerolls of a run before any achievement.
 const REROLLS: u8 = 1;
 /// The goals counted over every run: the enemies down, the Shadows down, the runs played.
@@ -19,11 +17,13 @@ const RUNS_GOAL: u32 = 25;
 /// The enemies down in a single run for Carnage; the hordes wiped out in a single run for Swarm.
 pub const CARNAGE_KILLS: u32 = 300;
 pub const SWARM_HORDES: u32 = 2;
+/// The level to reach in a single run for Veteran.
+pub const VETERAN_LEVEL: u32 = 25;
 /// The seconds without a hit, the night fallen, for Untouchable.
 pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card, and the reroll, as the collection shows them: those there from the start, then
-/// those unlocked, from the easiest to the hardest to unlock. Not the heal, no card of a build.
+/// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
 pub const COLLECTION: [Unlock; 24] = [
     Unlock::Card(Choice::Weapon(Weapon::Crowbar)),
     Unlock::Card(Choice::Weapon(Weapon::Machete)),
@@ -46,8 +46,8 @@ pub const COLLECTION: [Unlock; 24] = [
     Unlock::Reroll,
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
-    Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
+    Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
 
@@ -80,8 +80,8 @@ pub enum Achievement {
     Cleaner,
     /// A regular: 25 runs played.
     Regular,
-    /// Come rain or shine: every weather seen once, every run counted, even one lost in it.
-    Weathers,
+    /// Veteran: level 25 reached in a single run.
+    Veteran,
 }
 
 /// What an achievement unlocks.
@@ -107,10 +107,10 @@ impl Achievement {
         Achievement::Struck,
         Achievement::ThousandDown,
         Achievement::Shadows,
-        Achievement::Dawn,
         Achievement::Cleaner,
         Achievement::Regular,
-        Achievement::Weathers,
+        Achievement::Veteran,
+        Achievement::Dawn,
     ];
 
     /// What it unlocks.
@@ -126,10 +126,10 @@ impl Achievement {
             Achievement::Struck => Unlock::Card(Choice::Action(Action::Dash)),
             Achievement::ThousandDown => Unlock::Card(Choice::Passive(Passive::Regeneration)),
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
-            Achievement::Dawn => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+            Achievement::Dawn => Unlock::Arcade,
             Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
             Achievement::Regular => Unlock::Reroll,
-            Achievement::Weathers => Unlock::Arcade,
+            Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
     }
 
@@ -138,10 +138,10 @@ impl Achievement {
         self.unlocks().rarity()
     }
 
-    /// Whether it is hidden until reached, what it unlocks a surprise: the dawn's, the
-    /// arcade's.
+    /// Whether it is hidden until reached, what it unlocks a surprise: the dawn's (the arcade),
+    /// the veteran's (Illumination).
     pub fn hidden(self) -> bool {
-        matches!(self, Achievement::Dawn | Achievement::Weathers)
+        matches!(self, Achievement::Dawn | Achievement::Veteran)
     }
 }
 
@@ -167,14 +167,34 @@ impl Unlock {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Progress {
+    /// Those an older version had and this one no longer has are left out as it is read.
+    #[serde(deserialize_with = "known")]
     pub achieved: BTreeSet<Achievement>,
     /// The enemies down, and the Shadows among them.
     pub kills: u64,
     pub shadows: u64,
     /// The runs played to their end.
     pub runs: u32,
-    /// The weathers seen, every run counted.
-    pub weathers: BTreeSet<Weather>,
+}
+
+/// The achievements read, but those no longer in the game: a progress kept by an older version
+/// still reads, rather than being lost.
+fn known<'de, D: Deserializer<'de>>(reader: D) -> Result<BTreeSet<Achievement>, D::Error> {
+    /// An achievement as read: one the game has, or one it no longer has.
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Read {
+        Known(Achievement),
+        Gone(IgnoredAny),
+    }
+    let read = Vec::<Read>::deserialize(reader)?;
+    Ok(read
+        .into_iter()
+        .filter_map(|achievement| match achievement {
+            Read::Known(achievement) => Some(achievement),
+            Read::Gone(_) => None,
+        })
+        .collect())
 }
 
 impl Progress {
@@ -216,11 +236,9 @@ impl Progress {
         self.achieved.insert(achievement);
     }
 
-    /// A weather seen: once every one has, the achievement it makes.
-    pub fn see(&mut self, weather: Weather) {
-        if self.weathers.insert(weather) && self.weathers.len() == WEATHERS {
-            self.reach(Achievement::Weathers);
-        }
+    /// Whether the exterminator's skin can be worn: Cleaner reached, as the flamethrower.
+    pub fn exterminator(&self) -> bool {
+        self.achieved.contains(&Achievement::Cleaner)
     }
 
     /// Whether the arcade mode can be played: its achievement reached.
@@ -324,22 +342,34 @@ mod tests {
     }
 
     #[test]
-    fn every_weather_seen_over_the_runs_unlocks_the_arcade() {
+    fn the_dawn_unlocks_the_arcade_and_veteran_illumination() {
         let mut progress = Progress::default();
-        assert!(!progress.arcade());
-        for weather in [
-            Weather::Clear,
-            Weather::Drizzle,
-            Weather::Rain,
-            Weather::Storm,
-        ] {
-            progress.see(weather);
-        }
-        // Another run, the dusk and the tempest at last.
-        progress.see(Weather::Dusk);
-        assert!(!progress.arcade());
-        progress.see(Weather::Tempest);
+        let illumination = Choice::Legendary(Legendary::Illumination);
+        assert!(!progress.arcade() && !progress.deals(illumination));
+        progress.reach(Achievement::Dawn);
         assert!(progress.arcade());
+        progress.reach(Achievement::Veteran);
+        assert!(progress.deals(illumination));
+    }
+
+    #[test]
+    fn the_hidden_achievements_come_last_in_the_collection_and_the_achievements() {
+        let hidden = |unlock: &Unlock| unlock.achievement().is_some_and(Achievement::hidden);
+        let first_hidden = COLLECTION.iter().position(hidden).unwrap();
+        assert!(COLLECTION[first_hidden..].iter().all(hidden));
+        let first_hidden = Achievement::ALL.iter().position(|a| a.hidden()).unwrap();
+        assert!(Achievement::ALL[first_hidden..].iter().all(|a| a.hidden()));
+    }
+
+    #[test]
+    fn a_progress_holding_an_achievement_no_longer_in_the_game_still_reads() {
+        let text = "(achieved: [Hunter, Weathers, Dawn], kills: 40, weathers: [Dusk, Clear])";
+        let progress = ron::from_str::<Progress>(text).unwrap();
+        assert_eq!(
+            progress.achieved,
+            BTreeSet::from([Achievement::Hunter, Achievement::Dawn])
+        );
+        assert_eq!(progress.kills, 40);
     }
 
     #[test]

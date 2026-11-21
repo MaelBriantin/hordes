@@ -21,7 +21,7 @@ use super::machete::Swing;
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
-use super::progress::{Achievement, CARNAGE_KILLS, Progress, UNTOUCHABLE_SECONDS};
+use super::progress::{Achievement, CARNAGE_KILLS, Progress, UNTOUCHABLE_SECONDS, VETERAN_LEVEL};
 use super::score;
 use super::stain::Stain;
 use super::weather::{self, Weather};
@@ -628,7 +628,6 @@ impl World {
     /// counted over every run. The cards they unlock are dealt at once.
     fn reach_goals(&mut self) {
         let weather = self.weather();
-        self.progress.see(weather);
         if weather >= Weather::Drizzle {
             self.progress.reach(Achievement::Drizzle);
         }
@@ -637,6 +636,9 @@ impl World {
         }
         if self.kills >= CARNAGE_KILLS {
             self.progress.reach(Achievement::Carnage);
+        }
+        if self.player.level >= VETERAN_LEVEL {
+            self.progress.reach(Achievement::Veteran);
         }
         if matches!(weather, Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Storm);

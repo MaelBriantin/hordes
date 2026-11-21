@@ -624,13 +624,25 @@ pub fn render_sprite_scaled(
     sprite: SpriteId,
     scale: i32,
 ) {
+    render_look_scaled(buffer, area, sprites, Look::plain(sprite), scale);
+}
+
+/// A sprite alone as `look` has it (mirrored or not), `scale` times as big, in the middle of
+/// `area`.
+pub fn render_look_scaled(
+    buffer: &mut Buffer,
+    area: Rect,
+    sprites: &Sprites,
+    look: Look,
+    scale: i32,
+) {
     let mut canvas = Canvas::new(sprites, area, (0, 0));
-    let picture = sprites.get(sprite);
+    let picture = sprites.get(look.sprite);
     // Its top on a cell's top row, for its rows not to straddle the cells' halves.
     let height = i32::from(area.height) * 2;
     let top = ((height - picture.height() * scale) / 2).max(0) / 2 * 2 - height / 2;
     let left = -picture.width() * scale / 2;
-    for (x, y, color) in picture.pixels(false) {
+    for (x, y, color) in picture.pixels(look.mirrored) {
         for dy in 0..scale {
             for dx in 0..scale {
                 let point = (left + x * scale + dx, top + y * scale + dy);

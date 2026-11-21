@@ -22,6 +22,10 @@ pub enum SpriteId {
     ClassicBack,
     /// Facing right.
     ClassicSide,
+    ExterminatorFront,
+    ExterminatorBack,
+    /// Facing right.
+    ExterminatorSide,
     /// Facing right.
     ZombieSide,
     ZombieFront,
@@ -78,19 +82,24 @@ pub enum SpriteId {
     IconHordeHunter,
     IconArcade,
     IconHidden,
+    /// The skin worn, on its tile.
+    Check,
     ArrowLeft,
     ArrowRight,
     Title,
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 60] = [
+    const ALL: [SpriteId; 64] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
         SpriteId::ClassicFront,
         SpriteId::ClassicBack,
         SpriteId::ClassicSide,
+        SpriteId::ExterminatorFront,
+        SpriteId::ExterminatorBack,
+        SpriteId::ExterminatorSide,
         SpriteId::ZombieSide,
         SpriteId::ZombieFront,
         SpriteId::GhoulSide,
@@ -142,6 +151,7 @@ impl SpriteId {
         SpriteId::IconHordeHunter,
         SpriteId::IconArcade,
         SpriteId::IconHidden,
+        SpriteId::Check,
         SpriteId::ArrowLeft,
         SpriteId::ArrowRight,
         SpriteId::Title,
@@ -155,6 +165,9 @@ impl SpriteId {
             SpriteId::ClassicFront => "classic_front",
             SpriteId::ClassicBack => "classic_back",
             SpriteId::ClassicSide => "classic_side",
+            SpriteId::ExterminatorFront => "exterminator_front",
+            SpriteId::ExterminatorBack => "exterminator_back",
+            SpriteId::ExterminatorSide => "exterminator_side",
             SpriteId::ZombieSide => "zombie_side",
             SpriteId::ZombieFront => "zombie_front",
             SpriteId::GhoulSide => "ghoul_side",
@@ -206,6 +219,7 @@ impl SpriteId {
             SpriteId::IconHordeHunter => "icon_horde_hunter",
             SpriteId::IconArcade => "icon_arcade",
             SpriteId::IconHidden => "icon_hidden",
+            SpriteId::Check => "check",
             SpriteId::ArrowLeft => "arrow_left",
             SpriteId::ArrowRight => "arrow_right",
             SpriteId::Title => "title",
@@ -276,14 +290,27 @@ pub enum Skin {
     Survivor,
     /// The hero of the first versions, in a red headband.
     Classic,
+    /// In a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back: once
+    /// Cleaner is reached.
+    Exterminator,
 }
 
 impl Skin {
-    /// The other one, round and round.
-    pub fn next(self) -> Self {
+    /// The next one, round and round: the exterminator only once `exterminator` is unlocked.
+    pub fn next(self, exterminator: bool) -> Self {
         match self {
             Skin::Survivor => Skin::Classic,
-            Skin::Classic => Skin::Survivor,
+            Skin::Classic if exterminator => Skin::Exterminator,
+            Skin::Classic | Skin::Exterminator => Skin::Survivor,
+        }
+    }
+
+    /// The skin worn: the survivor in place of the exterminator, while it is locked.
+    pub fn worn(self, exterminator: bool) -> Self {
+        if self == Skin::Exterminator && !exterminator {
+            Skin::Survivor
+        } else {
+            self
         }
     }
 
@@ -292,6 +319,7 @@ impl Skin {
         match self {
             Skin::Survivor => "survivor",
             Skin::Classic => "classic",
+            Skin::Exterminator => "exterminator",
         }
     }
 }
@@ -304,6 +332,11 @@ pub fn hero(facing: Facing, skin: Skin) -> Look {
             SpriteId::ClassicFront,
             SpriteId::ClassicBack,
             SpriteId::ClassicSide,
+        ),
+        Skin::Exterminator => (
+            SpriteId::ExterminatorFront,
+            SpriteId::ExterminatorBack,
+            SpriteId::ExterminatorSide,
         ),
     };
     match facing {
@@ -528,6 +561,15 @@ impl Sprite {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_exterminator_is_worn_and_picked_only_once_unlocked() {
+        assert_eq!(Skin::Classic.next(false), Skin::Survivor);
+        assert_eq!(Skin::Classic.next(true), Skin::Exterminator);
+        assert_eq!(Skin::Exterminator.next(true), Skin::Survivor);
+        assert_eq!(Skin::Exterminator.worn(false), Skin::Survivor);
+        assert_eq!(Skin::Exterminator.worn(true), Skin::Exterminator);
+    }
 
     const PALETTE_ONLY: &str = "palette\nA 1 2 3  a comment\n\n";
 

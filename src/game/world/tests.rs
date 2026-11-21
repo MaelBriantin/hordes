@@ -1988,3 +1988,20 @@ fn every_horde_of_a_run_wiped_out_unlocks_the_flamethrower() {
     wipe_out_a_horde(&mut world);
     assert!(world.progress.deals(Choice::Weapon(Weapon::Flamethrower)));
 }
+
+#[test]
+fn level_25_in_a_run_unlocks_illumination() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    world.player.level = 24;
+    wait(&mut world, 1);
+    assert!(!world.progress.achieved.contains(&Achievement::Veteran));
+    world.player.level = 25;
+    wait(&mut world, 1);
+    assert!(
+        world
+            .progress
+            .deals(Choice::Legendary(Legendary::Illumination))
+    );
+}

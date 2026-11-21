@@ -37,7 +37,7 @@ pub struct Flamethrower {
 pub fn at(level: u8) -> Flamethrower {
     let second = u32::from(TICKS_PER_SECOND);
     Flamethrower {
-        range: if level >= 2 { 4.0 } else { 3.0 },
+        range: if level >= 2 { 5.5 } else { 4.5 },
         damage: if level >= 3 { 3 } else { 2 },
         tank: if level >= 4 { 5 } else { 3 } * second,
         leaks: level >= 5,
@@ -102,8 +102,8 @@ mod tests {
     #[test]
     fn the_flamethrower_grows_with_its_levels() {
         let (first, last) = (at(1), at(5));
-        assert_eq!((first.range, first.damage, first.tank), (3.0, 2, 90));
-        assert_eq!((last.range, last.damage, last.tank), (4.0, 3, 150));
+        assert_eq!((first.range, first.damage, first.tank), (4.5, 2, 90));
+        assert_eq!((last.range, last.damage, last.tank), (5.5, 3, 150));
         assert!(last.leaks && !first.leaks);
     }
 }

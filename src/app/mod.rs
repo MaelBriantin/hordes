@@ -26,7 +26,8 @@ use crate::game::{
     World,
 };
 use crate::ui::{
-    self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
+    self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, SKINS, Screen, Sprites, ViewState,
+    skin_unlocked,
 };
 use keys::Keys;
 use settings::Settings;
@@ -51,6 +52,17 @@ pub struct App {
     /// the screen is wide.
     picked: usize,
     browsing: bool,
+    /// The skin's tile the arrows are on, while the skins show on the title screen: S shows
+    /// them, at the skin worn; Enter, Space or S wear the one picked, Esc hides them.
+    skin_picked: Option<usize>,
+    /// The frame the skin's tile the arrows are on was picked at: its hero turns round a second
+    /// after.
+    skin_picked_at: u32,
+    /// What is under the title on the title screen (the mode, and whether the collection or the
+    /// skins show), what was before, and the frame it changed at, if it has: the title slides.
+    under_title: (Mode, bool),
+    under_title_was: (Mode, bool),
+    under_title_at: Option<u32>,
     /// Whether the options ask to confirm erasing the progress: Enter again erases it.
     confirm_reset: bool,
     /// Whether the progress is kept on disk: read at start, or written since. Gone while the
@@ -94,6 +106,11 @@ impl App {
             toast_since: None,
             picked: 0,
             browsing: false,
+            skin_picked: None,
+            skin_picked_at: 0,
+            under_title: (Mode::Standard, false),
+            under_title_was: (Mode::Standard, false),
+            under_title_at: None,
             confirm_reset: false,
             progress_kept: progress::kept(),
             collection_row: 1,
@@ -136,6 +153,19 @@ impl App {
             self.world.set_view(ui::view(terminal.size()?.into()));
             self.collection_row = ui::collection_row(terminal.size()?.into());
             self.collection_shows = ui::collection_shows(terminal.size()?.into());
+            let open = (self.mode() == Mode::Standard && self.collection_shows && self.browsing)
+                || (self.skin_picked.is_some() && self.collection_shows);
+            let under = (self.mode(), open);
+            if under != self.under_title {
+                // The first frame, nothing to slide from.
+                self.under_title_was = if self.frames == 0 {
+                    under
+                } else {
+                    self.under_title
+                };
+                self.under_title = under;
+                self.under_title_at = Some(self.frames);
+            }
             let view = ViewState {
                 selected: self.selected,
                 shown: self.dealt_at.map_or(Duration::ZERO, |at| at.elapsed()),
@@ -146,7 +176,7 @@ impl App {
                 pinged: self
                     .pinged_at
                     .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
-                skin: self.settings.skin,
+                skin: self.settings.skin.worn(self.progress.exterminator()),
                 mode: self.mode(),
                 arcade: self.progress.arcade(),
                 skip_dusk: self.settings.skip_dusk,
@@ -165,6 +195,14 @@ impl App {
                 confirm_reset: self.confirm_reset,
                 picked: (self.mode() == Mode::Standard && self.collection_shows && self.browsing)
                     .then_some(self.picked),
+                slide_from: self.under_title_was,
+                panel_since: self
+                    .under_title_at
+                    .map_or(u32::MAX, |at| self.frames.wrapping_sub(at)),
+                skins: self
+                    .skin_picked
+                    .filter(|_| self.collection_shows)
+                    .map(|at| (at, self.frames.wrapping_sub(self.skin_picked_at))),
             };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
@@ -244,6 +282,14 @@ impl App {
     }
 
     fn on_title(&mut self, code: KeyCode) {
+        // The skins, while they show, take the keys; gone with the room for them.
+        if !self.collection_shows {
+            self.skin_picked = None;
+        }
+        if let Some(at) = self.skin_picked {
+            self.on_skins(code, at);
+            return;
+        }
         let collection = self.mode() == Mode::Standard && self.collection_shows;
         match code {
             // A new run, in the mode chosen.
@@ -257,6 +303,14 @@ impl App {
                 self.picked = 0;
             }
             KeyCode::Esc if self.browsing => self.browsing = false,
+            // The skins shown, at the one worn, in the collection's place; in the collection
+            // open, S goes down a row.
+            KeyCode::Char('s' | 'S') if self.collection_shows && !(collection && self.browsing) => {
+                self.browsing = false;
+                let worn = self.settings.skin.worn(self.progress.exterminator());
+                self.skin_picked = Some(SKINS.iter().position(|skin| *skin == worn).unwrap_or(0));
+                self.skin_picked_at = self.frames;
+            }
             KeyCode::Tab | KeyCode::BackTab if self.progress.arcade() => {
                 self.settings.mode = self.settings.mode.other();
                 self.keep_settings();
@@ -270,6 +324,32 @@ impl App {
             }
             _ if collection && self.browsing => self.on_collection(code),
             _ => {}
+        }
+    }
+
+    /// The skins showing: the arrows go from tile to tile; Enter, Space or S wear the one picked,
+    /// once unlocked, and hide them; Esc hides them.
+    fn on_skins(&mut self, code: KeyCode, at: usize) {
+        let last = SKINS.len() - 1;
+        self.skin_picked = match code {
+            KeyCode::Left | KeyCode::Char('a' | 'A' | 'q' | 'Q') => Some(at.saturating_sub(1)),
+            KeyCode::Right | KeyCode::Char('d' | 'D') => Some((at + 1).min(last)),
+            KeyCode::Enter | KeyCode::Char(' ' | 's' | 'S') => {
+                let skin = SKINS[at];
+                if skin_unlocked(&self.progress, skin) {
+                    self.settings.skin = skin;
+                    self.keep_settings();
+                    None
+                } else {
+                    Some(at)
+                }
+            }
+            KeyCode::Esc => None,
+            _ => Some(at),
+        };
+        // Another tile picked: its hero waits a second before turning round.
+        if self.skin_picked.is_some_and(|now| now != at) {
+            self.skin_picked_at = self.frames;
         }
     }
 
@@ -431,7 +511,8 @@ impl App {
                 self.keep_settings();
             }
             OptionItem::Skin => {
-                self.settings.skin = self.settings.skin.next();
+                let exterminator = self.progress.exterminator();
+                self.settings.skin = self.settings.skin.worn(exterminator).next(exterminator);
                 self.keep_settings();
             }
             // Hidden, as icons, as a list, and round again.

@@ -14,23 +14,23 @@ use crate::game::{COLLECTION, Choice, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
 /// rows, a corner's row.
-const TILE_WIDTH: u16 = 10;
-const TILE_HEIGHT: u16 = 6;
-const PICTURE: (u16, u16) = (8, 4);
+pub(super) const TILE_WIDTH: u16 = 10;
+pub(super) const TILE_HEIGHT: u16 = 6;
+pub(super) const PICTURE: (u16, u16) = (8, 4);
 /// The cells an arrow beside a row takes: as tall as a picture, its pixels in its middle.
 const ARROW: (u16, u16) = (3, 4);
 /// The most tiles in a row, however wide the screen.
 const MOST_IN_A_ROW: usize = 10;
 /// The box telling the tile picked: its size, its ground, its words, its bar.
-const BOX_WIDTH: u16 = 30;
-const BOX_HEIGHT: u16 = 7;
-const BOX: Color = Color::Rgb(28, 30, 38);
-const WHITE: Color = Color::Rgb(225, 225, 230);
-const GREY: Color = Color::Rgb(140, 145, 160);
+pub(super) const BOX_WIDTH: u16 = 30;
+pub(super) const BOX_HEIGHT: u16 = 7;
+pub(super) const BOX: Color = Color::Rgb(28, 30, 38);
+pub(super) const WHITE: Color = Color::Rgb(225, 225, 230);
+pub(super) const GREY: Color = Color::Rgb(140, 145, 160);
 /// The room on each side of the box's words and bar.
-const BOX_PADDING: u16 = 3;
+pub(super) const BOX_PADDING: u16 = 3;
 /// The word telling a card the player has.
-const UNLOCKED: Color = Color::Rgb(110, 200, 110);
+pub(super) const UNLOCKED: Color = Color::Rgb(110, 200, 110);
 /// How dark a tile the player doesn't have is.
 const LOCKED_SHARE: f32 = 0.4;
 
@@ -45,7 +45,7 @@ pub fn in_a_row(width: u16) -> usize {
 
 /// The rows the collection takes, `rows` rows of tiles shown: its title and a row of room, the
 /// tiles, a row of room and the box.
-fn height_of(rows: usize) -> u16 {
+pub(super) fn height_of(rows: usize) -> u16 {
     let rows = u16::try_from(rows).unwrap_or(1);
     2 + TILE_HEIGHT * rows + 1 + BOX_HEIGHT
 }
@@ -135,6 +135,20 @@ pub fn render(
     }
 }
 
+/// A tile's frame, its top left at `at`, in `colour`: around a picture, for the tile picked.
+pub(super) fn frame(buffer: &mut Buffer, at: (u16, u16), colour: Color) {
+    let (x, y) = (at.0 + 1, at.1 + 1);
+    let bottom = y + PICTURE.1;
+    let style = Style::new().fg(colour);
+    let line = "─".repeat(usize::from(PICTURE.0));
+    buffer.set_string(at.0, at.1, format!("┌{line}┐"), style);
+    buffer.set_string(at.0, bottom, format!("└{line}┘"), style);
+    for row in y..bottom {
+        buffer.set_string(at.0, row, "│", style);
+        buffer.set_string(x + PICTURE.0, row, "│", style);
+    }
+}
+
 /// A tile, its top left at `at`: its picture, in colour or grey; framed if picked.
 fn tile(
     buffer: &mut Buffer,
@@ -148,16 +162,8 @@ fn tile(
     let has = progress.has(unlock);
     let (x, y) = (at.0 + 1, at.1 + 1);
     let inside = Rect::new(x, y, PICTURE.0, PICTURE.1);
-    let bottom = y + PICTURE.1;
     if picked {
-        let colour = Style::new().fg(if has { colour(unlock) } else { GREY });
-        let line = "─".repeat(usize::from(PICTURE.0));
-        buffer.set_string(at.0, at.1, format!("┌{line}┐"), colour);
-        buffer.set_string(at.0, bottom, format!("└{line}┘"), colour);
-        for row in y..bottom {
-            buffer.set_string(at.0, row, "│", colour);
-            buffer.set_string(x + PICTURE.0, row, "│", colour);
-        }
+        frame(buffer, at, if has { colour(unlock) } else { GREY });
     }
     let picture_of = if hidden(progress, unlock) {
         SpriteId::IconHidden
@@ -169,13 +175,25 @@ fn tile(
 
 /// A picture over what is under it, in grey if `coloured` isn't.
 fn picture(buffer: &mut Buffer, sprites: &Sprites, sprite: SpriteId, area: Rect, coloured: bool) {
+    overlay(buffer, area, coloured, |drawn, apart| {
+        pixels::render_sprite(drawn, apart, sprites, sprite);
+    });
+}
+
+/// What `draw` draws in `area`, over what is under it, in grey if `coloured` isn't.
+pub(super) fn overlay(
+    buffer: &mut Buffer,
+    area: Rect,
+    coloured: bool,
+    draw: impl FnOnce(&mut Buffer, Rect),
+) {
     // Drawn apart first: where it leaves its ground unset, what is under shows.
     let apart = Rect::new(0, 0, area.width, area.height);
     let mut drawn = Buffer::empty(apart);
     for cell in &mut drawn.content {
         cell.set_bg(Color::Reset);
     }
-    pixels::render_sprite(&mut drawn, apart, sprites, sprite);
+    draw(&mut drawn, apart);
     let shade = |colour: Color| if coloured { colour } else { grey(colour) };
     for row in 0..area.height {
         for column in 0..area.width {
@@ -194,7 +212,7 @@ fn picture(buffer: &mut Buffer, sprites: &Sprites, sprite: SpriteId, area: Rect,
 }
 
 /// A colour gone grey and dark: what the player doesn't have yet.
-fn grey(colour: Color) -> Color {
+pub(super) fn grey(colour: Color) -> Color {
     match colour {
         Color::Rgb(red, green, blue) => {
             let mean = (u16::from(red) + u16::from(green) + u16::from(blue)) / 3;
@@ -334,7 +352,7 @@ fn bar(buffer: &mut Buffer, at: (u16, u16), wide: u16, count: u64, of: u64) {
 }
 
 /// A line of `area` with `text` in its middle.
-fn centred(buffer: &mut Buffer, area: Rect, y: u16, text: &str, style: Style) {
+pub(super) fn centred(buffer: &mut Buffer, area: Rect, y: u16, text: &str, style: Style) {
     let width = u16::try_from(text.chars().count()).unwrap_or(area.width);
     buffer.set_string(
         area.x + area.width.saturating_sub(width) / 2,

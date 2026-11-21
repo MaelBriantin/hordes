@@ -13,6 +13,7 @@ mod level_up;
 mod menu;
 mod night;
 mod pixels;
+mod skins;
 mod sprites;
 mod text;
 
@@ -32,6 +33,7 @@ pub use debug::DebugAction;
 pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
 pub use pixels::Arrow;
+pub use skins::{SKINS, unlocked as skin_unlocked};
 pub use sprites::{Skin, Sprites};
 
 /// Where the player is, outside the run itself.
@@ -202,6 +204,14 @@ pub struct ViewState {
     /// The collection's tile the arrows are on, on the title screen; none without a collection
     /// showing.
     pub picked: Option<usize>,
+    /// The skin's tile the arrows are on, on the title screen, and the frames since it was
+    /// picked; none while the skins don't show.
+    pub skins: Option<(usize, u32)>,
+    /// On the title screen, what was under the title before (the mode, and whether the
+    /// collection or the skins showed) and the frames since it changed: the title slides from
+    /// where it stood.
+    pub slide_from: (Mode, bool),
+    pub panel_since: u32,
     /// Whether the options ask to confirm erasing the progress.
     pub confirm_reset: bool,
 }

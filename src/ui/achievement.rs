@@ -148,7 +148,7 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Dawn => fl!("achievement-dawn-goal"),
         Achievement::Cleaner => fl!("achievement-cleaner-goal"),
         Achievement::Regular => fl!("achievement-regular-goal"),
-        Achievement::Weathers => fl!("achievement-weathers-goal"),
+        Achievement::Veteran => fl!("achievement-veteran-goal"),
     }
 }
 
@@ -168,7 +168,7 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Dawn => fl!("achievement-dawn"),
         Achievement::Cleaner => fl!("achievement-cleaner"),
         Achievement::Regular => fl!("achievement-regular"),
-        Achievement::Weathers => fl!("achievement-weathers"),
+        Achievement::Veteran => fl!("achievement-veteran"),
     }
 }
 

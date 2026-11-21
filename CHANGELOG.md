@@ -13,8 +13,12 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The Barricade, a second action card, unlocked by a new achievement, Untouchable (2 minutes without a hit after nightfall): Space or Enter heaps three crates just ahead, stopping the walking enemies, which batter it until it breaks; the Shadows fly over it, the shots go over it. The next in 8 s, two at most at once; more HP, a third, and unbreakable metal crates at the last level.
 
 - The flamethrower, a rare weapon, unlocked by a new achievement, Cleaner (every horde of a run wiped out): a cone of fire ahead of the player setting every enemy in it on fire, its tank filling again once empty; at the last level, the tank leaks a trail of fire behind the player.
+- The exterminator, a skin for the hero once Cleaner is reached: a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back.
+- The skins on the title screen, S showing them as the collection shows its cards: the hero picked turning round, the locked ones in grey with the achievement that unlocks them, Enter to wear one.
 
 ### Changed
+- The arcade mode unlocked by reaching the dawn, the game won, rather than by seeing every weather; Illumination by a new achievement, Veteran (level 25 in one run). Come rain or shine (every weather seen) is gone, a progress holding it still read.
+- The title screen in the middle of the screen when nothing shows under it, rather than over an empty room kept for the collection: it slides as the collection or the skins open and close, and as Tab changes the mode.
 - Trees and rocks stop the shots: the guns and the drones aim only at enemies in sight, and a bullet meeting an obstacle stops there, in a spark; a Shadow over a rock can't be shot.
 - The drones reworked, dealt again once unlocked by a new achievement, Swarm (2 hordes wiped out in one run): one at first, each shooting at the nearest enemy within 6 tiles, a bullet every 0.4 s, but in the dark; an enemy touching one takes a blow from it and breaks it for 3 s (2 at level 4). More drones at levels 2, 4 and 5, more damage at level 3.
 
