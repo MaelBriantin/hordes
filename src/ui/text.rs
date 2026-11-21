@@ -87,7 +87,7 @@ fn blend(from: (u8, u8, u8), to: (u8, u8, u8), share: f32) -> Color {
 }
 
 /// Words gathered into lines no wider than `width`; a word wider alone gets a line of its own.
-fn wrap(text: &str, width: usize) -> Vec<String> {
+pub fn wrap(text: &str, width: usize) -> Vec<String> {
     let mut lines: Vec<String> = Vec::new();
     for word in text.split_whitespace() {
         match lines.last_mut() {

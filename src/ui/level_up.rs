@@ -404,6 +404,27 @@ fn gain_of(choice: Choice, level: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::Action;
+
+    #[test]
+    fn every_gain_fits_its_card() {
+        let choices = Weapon::ALL
+            .into_iter()
+            .map(Choice::Weapon)
+            .chain(Passive::ALL.into_iter().map(Choice::Passive))
+            .chain(Action::ALL.into_iter().map(Choice::Action))
+            .chain(Legendary::ALL.into_iter().map(Choice::Legendary))
+            .chain([Choice::Heal]);
+        // Inside its frame and its room on each side, three rows under the picture.
+        let width = usize::from(CARD_WIDTH - 2 - 4);
+        for choice in choices {
+            for level in 1..=MAX_LEVEL {
+                let gain = gain_of(choice, level);
+                let rows = super::super::text::wrap(&gain, width).len();
+                assert!(rows <= 3, "{choice:?} at {level}: {gain}");
+            }
+        }
+    }
 
     #[test]
     fn a_card_turns_over_in_its_time() {

@@ -68,7 +68,8 @@ pub enum Passive {
     Regeneration,
     /// The enemies in the torch's light slowed, 10% per level.
     Glare,
-    /// +10% damage to the hordes per level; their last ones veiled in red, more with the levels.
+    /// +10% damage to the hordes per level; their last ones targeted in red, more with the
+    /// levels.
     HordeHunter,
 }
 
@@ -352,10 +353,11 @@ impl Build {
         10 * u32::from(self.passive_level(Passive::HordeHunter))
     }
 
-    /// The share of a horde, its last ones still standing, veiled in red, in percent: none
-    /// without Horde Hunter, then a tenth, a quarter, a half, three quarters, all of it.
+    /// The share of a horde, its last ones still standing, targeted in red, in percent: none
+    /// without Horde Hunter, then a tenth, a quarter (seen in the dark from level 3), a half,
+    /// all of it.
     pub fn horde_veil_percent(&self) -> u32 {
-        [0, 10, 25, 50, 75, 100][usize::from(self.passive_level(Passive::HordeHunter).min(5))]
+        [0, 10, 25, 25, 50, 100][usize::from(self.passive_level(Passive::HordeHunter).min(5))]
     }
 
     /// Whether the veiled show in the dark too: from level 3 of Horde Hunter.

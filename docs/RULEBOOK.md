@@ -63,7 +63,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - While some of a horde still stands, a count shows on the top of the map, white on red: how many are left. While several hordes stand, each its own count, by its number, side by side (HORDE 3 · 1, HORDE 4 · 20); one of them wiped out is told with its number under the big letters.
 - **Wiped out** to the last, a horde brings **a level**, 2 s on (once told), its cards rarer (**60%** of rare ones); in arcade, it **doubles** the points its kills were worth too. It is told in big gold letters, what it brought under them, the run going on.
 - Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
-- With **Horde Hunter**, its last ones still standing are veiled in red: the very last tenth (the last one at least) pulsing once a second, the others of the share veiled faint and steady (see Passives).
+- With **Horde Hunter**, its last ones still standing are targeted in red: the very last tenth (the last one at least) pulsing once a second, the others of the share veiled faint and steady (see Passives).
 
 ## Score
 
@@ -229,7 +229,7 @@ Up to **4 passives**, each up to **level 5**.
 | Flashlight | +2 tiles of light around the player (9 at first) |
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
-| Horde Hunter | +10% damage from the weapons to an enemy of a horde, per level (+50% at level 5). A horde's last ones veiled in red: its last tenth at level 1, a quarter at 2, a half at 3, three quarters at 4, the whole horde at 5; as far as the light shows, then from level 3 in the dark too |
+| Horde Hunter | +10% damage from the weapons to an enemy of a horde, per level (+50% at level 5). A horde's last ones targeted in red: its last tenth at level 1, a quarter at 2, seen in the dark too from level 3, a half at 4, the whole horde at 5 |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
 
