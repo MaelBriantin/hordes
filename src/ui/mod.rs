@@ -202,6 +202,8 @@ pub struct ViewState {
     /// The collection's tile the arrows are on, on the title screen; none without a collection
     /// showing.
     pub picked: Option<usize>,
+    /// Whether the options ask to confirm erasing the progress.
+    pub confirm_reset: bool,
 }
 
 pub fn render(

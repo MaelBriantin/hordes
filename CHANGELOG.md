@@ -21,6 +21,9 @@ Progress:
 Menace:
 - An abomination felled swells, blinking white, for 0.6 s, then bursts: a disc of green bile out to 3 tiles, costing everything it reaches 10 HP, the player and the enemies alike, and pushing it back 2 tiles. Out of it come 4 parasites, small green worms hopping, fast (12 HP, 4.5 tiles/s, 3 damage), that always find the player; worth a point and no gem.
 
+Options:
+- Erase the progress, from the title screen's options, after a confirmation.
+
 Cards:
 - Action cards, a third kind beside the weapons and the passives: played with Space or Enter; one a run. The Dash is the first.
 
@@ -36,6 +39,7 @@ Cards:
 - Shadows hunt faster the longer they hunt in the dark, up to 50% after 5 seconds, and bolt out of the torch's light as it catches them: lighting it at the last moment no longer leaves them to be shot.
 
 ### Fixed
+- A game left open while `hordes reset` erases the progress no longer writes it back: it forgets it too.
 - The arrow over the player, and their HP bar, show over everything on the map: gems, rain, lightning; they went under the gems.
 - A gun's gauge empties as its last round goes, its reload filling back from nothing, rather than starting again at once from a pixel.
 - The night's announcement no longer names a key for the torch: it said Space, the torch long on F.

@@ -51,6 +51,11 @@ pub struct App {
     /// the screen is wide.
     picked: usize,
     browsing: bool,
+    /// Whether the options ask to confirm erasing the progress: Enter again erases it.
+    confirm_reset: bool,
+    /// Whether the progress is kept on disk: read at start, or written since. Gone while the
+    /// game is open, it was erased by `hordes reset`: the game forgets it too.
+    progress_kept: bool,
     collection_row: usize,
     /// Whether the collection shows: the screen big enough for it.
     collection_shows: bool,
@@ -89,6 +94,8 @@ impl App {
             toast_since: None,
             picked: 0,
             browsing: false,
+            confirm_reset: false,
+            progress_kept: progress::kept(),
             collection_row: 1,
             collection_shows: false,
             scored: false,
@@ -113,7 +120,7 @@ impl App {
         self.keys = Keys::new(reports_release);
         let result = self.game_loop(terminal);
         // The counts of the run left unfinished kept too.
-        let _ = progress::save(&self.progress);
+        self.keep_progress();
         execute!(io::stdout(), DisableFocusChange)?;
         if reports_release {
             execute!(io::stdout(), PopKeyboardEnhancementFlags)?;
@@ -155,6 +162,7 @@ impl App {
                     .front()
                     .zip(self.toast_since)
                     .map(|(&achievement, since)| (achievement, self.frames.wrapping_sub(since))),
+                confirm_reset: self.confirm_reset,
                 picked: (self.mode() == Mode::Standard && self.collection_shows && self.browsing)
                     .then_some(self.picked),
             };
@@ -366,6 +374,18 @@ impl App {
             Screen::Title
         };
         let item = items[selected];
+        // Enter on it asks to confirm, Enter again erases; any other key, and it asks no more.
+        let enter = matches!(code, KeyCode::Enter | KeyCode::Char(' '));
+        let confirmed = self.confirm_reset && item == OptionItem::ResetProgress && enter;
+        self.confirm_reset = false;
+        if item == OptionItem::ResetProgress && enter {
+            if confirmed {
+                self.reset_progress();
+            } else {
+                self.confirm_reset = true;
+            }
+            return;
+        }
         let forward = match code {
             KeyCode::Up | KeyCode::Char('w' | 'z') => {
                 self.screen = Screen::Options {
@@ -433,7 +453,31 @@ impl App {
                 self.keep_settings();
             }
             OptionItem::Language => self.change_language(),
-            OptionItem::Back | OptionItem::Quit => {}
+            OptionItem::Back | OptionItem::Quit | OptionItem::ResetProgress => {}
+        }
+    }
+
+    /// Erases the progress, in memory and on disk: every achievement to reach again.
+    fn reset_progress(&mut self) {
+        self.progress = Progress::default();
+        self.world.progress = Progress::default();
+        self.toasts.clear();
+        self.toast_since = None;
+        let _ = progress::erase();
+        self.progress_kept = false;
+    }
+
+    /// Keeps the progress on disk; but if it was there and is gone, erased while the game is
+    /// open, the game forgets it too rather than writing it back.
+    fn keep_progress(&mut self) {
+        if self.progress_kept && !progress::kept() {
+            self.progress = Progress::default();
+            self.world.progress = Progress::default();
+            self.progress_kept = false;
+            return;
+        }
+        if progress::save(&self.progress).is_ok() {
+            self.progress_kept = true;
         }
     }
 
@@ -500,7 +544,7 @@ impl App {
         self.progress = self.world.progress.clone();
         if !new.is_empty() {
             self.toasts.extend(new);
-            let _ = progress::save(&self.progress);
+            self.keep_progress();
         }
     }
 
@@ -519,7 +563,7 @@ impl App {
     /// The run is over: if its score makes the leaderboard, three letters to type in.
     fn weigh_score(&mut self) {
         self.scored = true;
-        let _ = progress::save(&self.progress);
+        self.keep_progress();
         // A standard run keeps no score.
         if self.world.mode == Mode::Arcade && self.leaderboard.qualifies(self.world.score) {
             self.screen = Screen::NameEntry {

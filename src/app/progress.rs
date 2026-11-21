@@ -17,6 +17,19 @@ pub fn load() -> Progress {
         .unwrap_or_default()
 }
 
+/// Whether the progress is kept on disk.
+pub fn kept() -> bool {
+    data_file(FILE).is_some_and(|path| path.exists())
+}
+
+/// Erases the progress kept: none reached any more.
+pub fn erase() -> io::Result<()> {
+    match data_file(FILE) {
+        Some(path) if path.exists() => fs::remove_file(path),
+        _ => Ok(()),
+    }
+}
+
 /// Keeps the progress for the next runs.
 pub fn save(progress: &Progress) -> io::Result<()> {
     let path = data_file(FILE).ok_or_else(|| io::Error::other("no data folder"))?;

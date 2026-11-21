@@ -87,6 +87,8 @@ pub enum OptionItem {
     Ground,
     /// The language the game speaks.
     Language,
+    /// The progress erased, after a confirmation: from the title screen's options alone.
+    ResetProgress,
     /// Back where the menu was opened from.
     Back,
     /// Quit the game: from the title screen's options.
@@ -94,7 +96,24 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 12] = [
+    /// The items opened from the title screen; from the pause menu, the same but for erasing
+    /// the progress and quitting.
+    const TITLE: [OptionItem; 13] = [
+        OptionItem::Blood,
+        OptionItem::Rain,
+        OptionItem::Arrow,
+        OptionItem::Skin,
+        OptionItem::Announcements,
+        OptionItem::Dusk,
+        OptionItem::Gear,
+        OptionItem::MiniBars,
+        OptionItem::Ground,
+        OptionItem::Language,
+        OptionItem::ResetProgress,
+        OptionItem::Back,
+        OptionItem::Quit,
+    ];
+    const PAUSE: [OptionItem; 11] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
@@ -106,16 +125,15 @@ impl OptionItem {
         OptionItem::Ground,
         OptionItem::Language,
         OptionItem::Back,
-        OptionItem::Quit,
     ];
 
     /// The items of the menu, opened from the pause menu (which has its own way to quit) or
     /// from the title screen.
     pub fn items(from_pause: bool) -> &'static [OptionItem] {
         if from_pause {
-            &Self::ALL[..Self::ALL.len() - 1]
+            &Self::PAUSE
         } else {
-            &Self::ALL
+            &Self::TITLE
         }
     }
 
@@ -172,6 +190,8 @@ impl OptionItem {
                 }
             ),
             OptionItem::Language => fl!("pause-language", value = view.language),
+            OptionItem::ResetProgress if view.confirm_reset => fl!("option-reset-confirm"),
+            OptionItem::ResetProgress => fl!("option-reset"),
             OptionItem::Back => fl!("option-back"),
             OptionItem::Quit => fl!("pause-quit"),
         }

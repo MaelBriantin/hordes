@@ -20,6 +20,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
   - **HP over the hero**: shown or hidden: the player's HP in a small bar over their head (over the arrow, when it shows).
   - **Coloured ground** (experimental): off or on: on, the bare ground is dark grass speckled with earth, lit as the rest, rather than the screen's dark. Off at first: it redraws most of the screen at every step, for a modern, fast terminal (Ghostty, kitty, WezTerm…).
   - **Dusk**: played or skipped: skipped, a run opens on the night, the torch lit.
+  - **Erase the progress**, from the title screen's options alone: Enter asks to confirm, Enter again erases the achievements, their counts and so the collection (not the settings nor the leaderboard); any other key keeps them.
   - **Language**: English or French. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).
 - The title screen and the pause menu show the game's version.
