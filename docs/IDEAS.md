@@ -32,6 +32,10 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
 - **Sniper rifle**: aims at an enemy far off (12–15 tiles, the furthest or the toughest), a red laser dot on it for a moment before the shot; a heavy hit (enough for a Shadow at once), a shot every few seconds; later, the bullet goes through several. A gun: holds its fire in the dark.
 - **Grenade**: thrown at the enemies nearby, it bursts at once, no fire: heavy damage over an area, the enemies caught in it blown outwards, away from its centre, giving the player room.
+- **Experimental weapons**, a kind of their own, found in **crates** on the map rather than dealt: a crate guarded by a "capture the hill" goal, the player holding a zone a while against the enemies before it opens.
+- **Laser beam** (experimental): a beam across the whole map, hurting every enemy that crosses it.
+- **Portal maker** (an action card): two portals laid, the player stepping into one comes out of the other.
+- **Energy shield** (a passive): it soaks up the damage taken, then sends it back out in a wave around the player.
 
 ## Level-ups
 
