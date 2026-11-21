@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.8.0 · November 21, 2026
+Hunted.
+
 ### New
 Progress:
 - Achievements, reached once and kept from one run to the next, each unlocking a card, a reroll or the arcade mode, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun, and Vitality, Swiftness, Magnet, Flashlight, Wisdom and Loot alone are dealt.
