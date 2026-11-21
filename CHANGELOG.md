@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.8.1 · November 21, 2026
+Fine print.
+
 ### Changed
 - Horde Hunter says its enemies targeted rather than veiled, and targets less of a horde: a tenth, a quarter, the targets seen in the dark at level 3, a half, the whole horde at the last (rather than three quarters at level 4).
 
