@@ -10,12 +10,17 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
-- Action cards, a third kind beside the weapons and the passives: played with the action key, set in the options (Space at first, or Shift in kitty terminals); one a run. The Dash is the first.
-- The arcade mode is unlocked by an achievement, Come rain or shine: every weather seen once, every run counted; until then, the standard alone.
-- A new passive, Horde Hunter, unlocked by wiping out a horde (achievement Hunter): +10% damage to the hordes per level, and their last ones veiled in red, more with the levels, the whole horde at the last; from level 3, seen in the dark too.
-- The collection, on the title screen in standard mode: every card and the reroll, in colour once had, grey until then, from the easiest to unlock to the hardest; the arrows go over them, the one picked framed, a box telling it: available from the start, or the achievement that unlocks it and how far along it is.
+Progress:
+- Achievements, reached once and kept from one run to the next, each unlocking a card, a reroll or the arcade mode, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
+- The first and easiest, Hunter, a horde wiped out to the last, unlocks a new passive, Horde Hunter: +10% damage to the hordes per level, and their last ones veiled in red, more with the levels, the whole horde at the last; from level 3, seen in the dark too.
+- The arcade mode is unlocked by an achievement too, Come rain or shine: every weather seen once, every run counted; until then, the standard alone.
+- The collection, on the title screen in standard mode: every card, the reroll and the arcade, in colour once had, grey until then, from the easiest to unlock to the hardest; the arrows go over them, the one picked framed, a box telling it: available from the start, or the achievement that unlocks it and how far along it is.
+
+Menace:
 - An abomination felled swells, blinking white, for 0.6 s, then bursts: a disc of green bile out to 3 tiles, costing everything it reaches 10 HP, the player and the enemies alike, and pushing it back 2 tiles. Out of it come 4 parasites, small green worms hopping, fast (12 HP, 4.5 tiles/s, 3 damage), that always find the player; worth a point and no gem.
-- Progress: achievements, reached once and kept from one run to the next, each unlocking a card or a reroll, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
+
+Cards:
+- Action cards, a third kind beside the weapons and the passives: played with the action key, set in the options (Space at first, or Shift in kitty terminals); one a run. The Dash is the first.
 
 ### Changed
 - The title screen's and the death screen's prompts, each key as a cap; on the death screen, steady, R for a new run, Esc back to the main menu rather than quitting.
