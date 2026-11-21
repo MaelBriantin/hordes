@@ -13,7 +13,6 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
-  - **Action key**: the key the action card is played with: Space (at first) or Shift, Shift alone only reaching the game in terminals with kitty's keyboard protocol (Rex, kitty, Ghostty, WezTerm…).
   - **Rain**: how it shows (full, reduced to half its drops, or off). The weather itself is the same whatever the choice.
   - **Arrow**: a small arrow over the player's head, bouncing, to see them at once in the crowd: off, white, yellow or red. Whatever the setting, **E** shows the arrow for **2 s** (white, if off): the player found again in the crowd.
   - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). Big, no pause, at first. The opening is always told big, with a pause.
@@ -116,7 +115,7 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | HP | 100 (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
 | Dashes | None at first: the Dash card brings them (see Passives). One, ready as the card is taken, back 8 s after it is taken (6 s from level 2, 4.5 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
-| Dash | The action key: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
+| Dash | Space or Enter: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
 
 ## Enemies
 
@@ -235,7 +234,7 @@ Up to **4 passives**, each up to **level 5**.
 
 ## Actions
 
-Cards played with the **action key** (see Options), when the player wants. A run holds **one**: once taken, no other action card is dealt, only its next levels. A card says ACTION on its top border, as others say WEAPON or PASSIVE.
+Cards played with **Space or Enter**, when the player wants. A run holds **one**: once taken, no other action card is dealt, only its next levels. A card says ACTION on its top border, as others say WEAPON or PASSIVE.
 
 | Action | What it does |
 |---|---|
@@ -252,23 +251,25 @@ Cards played with the **action key** (see Options), when the player wants. A run
 
 ## Progress
 
-- **Achievements**: goals reached once, kept from one run to the next, in both modes; each unlocks a card, dealt from then on, or a reroll more a run. At first, the cards dealt are four weapons, the **crowbar**, the **machete**, the **pistol** and the **shotgun**; Vitality, Swiftness, Magnet, Might, Haste, Flashlight, Wisdom, Loot; and the heal.
+- **Achievements**: goals reached once, kept from one run to the next, in both modes; each unlocks a card, dealt from then on, or a reroll more a run. At first, the cards dealt are four weapons, the **crowbar**, the **machete**, the **pistol** and the **shotgun**; Vitality, Swiftness, Magnet, Flashlight, Wisdom, Loot; and the heal.
 
 | Achievement | Goal | Unlocks |
 |---|---|---|
 | Hunter | Wipe out a horde to the last | Horde Hunter |
+| First drops | Hold out until the drizzle | Haste |
+| Carnage | 300 enemies down in a single run | Might |
 | Rain of lead | Hold out until the rain | Machine gun |
 | In the eye | Hold out until the storm | Molotov |
 | Struck | Struck by lightning, and standing | Dash |
 | A thousand down | 1,000 enemies down, in all (every run counted) | Regeneration |
 | Raw light | 50 Shadows down, in all (every run counted) | Glare |
 | Dawn | Hold out until dawn | Illumination |
-| A regular | 10 runs played | A second reroll a run |
+| A regular | 25 runs played | A second reroll a run |
 | Come rain or shine | Every weather seen once, every run counted, even one lost in it | The arcade mode (legendary) |
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
 - The **drones** are dealt no more, until they are made worth taking.
-- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination), and last the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. The arrows go from tile to tile; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
+- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination), and last the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 21): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's and the arcade's: their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience

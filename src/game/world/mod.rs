@@ -20,7 +20,7 @@ use super::machete::Swing;
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
-use super::progress::{Achievement, Progress};
+use super::progress::{Achievement, CARNAGE_KILLS, Progress};
 use super::score;
 use super::stain::Stain;
 use super::weather::{self, Weather};
@@ -599,8 +599,14 @@ impl World {
     fn reach_goals(&mut self) {
         let weather = self.weather();
         self.progress.see(weather);
+        if weather >= Weather::Drizzle {
+            self.progress.reach(Achievement::Drizzle);
+        }
         if matches!(weather, Weather::Rain | Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Rain);
+        }
+        if self.kills >= CARNAGE_KILLS {
+            self.progress.reach(Achievement::Carnage);
         }
         if matches!(weather, Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Storm);

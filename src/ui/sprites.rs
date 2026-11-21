@@ -71,13 +71,14 @@ pub enum SpriteId {
     IconReroll,
     IconHordeHunter,
     IconArcade,
+    IconHidden,
     ArrowLeft,
     ArrowRight,
     Title,
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 53] = [
+    const ALL: [SpriteId; 54] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -128,6 +129,7 @@ impl SpriteId {
         SpriteId::IconReroll,
         SpriteId::IconHordeHunter,
         SpriteId::IconArcade,
+        SpriteId::IconHidden,
         SpriteId::ArrowLeft,
         SpriteId::ArrowRight,
         SpriteId::Title,
@@ -185,6 +187,7 @@ impl SpriteId {
             SpriteId::IconReroll => "icon_reroll",
             SpriteId::IconHordeHunter => "icon_horde_hunter",
             SpriteId::IconArcade => "icon_arcade",
+            SpriteId::IconHidden => "icon_hidden",
             SpriteId::ArrowLeft => "arrow_left",
             SpriteId::ArrowRight => "arrow_right",
             SpriteId::Title => "title",

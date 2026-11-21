@@ -15,7 +15,9 @@ const REROLLS: u8 = 1;
 /// The goals counted over every run: the enemies down, the Shadows down, the runs played.
 const KILLS_GOAL: u64 = 1_000;
 const SHADOWS_GOAL: u64 = 50;
-const RUNS_GOAL: u32 = 10;
+const RUNS_GOAL: u32 = 25;
+/// The enemies down in a single run for Carnage.
+pub const CARNAGE_KILLS: u32 = 300;
 
 /// Every card, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock. Not the drones, dealt no more, nor
@@ -30,10 +32,10 @@ pub const COLLECTION: [Unlock; 21] = [
     Unlock::Card(Choice::Passive(Passive::Magnet)),
     Unlock::Card(Choice::Passive(Passive::Flashlight)),
     Unlock::Card(Choice::Passive(Passive::Loot)),
-    Unlock::Card(Choice::Passive(Passive::Might)),
-    Unlock::Card(Choice::Passive(Passive::Haste)),
     Unlock::Card(Choice::Passive(Passive::Wisdom)),
     Unlock::Card(Choice::Passive(Passive::HordeHunter)),
+    Unlock::Card(Choice::Passive(Passive::Haste)),
+    Unlock::Card(Choice::Passive(Passive::Might)),
     Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
     Unlock::Card(Choice::Weapon(Weapon::Molotov)),
     Unlock::Card(Choice::Action(Action::Dash)),
@@ -49,6 +51,10 @@ pub const COLLECTION: [Unlock; 21] = [
 pub enum Achievement {
     /// Hunter: a horde wiped out to the last.
     Hunter,
+    /// First drops: hold out until the drizzle.
+    Drizzle,
+    /// Carnage: 300 enemies down in a single run.
+    Carnage,
     /// Rain of lead: hold out until the rain.
     Rain,
     /// In the eye: hold out until the storm.
@@ -61,7 +67,7 @@ pub enum Achievement {
     Shadows,
     /// Hold out until dawn.
     Dawn,
-    /// A regular: 10 runs played.
+    /// A regular: 25 runs played.
     Regular,
     /// Come rain or shine: every weather seen once, every run counted, even one lost in it.
     Weathers,
@@ -79,8 +85,10 @@ pub enum Unlock {
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 9] = [
+    pub const ALL: [Achievement; 11] = [
         Achievement::Hunter,
+        Achievement::Drizzle,
+        Achievement::Carnage,
         Achievement::Rain,
         Achievement::Storm,
         Achievement::Struck,
@@ -95,6 +103,8 @@ impl Achievement {
     pub fn unlocks(self) -> Unlock {
         match self {
             Achievement::Hunter => Unlock::Card(Choice::Passive(Passive::HordeHunter)),
+            Achievement::Drizzle => Unlock::Card(Choice::Passive(Passive::Haste)),
+            Achievement::Carnage => Unlock::Card(Choice::Passive(Passive::Might)),
             Achievement::Rain => Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
             Achievement::Storm => Unlock::Card(Choice::Weapon(Weapon::Molotov)),
             Achievement::Struck => Unlock::Card(Choice::Action(Action::Dash)),
@@ -109,6 +119,12 @@ impl Achievement {
     /// How rare it is: as the card it unlocks; a reroll, rare.
     pub fn rarity(self) -> Rarity {
         self.unlocks().rarity()
+    }
+
+    /// Whether it is hidden until reached, what it unlocks a surprise: the dawn's, the
+    /// arcade's.
+    pub fn hidden(self) -> bool {
+        matches!(self, Achievement::Dawn | Achievement::Weathers)
     }
 }
 
@@ -234,7 +250,10 @@ mod tests {
             assert!(progress.deals(Choice::Weapon(weapon)));
         }
         assert!(progress.deals(Choice::Passive(Passive::Vitality)));
+        assert!(progress.deals(Choice::Passive(Passive::Wisdom)));
         assert!(progress.deals(Choice::Heal));
+        assert!(!progress.deals(Choice::Passive(Passive::Might)));
+        assert!(!progress.deals(Choice::Passive(Passive::Haste)));
         assert!(!progress.deals(Choice::Weapon(Weapon::MachineGun)));
         assert!(!progress.deals(Choice::Passive(Passive::Regeneration)));
         assert!(!progress.deals(Choice::Action(Action::Dash)));

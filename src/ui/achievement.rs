@@ -136,6 +136,8 @@ fn rows_shown(since: u32) -> u16 {
 pub fn goal(achievement: Achievement) -> String {
     match achievement {
         Achievement::Hunter => fl!("achievement-hunter-goal"),
+        Achievement::Drizzle => fl!("achievement-drizzle-goal"),
+        Achievement::Carnage => fl!("achievement-carnage-goal"),
         Achievement::Rain => fl!("achievement-rain-goal"),
         Achievement::Storm => fl!("achievement-storm-goal"),
         Achievement::Struck => fl!("achievement-struck-goal"),
@@ -151,6 +153,8 @@ pub fn goal(achievement: Achievement) -> String {
 pub fn name(achievement: Achievement) -> String {
     match achievement {
         Achievement::Hunter => fl!("achievement-hunter"),
+        Achievement::Drizzle => fl!("achievement-drizzle"),
+        Achievement::Carnage => fl!("achievement-carnage"),
         Achievement::Rain => fl!("achievement-rain"),
         Achievement::Storm => fl!("achievement-storm"),
         Achievement::Struck => fl!("achievement-struck"),

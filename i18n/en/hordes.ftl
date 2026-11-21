@@ -3,8 +3,9 @@
 
 ## Keys, on the last line of the screen
 
-help-title = Enter start · Tab mode · Arrows collection · O / Esc options
-help-title-standard = Enter start · Arrows collection · O / Esc options
+help-title = Enter start · Tab mode · C collection · O / Esc options
+help-title-browsing = Arrows browse · C / Esc close · Enter start
+help-title-standard = Enter start · C collection · O / Esc options
 help-title-arcade = Enter start · Tab mode · O / Esc options
 help-options = ↑↓ choose · ←→ / Enter change · Esc back
 help-paused = ↑↓ choose · Enter confirm · ←→ change · P / Esc resume
@@ -18,12 +19,11 @@ title-start-after = to start
 mode-standard = SURVIVE THE NIGHT
 mode-arcade = ARCADE
 key-tab = Tab
+key-c = C
 key-enter = Enter
 key-r = R
 key-esc = Esc
 key-space = Space
-key-shift = Shift
-key-shift-kitty = Shift (kitty terminals only)
 dusk-played = played
 dusk-skipped = skipped
 
@@ -58,7 +58,6 @@ pause-announcements = Announcements: { $value }
 options-title = Options
 option-dusk = Dusk: { $value }
 option-gear = Gear: { $value }
-option-action-key = Action key: { $value }
 option-skin = Hero: { $value }
 skin-survivor = survivor
 skin-classic = classic
@@ -239,6 +238,10 @@ achievement-weathers-goal = See every weather at least once
 achievement-reroll = a reroll more a run
 achievement-hunter = Hunter
 achievement-hunter-goal = Wipe out a horde to the last
+achievement-drizzle = First drops
+achievement-drizzle-goal = Hold out until the drizzle
+achievement-carnage = Carnage
+achievement-carnage-goal = 300 enemies down in a single run
 achievement-rain = Rain of lead
 achievement-rain-goal = Hold out until the rain
 achievement-storm = In the eye
@@ -252,13 +255,14 @@ achievement-shadows-goal = 50 Shadows down, in all
 achievement-dawn = Dawn
 achievement-dawn-goal = Hold out until dawn
 achievement-regular = A regular
-achievement-regular-goal = Play 10 runs
+achievement-regular-goal = Play 25 runs
 
 collection-title = COLLECTION
 collection-from-start = Available from the start
 collection-achievement = Achievement “{ $name }”
 collection-reroll = One more reroll
 collection-arcade = Arcade mode
+collection-hidden = Hidden achievement
 collection-kind-bonus = BONUS
 collection-kind-mode = MODE
 collection-unlocked = Unlocked

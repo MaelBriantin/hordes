@@ -765,6 +765,23 @@ fn a_strike_spares_the_player_out_of_its_ring() {
 }
 
 #[test]
+fn the_drizzle_unlocks_haste_and_300_kills_in_a_run_might() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    world.next_horde = u32::MAX;
+    world.ticks = (weather::DUSK_SECONDS + 2 * weather::stage_seconds(Mode::Standard)) * 30 - 1;
+    wait(&mut world, 1);
+    assert!(world.progress.deals(Choice::Passive(Passive::Haste)));
+    assert!(!world.progress.deals(Choice::Passive(Passive::Might)));
+    // The drizzle told, the world going on.
+    world.announcement = None;
+    world.kills = 300;
+    wait(&mut world, 1);
+    assert!(world.progress.deals(Choice::Passive(Passive::Might)));
+}
+
+#[test]
 fn reaching_the_rain_unlocks_the_machine_gun_for_the_next_runs() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);

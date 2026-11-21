@@ -6,7 +6,7 @@ use rand::{Rng, RngExt};
 pub const MAX_LEVEL: u8 = 5;
 pub const MAX_WEAPONS: usize = 4;
 pub const MAX_PASSIVES: usize = 4;
-/// The action cards a run can hold: one, played with the action key.
+/// The action cards a run can hold: one, played with Space or Enter.
 pub const MAX_ACTIONS: usize = 1;
 /// How many choices a level-up offers.
 const CHOICES: usize = 3;
@@ -88,7 +88,7 @@ impl Passive {
     ];
 }
 
-/// A card played with the action key, when the player wants: one a run, no more.
+/// A card played with Space or Enter, when the player wants: one a run, no more.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     /// A dash; a second at level 3, each back sooner and sooner.

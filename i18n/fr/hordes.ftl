@@ -3,8 +3,9 @@
 
 ## Touches, sur la dernière ligne de l'écran
 
-help-title = Entrée jouer · Tab mode · Flèches collection · O / Échap options
-help-title-standard = Entrée jouer · Flèches collection · O / Échap options
+help-title = Entrée jouer · Tab mode · C collection · O / Échap options
+help-title-browsing = Flèches parcourir · C / Échap fermer · Entrée jouer
+help-title-standard = Entrée jouer · C collection · O / Échap options
 help-title-arcade = Entrée jouer · Tab mode · O / Échap options
 help-options = ↑↓ choisir · ←→ / Entrée changer · Échap retour
 help-paused = ↑↓ choisir · Entrée valider · ←→ changer · P / Échap reprendre
@@ -15,15 +16,14 @@ help-level-up = ←→ / 1 2 3 choisir · Entrée prendre · Échap pause
 
 title-start-before = Appuie sur
 title-start-after = pour jouer
-mode-standard = SURVIS À LA NUIT
+mode-standard = SURVIVE THE NIGHT
 mode-arcade = ARCADE
 key-tab = Tab
+key-c = C
 key-enter = Entrée
 key-r = R
 key-esc = Échap
 key-space = Espace
-key-shift = Maj
-key-shift-kitty = Maj (terminaux kitty seulement)
 dusk-played = joué
 dusk-skipped = passé
 
@@ -58,7 +58,6 @@ pause-announcements = Annonces : { $value }
 options-title = Options
 option-dusk = Crépuscule : { $value }
 option-gear = Équipement : { $value }
-option-action-key = Touche action : { $value }
 option-skin = Héros : { $value }
 skin-survivor = survivant
 skin-classic = classique
@@ -239,6 +238,10 @@ achievement-weathers-goal = Voir chaque météo au moins une fois
 achievement-reroll = une relance de plus par partie
 achievement-hunter = Chasseur
 achievement-hunter-goal = Abattre une horde jusqu'au dernier
+achievement-drizzle = Premières gouttes
+achievement-drizzle-goal = Tenir jusqu'à la bruine
+achievement-carnage = Carnage
+achievement-carnage-goal = Abattre 300 ennemis en une partie
 achievement-rain = Pluie de plomb
 achievement-rain-goal = Tenir jusqu'à la pluie
 achievement-storm = Dans l'œil
@@ -252,13 +255,14 @@ achievement-shadows-goal = 50 Ombres abattues, en tout
 achievement-dawn = L'aube
 achievement-dawn-goal = Tenir jusqu'à l'aube
 achievement-regular = Habitué
-achievement-regular-goal = Jouer 10 parties
+achievement-regular-goal = Jouer 25 parties
 
 collection-title = COLLECTION
 collection-from-start = Disponible dès le départ
 collection-achievement = Succès « { $name } »
 collection-reroll = Une relance de plus
 collection-arcade = Mode Arcade
+collection-hidden = Succès caché
 collection-kind-bonus = BONUS
 collection-kind-mode = MODE
 collection-unlocked = Débloqué

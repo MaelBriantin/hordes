@@ -14,10 +14,10 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred_as_is, centred_spans, shimmer};
 use super::{
-    ActionKey, Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, Skin, ViewState,
-    faded, weather_colour,
+    Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, Skin, ViewState, faded,
+    weather_colour,
 };
-use crate::game::{Entry, Leaderboard, Mode, Progress, Weather, WeatherNews, World};
+use crate::game::{COLLECTION, Entry, Leaderboard, Mode, Progress, Weather, WeatherNews, World};
 
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
@@ -75,8 +75,6 @@ pub enum OptionItem {
     Arrow,
     /// How the hero looks.
     Skin,
-    /// The key the action card is played with.
-    ActionKey,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
     Announcements,
     /// Whether runs open on the dusk or on the night.
@@ -96,12 +94,11 @@ pub enum OptionItem {
 }
 
 impl OptionItem {
-    const ALL: [OptionItem; 13] = [
+    const ALL: [OptionItem; 12] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
         OptionItem::Skin,
-        OptionItem::ActionKey,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
@@ -174,14 +171,6 @@ impl OptionItem {
                     fl!("ground-plain")
                 }
             ),
-            // Shift alone only reaches the game through kitty's keyboard protocol: said here.
-            OptionItem::ActionKey => {
-                let key = match view.action_key {
-                    ActionKey::Space => fl!("key-space"),
-                    ActionKey::Shift => fl!("key-shift-kitty"),
-                };
-                fl!("option-action-key", value = key)
-            }
             OptionItem::Language => fl!("pause-language", value = view.language),
             OptionItem::Back => fl!("option-back"),
             OptionItem::Quit => fl!("pause-quit"),
@@ -306,7 +295,7 @@ pub fn render_title(
                 format!("{} ", fl!("title-start-before").to_uppercase()),
                 bold,
             ),
-            Span::styled(format!(" {} ", fl!("key-enter").to_uppercase()), KEY_CAP),
+            Span::styled(format!(" {} ", fl!("key-space").to_uppercase()), KEY_CAP),
             Span::styled(
                 format!(" {}", fl!("title-start-after").to_uppercase()),
                 bold,
@@ -314,10 +303,10 @@ pub fn render_title(
         ];
         centred_spans(frame, spans, start);
     }
-    // The key changing the mode, once the arcade can be chosen.
-    if view.arcade {
-        render_mode_key(frame, last, view.mode);
-    }
+    // At the bottom, the keys: the one changing the mode, once the arcade can be chosen; the one
+    // showing or hiding the collection, in standard, where it fits.
+    let collection = view.mode == Mode::Standard && collection_rows > 0;
+    render_title_keys(frame, last, view, progress, collection);
     frame.render_widget(
         Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
         last,
@@ -377,18 +366,42 @@ fn render_mode(frame: &mut Frame, area: Rect, sprites: &Sprites, mode: Mode, fra
     }
 }
 
-/// The key changing the mode, and the other mode it changes to, at the start of `area`.
-fn render_mode_key(frame: &mut Frame, area: Rect, mode: Mode) {
-    let other = match mode.other() {
-        Mode::Standard => fl!("mode-standard"),
-        Mode::Arcade => fl!("mode-arcade"),
-    };
-    let line = Line::from(vec![
-        Span::raw(" "),
-        Span::styled(format!(" {} ", fl!("key-tab")), KEY_CAP),
-        Span::styled(format!("  {other}"), Style::new().fg(GREY)),
-    ]);
-    frame.render_widget(line, area);
+/// The title screen's keys at the start of `area`, each as a cap, what it does after it: Tab
+/// and the other mode it changes to, once the arcade can be chosen; C showing or hiding the
+/// collection and how much of it the player has, if `collection`.
+fn render_title_keys(
+    frame: &mut Frame,
+    area: Rect,
+    view: ViewState,
+    progress: &Progress,
+    collection: bool,
+) {
+    let mut spans = vec![Span::raw(" ")];
+    if view.arcade {
+        let other = match view.mode.other() {
+            Mode::Standard => fl!("mode-standard"),
+            Mode::Arcade => fl!("mode-arcade"),
+        };
+        spans.push(Span::styled(format!(" {} ", fl!("key-tab")), KEY_CAP));
+        spans.push(Span::styled(
+            format!("  {other}    "),
+            Style::new().fg(GREY),
+        ));
+    }
+    if collection {
+        let had = COLLECTION
+            .iter()
+            .filter(|unlock| progress.has(**unlock))
+            .count();
+        let words = format!(
+            "  {}  {had} / {}",
+            fl!("collection-title"),
+            COLLECTION.len()
+        );
+        spans.push(Span::styled(format!(" {} ", fl!("key-c")), KEY_CAP));
+        spans.push(Span::styled(words, Style::new().fg(GREY)));
+    }
+    frame.render_widget(Line::from(spans), area);
 }
 
 /// A colour between two, `share` of the way from the first.
@@ -440,9 +453,10 @@ fn version() -> String {
 const KEYS_COLUMN: usize = 23;
 
 /// Every key of a run, in a box over the map, the run standing still.
-pub fn render_keys(frame: &mut Frame, map: Rect, action: ActionKey) {
-    // The action key as the settings have it, in the keys' column.
-    let action = format!("{:<KEYS_COLUMN$}{}", action.name(), fl!("keys-action"));
+pub fn render_keys(frame: &mut Frame, map: Rect) {
+    // The action keys, in the keys' column.
+    let keys = format!("{} / {}", fl!("key-space"), fl!("key-enter"));
+    let action = format!("{keys:<KEYS_COLUMN$}{}", fl!("keys-action"));
     let lines = [
         fl!("keys-move"),
         fl!("keys-torch"),

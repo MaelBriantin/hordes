@@ -11,19 +11,21 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 
 ### New
 Progress:
-- Achievements, reached once and kept from one run to the next, each unlocking a card, a reroll or the arcade mode, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun and the plain passives alone are dealt.
+- Achievements, reached once and kept from one run to the next, each unlocking a card, a reroll or the arcade mode, from the next run on; told as reached, a box rising on the bottom right of the map, in the rarity's colour. At first, the crowbar, the machete, the pistol, the shotgun, and Vitality, Swiftness, Magnet, Flashlight, Wisdom and Loot alone are dealt.
 - The first and easiest, Hunter, a horde wiped out to the last, unlocks a new passive, Horde Hunter: +10% damage to the hordes per level, and their last ones veiled in red, more with the levels, the whole horde at the last; from level 3, seen in the dark too.
+- Haste and Might are unlocked too: Haste by First drops, the drizzle reached; Might by Carnage, 300 enemies down in a single run.
 - The arcade mode is unlocked by an achievement too, Come rain or shine: every weather seen once, every run counted; until then, the standard alone.
+- Hidden achievements, the dawn's and the arcade's: in the collection a pixel question mark and "Hidden achievement" until reached.
 - The collection, on the title screen in standard mode: every card, the reroll and the arcade, in colour once had, grey until then, from the easiest to unlock to the hardest; the arrows go over them, the one picked framed, a box telling it: available from the start, or the achievement that unlocks it and how far along it is.
 
 Menace:
 - An abomination felled swells, blinking white, for 0.6 s, then bursts: a disc of green bile out to 3 tiles, costing everything it reaches 10 HP, the player and the enemies alike, and pushing it back 2 tiles. Out of it come 4 parasites, small green worms hopping, fast (12 HP, 4.5 tiles/s, 3 damage), that always find the player; worth a point and no gem.
 
 Cards:
-- Action cards, a third kind beside the weapons and the passives: played with the action key, set in the options (Space at first, or Shift in kitty terminals); one a run. The Dash is the first.
+- Action cards, a third kind beside the weapons and the passives: played with Space or Enter; one a run. The Dash is the first.
 
 ### Changed
-- The title screen's and the death screen's prompts, each key as a cap; on the death screen, steady, R for a new run, Esc back to the main menu rather than quitting.
+- The title screen's and the death screen's prompts, each key as a cap (Press [Space] to start); on the death screen, steady, R for a new run, Esc back to the main menu rather than quitting.
 - A darker night: what the light doesn't reach keeps 10% of its brightness rather than 14%.
 - A strike of lightning sets on fire the enemies it hurts.
 - The line under the big letters (a weather, a horde, the dawn) in white capitals.

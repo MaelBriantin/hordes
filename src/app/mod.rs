@@ -16,8 +16,7 @@ use std::time::{Duration, Instant};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{
     self, DisableFocusChange, EnableFocusChange, Event, KeyCode, KeyEvent, KeyModifiers,
-    KeyboardEnhancementFlags, ModifierKeyCode, PopKeyboardEnhancementFlags,
-    PushKeyboardEnhancementFlags,
+    KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
 };
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::supports_keyboard_enhancement;
@@ -27,12 +26,15 @@ use crate::game::{
     World,
 };
 use crate::ui::{
-    self, ActionKey, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites,
-    ViewState,
+    self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, Screen, Sprites, ViewState,
 };
 use keys::Keys;
 use settings::Settings;
 
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "states of the app, each on its own"
+)]
 pub struct App {
     world: World,
     sprites: Sprites,
@@ -44,9 +46,11 @@ pub struct App {
     /// The achievements reached and still to be told, the first being told since a frame.
     toasts: VecDeque<Achievement>,
     toast_since: Option<u32>,
-    /// The collection's tile the arrows are on, on the title screen. And how many tiles a row of
-    /// it holds, as the screen is wide.
+    /// The collection's tile the arrows are on, on the title screen, and whether it is open: C
+    /// opens it, at its first tile, C or Esc close it. And how many tiles a row of it holds, as
+    /// the screen is wide.
     picked: usize,
+    browsing: bool,
     collection_row: usize,
     /// Whether the collection shows: the screen big enough for it.
     collection_shows: bool,
@@ -84,6 +88,7 @@ impl App {
             toasts: VecDeque::new(),
             toast_since: None,
             picked: 0,
+            browsing: false,
             collection_row: 1,
             collection_shows: false,
             scored: false,
@@ -124,35 +129,35 @@ impl App {
             self.world.set_view(ui::view(terminal.size()?.into()));
             self.collection_row = ui::collection_row(terminal.size()?.into());
             self.collection_shows = ui::collection_shows(terminal.size()?.into());
-            let view =
-                ViewState {
-                    selected: self.selected,
-                    shown: self.dealt_at.map_or(Duration::ZERO, |at| at.elapsed()),
-                    frame: self.frames,
-                    blood: self.settings.blood,
-                    rain: self.settings.rain,
-                    arrow: self.settings.arrow,
-                    pinged: self
-                        .pinged_at
-                        .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
-                    skin: self.settings.skin,
-                    action_key: self.settings.action_key,
-                    mode: self.mode(),
-                    arcade: self.progress.arcade(),
-                    skip_dusk: self.settings.skip_dusk,
-                    gear: self.settings.gear,
-                    gear_list: self.settings.gear_list,
-                    mini_bars: self.settings.mini_bars,
-                    ground: self.settings.ground,
-                    weather_news: self.settings.weather_news,
-                    language: self.settings.language.name(),
-                    highlight: self.highlight,
-                    toast: self.toasts.front().zip(self.toast_since).map(
-                        |(&achievement, since)| (achievement, self.frames.wrapping_sub(since)),
-                    ),
-                    picked: (self.mode() == Mode::Standard && self.collection_shows)
-                        .then_some(self.picked),
-                };
+            let view = ViewState {
+                selected: self.selected,
+                shown: self.dealt_at.map_or(Duration::ZERO, |at| at.elapsed()),
+                frame: self.frames,
+                blood: self.settings.blood,
+                rain: self.settings.rain,
+                arrow: self.settings.arrow,
+                pinged: self
+                    .pinged_at
+                    .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
+                skin: self.settings.skin,
+                mode: self.mode(),
+                arcade: self.progress.arcade(),
+                skip_dusk: self.settings.skip_dusk,
+                gear: self.settings.gear,
+                gear_list: self.settings.gear_list,
+                mini_bars: self.settings.mini_bars,
+                ground: self.settings.ground,
+                weather_news: self.settings.weather_news,
+                language: self.settings.language.name(),
+                highlight: self.highlight,
+                toast: self
+                    .toasts
+                    .front()
+                    .zip(self.toast_since)
+                    .map(|(&achievement, since)| (achievement, self.frames.wrapping_sub(since))),
+                picked: (self.mode() == Mode::Standard && self.collection_shows && self.browsing)
+                    .then_some(self.picked),
+            };
             self.frames = self.frames.wrapping_add(1);
             terminal.draw(|frame| {
                 ui::render(
@@ -234,7 +239,16 @@ impl App {
         let collection = self.mode() == Mode::Standard && self.collection_shows;
         match code {
             // A new run, in the mode chosen.
-            KeyCode::Enter | KeyCode::Char(' ') => self.new_run(),
+            KeyCode::Enter | KeyCode::Char(' ') => {
+                self.browsing = false;
+                self.new_run();
+            }
+            // The collection opened, at its first tile, or closed.
+            KeyCode::Char('c' | 'C') if collection => {
+                self.browsing = !self.browsing;
+                self.picked = 0;
+            }
+            KeyCode::Esc if self.browsing => self.browsing = false,
             KeyCode::Tab | KeyCode::BackTab if self.progress.arcade() => {
                 self.settings.mode = self.settings.mode.other();
                 self.keep_settings();
@@ -246,12 +260,12 @@ impl App {
                     from_pause: false,
                 };
             }
-            _ if collection => self.on_collection(code),
+            _ if collection && self.browsing => self.on_collection(code),
             _ => {}
         }
     }
 
-    /// On the collection, in standard: the arrows go from tile to tile.
+    /// In the collection open, in standard: the arrows go from tile to tile.
     fn on_collection(&mut self, code: KeyCode) {
         let (at, last, row) = (self.picked, COLLECTION.len() - 1, self.collection_row);
         self.picked = match code {
@@ -400,10 +414,6 @@ impl App {
                 self.settings.skin = self.settings.skin.next();
                 self.keep_settings();
             }
-            OptionItem::ActionKey => {
-                self.settings.action_key = self.settings.action_key.next();
-                self.keep_settings();
-            }
             // Hidden, as icons, as a list, and round again.
             OptionItem::Gear => {
                 let settings = &mut self.settings;
@@ -427,7 +437,7 @@ impl App {
         }
     }
 
-    /// In the run: P or Esc pause it, F switches the torch, the action key plays the action card,
+    /// In the run: P or Esc pause it, F switches the torch, Space or Enter play the action card,
     /// or once it is over, R starts anew and Esc goes back to the title screen; on a level-up,
     /// the cards.
     fn on_run(&mut self, code: KeyCode) {
@@ -465,19 +475,8 @@ impl App {
             self.world.switch_torch();
             return;
         }
-        // The action key plays the action card, as the settings have it: Space; or Shift, alone
-        // with kitty's protocol, elsewhere only seen on the keys it changes, a way in capitals.
-        let action = match (self.settings.action_key, code) {
-            (ActionKey::Space, KeyCode::Char(' '))
-            | (
-                ActionKey::Shift,
-                KeyCode::Modifier(ModifierKeyCode::LeftShift | ModifierKeyCode::RightShift),
-            ) => true,
-            (ActionKey::Shift, KeyCode::Char('W' | 'A' | 'S' | 'D' | 'Z' | 'Q')) => {
-                !self.keys.reports_release()
-            }
-            _ => false,
-        };
+        // Space or Enter play the action card, as they act everywhere else.
+        let action = matches!(code, KeyCode::Char(' ') | KeyCode::Enter);
         if action && self.world.offer.is_none() {
             self.world.dash();
             return;

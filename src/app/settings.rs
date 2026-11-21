@@ -7,7 +7,7 @@ use std::io;
 use std::path::PathBuf;
 
 use crate::game::{Mode, WeatherNews};
-use crate::ui::{ActionKey, Arrow, BloodLook, RainDisplay, Skin};
+use crate::ui::{Arrow, BloodLook, RainDisplay, Skin};
 
 /// Where the settings go instead of the data folder, if set: for tests.
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
@@ -74,8 +74,6 @@ pub struct Settings {
     pub arrow: Arrow,
     /// How the hero looks.
     pub skin: Skin,
-    /// The key the action card is played with.
-    pub action_key: ActionKey,
     /// The mode runs are played in, and whether they skip the dusk.
     pub mode: Mode,
     pub skip_dusk: bool,
@@ -98,7 +96,6 @@ impl Default for Settings {
             rain: RainDisplay::Full,
             arrow: Arrow::Off,
             skin: Skin::Survivor,
-            action_key: ActionKey::Space,
             mode: Mode::Standard,
             skip_dusk: false,
             gear: false,
@@ -153,8 +150,6 @@ impl Settings {
                 ("arrow" | "outline", "red") => settings.arrow = Arrow::Red,
                 ("skin", "survivor") => settings.skin = Skin::Survivor,
                 ("skin", "classic") => settings.skin = Skin::Classic,
-                ("action", "space") => settings.action_key = ActionKey::Space,
-                ("action", "shift") => settings.action_key = ActionKey::Shift,
                 ("mode", "standard") => settings.mode = Mode::Standard,
                 ("mode", "arcade") => settings.mode = Mode::Arcade,
                 ("dusk", "played") => settings.skip_dusk = false,
@@ -181,13 +176,12 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\naction = {}\nmode = {}\ndusk = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
             self.arrow.id(),
             self.skin.id(),
-            self.action_key.id(),
             self.mode.id(),
             if self.skip_dusk { "skipped" } else { "played" },
             if self.gear { "shown" } else { "hidden" },
@@ -228,7 +222,6 @@ mod tests {
             rain: RainDisplay::Reduced,
             arrow: Arrow::Yellow,
             skin: Skin::Classic,
-            action_key: ActionKey::Shift,
             mode: Mode::Arcade,
             skip_dusk: true,
             gear: false,

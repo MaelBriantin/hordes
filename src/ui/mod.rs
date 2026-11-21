@@ -108,41 +108,6 @@ const HURT_RED: (u8, u8, u8) = (200, 20, 30);
 const SCREEN: Style = Style::new()
     .fg(Color::Rgb(225, 225, 230))
     .bg(Color::Rgb(12, 12, 18));
-/// The key an action card is played with: a setting, Space at first. Shift alone only with
-/// kitty's keyboard protocol.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ActionKey {
-    #[default]
-    Space,
-    Shift,
-}
-
-impl ActionKey {
-    /// The other one, round and round.
-    pub fn next(self) -> Self {
-        match self {
-            ActionKey::Space => ActionKey::Shift,
-            ActionKey::Shift => ActionKey::Space,
-        }
-    }
-
-    /// Its name in the settings file.
-    pub fn id(self) -> &'static str {
-        match self {
-            ActionKey::Space => "space",
-            ActionKey::Shift => "shift",
-        }
-    }
-
-    /// Its name, as the keyboard has it.
-    pub fn name(self) -> String {
-        match self {
-            ActionKey::Space => fl!("key-space"),
-            ActionKey::Shift => fl!("key-shift"),
-        }
-    }
-}
-
 /// A key drawn as a cap: dark on grey.
 const KEY_CAP: Style = Style::new()
     .fg(Color::Rgb(12, 12, 18))
@@ -218,8 +183,6 @@ pub struct ViewState {
     pub ground: bool,
     /// How the hero looks.
     pub skin: Skin,
-    /// The key the action card is played with.
-    pub action_key: ActionKey,
     /// The mode the next run is played in, and whether it skips the dusk; whether the arcade
     /// can be chosen, its achievement reached.
     pub mode: Mode,
@@ -296,8 +259,9 @@ pub fn render(
     }
     // The keys below, but for the run going on: its XP bar, all along the screen.
     let help = match screen {
+        Screen::Title if view.picked.is_some() => Some(fl!("help-title-browsing")),
         Screen::Title if !view.arcade => Some(fl!("help-title-standard")),
-        Screen::Title if view.picked.is_some() => Some(fl!("help-title")),
+        Screen::Title if view.mode == Mode::Standard => Some(fl!("help-title")),
         Screen::Title => Some(fl!("help-title-arcade")),
         Screen::Paused { .. } => Some(fl!("help-paused")),
         Screen::Options { .. } => Some(fl!("help-options")),
@@ -333,7 +297,7 @@ pub fn render(
         }
         Screen::Keys => {
             announce::dim(frame.buffer_mut(), map);
-            menu::render_keys(frame, map, view.action_key);
+            menu::render_keys(frame, map);
             return;
         }
         Screen::Playing => {}

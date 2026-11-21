@@ -61,7 +61,8 @@ pub fn height(width: u16, room: u16) -> u16 {
         .unwrap_or(0)
 }
 
-/// The collection in `area`, `picked` the tile the arrows are on, if they are.
+/// The collection in `area`, shown: `picked` the tile the arrows are on, every tile and the box
+/// telling the one picked; hidden, nothing.
 pub fn render(
     buffer: &mut Buffer,
     area: Rect,
@@ -87,6 +88,10 @@ pub fn render(
         .count();
     let title = format!("{}  {had} / {}", fl!("collection-title"), COLLECTION.len());
     let title_style = Style::new().fg(WHITE).add_modifier(Modifier::BOLD);
+    // Hidden: nothing; its key is at the bottom of the screen.
+    if picked.is_none() {
+        return;
+    }
     centred(buffer, area, area.y, &title, title_style);
     let mut y = area.y + 2;
     let all = shown.len() == rows;
@@ -154,7 +159,12 @@ fn tile(
             buffer.set_string(x + PICTURE.0, row, "│", colour);
         }
     }
-    picture(buffer, sprites, icon(unlock), inside, has);
+    let picture_of = if hidden(progress, unlock) {
+        SpriteId::IconHidden
+    } else {
+        icon(unlock)
+    };
+    picture(buffer, sprites, picture_of, inside, has);
 }
 
 /// A picture over what is under it, in grey if `coloured` isn't.
@@ -210,8 +220,10 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, unlock: Unlock, y:
     let counted = achievement
         .and_then(|achievement| progress.count_of(achievement))
         .filter(|_| !reached);
-    // What it says, line by line: its name, then where it comes from.
+    // What it says, line by line: its name, then where it comes from; hidden, nothing of it.
+    let hidden = hidden(progress, unlock);
     let lines = words(unlock);
+    let (name, kind) = (name(unlock), kind(unlock));
     let status = if has {
         fl!("collection-unlocked")
     } else {
@@ -239,16 +251,28 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, unlock: Unlock, y:
             ground.fg(if has { colour } else { grey(colour) }),
         );
     }
+    // Hidden: that alone, in capitals, in its middle.
+    if hidden {
+        let middle = Rect::new(x, y + BOX_HEIGHT / 2, width, 1);
+        let words = fl!("collection-hidden").to_uppercase();
+        centred(
+            buffer,
+            middle,
+            middle.y,
+            &words,
+            ground.fg(GREY).add_modifier(Modifier::BOLD),
+        );
+        return;
+    }
     let (left, top) = (x + BOX_PADDING, y + 1);
     let name_colour = if has { colour } else { GREY };
     buffer.set_string(
         left,
         top,
-        name(unlock),
+        name,
         ground.fg(name_colour).add_modifier(Modifier::BOLD),
     );
     // Its kind on the same row, on the right.
-    let kind = kind(unlock);
     let kind_width = u16::try_from(kind.chars().count()).unwrap_or(0);
     buffer.set_string(
         x + width.saturating_sub(BOX_PADDING + kind_width),
@@ -271,6 +295,13 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, unlock: Unlock, y:
         let style = ground.fg(fg).add_modifier(Modifier::BOLD);
         centred(buffer, last, last.y, &status, style);
     }
+}
+
+/// Whether a tile is hidden: its achievement hidden, and not reached yet.
+fn hidden(progress: &Progress, unlock: Unlock) -> bool {
+    unlock.achievement().is_some_and(|achievement| {
+        achievement.hidden() && !progress.achieved.contains(&achievement)
+    })
 }
 
 /// What the box says of a tile, but for its last row: its name, then where it comes from.

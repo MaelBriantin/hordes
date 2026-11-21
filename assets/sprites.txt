@@ -465,6 +465,18 @@ www
 ww.
 w..
 
+# A hidden achievement's tile, until reached: a question mark.
+
+icon_hidden
+..wwww..
+.ww..ww.
+.....ww.
+....ww..
+...ww...
+...ww...
+........
+...ww...
+
 # The arcade mode: a joystick, its red ball on a black base, a button aside.
 
 icon_arcade
