@@ -3,17 +3,20 @@
 
 use rand::RngExt;
 
-use super::super::body::{slide, touch};
+use super::super::body::{in_sight, slide, touch};
 use super::super::build::Weapon;
 use super::super::enemy::Enemy;
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
-use super::super::{Vec2, drones};
+use super::super::{Vec2, drones, flamethrower};
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
 const GUNS: [Weapon; 3] = [Weapon::Pistol, Weapon::MachineGun, Weapon::Shotgun];
+
+/// The ticks a spark shows where a bullet hit a tree or a rock.
+const SPARK_TICKS: u32 = 4;
 
 impl World {
     /// The Molotov: bottles fly on and burst into puddles; puddles burn on, setting every enemy
@@ -29,6 +32,7 @@ impl World {
                     radius: bottle.radius,
                     left: bottle.lasts,
                     lasts: bottle.lasts,
+                    burst: true,
                 });
             }
             bottle.left > 0
@@ -191,6 +195,7 @@ impl World {
             bullets,
             magazines,
             rng,
+            map,
             ..
         } = self;
         let build = &player.build;
@@ -217,7 +222,10 @@ impl World {
             if dark {
                 continue;
             }
-            let targets = guns::targets(enemies, player.position, gun.bullets, gun.range);
+            // Only those in sight: no shooting through trees and rocks.
+            let targets = guns::targets(enemies, player.position, gun.bullets, gun.range, |at| {
+                in_sight(map, player.position, at)
+            });
             if targets.is_empty() {
                 continue;
             }
@@ -239,9 +247,16 @@ impl World {
     /// many as they can, or flown their range.
     pub(super) fn move_bullets(&mut self) {
         let enemies = &mut self.enemies;
+        let (map, sparks, now) = (&self.map, &mut self.sparks, self.ticks);
         let hunter = self.player.build.horde_bonus();
+        sparks.retain(|&(_, at)| now.saturating_sub(at) < SPARK_TICKS);
         self.bullets.retain_mut(|bullet| {
             if !bullet.advance() {
+                return false;
+            }
+            // A tree or a rock stops it, a spark where it hits.
+            if map.stops_shots(bullet.position.tile()) {
+                sparks.push((bullet.position, now));
                 return false;
             }
             for enemy in enemies.iter_mut() {
@@ -283,8 +298,9 @@ impl World {
             let every = build.cooldown(molotov::at(level).every).max(1);
             waits.push((Weapon::Molotov, self.molotov_wait.min(every), every));
         }
-        if build.weapon_level(Weapon::Drones) > 0 {
-            let repair = build.cooldown(drones::repair()).max(1);
+        let level = build.weapon_level(Weapon::Drones);
+        if level > 0 {
+            let repair = build.cooldown(drones::repair(level)).max(1);
             let left = self.drone_repairs.iter().copied().max().unwrap_or(0);
             waits.push((Weapon::Drones, left.min(repair), repair));
         }
@@ -305,7 +321,25 @@ impl World {
                 let reload = self.player.build.cooldown(gun.reload).max(1);
                 Some((weapon, magazine, gun.magazine, reload))
             })
+            .chain(self.tank())
             .collect()
+    }
+
+    /// The flamethrower's tank as a gun's magazine, if the player has it: its fuel in ticks,
+    /// and its filling as a reload.
+    fn tank(&self) -> Option<(Weapon, Magazine, u32, u32)> {
+        let level = self.player.build.weapon_level(Weapon::Flamethrower);
+        let stats = (level > 0).then(|| flamethrower::at(level))?;
+        let tank = self
+            .magazines
+            .get(&Weapon::Flamethrower)
+            .copied()
+            .unwrap_or(Magazine {
+                rounds: stats.tank,
+                ..Magazine::default()
+            });
+        let refill = self.player.build.cooldown(flamethrower::refill()).max(1);
+        Some((Weapon::Flamethrower, tank, stats.tank, refill))
     }
 
     /// Where the drones are, if the player has them, and whether each is broken.
@@ -321,8 +355,9 @@ impl World {
             .collect()
     }
 
-    /// The drones turn on; each that works hits the first enemy it runs into, pushes it back
-    /// from the player, and breaks. A broken drone repairs with time.
+    /// The drones turn on; each that works shoots at the nearest enemy within its reach, as
+    /// often as it can, but in the dark: nothing to aim at. An enemy touching one takes a blow
+    /// from it and breaks it; a broken drone repairs with time.
     pub(super) fn turn_drones(&mut self) {
         let build = &self.player.build;
         let level = build.weapon_level(Weapon::Drones);
@@ -331,18 +366,21 @@ impl World {
         }
         self.drone_angle =
             (self.drone_angle + drones::turn_per_tick(level)) % std::f32::consts::TAU;
-        let damage = build.damage(drones::damage(level));
+        let gun = drones::gun(level);
+        let damage = build.damage(gun.damage);
         let hunter = build.horde_bonus();
-        let repair = build.cooldown(drones::repair());
-        let player = self.player.position;
+        let interval = build.cooldown(gun.interval).max(1);
+        let repair = build.cooldown(drones::repair(level)).max(1);
+        let dark = self.torch_on().is_some() && !self.torch_lit();
         let drones = self.drones();
         self.drone_repairs.resize(drones.len(), 0);
+        self.drone_waits.resize(drones.len(), 0);
         for (index, (position, broken)) in drones.into_iter().enumerate() {
             if broken {
                 self.drone_repairs[index] -= 1;
                 continue;
             }
-            let hit = self.enemies.iter_mut().find(|enemy| {
+            let touched = self.enemies.iter_mut().find(|enemy| {
                 enemy.hp > 0
                     && touch(
                         position,
@@ -351,20 +389,27 @@ impl World {
                         enemy.kind.stats().half_width,
                     )
             });
-            let Some(enemy) = hit else {
+            // Touched, it strikes the enemy a last time, and breaks.
+            if let Some(enemy) = touched {
+                enemy.hit(against(damage, enemy, hunter));
+                self.drone_repairs[index] = repair;
                 continue;
-            };
-            let stats = enemy.kind.stats();
-            enemy.hit(against(damage, enemy, hunter));
-            let away = (enemy.position - player).normalized() * drones::KNOCKBACK;
-            enemy.position = slide(
-                &self.map,
-                enemy.position,
-                away,
-                stats.half_width,
-                stats.flies,
-            );
-            self.drone_repairs[index] = repair.max(1);
+            }
+            let wait = &mut self.drone_waits[index];
+            *wait = wait.saturating_sub(1);
+            if *wait > 0 || dark {
+                continue;
+            }
+            if let Some(&target) =
+                guns::targets(&self.enemies, position, 1, drones::reach(), |at| {
+                    in_sight(&self.map, position, at)
+                })
+                .first()
+            {
+                self.bullets
+                    .push(Bullet::toward(position, target, &gun, damage));
+                *wait = interval;
+            }
         }
     }
 }

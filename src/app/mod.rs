@@ -522,7 +522,7 @@ impl App {
         // Space or Enter play the action card, as they act everywhere else.
         let action = matches!(code, KeyCode::Char(' ') | KeyCode::Enter);
         if action && self.world.offer.is_none() {
-            self.world.dash();
+            self.world.act();
             return;
         }
         self.choose(code);

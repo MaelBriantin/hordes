@@ -13,7 +13,7 @@ use super::super::gem::Gem;
 use super::super::horde::{self, Tally, Warning};
 use super::super::map::Feature;
 use super::super::mode::Mode;
-use super::super::progress::Achievement;
+use super::super::progress::{Achievement, SWARM_HORDES};
 use super::super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::super::stain::{self, MAX_STAINS, Stain};
 use super::super::weather;
@@ -77,6 +77,10 @@ impl World {
                 tally.left -= 1;
                 if tally.left == 0 {
                     self.progress.reach(Achievement::Hunter);
+                    self.hordes_wiped += 1;
+                    if self.hordes_wiped >= SWARM_HORDES {
+                        self.progress.reach(Achievement::Swarm);
+                    }
                     let bonus = if self.mode == Mode::Arcade {
                         tally.points
                     } else {
@@ -84,6 +88,14 @@ impl World {
                     };
                     self.score += bonus;
                     self.tallies.remove(&number);
+                    // Every horde of a standard run wiped out: none standing, none to come.
+                    if self.mode == Mode::Standard
+                        && self.tallies.is_empty()
+                        && self.horde_warning.is_none()
+                        && self.next_horde >= weather::dawn()
+                    {
+                        self.progress.reach(Achievement::Cleaner);
+                    }
                     let others = !self.tallies.is_empty();
                     self.horde_cleared = Some((self.ticks, bonus, others.then_some(number)));
                     wiped_out += 1;
@@ -151,6 +163,7 @@ impl World {
     /// An abomination bursts at `at`.
     pub(super) fn burst(&mut self, at: Vec2) {
         self.blasts.push(Blast { centre: at, age: 0 });
+        self.blow_barricades(at, burst::REACH);
         for enemy in &mut self.enemies {
             let away = enemy.position - at;
             if away.length() > burst::REACH {

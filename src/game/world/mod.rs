@@ -4,6 +4,7 @@ use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
 
 use super::announce::{Announcement, News, WeatherNews};
+use super::barricade::Barricade;
 use super::body::{slide, touch};
 use super::build::{
     BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
@@ -20,14 +21,16 @@ use super::machete::Swing;
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
-use super::progress::{Achievement, CARNAGE_KILLS, Progress};
+use super::progress::{Achievement, CARNAGE_KILLS, Progress, UNTOUCHABLE_SECONDS};
 use super::score;
 use super::stain::Stain;
 use super::weather::{self, Weather};
 use super::{Facing, Map, TICKS_PER_SECOND, Vec2, tick_seconds};
 
+mod barricades;
 mod debug;
 mod enemies;
+mod flames;
 mod storm;
 mod weapons;
 
@@ -146,11 +149,14 @@ pub struct World {
     /// The number the next enemy to appear gets.
     next_enemy_id: u32,
     pub bullets: Vec<Bullet>,
+    /// Where bullets lately hit a tree or a rock, and when: a spark shows there a moment.
+    pub sparks: Vec<(Vec2, u32)>,
     pub gems: Vec<Gem>,
     /// Where blood was spilt lately, oldest first.
     pub stains: Vec<Stain>,
-    /// The enemies the player has felled.
+    /// The enemies the player has felled, and the hordes wiped out to the last.
     pub kills: u32,
+    hordes_wiped: u32,
     pub score: u64,
     /// The kills in a row, each within the combo's window of the one before; 0 once it closes.
     pub combo: u32,
@@ -166,11 +172,24 @@ pub struct World {
     drone_angle: f32,
     /// Ticks left before each drone, broken by a blow, works again; 0 for one that works.
     drone_repairs: Vec<u32>,
+    /// Ticks left before each drone shoots again.
+    drone_waits: Vec<u32>,
     /// The Molotov's bottles in the air, its puddles of fire on the ground, and the ticks before
     /// its next throw.
     pub bottles: Vec<Bottle>,
     pub puddles: Vec<Puddle>,
     molotov_wait: u32,
+    /// Whether the flamethrower burns this tick; the ticks it has burnt, for its bursts of
+    /// damage; and where its trail left its last fire.
+    pub flaming: bool,
+    flame_ticks: u32,
+    trail_from: Vec2,
+    /// The barricades standing, oldest first, and the ticks before the next can be set down.
+    pub barricades: Vec<Barricade>,
+    pub barricade_wait: u32,
+    /// The last barricade that couldn't be set down, the ground taken, and when: it shows a
+    /// moment where it would have stood.
+    pub barricade_refused: Option<(Barricade, u32)>,
     /// The abominations felled, swelling before they burst; and their bursts, as they show.
     pub swellings: Vec<Swelling>,
     pub blasts: Vec<Blast>,
@@ -295,9 +314,11 @@ impl World {
             enemies: Vec::new(),
             next_enemy_id: 0,
             bullets: Vec::new(),
+            sparks: Vec::new(),
             gems: Vec::new(),
             stains: Vec::new(),
             kills: 0,
+            hordes_wiped: 0,
             score: 0,
             combo: 0,
             last_kill: 0,
@@ -306,6 +327,7 @@ impl World {
             magazines: HashMap::new(),
             drone_angle: 0.0,
             drone_repairs: Vec::new(),
+            drone_waits: Vec::new(),
             lightning: None,
             strikes_coming: Vec::new(),
             bottles: Vec::new(),
@@ -313,6 +335,12 @@ impl World {
             swellings: Vec::new(),
             blasts: Vec::new(),
             molotov_wait: 0,
+            flaming: false,
+            flame_ticks: 0,
+            trail_from: start,
+            barricades: Vec::new(),
+            barricade_wait: 0,
+            barricade_refused: None,
             horde_warning: None,
             next_horde: horde::first(Mode::Standard),
             hordes_come: 0,
@@ -569,6 +597,7 @@ impl World {
         self.spawn();
         self.hordes();
         self.move_enemies();
+        self.batter_barricades();
         for enemy in &mut self.enemies {
             enemy.scorch();
         }
@@ -577,6 +606,7 @@ impl World {
         self.storm();
         self.swing_melee();
         self.throw_molotovs();
+        self.throw_flames();
         self.fire_guns();
         self.move_bullets();
         self.turn_drones();
@@ -610,6 +640,15 @@ impl World {
         }
         if matches!(weather, Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Storm);
+        }
+        // Untouched since the night fell, or since the last hit after it.
+        let second = u32::from(TICKS_PER_SECOND);
+        let since = self
+            .hurt_at
+            .unwrap_or(0)
+            .max(weather::DUSK_SECONDS * second);
+        if self.ticks >= since + UNTOUCHABLE_SECONDS * second {
+            self.progress.reach(Achievement::Untouchable);
         }
         self.progress.count();
     }

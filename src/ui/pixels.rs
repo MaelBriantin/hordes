@@ -13,7 +13,8 @@ use super::ViewState;
 use super::night;
 use super::sprites::{self, Look, SpriteId, Sprites};
 use crate::game::{
-    Bullet, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2, Weapon, World,
+    Barricade, Bullet, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2,
+    Weapon, World,
 };
 use gear::{draw_gear_levels, draw_gear_list, gear_slots, list_size};
 
@@ -25,6 +26,8 @@ fn gem_glow(value: u32) -> (u8, u8, u8) {
         _ => (245, 190, 60),
     }
 }
+/// A spark where a bullet hits a tree or a rock: bright, then fading.
+const SPARK: (Color, Color) = (Color::Rgb(255, 240, 180), Color::Rgb(200, 150, 70));
 /// Pixels per tile, each way.
 const TILE_PIXELS: i32 = 2;
 
@@ -115,6 +118,9 @@ const TRACER: [Color; 3] = [
 ];
 /// The colour of a broken drone, repairing.
 const BROKEN: Color = Color::Rgb(75, 75, 82);
+/// A barricade that can't be set down, blinking every so many ticks.
+const REFUSED: Color = Color::Rgb(220, 50, 50);
+const REFUSED_BLINK: u32 = 3;
 /// The colour of a machete's swing, then as it fades.
 const SLASH: Color = Color::Rgb(235, 235, 245);
 const SLASH_FADING: Color = Color::Rgb(130, 130, 145);
@@ -259,17 +265,24 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// Where a bullet hit a tree or a rock: a spark, a cross at first, then a point, fading.
+    fn paint_sparks(&mut self, world: &World) {
+        for &(at, tick) in &world.sparks {
+            let age = world.ticks().saturating_sub(tick);
+            let (x, y) = pixel(at);
+            let colour = if age < 2 { SPARK.0 } else { SPARK.1 };
+            self.set((x, y), colour);
+            if age < 2 {
+                for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    self.set((x + dx, y + dy), colour);
+                }
+            }
+        }
+    }
+
     /// A sprite centred on a point of the map.
     fn paint_at(&mut self, look: Look, position: Vec2) {
-        let centre = pixel(position);
-        let sprite = self.sprites.get(look.sprite);
-        self.paint(
-            look,
-            (
-                centre.0 - sprite.width() / 2,
-                centre.1 - sprite.height() / 2,
-            ),
-        );
+        self.paint(look, self.corner_of(look, position));
     }
 
     /// The bare ground under everything: grass, speckled with earth.
@@ -311,6 +324,64 @@ impl<'a> Canvas<'a> {
                 }
             }
         }
+    }
+
+    /// The barricades standing as figures, each with how low it stands; white a moment once
+    /// hit.
+    fn barricade_figures(&self, world: &World) -> Vec<(f32, Look, (i32, i32))> {
+        world
+            .barricades
+            .iter()
+            .map(|barricade| {
+                let (sprite, corner) = self.barricade_placed(barricade);
+                let look = Look {
+                    tint: (barricade.flash > 0).then_some(sprites::FLASH),
+                    ..Look::plain(sprite)
+                };
+                (barricade.centre().y, look, corner)
+            })
+            .collect()
+    }
+
+    /// A barricade's sprite, and its top left pixel: its crates on the bottom of the tiles it
+    /// covers, a file's one pixel past them on the right.
+    fn barricade_placed(&self, barricade: &Barricade) -> (SpriteId, (i32, i32)) {
+        let sprite = match (barricade.file(), barricade.metal) {
+            (false, false) => SpriteId::Barricade,
+            (false, true) => SpriteId::BarricadeMetal,
+            (true, false) => SpriteId::BarricadeFile,
+            (true, true) => SpriteId::BarricadeFileMetal,
+        };
+        let (x, y) = barricade.corner;
+        let bottom = (y + barricade.size().1) * TILE_PIXELS;
+        let height = self.sprites.get(sprite).height();
+        (sprite, (x * TILE_PIXELS, bottom - height))
+    }
+
+    /// A barricade that couldn't be set down, the ground taken: in red where it would have
+    /// stood, blinking, over everything.
+    fn paint_refused(&mut self, world: &World) {
+        let Some((barricade, at)) = world.barricade_refused else {
+            return;
+        };
+        if (world.ticks().saturating_sub(at) / REFUSED_BLINK).is_multiple_of(2) {
+            let (sprite, corner) = self.barricade_placed(&barricade);
+            let look = Look {
+                tint: Some(REFUSED),
+                ..Look::plain(sprite)
+            };
+            self.paint(look, corner);
+        }
+    }
+
+    /// Where a sprite centred on `position` has its top left pixel.
+    fn corner_of(&self, look: Look, position: Vec2) -> (i32, i32) {
+        let centre = pixel(position);
+        let sprite = self.sprites.get(look.sprite);
+        (
+            centre.0 - sprite.width() / 2,
+            centre.1 - sprite.height() / 2,
+        )
     }
 
     /// Each cell as a half block: its top pixel in the foreground of `▀`, its bottom one in the
@@ -391,12 +462,14 @@ pub fn render_map(
         canvas.paint_heal(centre, world.ticks().saturating_sub(healed_at));
     }
     canvas.paint_shadow_eyes(world);
+    canvas.paint_refused(world);
     // With Horde Hunter from its level 3, the hordes' veiled show in the dark too.
     if world.player.build.horde_veil_in_dark() {
         canvas.paint_veils(world);
     }
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
+    canvas.paint_flamethrower(world, frame);
     // Each gem on screen glows its colour around it, then shows over its glow.
     night::paint_glows(&mut canvas, &glows);
     for gem in &world.gems {
@@ -408,6 +481,7 @@ pub fn render_map(
     for bullet in &world.bullets {
         canvas.paint_bullet(bullet);
     }
+    canvas.paint_sparks(world);
     let weather = world.weather();
     if let Some(rain) = night::run_rain(
         weather,

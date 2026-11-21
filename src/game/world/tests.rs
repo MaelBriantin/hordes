@@ -1,10 +1,12 @@
 use super::super::Obstacle;
 use super::super::announce::{News, WeatherNews};
+use super::super::barricade;
 use super::super::body::fits;
 use super::super::build::{Action, BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::burst;
 use super::super::enemy::EnemyKind;
 use super::super::gem::Gem;
+use super::super::guns::{self, Bullet};
 use super::super::mode::Mode;
 use super::super::progress::{Achievement, Progress};
 use super::super::spawn::{MARGIN, MAX_ENEMIES};
@@ -12,6 +14,7 @@ use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::super::drones;
+use super::super::flamethrower;
 use super::super::heal::{CAMPFIRE_HP, HERB_HP};
 use super::super::horde::Warning;
 use super::super::map::Feature;
@@ -240,6 +243,48 @@ fn a_rock_stops_a_zombie_but_not_a_shadow() {
     let (zombie, shadow) = (&world.enemies[0], &world.enemies[1]);
     assert!(zombie.position.x >= 22.0 + 0.45 - 1e-3, "{zombie:?}");
     assert!(shadow.position.x < 20.0, "{shadow:?}");
+}
+
+#[test]
+fn a_gun_holds_its_fire_at_an_enemy_behind_a_rock_and_shoots_once_it_shows() {
+    let mut world = by_a_rock(Vec2::new(17.0, 11.0));
+    disarm(&mut world);
+    world.player.build.take(Choice::Weapon(Weapon::Pistol));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(24.0, 11.0)));
+    world.enemies[0].stunned = 1_000;
+    wait(&mut world, 10);
+    assert_eq!(world.bullets, [], "behind the rock");
+    world.enemies[0].position = Vec2::new(24.0, 16.0);
+    wait(&mut world, 10);
+    assert!(
+        !world.bullets.is_empty() || world.enemies[0].hp < 40,
+        "in sight"
+    );
+}
+
+#[test]
+fn a_rock_stops_a_bullet_a_spark_where_it_hits() {
+    let mut world = by_a_rock(Vec2::new(17.0, 11.0));
+    disarm(&mut world);
+    let gun = guns::gun(Weapon::Pistol, 1).expect("a gun");
+    world.bullets.push(Bullet::toward(
+        Vec2::new(18.0, 11.0),
+        Vec2::new(30.0, 11.0),
+        &gun,
+        10,
+    ));
+    // Until it stops: its spark there just then.
+    for _ in 0..10 {
+        if world.bullets.is_empty() {
+            break;
+        }
+        wait(&mut world, 1);
+    }
+    assert_eq!(world.bullets, []);
+    assert_eq!(world.sparks.len(), 1);
+    assert!((world.sparks[0].0.x - 20.0).abs() < 1.0);
 }
 
 #[test]
@@ -636,33 +681,36 @@ fn a_piercing_bullet_goes_through_one_enemy() {
 }
 
 #[test]
-fn a_drone_hits_an_enemy_on_its_circle_and_pushes_it_back() {
+fn drones_shoot_at_the_enemies_within_their_reach_again_and_again() {
     let mut world = armed_with(Weapon::Drones, 1);
-    let next = drones::positions(world.player.position, 1, drones::turn_per_tick(1))[0];
-    world.enemies.push(enemy(EnemyKind::Abomination, next));
-    let before = (world.enemies[0].position - world.player.position).length();
-    wait(&mut world, 1);
-    let enemy = &world.enemies[0];
-    assert_eq!(enemy.hp, 40 - 8);
-    let after = (enemy.position - world.player.position).length();
-    assert!(after > before, "{before} then {after}");
+    // Out of the drones' way, standing still: within their reach, never touching them.
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(107.0, 50.0)));
+    world.enemies[0].hp = 1_000;
+    world.enemies[0].stunned = 1_000;
+    wait(&mut world, 30);
+    let hp = world.enemies[0].hp;
+    assert!(hp < 1_000, "hit");
+    wait(&mut world, 30);
+    assert!(world.enemies[0].hp < hp, "hit again");
 }
 
 #[test]
-fn a_drone_breaks_on_its_blow_and_repairs_in_two_seconds() {
+fn a_drone_touched_by_an_enemy_breaks_and_repairs_in_three_seconds() {
     let mut world = armed_with(Weapon::Drones, 1);
     let next = drones::positions(world.player.position, 1, drones::turn_per_tick(1))[0];
     world.enemies.push(enemy(EnemyKind::Abomination, next));
     world.enemies[0].hp = 1_000;
+    world.enemies[0].stunned = 1_000;
     wait(&mut world, 1);
-    assert_eq!(world.enemies[0].hp, 1_000 - 8);
     assert!(world.drones()[0].1, "broken");
-    // Broken, it passes through the enemy, harmless.
-    for _ in 0..60 {
-        world.enemies[0].position = world.drones()[0].0;
-        wait(&mut world, 1);
-    }
-    assert_eq!(world.enemies[0].hp, 1_000 - 8);
+    assert_eq!(world.enemies[0].hp, 1_000 - 4, "struck a last time");
+    // Out of the way, the drone repairs.
+    world.enemies[0].position = Vec2::new(150.0, 50.0);
+    wait(&mut world, 89);
+    assert!(world.drones()[0].1, "still broken");
+    wait(&mut world, 1);
     assert!(!world.drones()[0].1, "repaired");
 }
 
@@ -998,6 +1046,17 @@ fn a_horde_wiped_out_is_the_hunters_achievement() {
     wipe_out_a_horde(&mut world);
     assert!(world.progress.achieved.contains(&Achievement::Hunter));
     assert!(world.progress.deals(Choice::Passive(Passive::HordeHunter)));
+}
+
+#[test]
+fn two_hordes_wiped_out_in_a_run_unlock_the_drones() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    wipe_out_a_horde(&mut world);
+    assert!(!world.progress.deals(Choice::Weapon(Weapon::Drones)));
+    wipe_out_a_horde(&mut world);
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Drones)));
 }
 
 #[test]
@@ -1667,4 +1726,265 @@ fn the_crowbar_pushes_back_what_it_hits() {
     wait(&mut world, 1);
     assert_eq!(world.enemies[0].hp, 1_000 - 18);
     assert!(world.enemies[0].position.x > 102.5);
+}
+
+/// A run with the Barricade card at `level`, the player at (100.5, 50.5) facing right, unarmed.
+fn barricading(level: u8) -> World {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    for _ in 0..level {
+        world.player.build.take(Choice::Action(Action::Barricade));
+    }
+    world
+}
+
+#[test]
+fn a_barricade_set_down_ahead_stops_a_zombie_which_batters_it_until_it_breaks() {
+    let mut world = barricading(1);
+    world.act();
+    assert_eq!(world.barricades.len(), 1);
+    let left = world.barricades[0].corner.0;
+    assert_eq!(world.barricades[0].corner, (102, 49));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 51.0)));
+    wait(&mut world, 30 * 3);
+    let zombie = world.enemies[0].position.x;
+    assert!(
+        zombie > f32::from(u8::try_from(left).unwrap()) + 2.0,
+        "stopped at {zombie}"
+    );
+    assert_eq!(world.player.hp, BASE_HP);
+    assert!(world.barricades[0].hp < 80, "battered");
+    // 80 HP, 5 a second: broken in 16 seconds, the ground free again.
+    wait(&mut world, 30 * 16);
+    assert_eq!(world.barricades, Vec::new());
+    assert!(!world.map.blocks((102, 50)));
+}
+
+#[test]
+fn a_shadow_flies_over_a_barricade_and_the_shots_go_over_it() {
+    let mut world = barricading(1);
+    world.act();
+    let corner = world.barricades[0].corner;
+    assert!(super::super::body::in_sight(
+        &world.map,
+        world.player.position,
+        Vec2::new(110.0, 51.0)
+    ));
+    assert!(world.map.blocks(corner));
+    assert!(!world.map.stops_shots(corner));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(104.0, 51.0)));
+    wait(&mut world, 30);
+    assert!(world.enemies[0].position.x < 104.0, "went on");
+    assert_eq!(world.barricades[0].hp, 80, "flew over, never touching it");
+}
+
+#[test]
+fn barricades_come_back_in_their_time_the_oldest_taken_away_past_the_most() {
+    let mut world = barricading(1);
+    world.act();
+    world.act();
+    assert_eq!(world.barricades.len(), 1, "the next not ready yet");
+    let first = world.barricades[0].corner;
+    for _ in 0..2 {
+        world.player.position.y -= 5.0;
+        wait(&mut world, 30 * 8);
+        world.act();
+    }
+    assert_eq!(world.barricades.len(), 2);
+    assert!(
+        world
+            .barricades
+            .iter()
+            .all(|barricade| barricade.corner != first)
+    );
+    assert!(!world.map.blocks(first));
+}
+
+#[test]
+fn a_barricade_is_not_set_down_on_a_rock() {
+    let mut world = by_a_rock(Vec2::new(19.0, 10.5));
+    disarm(&mut world);
+    world.player.facing = Facing::Right;
+    world.player.build.take(Choice::Action(Action::Barricade));
+    world.act();
+    assert_eq!(world.barricades, Vec::new());
+    assert_eq!(world.barricade_wait, 0, "still ready");
+    assert!(world.barricade_refused.is_some(), "shown refused");
+    wait(&mut world, barricade::REFUSED_TICKS);
+    assert_eq!(world.barricade_refused, None);
+}
+
+#[test]
+fn an_abomination_s_burst_blows_a_barricade_away() {
+    let mut world = barricading(1);
+    world.act();
+    let centre = world.barricades[0].centre();
+    world.burst(centre + Vec2::new(1.5, 0.0));
+    assert_eq!(world.barricades, Vec::new());
+}
+
+#[test]
+fn at_level_5_the_barricade_is_of_metal_neither_battered_nor_blown_away() {
+    let mut world = barricading(5);
+    world.act();
+    assert!(world.barricades[0].metal);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(107.0, 51.0)));
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 30 * 5);
+    assert_eq!(world.barricades[0].hp, 180, "battered for nothing");
+    let centre = world.barricades[0].centre();
+    world.burst(centre + Vec2::new(1.5, 0.0));
+    assert_eq!(world.barricades.len(), 1, "still standing");
+}
+
+#[test]
+fn two_minutes_untouched_after_nightfall_unlock_the_barricade() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.progress = Progress::default();
+    world.weather_news = WeatherNews::Banner;
+    // Untouched all through the dusk: nothing yet.
+    wait(&mut world, 30 * 120);
+    assert!(!world.progress.achieved.contains(&Achievement::Untouchable));
+    world.hurt_at = Some(world.ticks);
+    wait(&mut world, 30 * 120 - 1);
+    assert!(!world.progress.achieved.contains(&Achievement::Untouchable));
+    wait(&mut world, 1);
+    assert!(world.progress.achieved.contains(&Achievement::Untouchable));
+    assert!(world.progress.deals(Choice::Action(Action::Barricade)));
+}
+
+/// The flamethrower at `level`, the player at (100.5, 50.5) facing right, enough enemies ahead
+/// to light it, stunned and tough, and one behind, the last.
+fn flaming(level: u8) -> World {
+    let mut world = armed_with(Weapon::Flamethrower, level);
+    world.next_horde = u32::MAX;
+    world.player.position = Vec2::new(100.5, 50.5);
+    world.player.facing = Facing::Right;
+    for (x, y) in [(102.5, 50.5), (102.5, 50.0), (102.5, 51.0), (98.5, 50.5)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    world
+}
+
+#[test]
+fn the_flamethrower_burns_the_enemies_ahead_and_sets_them_on_fire_not_those_behind() {
+    let mut world = flaming(1);
+    wait(&mut world, 1);
+    assert!(world.flaming);
+    assert_eq!(world.enemies[0].hp, 1_000 - 2);
+    assert!(world.enemies[0].burning > 0);
+    assert_eq!((world.enemies[3].hp, world.enemies[3].burning), (1_000, 0));
+    // Again a few ticks on.
+    wait(&mut world, flamethrower::BURN_EVERY);
+    assert_eq!(world.enemies[0].hp, 1_000 - 4);
+}
+
+#[test]
+fn the_flamethrower_s_tank_empties_in_three_seconds_and_fills_again_in_two() {
+    let mut world = flaming(1);
+    wait(&mut world, 30 * 3);
+    let tank = world.magazines[&Weapon::Flamethrower];
+    assert_eq!(tank.rounds, 0);
+    assert!(tank.reloading > 0);
+    wait(&mut world, 1);
+    assert!(!world.flaming, "empty");
+    wait(&mut world, 30 * 2);
+    assert!(world.flaming, "full again");
+}
+
+#[test]
+fn the_flamethrower_burns_nothing_behind_a_rock() {
+    let mut world = by_a_rock(Vec2::new(18.5, 11.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    for _ in 0..2 {
+        world
+            .player
+            .build
+            .take(Choice::Weapon(Weapon::Flamethrower));
+    }
+    world.player.facing = Facing::Right;
+    for y in [10.6, 11.0, 11.4] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(22.4, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.stunned = u32::MAX;
+    }
+    let hp = world.enemies[0].hp;
+    wait(&mut world, 1);
+    assert!(!world.flaming);
+    assert_eq!(world.enemies[0].hp, hp);
+}
+
+#[test]
+fn lit_by_one_enemy_the_flamethrower_burns_its_whole_tank() {
+    let mut world = flaming(1);
+    world.enemies.truncate(1);
+    wait(&mut world, 1);
+    assert!(world.flaming, "lit by one");
+    world.enemies.clear();
+    wait(&mut world, 30 * 3 - 2);
+    assert!(world.flaming, "on, the tank not yet empty");
+    wait(&mut world, 1);
+    assert_eq!(world.magazines[&Weapon::Flamethrower].rounds, 0);
+    wait(&mut world, 1);
+    assert!(!world.flaming, "out, filling again");
+}
+
+#[test]
+fn the_flamethrower_burns_in_the_dark_too() {
+    let mut world = flaming(1);
+    world.ticks = 30 * 40;
+    world.torch_switch = false;
+    assert_eq!(world.torch_on(), Some(false));
+    wait(&mut world, 1);
+    assert!(world.flaming);
+}
+
+#[test]
+fn at_level_5_the_flamethrower_s_tank_leaks_a_trail_of_fires() {
+    let mut world = flaming(5);
+    world.enemies.clear();
+    for _ in 0..15 {
+        world.spawn_debt = 0.0;
+        world.update(moving(1.0, 0.0));
+    }
+    assert!(world.puddles.len() >= 3, "{} fires", world.puddles.len());
+    assert!(world.puddles.iter().all(|puddle| !puddle.burst));
+    assert!(world.puddles.iter().all(|puddle| puddle.centre.x > 100.0));
+}
+
+#[test]
+fn every_horde_of_a_run_wiped_out_unlocks_the_flamethrower() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.progress = Progress::default();
+    world.next_horde = weather::dawn() - 1;
+    wipe_out_a_horde(&mut world);
+    assert!(
+        !world.progress.deals(Choice::Weapon(Weapon::Flamethrower)),
+        "one still to come"
+    );
+    // The last of the run, none after it before the dawn.
+    world.next_horde = weather::dawn() + 1;
+    wipe_out_a_horde(&mut world);
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Flamethrower)));
 }

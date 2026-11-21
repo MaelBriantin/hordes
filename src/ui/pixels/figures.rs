@@ -188,7 +188,8 @@ impl Canvas<'_> {
         }
     }
 
-    /// The player and the enemies, the lowest on the map last: in front of those above them.
+    /// The player, the enemies and the barricades, the lowest on the map last: in front of those
+    /// above them.
     /// While lightning is about to strike, which pixels they cover, for its ring to show on the
     /// ground under them; none otherwise.
     pub(super) fn paint_figures(&mut self, world: &World, skin: Skin) -> Vec<bool> {
@@ -215,7 +216,12 @@ impl Canvas<'_> {
         if player.dash.is_some() || !blinks_out {
             figures.push((player.position, sprites::hero(player.facing, skin)));
         }
-        figures.sort_by(|a, b| a.0.y.total_cmp(&b.0.y));
+        let mut figures: Vec<(f32, Look, (i32, i32))> = figures
+            .into_iter()
+            .map(|(position, look)| (position.y, look, self.corner_of(look, position)))
+            .chain(self.barricade_figures(world))
+            .collect();
+        figures.sort_by(|a, b| a.0.total_cmp(&b.0));
         // Dashing, the player leaves fading silhouettes of themselves behind.
         if let Some(dash) = player.dash {
             let look = sprites::hero(player.facing, skin);
@@ -231,8 +237,8 @@ impl Canvas<'_> {
             }
         }
         let ground = (!world.strikes_coming.is_empty()).then(|| self.pixels.clone());
-        for (position, look) in figures {
-            self.paint_at(look, position);
+        for (_, look, corner) in figures {
+            self.paint(look, corner);
         }
         // The hordes' veiled, under the night but in the dark: as far as the light shows.
         if !world.player.build.horde_veil_in_dark() {

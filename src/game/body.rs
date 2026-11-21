@@ -46,6 +46,28 @@ pub fn fits(map: &Map, centre: Vec2, half: f32, flies: bool) -> bool {
     (top..=bottom).all(|y| (left..=right).all(|x| !map.blocks((x, y))))
 }
 
+/// How far apart the points looked at along a line of sight are, in tiles: well under a tile,
+/// so no obstacle's corner slips between two.
+const SIGHT_STEP: f32 = 0.25;
+
+/// Whether `to` is in sight from `from`: no obstacle on the line between them, `to`'s own tile
+/// included (a Shadow over a rock is out of sight). A barricade hides nothing.
+pub fn in_sight(map: &Map, from: Vec2, to: Vec2) -> bool {
+    let along = to - from;
+    let length = along.length();
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a gun's range, a few dozen steps"
+    )]
+    let steps = (length / SIGHT_STEP).ceil() as u32;
+    (1..=steps).all(|step| {
+        let share = f32::from(u16::try_from(step).unwrap_or(u16::MAX))
+            / f32::from(u16::try_from(steps).unwrap_or(1));
+        !map.stops_shots((from + along * share).tile())
+    })
+}
+
 /// Whether two square bodies overlap.
 pub fn touch(a: Vec2, a_half: f32, b: Vec2, b_half: f32) -> bool {
     let reach = a_half + b_half;

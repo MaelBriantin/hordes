@@ -2,6 +2,7 @@
 //! at a time with what the player holds down, and the ui draws what it holds.
 
 mod announce;
+mod barricade;
 mod body;
 mod build;
 mod burst;
@@ -9,6 +10,7 @@ mod dash;
 mod drones;
 mod enemy;
 mod facing;
+mod flamethrower;
 mod gem;
 mod guns;
 mod heal;
@@ -28,6 +30,7 @@ mod weather;
 mod world;
 
 pub use announce::{News, WeatherNews};
+pub use barricade::{Barricade, recharge as barricade_recharge};
 pub use build::{
     Action, Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon,
 };

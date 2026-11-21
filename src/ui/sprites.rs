@@ -42,6 +42,10 @@ pub enum SpriteId {
     GemGold,
     Tree,
     Rock,
+    Barricade,
+    BarricadeMetal,
+    BarricadeFile,
+    BarricadeFileMetal,
     Grass,
     Pebble,
     Herb,
@@ -66,6 +70,8 @@ pub enum SpriteId {
     IconRegeneration,
     IconGlare,
     IconDash,
+    IconFlamethrower,
+    IconBarricade,
     IconIllumination,
     IconHeal,
     IconReroll,
@@ -78,7 +84,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 54] = [
+    const ALL: [SpriteId; 60] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -100,6 +106,10 @@ impl SpriteId {
         SpriteId::GemGold,
         SpriteId::Tree,
         SpriteId::Rock,
+        SpriteId::Barricade,
+        SpriteId::BarricadeMetal,
+        SpriteId::BarricadeFile,
+        SpriteId::BarricadeFileMetal,
         SpriteId::Grass,
         SpriteId::Pebble,
         SpriteId::Herb,
@@ -124,6 +134,8 @@ impl SpriteId {
         SpriteId::IconRegeneration,
         SpriteId::IconGlare,
         SpriteId::IconDash,
+        SpriteId::IconFlamethrower,
+        SpriteId::IconBarricade,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
         SpriteId::IconReroll,
@@ -158,6 +170,10 @@ impl SpriteId {
             SpriteId::GemGold => "gem_gold",
             SpriteId::Tree => "tree",
             SpriteId::Rock => "rock",
+            SpriteId::Barricade => "barricade",
+            SpriteId::BarricadeMetal => "barricade_metal",
+            SpriteId::BarricadeFile => "barricade_file",
+            SpriteId::BarricadeFileMetal => "barricade_file_metal",
             SpriteId::Grass => "grass",
             SpriteId::Pebble => "pebble",
             SpriteId::Herb => "herb",
@@ -182,6 +198,8 @@ impl SpriteId {
             SpriteId::IconRegeneration => "icon_regeneration",
             SpriteId::IconGlare => "icon_glare",
             SpriteId::IconDash => "icon_dash",
+            SpriteId::IconFlamethrower => "icon_flamethrower",
+            SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
             SpriteId::IconReroll => "icon_reroll",
@@ -306,7 +324,7 @@ pub fn gem(value: u32) -> SpriteId {
 }
 
 /// The colour of an enemy just hit.
-const FLASH: Color = Color::Rgb(255, 255, 255);
+pub const FLASH: Color = Color::Rgb(255, 255, 255);
 
 /// The ticks a swelling abomination blinks slowly, before it blinks fast.
 const SWELL_SLOW_TICKS: u32 = 10;

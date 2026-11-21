@@ -1,0 +1,109 @@
+//! The flamethrower: a cone of fire ahead of the player, the way they face, lit by an enemy in
+//! it and burning its whole tank once lit; every enemy in the cone burns. Empty, the tank fills
+//! again. At the last level, the tank leaks: a trail of small fires behind the player.
+
+use super::{TICKS_PER_SECOND, Vec2};
+
+/// Half the cone's opening, in degrees: 60° in all.
+const HALF_ANGLE_DEGREES: f32 = 30.0;
+/// How close to the nozzle an enemy is in the cone whatever its angle, in tiles: at its foot.
+const MOUTH: f32 = 0.8;
+/// The ticks between two bursts of damage to the enemies in the cone.
+pub const BURN_EVERY: u32 = 8;
+/// How far ahead of the player's middle its nozzle is, in tiles: its fire starts there.
+pub const NOZZLE: f32 = 0.9;
+/// The seconds an empty tank takes to fill again, before Haste.
+const REFILL_SECONDS: u32 = 2;
+/// At the last level, how far the player goes between two fires of the trail, in tiles; how far
+/// each spreads, in tiles; and how many seconds it burns.
+pub const TRAIL_STEP: f32 = 0.8;
+pub const TRAIL_RADIUS: f32 = 0.6;
+const TRAIL_SECONDS: u32 = 2;
+
+/// The flamethrower at a level.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Flamethrower {
+    /// How far the cone reaches, in tiles.
+    pub range: f32,
+    /// What each burst of damage does to each enemy in the cone, before Might.
+    pub damage: u32,
+    /// The ticks of fire a full tank holds.
+    pub tank: u32,
+    /// Whether the tank leaks, a trail of fires behind the player.
+    pub leaks: bool,
+}
+
+/// The flamethrower at a level.
+pub fn at(level: u8) -> Flamethrower {
+    let second = u32::from(TICKS_PER_SECOND);
+    Flamethrower {
+        range: if level >= 2 { 4.0 } else { 3.0 },
+        damage: if level >= 3 { 3 } else { 2 },
+        tank: if level >= 4 { 5 } else { 3 } * second,
+        leaks: level >= 5,
+    }
+}
+
+/// The ticks an empty tank takes to fill again, before Haste.
+pub fn refill() -> u32 {
+    REFILL_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// The ticks a fire of the trail burns.
+pub fn trail_lasts() -> u32 {
+    TRAIL_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// Whether a body (half as wide as `half`) centred on `at` is in the cone from `from` the way
+/// `way` goes (length 1), `range` long.
+pub fn in_cone(from: Vec2, way: Vec2, range: f32, at: Vec2, half: f32) -> bool {
+    let to = at - from;
+    let distance = to.length();
+    if distance > range + half {
+        return false;
+    }
+    if distance <= MOUTH {
+        return true;
+    }
+    let along = to.x * way.x + to.y * way.y;
+    // Its edge, not its middle, has to be within the opening.
+    let widened =
+        (HALF_ANGLE_DEGREES.to_radians() + (half / distance).atan()).min(89_f32.to_radians());
+    along > 0.0 && along >= distance * widened.cos()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cone_reaches_ahead_within_its_opening_not_behind_nor_beyond() {
+        let (from, way) = (Vec2::new(0.0, 0.0), Vec2::new(1.0, 0.0));
+        assert!(in_cone(from, way, 3.0, Vec2::new(2.5, 0.0), 0.45));
+        assert!(in_cone(from, way, 3.0, Vec2::new(2.0, 1.0), 0.45));
+        assert!(
+            !in_cone(from, way, 3.0, Vec2::new(1.0, 2.5), 0.45),
+            "outside the opening"
+        );
+        assert!(
+            !in_cone(from, way, 3.0, Vec2::new(-2.0, 0.0), 0.45),
+            "behind"
+        );
+        assert!(
+            !in_cone(from, way, 3.0, Vec2::new(4.0, 0.0), 0.45),
+            "beyond"
+        );
+        assert!(
+            in_cone(from, way, 3.0, Vec2::new(0.0, 0.6), 0.45),
+            "at its foot"
+        );
+    }
+
+    #[test]
+    fn the_flamethrower_grows_with_its_levels() {
+        let (first, last) = (at(1), at(5));
+        assert_eq!((first.range, first.damage, first.tank), (3.0, 2, 90));
+        assert_eq!((last.range, last.damage, last.tank), (4.0, 3, 150));
+        assert!(last.leaks && !first.leaks);
+    }
+}

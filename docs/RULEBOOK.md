@@ -7,7 +7,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
 - **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in the clear night's grey, as its word is told, or **Arcade** in gold, a gleam sweeping across it now and then. At the bottom left, the key and the other mode it changes to.
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
-- **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes.
+- **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
 - **Dash**: Shift, the way the player faces, once the Dash card is taken and a dash is ready (see The player). Without kitty's keyboard protocol, a terminal doesn't tell Shift alone: Shift with a way (a capital W, A, S, D, Z or Q) dashes.
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
@@ -81,7 +81,7 @@ In arcade, every run is played for its score.
 - Then runs take place at night. Everything is dimmer and bluer.
 - The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
 - **No battery**: the torch stays lit as long as the player wants, and lights again whenever they want. The status line shows the torch, on or out, as a bulb: green while it is on, grey-blue while it is out. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (10% of their brightness).
-- **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **8**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the machete and the drones still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
+- **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **8**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the crowbar and the machete still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
 - **Shadows** go the other way round, at night: they hunt the player in the dark, wherever they are, their eyes shining red, faster the longer they hunt (up to **50%** faster after 5 s; back to their speed once lit). The torch lit, they keep away from it: caught in its light, a Shadow **bolts** out of it, 2.5 times its speed for a third of a second.
 - **Gems, bullets and the machete's swings glow**: they show in the dark. A gem casts a small glow of its colour on the ground around it, two tiles or so, and lights what passes by it, an enemy, out of the dark.
 - **What burns casts a halo**: orange, flickering, on the ground around it: a puddle of fire, a campfire, an enemy burning. A bottle bursts in a flash of fire, lighting **6 tiles** around and fading in a quarter of a second. Where halos meet, the strongest shows, not their sum.
@@ -155,6 +155,8 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 
 They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **crowbar**; the others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
 
+**Obstacles and shots**: the guns and the drones aim only at enemies in sight, no tree nor rock between (a Shadow over a rock is out of sight); a bullet that meets a tree or a rock stops there, a spark where it hits. The melee weapons and the Molotov's bottles, thrown over, don't care.
+
 ### Crowbar
 
 The weapon every run starts with: a heavy blow in an arc before the player, once an enemy is within **2.5 tiles**, every **1.5 s** (less with Haste): **18 damage** to every enemy in the arc (90°), each pushed back **a tile**. Its blow shows iron grey.
@@ -193,9 +195,9 @@ A gun (see Guns: its rounds, its reload, it holds its fire in the dark) firing a
 
 ### Drones
 
-Drones circling the player **2.5 tiles** away, a turn every **2 s**. A drone hits the first enemy it runs into: **8 damage**, and a push of **half a tile** away from the player. The blow **breaks** it: it keeps circling, grey and harmless, and repairs in **2 s** (less with Haste).
+**A drone** circling the player **2.5 tiles** away, a turn every **2 s**. Each shoots at the nearest enemy within **6 tiles** of it, a bullet every **0.4 s** (less with Haste): **4 damage**, flying 16 tiles a second, 7 tiles far. Not in the dark, as the guns. An enemy **touching** a drone takes its damage a last time and **breaks** it: it keeps circling, grey and harmless, and repairs in **3 s** (less with Haste). The gauge under its icon follows the repair.
 
-**Levels**: 2: +1 drone · 3: 12 damage · 4: +1 drone (3) · 5: 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
+**Levels**: 2: +1 drone (2) · 3: 6 damage · 4: +1 drone (3), repaired in 2 s · 5: +1 drone (4), 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
 
 ### Molotov
 
@@ -203,9 +205,15 @@ Every **3 s** (less with Haste), a bottle thrown at an enemy at random within **
 
 **Levels**: 2: puddles 2 tiles around · 3: 2 bottles a throw, each at an enemy of its own · 4: puddles burn 5 s · 5: a throw every 2 s.
 
+### Flamethrower
+
+A **rare** weapon. A **cone of fire** ahead of the player, the way they face, **3 tiles** long, 60° wide, lit by an enemy in it, in sight (trees and rocks hide what stands behind them; a barricade doesn't), then burning its **whole tank**, enemies left or not; its fire leaves the nozzle, almost a tile ahead of the player, the nozzle sweeping from side to side (20° each way, about 1.6 s there and back), the balls of fire each flying the way it pointed as they left it: every enemy in the cone takes **2 damage** about 4 times a second (every 8 ticks, the first at once) and catches fire (see Fire). Its **tank** holds **3 s** of fire; empty, it fills again in **2 s** (less with Haste), its fuel then its filling under its icon, as a gun's rounds and reload. It burns **in the dark** too, the torch out (to be tried).
+
+**Levels**: 2: the cone 4 tiles long · 3: 3 damage · 4: a 5 s tank · 5: **the tank leaks**: a small fire on the ground every 0.8 tile the player goes, 0.6 tile around, burning 2 s, setting on fire every enemy in it, as a Molotov's puddle without its burst.
+
 ### Fire
 
-What sets enemies on fire (the Molotov; the shotgun's Dragon's breath to come): an enemy on fire **burns 3 s**, losing **1 HP every half second** (6 HP in all); set on fire again, it burns anew, never longer. Flames flicker over its head, and it lights a tile and a half around it, warm. Burnt to death, it leaves **ash**, grey, rather than blood (whatever the blood setting).
+What sets enemies on fire (the Molotov, the flamethrower; the shotgun's Dragon's breath to come): an enemy on fire **burns 3 s**, losing **1 HP every half second** (6 HP in all); set on fire again, it burns anew, never longer. Flames flicker over its head, and it lights a tile and a half around it, warm. Burnt to death, it leaves **ash**, grey, rather than blood (whatever the blood setting).
 
 ### To come
 
@@ -240,6 +248,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Action | What it does |
 |---|---|
 | Dash | A dash (see The player): back in 8 s, then sooner and sooner; a second dash at level 3 |
+| Barricade | Three **crates**, set down just ahead of the player, the way they face, **4 tiles across** their way and 2 along it, centred on them: facing up or down, heaped wide; facing left or right, in a staggered file going away. Drawn among the figures, in front of those above it. Not set down on a tree, a rock or another barricade: the card stays ready, and the barricade shows where it would have stood in red, blinking, 0.4 s; the walking enemies in its way are thrown just beyond it. It stops the **walking** enemies as a rock does, and the player too; the **Shadows** fly over it, the **shots** go over it (it hides no enemy from the guns). Every second, each walking enemy touching a wooden one hits it for its damage, as it would the player (a zombie 5, a parasite 3, an abomination 15), the crate showing white a moment; at 0 HP it breaks, the ground free again. An abomination's **burst** blows away the wooden barricades within its reach. The next comes 8 s after one is set down, its gauge under the card's icon in the gear; at most 2 stand at once, the oldest taken away for a new one. Level 1: 80 HP; 2: 120 HP; 3: a third at once, the next in 6 s; 4: 180 HP; 5: **metal** crates, dark steel and grey, unbreakable (neither the enemies nor a burst harm them; they go only when the oldest is taken away for a new one), the wooden ones already standing staying wood |
 
 ## Legendaries
 
@@ -259,18 +268,20 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Hunter | Wipe out a horde to the last | Horde Hunter |
 | First drops | Hold out until the drizzle | Haste |
 | Carnage | 300 enemies down in a single run | Might |
+| Swarm | Wipe out 2 hordes in one run | The drones |
 | Rain of lead | Hold out until the rain | Machine gun |
 | In the eye | Hold out until the storm | Molotov |
+| Untouchable | 2 minutes without a hit, counted from nightfall (the dusk's end) or from the last hit after it | Barricade |
 | Struck | Struck by lightning, and standing | Dash |
 | A thousand down | 1,000 enemies down, in all (every run counted) | Regeneration |
 | Raw light | 50 Shadows down, in all (every run counted) | Glare |
 | Dawn | Hold out until dawn | Illumination |
+| Cleaner | Wipe out every horde of a standard run: none left standing and none to come before the dawn | The flamethrower |
 | A regular | 25 runs played | A second reroll a run |
 | Come rain or shine | Every weather seen once, every run counted, even one lost in it | The arcade mode (legendary) |
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
-- The **drones** are dealt no more, until they are made worth taking.
-- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, machine gun, Molotov, Dash, the reroll, Glare, Regeneration, Illumination), and last the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 21): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's and the arcade's: their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
+- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, the drones, machine gun, Molotov, Barricade, Dash, the reroll, Glare, Regeneration, Illumination, the flamethrower), and last the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 22): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's and the arcade's: their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience
@@ -279,7 +290,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 - A gem shows by its worth: **silver** for a point, **blue** for 2 to 4 (a Shadow's), **gold** for 5 and more (an abomination's). Each glows its colour around it in the dark.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, the heal. Rare: Might, Haste, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, Barricade, the heal. Rare: the flamethrower, Might, Haste, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

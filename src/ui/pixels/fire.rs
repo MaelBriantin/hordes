@@ -8,6 +8,11 @@ use super::super::sprites::{Look, SpriteId};
 use super::{BURNING_LIGHT, Canvas, FLAME_COLOURS, gem_glow, pixel, sway};
 use crate::game::{Feature, Vec2, World, campfire_light};
 
+/// How far the flamethrower's nozzle sweeps each side, in degrees, and in how many steps (two
+/// frames each) it goes from side to side and back.
+const SWEEP: f32 = 20.0;
+const SWEEP_PERIOD: u32 = 24;
+
 /// How far off the canvas a gem still lights it, in pixels: its halo's reach.
 const GEM_HALO_MARGIN: i32 = 4;
 /// How much a campfire's light sways, as a share of its reach.
@@ -34,6 +39,19 @@ const HEAL_TICKS: u32 = 18;
 const HEAL_CROSSES: [(i32, i32); 3] = [(-5, 1), (5, -1), (0, -5)];
 const HEAL_BRIGHT: Color = Color::Rgb(110, 235, 120);
 const HEAL_DIM: Color = Color::Rgb(50, 140, 60);
+/// The flamethrower's fire, a stream as from a hose: the points drawn along it, a tile's worth;
+/// how wide it grows to at its end, in pixels each side; the steps its far end lags behind the
+/// nozzle's sweep, bending it; the share of it, from the nozzle, its yellow core runs, and its
+/// orange, the rest red and ragged. How far its fire lights, against the stream's length.
+const STREAM_POINTS_PER_TILE: f32 = 7.0;
+const STREAM_WIDTH: f32 = 1.5;
+const STREAM_LAG: f32 = 8.0;
+const STREAM_CORE: f32 = 0.6;
+const STREAM_ORANGE: f32 = 0.8;
+const FLAME_LIGHT: f32 = 0.8;
+/// How far apart the points looked at between the nozzle and the fire are, in tiles: a tree or
+/// a rock in between hides it.
+const FIRE_SIGHT: f32 = 0.25;
 
 impl Canvas<'_> {
     /// What burns besides the campfires: the bottles bursting, the puddles of fire and the
@@ -61,7 +79,7 @@ impl Canvas<'_> {
         for puddle in &world.puddles {
             let centre = pixel(puddle.centre);
             let age = puddle.age();
-            if age < BURST_TICKS {
+            if puddle.burst && age < BURST_TICKS {
                 let left = 1.0 - night::share(age, BURST_TICKS);
                 lights.push(night::Light::burst(centre, left));
                 let (colour, strength, reach) = BURST_HALO;
@@ -75,6 +93,13 @@ impl Canvas<'_> {
         for light in campfires {
             let (colour, strength, reach) = FIRE_HALO;
             halos.push(halo(light.centre, (colour, strength * flicker, reach)));
+        }
+        // The flamethrower's fire lights around its cone, warm.
+        if let Some((from, way, range)) = world.flame_cone() {
+            let middle = pixel(from + way * (range / 2.0));
+            lights.push(night::Light::fire(middle, range * FLAME_LIGHT));
+            let (colour, strength, reach) = FIRE_HALO;
+            halos.push(halo(middle, (colour, strength * flicker, reach)));
         }
         // An enemy on fire lights a little around it, warm.
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
@@ -155,6 +180,92 @@ impl Canvas<'_> {
         }
     }
 
+    /// The flamethrower's fire while it burns: a stream out of its nozzle, as from a hose,
+    /// widening as it goes, a yellow core, orange around, its end red and ragged; the nozzle
+    /// sweeping from side to side, its far end lagging, the stream bends. Not behind a tree or a
+    /// rock.
+    pub(super) fn paint_flamethrower(&mut self, world: &World, frame: u32) {
+        let Some((from, way, range)) = world.flame_cone() else {
+            return;
+        };
+        let step = frame / 2;
+        let side = Vec2::new(-way.y, way.x);
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "a few dozen points"
+        )]
+        let points = (range * STREAM_POINTS_PER_TILE).ceil() as u32;
+        for point in 0..points {
+            let share = night::share(point, points);
+            #[allow(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "a few steps"
+            )]
+            let lag = (share * STREAM_LAG) as u32;
+            let swept = step.saturating_sub(lag) % SWEEP_PERIOD;
+            let angle = (std::f32::consts::TAU * night::share(swept, SWEEP_PERIOD)).sin()
+                * SWEEP.to_radians();
+            let line = way * angle.cos() + side * angle.sin();
+            let across = Vec2::new(-line.y, line.x);
+            let middle = from + line * (share * range);
+            let width = 0.25 + share * STREAM_WIDTH;
+            // Half a pixel apart across it, as far as it is wide there.
+            for half_pixels in -3_i8..=3 {
+                let off = f32::from(half_pixels) * 0.5;
+                if off.abs() > width {
+                    continue;
+                }
+                if share > 0.75 {
+                    let luck = point.wrapping_mul(73_856_093)
+                        ^ u32::from(half_pixels.cast_unsigned()).wrapping_mul(19_349_663)
+                        ^ frame.wrapping_mul(83_492_791);
+                    if luck.is_multiple_of(3) {
+                        continue;
+                    }
+                }
+                let at = middle + across * (off / 2.0);
+                if !Self::in_flame_sight(world, from, at) {
+                    continue;
+                }
+                let core = off.abs() < width * 0.35;
+                let colour = FLAME_COLOURS[if core && share < STREAM_CORE {
+                    0
+                } else if share < STREAM_ORANGE {
+                    1
+                } else {
+                    2
+                }];
+                self.set(Self::from_player(world, at), colour);
+            }
+        }
+    }
+
+    /// The pixel of a point near the player, counted from the pixel the player is drawn
+    /// around: the same pixels on either side of them, wherever they stand in their tile.
+    fn from_player(world: &World, at: Vec2) -> (i32, i32) {
+        let (x, y) = pixel(world.player.position);
+        let apart = (at - world.player.position) * 2.0;
+        #[allow(clippy::cast_possible_truncation, reason = "a few pixels")]
+        (x + apart.x.floor() as i32, y + apart.y.floor() as i32)
+    }
+
+    /// Whether the fire reaches `to` from `from`: no tree nor rock in between.
+    fn in_flame_sight(world: &World, from: Vec2, to: Vec2) -> bool {
+        let along = to - from;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "the cone, a few tiles"
+        )]
+        let steps = (along.length() / FIRE_SIGHT).ceil() as u32;
+        (1..=steps).all(|step| {
+            let point = from + along * night::share(step, steps.max(1));
+            !world.map.stops_shots(point.tile())
+        })
+    }
+
     /// The healing on the ground the canvas shows, before the night falls on it: herbs, which
     /// only the player's torch or a strike of lightning shows, campfires, their flame flickering,
     /// or their logs once out. The lights of the campfires still burning.
@@ -193,5 +304,49 @@ impl Canvas<'_> {
             (columns.start - 2, rows.start - 2),
             (columns.end + 1, rows.end + 1),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::layout::Rect;
+
+    use super::super::super::Sprites;
+    use super::*;
+    use crate::game::{Choice, Facing, Weapon};
+
+    #[test]
+    fn the_flamethrower_s_fire_never_covers_the_player_whichever_way_they_face() {
+        let sprites = Sprites::load().unwrap();
+        // Anywhere in their tile: the middle, and near either edge.
+        let spots = [0.5, 0.26, 0.74, 0.95, 0.05].map(|share| Vec2::new(10.0 + share, 10.5));
+        for (facing, at) in [Facing::Left, Facing::Right]
+            .into_iter()
+            .flat_map(|facing| spots.map(|at| (facing, at)))
+        {
+            let mut world = World::new(1);
+            world
+                .player
+                .build
+                .take(Choice::Weapon(Weapon::Flamethrower));
+            world.player.facing = facing;
+            world.player.position = at;
+            world.flaming = true;
+            let (x, y) = pixel(world.player.position);
+            for frame in 0..48 {
+                let mut canvas = Canvas::new(&sprites, Rect::new(0, 0, 60, 30), (x, y));
+                canvas.paint_flamethrower(&world, frame);
+                // The hero, seen from the side: the two columns of the middle of their sprite.
+                for dy in -2..=1 {
+                    for dx in -1..=0 {
+                        let index = canvas.index((x + dx, y + dy)).unwrap();
+                        assert_eq!(
+                            canvas.pixels[index], None,
+                            "{facing:?} at {at:?}, frame {frame}"
+                        );
+                    }
+                }
+            }
+        }
     }
 }

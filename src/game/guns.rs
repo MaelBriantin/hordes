@@ -101,7 +101,11 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             speed: 18.0,
             range: 6.0,
         }),
-        Weapon::Crowbar | Weapon::Machete | Weapon::Drones | Weapon::Molotov => None,
+        Weapon::Crowbar
+        | Weapon::Machete
+        | Weapon::Drones
+        | Weapon::Molotov
+        | Weapon::Flamethrower => None,
     }
 }
 
@@ -192,12 +196,19 @@ impl Bullet {
     }
 }
 
-/// Where the `count` enemies nearest to `from` are, those within `range`, nearest first.
-pub fn targets(enemies: &[Enemy], from: Vec2, count: usize, range: f32) -> Vec<Vec2> {
+/// Where the `count` enemies nearest to `from` are, those within `range` that `sight` says can
+/// be seen, nearest first.
+pub fn targets(
+    enemies: &[Enemy],
+    from: Vec2,
+    count: usize,
+    range: f32,
+    sight: impl Fn(Vec2) -> bool,
+) -> Vec<Vec2> {
     let mut in_range: Vec<Vec2> = enemies
         .iter()
         .map(|enemy| enemy.position)
-        .filter(|position| (*position - from).length() <= range)
+        .filter(|position| (*position - from).length() <= range && sight(*position))
         .collect();
     in_range.sort_by(|a, b| (*a - from).length().total_cmp(&(*b - from).length()));
     in_range.truncate(count);

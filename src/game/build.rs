@@ -32,10 +32,11 @@ pub enum Weapon {
     Drones,
     Shotgun,
     Molotov,
+    Flamethrower,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 7] = [
+    pub const ALL: [Weapon; 8] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -43,6 +44,7 @@ impl Weapon {
         Weapon::Drones,
         Weapon::Shotgun,
         Weapon::Molotov,
+        Weapon::Flamethrower,
     ];
 }
 
@@ -94,10 +96,12 @@ impl Passive {
 pub enum Action {
     /// A dash; a second at level 3, each back sooner and sooner.
     Dash,
+    /// A crate set down just ahead, stopping the enemies that walk until they break it.
+    Barricade,
 }
 
 impl Action {
-    pub const ALL: [Action; 1] = [Action::Dash];
+    pub const ALL: [Action; 2] = [Action::Dash, Action::Barricade];
 }
 
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the
@@ -116,7 +120,8 @@ impl Choice {
     /// How rare its card is.
     pub fn rarity(self) -> Rarity {
         match self {
-            Choice::Passive(
+            Choice::Weapon(Weapon::Flamethrower)
+            | Choice::Passive(
                 Passive::Might
                 | Passive::Haste
                 | Passive::Wisdom

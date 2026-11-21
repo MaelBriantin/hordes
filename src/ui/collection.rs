@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
-        assert_eq!(in_a_row(108), 7, "three even rows rather than 10, 10 and 1");
+        assert_eq!(in_a_row(108), 8, "three even rows rather than 10, 10 and 2");
         assert_eq!(in_a_row(63), 5);
         assert_eq!(height(108, 40), height_of(3));
         assert_eq!(height(108, 20), height_of(1));

@@ -1,28 +1,59 @@
-//! Drones: drones circling the player, each hurting the first enemy it runs into and pushing it
-//! back; the blow breaks the drone, which keeps circling, harmless, until it has repaired.
+//! Drones: drones circling the player, each shooting at the nearest enemy within its reach, again
+//! and again; an enemy touching one breaks it, and it keeps circling, harmless, until it has
+//! repaired.
 
 use std::f32::consts::TAU;
 
+use super::build::Weapon;
+use super::guns::Gun;
 use super::{TICKS_PER_SECOND, Vec2, tick_seconds};
 
-/// Half the width of a drone's body, in tiles.
+/// Half the width of a drone's body, in tiles: an enemy within it breaks the drone.
 pub const HALF_WIDTH: f32 = 0.9;
-/// How far a drone pushes the enemy it hits, in tiles.
-pub const KNOCKBACK: f32 = 0.5;
+/// How near a drone an enemy has to be to be shot at, in tiles; how fast its bullets fly, in
+/// tiles a second, and how far.
+const REACH: f32 = 6.0;
+const BULLET_SPEED: f32 = 16.0;
+const BULLET_RANGE: f32 = 7.0;
+/// The ticks between two shots of a drone, before Haste: 0.4 s.
+const INTERVAL_TENTHS: u32 = 4;
 
-/// The drones at a level: 1, 2 from level 2, 3 from level 4.
+/// The drones at a level: 1, 2 from level 2, 3 from level 4, 4 at level 5.
 pub fn count(level: u8) -> u8 {
     match level {
         0 => 0,
         1 => 1,
         2 | 3 => 2,
-        _ => 3,
+        4 => 3,
+        _ => 4,
     }
 }
 
-/// What a drone takes from an enemy, in HP, at a level: 8, 12 from level 3.
+/// What a drone's bullet takes from an enemy, in HP, at a level: 4, 6 from level 3.
 pub fn damage(level: u8) -> u32 {
-    if level >= 3 { 12 } else { 8 }
+    if level >= 3 { 6 } else { 4 }
+}
+
+/// A drone as a gun: what it shoots, how often, how far.
+pub fn gun(level: u8) -> Gun {
+    Gun {
+        weapon: Weapon::Drones,
+        magazine: 1,
+        interval: INTERVAL_TENTHS * u32::from(TICKS_PER_SECOND) / 10,
+        reload: 0,
+        damage: damage(level),
+        bullets: 1,
+        pellets: 1,
+        spread: 0.0,
+        pierce: 0,
+        speed: BULLET_SPEED,
+        range: BULLET_RANGE,
+    }
+}
+
+/// How near a drone an enemy has to be for the drone to shoot at it, in tiles.
+pub fn reach() -> f32 {
+    REACH
 }
 
 /// How far from the player the drones circle, in tiles: 2.5, 3.5 at level 5.
@@ -36,9 +67,10 @@ pub fn turn_per_tick(level: u8) -> f32 {
     TAU / seconds_per_turn * tick_seconds()
 }
 
-/// The ticks a broken drone takes to repair, before Haste: 2 seconds.
-pub fn repair() -> u32 {
-    2 * u32::from(TICKS_PER_SECOND)
+/// The ticks a broken drone takes to repair, before Haste: 3 seconds, 2 from level 4.
+pub fn repair(level: u8) -> u32 {
+    let seconds = if level >= 4 { 2 } else { 3 };
+    seconds * u32::from(TICKS_PER_SECOND)
 }
 
 /// Where the drones are at a level, around `centre`, the first at `angle`, the others evenly

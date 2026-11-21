@@ -16,13 +16,15 @@ const REROLLS: u8 = 1;
 const KILLS_GOAL: u64 = 1_000;
 const SHADOWS_GOAL: u64 = 50;
 const RUNS_GOAL: u32 = 25;
-/// The enemies down in a single run for Carnage.
+/// The enemies down in a single run for Carnage; the hordes wiped out in a single run for Swarm.
 pub const CARNAGE_KILLS: u32 = 300;
+pub const SWARM_HORDES: u32 = 2;
+/// The seconds without a hit, the night fallen, for Untouchable.
+pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card, and the reroll, as the collection shows them: those there from the start, then
-/// those unlocked, from the easiest to the hardest to unlock. Not the drones, dealt no more, nor
-/// the heal, no card of a build.
-pub const COLLECTION: [Unlock; 21] = [
+/// those unlocked, from the easiest to the hardest to unlock. Not the heal, no card of a build.
+pub const COLLECTION: [Unlock; 24] = [
     Unlock::Card(Choice::Weapon(Weapon::Crowbar)),
     Unlock::Card(Choice::Weapon(Weapon::Machete)),
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
@@ -36,13 +38,16 @@ pub const COLLECTION: [Unlock; 21] = [
     Unlock::Card(Choice::Passive(Passive::HordeHunter)),
     Unlock::Card(Choice::Passive(Passive::Haste)),
     Unlock::Card(Choice::Passive(Passive::Might)),
+    Unlock::Card(Choice::Weapon(Weapon::Drones)),
     Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
     Unlock::Card(Choice::Weapon(Weapon::Molotov)),
+    Unlock::Card(Choice::Action(Action::Barricade)),
     Unlock::Card(Choice::Action(Action::Dash)),
     Unlock::Reroll,
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+    Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
     Unlock::Arcade,
 ];
 
@@ -55,10 +60,14 @@ pub enum Achievement {
     Drizzle,
     /// Carnage: 300 enemies down in a single run.
     Carnage,
+    /// Swarm: 2 hordes wiped out in a single run.
+    Swarm,
     /// Rain of lead: hold out until the rain.
     Rain,
     /// In the eye: hold out until the storm.
     Storm,
+    /// Untouchable: 2 minutes without a hit, the night fallen.
+    Untouchable,
     /// Struck by lightning, and standing.
     Struck,
     /// A thousand down: 1,000 enemies down, every run counted.
@@ -67,6 +76,8 @@ pub enum Achievement {
     Shadows,
     /// Hold out until dawn.
     Dawn,
+    /// Cleaner: every horde of a standard run wiped out.
+    Cleaner,
     /// A regular: 25 runs played.
     Regular,
     /// Come rain or shine: every weather seen once, every run counted, even one lost in it.
@@ -85,16 +96,19 @@ pub enum Unlock {
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 11] = [
+    pub const ALL: [Achievement; 14] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
+        Achievement::Swarm,
         Achievement::Rain,
         Achievement::Storm,
+        Achievement::Untouchable,
         Achievement::Struck,
         Achievement::ThousandDown,
         Achievement::Shadows,
         Achievement::Dawn,
+        Achievement::Cleaner,
         Achievement::Regular,
         Achievement::Weathers,
     ];
@@ -105,12 +119,15 @@ impl Achievement {
             Achievement::Hunter => Unlock::Card(Choice::Passive(Passive::HordeHunter)),
             Achievement::Drizzle => Unlock::Card(Choice::Passive(Passive::Haste)),
             Achievement::Carnage => Unlock::Card(Choice::Passive(Passive::Might)),
+            Achievement::Swarm => Unlock::Card(Choice::Weapon(Weapon::Drones)),
             Achievement::Rain => Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
             Achievement::Storm => Unlock::Card(Choice::Weapon(Weapon::Molotov)),
+            Achievement::Untouchable => Unlock::Card(Choice::Action(Action::Barricade)),
             Achievement::Struck => Unlock::Card(Choice::Action(Action::Dash)),
             Achievement::ThousandDown => Unlock::Card(Choice::Passive(Passive::Regeneration)),
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
             Achievement::Dawn => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+            Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Weathers => Unlock::Arcade,
         }
@@ -169,12 +186,8 @@ impl Progress {
         }
     }
 
-    /// Whether a card may be dealt: unless an achievement not yet reached unlocks it. The
-    /// drones are dealt no more, until they are made worth taking.
+    /// Whether a card may be dealt: unless an achievement not yet reached unlocks it.
     pub fn deals(&self, choice: Choice) -> bool {
-        if choice == Choice::Weapon(Weapon::Drones) {
-            return false;
-        }
         Achievement::ALL
             .into_iter()
             .find(|achievement| achievement.unlocks() == Unlock::Card(choice))
@@ -306,7 +319,6 @@ mod tests {
         for achievement in Achievement::ALL {
             assert!(COLLECTION.contains(&achievement.unlocks()));
         }
-        assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(Weapon::Drones))));
         assert!(!COLLECTION.contains(&Unlock::Card(Choice::Heal)));
         assert!(Progress::everything().has(Unlock::Reroll));
     }
@@ -331,9 +343,12 @@ mod tests {
     }
 
     #[test]
-    fn the_drones_are_dealt_no_more() {
-        let progress = Progress::everything();
+    fn the_drones_are_dealt_once_swarm_is_reached() {
+        let mut progress = Progress::default();
         assert!(!progress.deals(Choice::Weapon(Weapon::Drones)));
+        progress.reach(Achievement::Swarm);
+        assert!(progress.deals(Choice::Weapon(Weapon::Drones)));
+        let progress = Progress::everything();
         assert!(progress.deals(Choice::Weapon(Weapon::Molotov)));
     }
 

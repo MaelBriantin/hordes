@@ -240,6 +240,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Drones => SpriteId::IconDrones,
             Weapon::Shotgun => SpriteId::IconShotgun,
             Weapon::Molotov => SpriteId::IconMolotov,
+            Weapon::Flamethrower => SpriteId::IconFlamethrower,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -255,6 +256,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
+        Choice::Action(Action::Barricade) => SpriteId::IconBarricade,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -277,6 +279,7 @@ pub fn name(choice: Choice) -> String {
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
+        Choice::Action(Action::Barricade) => fl!("action-barricade"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -291,6 +294,7 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Drones => fl!("weapon-drones"),
         Weapon::Shotgun => fl!("weapon-shotgun"),
         Weapon::Molotov => fl!("weapon-molotov"),
+        Weapon::Flamethrower => fl!("weapon-flamethrower"),
     }
 }
 
@@ -327,9 +331,9 @@ fn gain_of(choice: Choice, level: u8) -> String {
         },
         Choice::Weapon(Weapon::Drones) => match level {
             1 => fl!("gain-drones-1"),
-            2 | 4 => fl!("gain-drones-more"),
             3 => fl!("gain-drones-3"),
-            _ => fl!("gain-drones-5"),
+            4 => fl!("gain-drones-4"),
+            _ => fl!("gain-drones-more"),
         },
         Choice::Weapon(Weapon::Shotgun) => match level {
             1 => fl!("gain-shotgun-1"),
@@ -344,6 +348,13 @@ fn gain_of(choice: Choice, level: u8) -> String {
             3 => fl!("gain-molotov-3"),
             4 => fl!("gain-molotov-4"),
             _ => fl!("gain-molotov-5"),
+        },
+        Choice::Weapon(Weapon::Flamethrower) => match level {
+            1 => fl!("gain-flamethrower-1"),
+            2 => fl!("gain-flamethrower-2"),
+            3 => fl!("gain-flamethrower-3"),
+            4 => fl!("gain-flamethrower-4"),
+            _ => fl!("gain-flamethrower-5"),
         },
         // A passive's gain, and the total it brings the player to at that level.
         Choice::Passive(passive) => {
@@ -384,8 +395,17 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 },
             }
         }
+        Choice::Action(action) => action_gain(action, level),
+        Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
+        Choice::Heal => fl!("gain-heal"),
+    }
+}
+
+/// What an action card brings, taken at `level`.
+fn action_gain(action: Action, level: u8) -> String {
+    match action {
         // The dash: level 3 brings the second; the others, sooner back, in tenths of a second.
-        Choice::Action(Action::Dash) => {
+        Action::Dash => {
             let tenths: u32 = [80, 60, 60, 45, 30][usize::from(level.clamp(1, 5) - 1)];
             match level {
                 0 | 1 => fl!("gain-dash"),
@@ -396,8 +416,14 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 }
             }
         }
-        Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
-        Choice::Heal => fl!("gain-heal"),
+        // The barricade: more HP at levels 2 and 4, a third and sooner at 3, metal at 5.
+        Action::Barricade => match level {
+            0 | 1 => fl!("gain-barricade"),
+            2 => fl!("gain-barricade-hp", from = 80, to = 120),
+            3 => fl!("gain-barricade-third"),
+            4 => fl!("gain-barricade-hp", from = 120, to = 180),
+            _ => fl!("gain-barricade-metal"),
+        },
     }
 }
 

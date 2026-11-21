@@ -61,6 +61,8 @@ pub struct Puddle {
     /// Ticks left it burns, out of how many in all.
     pub left: u32,
     pub lasts: u32,
+    /// Whether it burst from a bottle, in a flash; a fire of the flamethrower's trail doesn't.
+    pub burst: bool,
 }
 
 impl Puddle {

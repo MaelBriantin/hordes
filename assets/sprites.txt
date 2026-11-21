@@ -197,6 +197,42 @@ gGGD
 GGDD
 .DD.
 
+# The barricade, set down by the Barricade card, of metal from the card's level 5: facing up or
+# down, three crates heaped, 8 × 5 on 4 × 2 tiles; facing left or right, a file of three crates
+# going away, staggered, 5 × 7 on 2 × 4 tiles.
+
+barricade
+..KKKK..
+..KuuK..
+KKKKKKKK
+KuuKKuuK
+KKKKKKKK
+
+barricade_metal
+..nnnn..
+..nGGn..
+nnnnnnnn
+nGGnnGGn
+nnnnnnnn
+
+barricade_file
+.KKKK
+.KuuK
+KKKKK
+KuuK.
+KKKKK
+.KuuK
+.KKKK
+
+barricade_file_metal
+.nnnn
+.nGGn
+nnnnn
+nGGn.
+nnnnn
+.nGGn
+.nnnn
+
 # Healing on the ground: a red herb, 3 × 3; a campfire, 4 × 4, its flame flickering between
 # two looks; and the logs left once it is out.
 
@@ -281,6 +317,16 @@ icon_shotgun
 uuu.....
 uu......
 u.......
+........
+
+icon_flamethrower
+........
+......fY
+qqqqqqjf
+nnnqq...
+u.q.....
+u.......
+........
 ........
 
 icon_molotov
@@ -411,6 +457,16 @@ icon_dash
 2.3.Jx..
 .2.3.zz.
 ........
+........
+
+icon_barricade
+........
+........
+..KKKK..
+..KuuK..
+KKKKKKKK
+KuuKKuuK
+KKKKKKKK
 ........
 
 # The legendaries, on their golden cards.

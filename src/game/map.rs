@@ -5,7 +5,7 @@
 //! and more rarely still a campfire in a clearing.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use rand::rngs::StdRng;
 use rand::{RngExt, SeedableRng};
@@ -63,6 +63,8 @@ pub struct Map {
     start: (i32, i32),
     /// The chunks drawn so far, by their place.
     chunks: RefCell<HashMap<(i32, i32), Chunk>>,
+    /// The tiles barricades stand on: they block as obstacles do, but stop no shot.
+    barricaded: HashSet<(i32, i32)>,
 }
 
 impl Map {
@@ -72,6 +74,7 @@ impl Map {
             seed: Some(seed),
             start,
             chunks: RefCell::default(),
+            barricaded: HashSet::new(),
         }
     }
 
@@ -82,6 +85,7 @@ impl Map {
             seed: None,
             start: (0, 0),
             chunks: RefCell::default(),
+            barricaded: HashSet::new(),
         }
     }
 
@@ -127,9 +131,23 @@ impl Map {
             .push((tile, feature));
     }
 
-    /// Whether nothing can stand on a tile: an obstacle covers it.
+    /// Whether nothing can stand on a tile: an obstacle or a barricade covers it.
     pub fn blocks(&self, tile: (i32, i32)) -> bool {
+        self.barricaded.contains(&tile) || self.obstacle_at(tile).is_some()
+    }
+
+    /// Whether a shot stops on a tile: an obstacle covers it, not a barricade.
+    pub fn stops_shots(&self, tile: (i32, i32)) -> bool {
         self.obstacle_at(tile).is_some()
+    }
+
+    /// A barricade now stands on a tile, or no longer does.
+    pub fn barricade(&mut self, tile: (i32, i32), standing: bool) {
+        if standing {
+            self.barricaded.insert(tile);
+        } else {
+            self.barricaded.remove(&tile);
+        }
     }
 
     /// Puts an obstacle on the place of the grid that holds `tile`.

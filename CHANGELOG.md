@@ -9,6 +9,18 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The Barricade, a second action card, unlocked by a new achievement, Untouchable (2 minutes without a hit after nightfall): Space or Enter heaps three crates just ahead, stopping the walking enemies, which batter it until it breaks; the Shadows fly over it, the shots go over it. The next in 8 s, two at most at once; more HP, a third, and unbreakable metal crates at the last level.
+
+- The flamethrower, a rare weapon, unlocked by a new achievement, Cleaner (every horde of a run wiped out): a cone of fire ahead of the player setting every enemy in it on fire, its tank filling again once empty; at the last level, the tank leaks a trail of fire behind the player.
+
+### Changed
+- Trees and rocks stop the shots: the guns and the drones aim only at enemies in sight, and a bullet meeting an obstacle stops there, in a spark; a Shadow over a rock can't be shot.
+- The drones reworked, dealt again once unlocked by a new achievement, Swarm (2 hordes wiped out in one run): one at first, each shooting at the nearest enemy within 6 tiles, a bullet every 0.4 s, but in the dark; an enemy touching one takes a blow from it and breaks it for 3 s (2 at level 4). More drones at levels 2, 4 and 5, more damage at level 3.
+
+### Fixed
+- A gauge under an icon went wrong a moment (and the game could crash, built for debugging) when a level-up shortened a wait under way: Haste during a reload or between two swings.
+
 ## v0.8.2 · November 21, 2026
 Wind-up.
 

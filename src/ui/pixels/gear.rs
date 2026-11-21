@@ -8,7 +8,7 @@ use ratatui::style::{Color, Modifier, Style};
 use super::super::level_up;
 use super::super::sprites::{Look, SpriteId};
 use super::{Canvas, GEAR_GAP, share_of};
-use crate::game::{Action, Choice, MAX_LEVEL, World};
+use crate::game::{Action, Choice, MAX_LEVEL, World, barricade_recharge};
 
 /// The rows of veil above the icons and under their gauges, in pixels.
 const GEAR_PAD: i32 = 1;
@@ -91,6 +91,17 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
             GEAR_RELOADING,
         )
     };
+    // The Barricade card fills back between two barricades, full once one is ready.
+    let whole = barricade_recharge(build.action_level(Action::Barricade));
+    let barricade = if world.barricade_wait > 0 {
+        (
+            whole.saturating_sub(world.barricade_wait),
+            whole,
+            GEAR_RELOADING,
+        )
+    } else {
+        (1, 1, GEAR_ROUNDS)
+    };
     build
         .picked()
         .iter()
@@ -104,7 +115,11 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
                     .map(|gun| {
                         let (_, magazine, full, reload) = *gun;
                         if magazine.reloading > 0 {
-                            (reload - magazine.reloading, reload, GEAR_RELOADING)
+                            (
+                                reload.saturating_sub(magazine.reloading),
+                                reload,
+                                GEAR_RELOADING,
+                            )
                         } else {
                             (magazine.rounds, full, GEAR_ROUNDS)
                         }
@@ -116,7 +131,7 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
                             .find(|wait| wait.0 == weapon)
                             .map(|&(_, left, whole)| {
                                 if left > 0 {
-                                    (whole - left, whole, GEAR_RELOADING)
+                                    (whole.saturating_sub(left), whole, GEAR_RELOADING)
                                 } else {
                                     (1, 1, GEAR_ROUNDS)
                                 }
@@ -131,7 +146,10 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
             Choice::Action(action) => GearSlot {
                 choice,
                 level: Some(build.action_level(action)),
-                gauge: (action == Action::Dash).then_some(dashes),
+                gauge: Some(match action {
+                    Action::Dash => dashes,
+                    Action::Barricade => barricade,
+                }),
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {
                 choice,
@@ -237,5 +255,49 @@ pub(super) fn draw_gear_levels(buffer: &mut Buffer, area: Rect, levels: &[GearLe
             .bg(GEAR_BADGE)
             .add_modifier(Modifier::BOLD);
         buffer.set_string(area.x + x, area.y + y, text, style);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::{Input, Passive, Weapon};
+
+    /// Every gauge of the gear within its whole: filled no more than full.
+    fn assert_gauges_fit(world: &World) {
+        for slot in gear_slots(world) {
+            if let Some((filled, whole, _)) = slot.gauge {
+                assert!(filled <= whole, "{:?}: {filled} / {whole}", slot.choice);
+            }
+        }
+    }
+
+    #[test]
+    fn haste_taken_while_a_gun_reloads_leaves_its_gauge_whole() {
+        let mut world = World::new(1);
+        world.announcement = None;
+        world.player.build.take(Choice::Weapon(Weapon::Pistol));
+        world.update(Input::default());
+        let reload = world.ammo()[0].3;
+        world
+            .magazines
+            .get_mut(&Weapon::Pistol)
+            .expect("a magazine once the pistol is held")
+            .reloading = reload;
+        for _ in 0..3 {
+            world.player.build.take(Choice::Passive(Passive::Haste));
+        }
+        assert_gauges_fit(&world);
+    }
+
+    #[test]
+    fn the_barricade_sooner_back_while_one_comes_leaves_its_gauge_whole() {
+        let mut world = World::new(1);
+        for _ in 0..2 {
+            world.player.build.take(Choice::Action(Action::Barricade));
+        }
+        world.barricade_wait = barricade_recharge(2);
+        world.player.build.take(Choice::Action(Action::Barricade));
+        assert_gauges_fit(&world);
     }
 }
