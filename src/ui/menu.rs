@@ -13,7 +13,7 @@ use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::{centred_as_is, centred_spans, shimmer};
 use super::{
-    Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, Skin, ViewState, faded,
+    Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, ViewState, faded,
     weather_colour,
 };
 use super::{collection, skins};
@@ -73,8 +73,6 @@ pub enum OptionItem {
     Rain,
     /// The arrow over the player, in its colour.
     Arrow,
-    /// How the hero looks.
-    Skin,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
     Announcements,
     /// Whether runs open on the dusk or on the night.
@@ -98,11 +96,10 @@ pub enum OptionItem {
 impl OptionItem {
     /// The items opened from the title screen; from the pause menu, the same but for erasing
     /// the progress and quitting.
-    const TITLE: [OptionItem; 13] = [
+    const TITLE: [OptionItem; 12] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
-        OptionItem::Skin,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
@@ -113,11 +110,10 @@ impl OptionItem {
         OptionItem::Back,
         OptionItem::Quit,
     ];
-    const PAUSE: [OptionItem; 11] = [
+    const PAUSE: [OptionItem; 10] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
-        OptionItem::Skin,
         OptionItem::Announcements,
         OptionItem::Dusk,
         OptionItem::Gear,
@@ -142,14 +138,6 @@ impl OptionItem {
             OptionItem::Blood => fl!("pause-blood", value = blood_name(view.blood)),
             OptionItem::Rain => fl!("pause-rain", value = rain_name(view.rain)),
             OptionItem::Arrow => fl!("option-arrow", value = arrow_name(view.arrow)),
-            OptionItem::Skin => fl!(
-                "option-skin",
-                value = match view.skin {
-                    Skin::Survivor => fl!("skin-survivor"),
-                    Skin::Classic => fl!("skin-classic"),
-                    Skin::Exterminator => fl!("skin-exterminator"),
-                }
-            ),
             OptionItem::Announcements => fl!(
                 "pause-announcements",
                 value = match view.weather_news {

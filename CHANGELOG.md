@@ -17,6 +17,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The skins on the title screen, S showing them as the collection shows its cards: the hero picked turning round, the locked ones in grey with the achievement that unlocks them, Enter to wear one.
 
 ### Changed
+- The skin chosen on the title screen alone (S), no longer in the options.
 - The arcade mode unlocked by reaching the dawn, the game won, rather than by seeing every weather; Illumination by a new achievement, Veteran (level 25 in one run). Come rain or shine (every weather seen) is gone, a progress holding it still read.
 - The title screen in the middle of the screen when nothing shows under it, rather than over an empty room kept for the collection: it slides as the collection or the skins open and close, and as Tab changes the mode.
 - Trees and rocks stop the shots: the guns and the drones aim only at enemies in sight, and a bullet meeting an obstacle stops there, in a spark; a Shadow over a rock can't be shot.

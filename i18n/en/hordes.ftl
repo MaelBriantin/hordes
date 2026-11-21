@@ -60,7 +60,6 @@ pause-announcements = Announcements: { $value }
 options-title = Options
 option-dusk = Dusk: { $value }
 option-gear = Gear: { $value }
-option-skin = Hero: { $value }
 skin-survivor = survivor
 skin-classic = classic
 skin-exterminator = exterminator

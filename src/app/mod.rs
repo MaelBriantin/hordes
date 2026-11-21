@@ -510,11 +510,6 @@ impl App {
                 self.settings.skip_dusk = !self.settings.skip_dusk;
                 self.keep_settings();
             }
-            OptionItem::Skin => {
-                let exterminator = self.progress.exterminator();
-                self.settings.skin = self.settings.skin.worn(exterminator).next(exterminator);
-                self.keep_settings();
-            }
             // Hidden, as icons, as a list, and round again.
             OptionItem::Gear => {
                 let settings = &mut self.settings;

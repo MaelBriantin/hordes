@@ -296,15 +296,6 @@ pub enum Skin {
 }
 
 impl Skin {
-    /// The next one, round and round: the exterminator only once `exterminator` is unlocked.
-    pub fn next(self, exterminator: bool) -> Self {
-        match self {
-            Skin::Survivor => Skin::Classic,
-            Skin::Classic if exterminator => Skin::Exterminator,
-            Skin::Classic | Skin::Exterminator => Skin::Survivor,
-        }
-    }
-
     /// The skin worn: the survivor in place of the exterminator, while it is locked.
     pub fn worn(self, exterminator: bool) -> Self {
         if self == Skin::Exterminator && !exterminator {
@@ -563,10 +554,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_exterminator_is_worn_and_picked_only_once_unlocked() {
-        assert_eq!(Skin::Classic.next(false), Skin::Survivor);
-        assert_eq!(Skin::Classic.next(true), Skin::Exterminator);
-        assert_eq!(Skin::Exterminator.next(true), Skin::Survivor);
+    fn the_exterminator_is_worn_only_once_unlocked() {
         assert_eq!(Skin::Exterminator.worn(false), Skin::Survivor);
         assert_eq!(Skin::Exterminator.worn(true), Skin::Exterminator);
     }
