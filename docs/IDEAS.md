@@ -7,6 +7,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Unlockable characters**, each with a speciality of its own: a starting weapon, different stats. A werewolf could be one of them.
 - **Characters by achievement**: a character, its own look and its own starting weapon, unlocked by an achievement fitting it. The Cleaner (every horde of a run wiped out) could bring a cleaner in overalls, starting with the flamethrower.
 - **A nod to Dungeon Crawler Carl**: a character called Carl, a look of his own that recalls the book's hero (boxers, a jacket, bare feet) in the few colours at hand; and a card to go with him, a cat thrown that whirls through the enemies, a nod to Princess Donut. A nod, not a copy: our own pixels, our own words.
+- **The classic hero, a Rambo**: the hero of the first versions, in his red headband, no longer there from the start but unlocked by an **arcade achievement**, Legend: **25,000 points in one arcade run** (the best on the leaderboard so far, 9,144), a goal for the arcade at last. The same achievement brings the **napalm bombardment** (see Weapons), as Cleaner brings the flamethrower with the exterminator.
 - **Found on the map**: a character to unlock is met during a run (a survivor to reach, to rescue); once found, it can be played in the next runs. With the weapons to unlock (see Weapons), the game's progression from one run to the next.
 
 ## Enemies
@@ -31,6 +32,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 - **Weapons to unlock**, as the characters: only a few in the cards at first (the crowbar, the pistol, the machete?), the others unlocked for the next runs by **exploring** the map (a cache, a crate, an abandoned car holding the shotgun) or by **challenges** (100 enemies down with the crowbar for the machete; the dawn without lighting the torch again; and so on). Fewer weapons about at first, builds easier to balance.
 - **Flamethrower**: from time to time, a jet of flame sweeps around the player, further out than the drones, burning what it passes over.
 - **Sniper rifle**: aims at an enemy far off (12–15 tiles, the furthest or the toughest), a red laser dot on it for a moment before the shot; a heavy hit (enough for a Shadow at once), a shot every few seconds; later, the bullet goes through several. A gun: holds its fire in the dark.
+- **Napalm bombardment**: strikes falling around the player from the sky, each shown a moment before by a mark on the ground (as the lightning's), leaving sheets of fire that set the enemies on fire. Unlocked with the classic hero by the arcade achievement Legend (see Characters). Rather than a Gatling, kept for the machine gun's evolution.
 - **Grenade**: thrown at the enemies nearby, it bursts at once, no fire: heavy damage over an area, the enemies caught in it blown outwards, away from its centre, giving the player room.
 - **Experimental weapons**, a kind of their own, found in **crates** on the map rather than dealt: a crate guarded by a "capture the hill" goal, the player holding a zone a while against the enemies before it opens.
 - **Laser beam** (experimental): a beam across the whole map, hurting every enemy that crosses it.
@@ -72,6 +74,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 The game's strength: a black night, lit here and there. The rule: **a light makes a halo**, around it, on what is there; what isn't a light doesn't glow.
 
+- **Lightning puts the torch out**: a strike near the player puts their torch out a moment, longer or shorter as luck has it, then it flickers back on of itself. The night all at once, the horde about.
 - **Shooting in the dark**: the guns fire on with the torch out, each shot flashing at the gun's mouth, a small halo of light a blink, which the enemies see and come to. Better in Godot, with finer lights and shadows.
 - Tried, and dropped: **muzzle flashes** in the terminal, a few pixels at the gun's mouth, with a light and a halo, then without: too many lights, and ugly at this size.
 - Tried, and dropped: **glowing bullets**, a light and a halo each: the torch lights enough, and they aren't lights.
