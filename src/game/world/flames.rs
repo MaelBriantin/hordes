@@ -83,7 +83,7 @@ impl World {
         for index in burning {
             let enemy = &mut enemies[index];
             enemy.hit(against(damage, enemy, hunter));
-            enemy.ignite();
+            enemy.ignite_for(build.burn_ticks());
         }
     }
 

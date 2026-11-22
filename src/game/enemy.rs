@@ -7,7 +7,7 @@ const BURN_EVERY: u32 = 15;
 const BURN_DAMAGE: u32 = 1;
 
 /// The ticks an enemy burns once on fire.
-fn burn_ticks() -> u32 {
+pub fn burn_ticks() -> u32 {
     BURN_SECONDS * u32::from(super::TICKS_PER_SECOND)
 }
 
@@ -112,6 +112,9 @@ pub struct Enemy {
     pub hp: u32,
     /// Ticks left during which it shows white, after a hit.
     pub flash: u32,
+    /// How far it is thrown each tick by a shock, the hammer's, and for how many ticks more.
+    pub knock: Vec2,
+    pub knocked: u32,
     /// The horde it came with, if it did.
     pub horde: Option<u32>,
     /// A number of its own, drawn as it appears, in radians: where it starts to wander.
@@ -124,6 +127,8 @@ pub struct Enemy {
     pub burning: u32,
     /// Ticks left it stands stunned, not moving; 0 when it isn't.
     pub stunned: u32,
+    /// Ticks left it stands paralysed by a shock, the stun baton's: it shows, blinking blue.
+    pub shocked: u32,
     /// Ticks it has hunted the player in the dark, without a break: a Shadow's.
     pub hunting: u32,
     /// Ticks left it bolts out of the torch's light: a Shadow's.
@@ -145,6 +150,9 @@ impl Enemy {
             wander: phase,
             burning: 0,
             stunned: 0,
+            shocked: 0,
+            knock: Vec2::ZERO,
+            knocked: 0,
             hunting: 0,
             bolting: 0,
         }
@@ -155,6 +163,11 @@ impl Enemy {
         let ramped = u16::try_from(self.hunting.min(HUNT_RAMP_TICKS)).unwrap_or(0);
         let ramp = u16::try_from(HUNT_RAMP_TICKS).unwrap_or(u16::MAX);
         1.0 + f32::from(ramped) / f32::from(ramp) * f32::from(HUNT_MOST_PERCENT) / 100.0
+    }
+
+    /// Catches fire for `ticks`, or burns anew: never longer than that.
+    pub fn ignite_for(&mut self, ticks: u32) {
+        self.burning = self.burning.max(ticks);
     }
 
     /// Catches fire, or burns anew: as long again as a fire burns, never longer.

@@ -74,9 +74,8 @@ pub struct Settings {
     pub arrow: Arrow,
     /// How the hero looks.
     pub skin: Skin,
-    /// The mode runs are played in, and whether they skip the dusk.
+    /// The mode runs are played in.
     pub mode: Mode,
-    pub skip_dusk: bool,
     /// Whether the gear shows over the top left of the map; as a list rather than icons.
     pub gear: bool,
     pub gear_list: bool,
@@ -97,7 +96,6 @@ impl Default for Settings {
             arrow: Arrow::Off,
             skin: Skin::Survivor,
             mode: Mode::Standard,
-            skip_dusk: false,
             gear: false,
             gear_list: false,
             mini_bars: false,
@@ -151,10 +149,10 @@ impl Settings {
                 ("skin", "survivor") => settings.skin = Skin::Survivor,
                 ("skin", "classic") => settings.skin = Skin::Classic,
                 ("skin", "exterminator") => settings.skin = Skin::Exterminator,
+                ("skin", "demolisher") => settings.skin = Skin::Demolisher,
+                ("skin", "rookie") => settings.skin = Skin::Rookie,
                 ("mode", "standard") => settings.mode = Mode::Standard,
                 ("mode", "arcade") => settings.mode = Mode::Arcade,
-                ("dusk", "played") => settings.skip_dusk = false,
-                ("dusk", "skipped") => settings.skip_dusk = true,
                 ("gear", "shown") => settings.gear = true,
                 ("gear", "hidden") => settings.gear = false,
                 ("gear_layout", "icons") => settings.gear_list = false,
@@ -177,14 +175,13 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ndusk = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
             self.arrow.id(),
             self.skin.id(),
             self.mode.id(),
-            if self.skip_dusk { "skipped" } else { "played" },
             if self.gear { "shown" } else { "hidden" },
             if self.gear_list { "list" } else { "icons" },
             if self.mini_bars { "shown" } else { "hidden" },
@@ -224,7 +221,6 @@ mod tests {
             arrow: Arrow::Yellow,
             skin: Skin::Exterminator,
             mode: Mode::Arcade,
-            skip_dusk: true,
             gear: false,
             gear_list: false,
             mini_bars: true,

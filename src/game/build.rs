@@ -3,6 +3,8 @@
 
 use rand::{Rng, RngExt};
 
+use super::skin::Skin;
+
 pub const MAX_LEVEL: u8 = 5;
 pub const MAX_WEAPONS: usize = 4;
 pub const MAX_PASSIVES: usize = 4;
@@ -13,7 +15,7 @@ const CHOICES: usize = 3;
 /// The chance, in percent, that a card of a level-up is a rare one, when there are rare ones to
 /// offer.
 pub const RARE_PERCENT: u32 = 25;
-/// The player's HP before Vitality.
+/// The survivor's HP before Vitality: the measure of the others'.
 pub const BASE_HP: u32 = 100;
 /// How long a dash takes to come back, in ticks, by the Dash card's level: 8 s, 6 s, 6 s,
 /// 4.5 s, 3 s.
@@ -33,10 +35,13 @@ pub enum Weapon {
     Shotgun,
     Molotov,
     Flamethrower,
+    Hammer,
+    Baton,
+    Knife,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 8] = [
+    pub const ALL: [Weapon; 11] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -45,6 +50,9 @@ impl Weapon {
         Weapon::Shotgun,
         Weapon::Molotov,
         Weapon::Flamethrower,
+        Weapon::Hammer,
+        Weapon::Baton,
+        Weapon::Knife,
     ];
 }
 
@@ -120,7 +128,7 @@ impl Choice {
     /// How rare its card is.
     pub fn rarity(self) -> Rarity {
         match self {
-            Choice::Weapon(Weapon::Flamethrower)
+            Choice::Weapon(Weapon::Flamethrower | Weapon::Hammer | Weapon::Baton)
             | Choice::Passive(
                 Passive::Might
                 | Passive::Haste
@@ -163,18 +171,32 @@ pub struct Build {
     legendaries: Vec<Legendary>,
     /// Every weapon, passive, action and legendary, in the order first picked.
     picked: Vec<Choice>,
+    /// The hero playing: their HP, their speed, their perk.
+    hero: Skin,
 }
 
 impl Build {
-    /// What a run starts with: the crowbar.
+    /// What a run starts with, the survivor playing: the crowbar.
     pub fn new() -> Self {
+        Self::playing(Skin::Survivor)
+    }
+
+    /// What a run starts with, a hero playing: their own weapon at its first level.
+    pub fn playing(hero: Skin) -> Self {
+        let weapon = hero.weapon();
         Self {
-            weapons: vec![(Weapon::Crowbar, 1)],
+            weapons: vec![(weapon, 1)],
             passives: Vec::new(),
             actions: Vec::new(),
             legendaries: Vec::new(),
-            picked: vec![Choice::Weapon(Weapon::Crowbar)],
+            picked: vec![Choice::Weapon(weapon)],
+            hero,
         }
+    }
+
+    /// The hero playing.
+    pub fn hero(&self) -> Skin {
+        self.hero
     }
 
     /// No weapon at all: to watch enemies without them falling.
@@ -186,6 +208,7 @@ impl Build {
             actions: Vec::new(),
             legendaries: Vec::new(),
             picked: Vec::new(),
+            hero: Skin::Survivor,
         }
     }
 
@@ -311,13 +334,15 @@ impl Build {
         }
     }
 
+    /// The player's HP at most: the hero's, and Vitality's.
     pub fn max_hp(&self) -> u32 {
-        BASE_HP + VITALITY_HP * u32::from(self.passive_level(Passive::Vitality))
+        self.hero.hp() + VITALITY_HP * u32::from(self.passive_level(Passive::Vitality))
     }
 
-    /// The player's speed, against their base speed, in percent.
+    /// The player's speed, against the survivor's, in percent: the hero's, and Swiftness's.
     pub fn speed_percent(&self) -> u16 {
-        100 + 8 * u16::from(self.passive_level(Passive::Swiftness))
+        let swiftness = 8 * i16::from(self.passive_level(Passive::Swiftness));
+        u16::try_from(100 + self.hero.speed_percent() + swiftness).unwrap_or(100)
     }
 
     /// How near the player gems start to fly to them, in tiles.
@@ -347,9 +372,20 @@ impl Build {
         100 + 10 * u32::from(self.passive_level(Passive::Wisdom))
     }
 
-    /// A weapon's damage, with Might.
+    /// A weapon's damage, with Might and the hero's perk.
     pub fn damage(&self, base: u32) -> u32 {
-        base * (100 + 10 * u32::from(self.passive_level(Passive::Might))) / 100
+        let might = 100 + 10 * u32::from(self.passive_level(Passive::Might));
+        base * might * self.hero.perk().damage_percent() / 10_000
+    }
+
+    /// A gun's reload in ticks, with Haste and the hero's perk.
+    pub fn reload(&self, base: u32) -> u32 {
+        self.cooldown(base) * self.hero.perk().reload_percent() / 100
+    }
+
+    /// How long an enemy set on fire burns, in ticks, with the hero's perk.
+    pub fn burn_ticks(&self) -> u32 {
+        super::enemy::burn_ticks() * self.hero.perk().burn_times()
     }
 
     /// How much more the weapons hurt an enemy of a horde, in percent: 10 per level of Horde

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use ratatui::style::Color;
 use thiserror::Error;
 
+pub use crate::game::Skin;
 use crate::game::{Enemy, EnemyKind, Facing, Swelling};
 
 const SOURCE: &str = include_str!("../../assets/sprites.txt");
@@ -26,6 +27,14 @@ pub enum SpriteId {
     ExterminatorBack,
     /// Facing right.
     ExterminatorSide,
+    DemolisherFront,
+    DemolisherBack,
+    /// Facing right.
+    DemolisherSide,
+    RookieFront,
+    RookieBack,
+    /// Facing right.
+    RookieSide,
     /// Facing right.
     ZombieSide,
     ZombieFront,
@@ -75,6 +84,9 @@ pub enum SpriteId {
     IconGlare,
     IconDash,
     IconFlamethrower,
+    IconHammer,
+    IconBaton,
+    IconKnife,
     IconBarricade,
     IconIllumination,
     IconHeal,
@@ -90,7 +102,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 64] = [
+    const ALL: [SpriteId; 73] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -100,6 +112,12 @@ impl SpriteId {
         SpriteId::ExterminatorFront,
         SpriteId::ExterminatorBack,
         SpriteId::ExterminatorSide,
+        SpriteId::DemolisherFront,
+        SpriteId::DemolisherBack,
+        SpriteId::DemolisherSide,
+        SpriteId::RookieFront,
+        SpriteId::RookieBack,
+        SpriteId::RookieSide,
         SpriteId::ZombieSide,
         SpriteId::ZombieFront,
         SpriteId::GhoulSide,
@@ -144,6 +162,9 @@ impl SpriteId {
         SpriteId::IconGlare,
         SpriteId::IconDash,
         SpriteId::IconFlamethrower,
+        SpriteId::IconHammer,
+        SpriteId::IconBaton,
+        SpriteId::IconKnife,
         SpriteId::IconBarricade,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
@@ -168,6 +189,12 @@ impl SpriteId {
             SpriteId::ExterminatorFront => "exterminator_front",
             SpriteId::ExterminatorBack => "exterminator_back",
             SpriteId::ExterminatorSide => "exterminator_side",
+            SpriteId::DemolisherFront => "demolisher_front",
+            SpriteId::DemolisherBack => "demolisher_back",
+            SpriteId::DemolisherSide => "demolisher_side",
+            SpriteId::RookieFront => "rookie_front",
+            SpriteId::RookieBack => "rookie_back",
+            SpriteId::RookieSide => "rookie_side",
             SpriteId::ZombieSide => "zombie_side",
             SpriteId::ZombieFront => "zombie_front",
             SpriteId::GhoulSide => "ghoul_side",
@@ -212,6 +239,9 @@ impl SpriteId {
             SpriteId::IconGlare => "icon_glare",
             SpriteId::IconDash => "icon_dash",
             SpriteId::IconFlamethrower => "icon_flamethrower",
+            SpriteId::IconHammer => "icon_hammer",
+            SpriteId::IconBaton => "icon_baton",
+            SpriteId::IconKnife => "icon_knife",
             SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
@@ -283,38 +313,6 @@ impl Look {
     }
 }
 
-/// How the hero looks: a setting, the survivor at first.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Skin {
-    /// In a leather jacket and jeans.
-    Survivor,
-    /// The hero of the first versions, in a red headband.
-    Classic,
-    /// In a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back: once
-    /// Cleaner is reached.
-    Exterminator,
-}
-
-impl Skin {
-    /// The skin worn: the survivor in place of the exterminator, while it is locked.
-    pub fn worn(self, exterminator: bool) -> Self {
-        if self == Skin::Exterminator && !exterminator {
-            Skin::Survivor
-        } else {
-            self
-        }
-    }
-
-    /// Its name in the settings file.
-    pub fn id(self) -> &'static str {
-        match self {
-            Skin::Survivor => "survivor",
-            Skin::Classic => "classic",
-            Skin::Exterminator => "exterminator",
-        }
-    }
-}
-
 /// The hero, as `skin` says, turned the way they face.
 pub fn hero(facing: Facing, skin: Skin) -> Look {
     let (front, back, side) = match skin {
@@ -328,6 +326,16 @@ pub fn hero(facing: Facing, skin: Skin) -> Look {
             SpriteId::ExterminatorFront,
             SpriteId::ExterminatorBack,
             SpriteId::ExterminatorSide,
+        ),
+        Skin::Demolisher => (
+            SpriteId::DemolisherFront,
+            SpriteId::DemolisherBack,
+            SpriteId::DemolisherSide,
+        ),
+        Skin::Rookie => (
+            SpriteId::RookieFront,
+            SpriteId::RookieBack,
+            SpriteId::RookieSide,
         ),
     };
     match facing {
@@ -411,11 +419,19 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
             Look::sideways(shape, enemy.facing)
         }
     };
-    Look {
-        tint: (enemy.flash > 0).then_some(FLASH),
-        ..look
-    }
+    // Paralysed by a shock, it blinks blue; hit, it flashes white over that.
+    let shocked = enemy.shocked > 0 && (ticks / SHOCK_BLINK + enemy.id).is_multiple_of(2);
+    let tint = if enemy.flash > 0 {
+        Some(FLASH)
+    } else {
+        shocked.then_some(SHOCK)
+    };
+    Look { tint, ..look }
 }
+
+/// The blue an enemy paralysed by a shock blinks in, every so many ticks.
+pub const SHOCK: Color = Color::Rgb(70, 140, 255);
+const SHOCK_BLINK: u32 = 3;
 
 impl Sprites {
     /// The game's sprites, from the file built into it.
@@ -552,12 +568,6 @@ impl Sprite {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn the_exterminator_is_worn_only_once_unlocked() {
-        assert_eq!(Skin::Exterminator.worn(false), Skin::Survivor);
-        assert_eq!(Skin::Exterminator.worn(true), Skin::Exterminator);
-    }
 
     const PALETTE_ONLY: &str = "palette\nA 1 2 3  a comment\n\n";
 

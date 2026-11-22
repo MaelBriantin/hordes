@@ -38,6 +38,9 @@ const ARROW_BOUNCE: u32 = 15;
 const MINI_BAR: i32 = 6;
 const MINI_BAR_GAP: i32 = 1;
 
+/// The ticks the mini bar shows, then hides, low on HP.
+const MINI_BAR_BLINK: u32 = 6;
+
 impl Canvas<'_> {
     /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
     /// moment once pinged; and their HP in a small bar over it all, if it shows.
@@ -48,7 +51,10 @@ impl Canvas<'_> {
         if arrow {
             self.arrow(look, player.position, world.ticks(), view.arrow.colour());
         }
-        if view.mini_bars {
+        // Low on HP, it blinks.
+        let blinks_out = super::super::low_hp(world).is_some()
+            && (world.ticks() / MINI_BAR_BLINK).is_multiple_of(2);
+        if view.mini_bars && !blinks_out {
             self.mini_bars(world, look, arrow);
         }
     }

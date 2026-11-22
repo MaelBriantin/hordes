@@ -31,8 +31,6 @@ const DAYBREAK_SECONDS: u32 = 4;
 pub const STRIKE_DAMAGE: u32 = 30;
 /// How near where it falls a strike hurts enemies, and the player, in tiles.
 pub const STRIKE_RADIUS: f32 = 2.5;
-/// What a strike of lightning takes from the player, in HP.
-pub const STRIKE_PLAYER_DAMAGE: u32 = 20;
 /// How long a strike's ring shows where it will fall before it does, in ticks: half a second,
 /// time enough to run out of it from its middle.
 pub const STRIKE_WARNING_TICKS: u32 = 15;

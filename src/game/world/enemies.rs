@@ -185,10 +185,12 @@ impl World {
             if !self.unhurt && !self.daybreak() && self.player.invincible == 0 {
                 self.wound_player(burst::DAMAGE);
             }
+            let thrown = self.player.build.hero().perk().thrown();
+            let push = if thrown { burst::PUSH } else { 0.0 };
             self.player.position = shove(
                 &self.map,
                 self.player.position,
-                away.normalized() * burst::PUSH,
+                away.normalized() * push,
                 PLAYER_HALF_WIDTH,
                 false,
             );
@@ -354,6 +356,7 @@ impl World {
         let ticks = self.ticks;
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
+            enemy.shocked = enemy.shocked.saturating_sub(1);
             let stats = enemy.kind.stats();
             let apart = (target - enemy.position).length();
             if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
@@ -425,7 +428,14 @@ impl World {
             };
             let glared = f32::from(u16::try_from(100 - slowed.min(100)).unwrap_or(100)) / 100.0;
             let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace * glared;
-            let step = (heading * (speed * tick_seconds()) + push).clamp_length(MAX_STEP);
+            // Thrown by a shock, it goes on its way out, whatever else it does.
+            let knock = if enemy.knocked > 0 {
+                enemy.knocked -= 1;
+                enemy.knock
+            } else {
+                Vec2::ZERO
+            };
+            let step = (heading * (speed * tick_seconds()) + push + knock).clamp_length(MAX_STEP);
             enemy.position = slide(
                 &self.map,
                 enemy.position,

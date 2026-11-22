@@ -7,8 +7,9 @@ use super::super::burst;
 use super::super::enemy::EnemyKind;
 use super::super::gem::Gem;
 use super::super::guns::{self, Bullet};
+use super::super::hammer;
 use super::super::mode::Mode;
-use super::super::progress::{Achievement, Progress};
+use super::super::progress::{Achievement, Progress, Unlock};
 use super::super::spawn::{MARGIN, MAX_ENEMIES};
 use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -796,19 +797,20 @@ fn a_storms_strike_shows_its_ring_before_it_falls_on_the_player() {
     wait(&mut world, weather::STRIKE_WARNING_TICKS - 1);
     assert_eq!(world.player.hp, BASE_HP);
     assert!(world.lightning.is_none());
-    // Half a second on, it falls: the player, still in the ring, is hurt.
+    // Half a second on, it falls: the player, still in the ring, unhurt, their torch out.
     wait(&mut world, 1);
     assert!(world.lightning.is_some());
     assert_eq!(world.strikes_coming, []);
-    assert_eq!(world.player.hp, BASE_HP - weather::STRIKE_PLAYER_DAMAGE);
+    assert_eq!(world.player.hp, BASE_HP);
+    assert_eq!(world.torch_on(), Some(false));
 }
 
 #[test]
-fn a_strike_spares_the_player_out_of_its_ring() {
+fn a_strike_never_hurts_the_player() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.ticks = 30 * 480;
-    world.strike(Vec2::new(103.0, 50.0), true);
+    world.strike(world.player.position, true);
     assert_eq!(world.player.hp, BASE_HP);
 }
 
@@ -1272,23 +1274,25 @@ fn illumination_gives_a_point_of_xp_a_second() {
 }
 
 #[test]
-fn the_torch_lights_up_of_itself_as_the_night_falls_and_goes_out_at_will() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    disarm(&mut world);
+fn the_night_fallen_the_torch_waits_for_the_player_to_light_it_f_shown_till_then() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.announcement = None;
     world.next_horde = u32::MAX;
-    assert!(!world.torch_lit());
+    disarm(&mut world);
+    assert!(!world.torch_hint(), "not at dusk");
     world.switch_torch();
-    assert_eq!(world.torch_on(), None);
-    // It lights up at 0:26, holding once it has flickered, a second and a half at most.
-    world.ticks = 30 * 26 - 1;
-    wait(&mut world, 1);
-    wait(&mut world, 45);
+    assert_eq!(world.torch_on(), None, "nothing to light at dusk");
+    world.ticks = 30 * 26;
+    assert_eq!(world.torch_on(), Some(false), "out as the night falls");
+    assert!(world.torch_hint());
+    world.switch_torch();
+    assert!(!world.torch_hint());
+    // Holding once it has flickered, a second and a half at most.
+    wait(&mut world, 46);
     assert!(world.torch_lit());
     world.switch_torch();
     assert!(!world.torch_lit() && !world.torch_shines());
-    world.switch_torch();
-    wait(&mut world, 46);
-    assert!(world.torch_lit());
+    assert!(!world.torch_hint(), "lit once this run: no more F");
 }
 
 #[test]
@@ -2004,4 +2008,186 @@ fn level_25_in_a_run_unlocks_illumination() {
             .progress
             .deals(Choice::Legendary(Legendary::Illumination))
     );
+}
+
+#[test]
+fn a_strike_with_the_player_in_its_ring_puts_their_torch_out_up_to_them_to_light_it_again() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.ticks = 30 * 40;
+    world.torch_steady_at = 0;
+    assert!(world.torch_lit());
+    world.strike(world.player.position + Vec2::new(3.0, 0.0), false);
+    assert!(world.torch_lit(), "out of its ring");
+    world.strike(world.player.position + Vec2::new(2.0, 0.0), false);
+    assert_eq!(world.torch_on(), Some(false), "out");
+    wait(&mut world, 30 * 5);
+    assert_eq!(world.torch_on(), Some(false), "not back of itself");
+    world.switch_torch();
+    assert_eq!(world.torch_on(), Some(true));
+}
+
+#[test]
+fn the_hammer_lands_ahead_hurting_and_throwing_back_every_enemy_around_not_those_away() {
+    let mut world = armed_with(Weapon::Hammer, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // Where it lands, 2.5 tiles ahead; within its 2 tiles; well away.
+    for x in [102.5, 104.0, 110.0] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    // Raised a moment over the player's head, then down.
+    wait(&mut world, 1);
+    assert!(world.hammer_raised > 0 && world.blow.is_none());
+    assert_eq!(world.enemies[0].hp, 1_000);
+    wait(&mut world, hammer::RAISE_TICKS);
+    assert!(world.blow.is_some());
+    assert_eq!(world.enemies[0].hp, 1_000 - 28);
+    assert_eq!(world.enemies[1].hp, 1_000 - 28);
+    // Thrown out as the wave goes, a tile and a half.
+    wait(&mut world, hammer::WAVE_TICKS);
+    assert!(world.enemies[1].position.x > 105.0, "thrown back");
+    assert_eq!(world.enemies[2].hp, 1_000);
+    // Two seconds after the blow before it is raised again.
+    let hp = world.enemies[0].hp;
+    wait(&mut world, 30 * 2 - 1 - hammer::WAVE_TICKS);
+    assert_eq!(world.enemies[0].hp, hp);
+    assert_eq!(world.hammer_raised, 0);
+}
+
+#[test]
+fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher() {
+    let mut world = armed_with(Weapon::Crowbar, 1);
+    world.next_horde = u32::MAX;
+    world.progress = Progress::default();
+    world.player.facing = Facing::Right;
+    for felled in 0..10 {
+        assert!(
+            !world.progress.has(Unlock::Skin(Skin::Demolisher)),
+            "{felled}"
+        );
+        world.melee.clear();
+        world
+            .enemies
+            .push(enemy(EnemyKind::Abomination, Vec2::new(101.5, 50.0)));
+        let last = world.enemies.len() - 1;
+        world.enemies[last].hp = 1;
+        world.enemies[last].stunned = u32::MAX;
+        wait(&mut world, 1);
+        world.enemies.clear();
+        world.swellings.clear();
+    }
+    assert!(world.progress.has(Unlock::Skin(Skin::Demolisher)));
+}
+
+#[test]
+fn a_hero_starts_with_their_own_weapon_dealt_to_them_alone() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.play_as(Skin::Classic);
+    assert_eq!(world.player.build.weapon_level(Weapon::Machete), 1);
+    assert_eq!(world.player.build.weapon_level(Weapon::Crowbar), 0);
+    let dealt: Vec<Choice> = (0..60).flat_map(|_| world.deal_as(25)).collect();
+    assert!(dealt.contains(&Choice::Weapon(Weapon::Machete)));
+    for others in [Weapon::Crowbar, Weapon::Hammer, Weapon::Baton] {
+        assert!(!dealt.contains(&Choice::Weapon(others)), "{others:?}");
+    }
+}
+
+#[test]
+fn the_baton_thrusts_straight_ahead_hurting_and_paralysing_the_enemies_on_its_line() {
+    let mut world = armed_with(Weapon::Baton, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // On its line, near and at its reach; aside; behind.
+    for (x, y) in [(101.5, 50.0), (102.8, 50.2), (101.5, 52.0), (98.5, 50.0)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+    }
+    wait(&mut world, 1);
+    assert!(world.thrust.is_some());
+    let hit: Vec<bool> = world.enemies.iter().map(|e| e.hp < 1_000).collect();
+    assert_eq!(hit, [true, true, false, false]);
+    assert!(world.enemies[0].stunned > 0, "paralysed");
+    assert!(world.enemies[0].shocked > 0, "shown shocked");
+    assert_eq!(world.enemies[2].stunned, 0);
+}
+
+#[test]
+fn the_knife_stabs_the_nearest_enemy_whichever_way_quick_and_often() {
+    let mut world = armed_with(Weapon::Knife, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // Behind the player, the nearest; a little further; out of reach.
+    for (x, y) in [(99.2, 50.0), (101.4, 50.0), (104.0, 50.0)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    let hp: Vec<u32> = world.enemies.iter().map(|e| e.hp).collect();
+    assert_eq!(hp, [1_000 - 8, 1_000, 1_000]);
+    assert_eq!(world.stabs.len(), 1);
+    // Again 0.4 s on.
+    wait(&mut world, 12);
+    assert_eq!(world.enemies[0].hp, 1_000 - 16);
+}
+
+#[test]
+fn a_minute_under_30_percent_of_hp_in_a_run_unlocks_the_rookie() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.progress = Progress::default();
+    world.weather_news = WeatherNews::Banner;
+    world.player.hp = 29;
+    wait(&mut world, 30 * 60 - 1);
+    assert!(!world.progress.has(Unlock::Skin(Skin::Rookie)));
+    wait(&mut world, 1);
+    assert!(world.progress.has(Unlock::Skin(Skin::Rookie)));
+}
+
+#[test]
+fn each_hero_plays_with_their_own_hp_speed_and_perk() {
+    let build = |hero| Build::playing(hero);
+    assert_eq!(build(Skin::Survivor).max_hp(), BASE_HP);
+    assert_eq!(build(Skin::Demolisher).max_hp(), 140);
+    assert_eq!(build(Skin::Rookie).max_hp(), 80);
+    assert_eq!(build(Skin::Survivor).speed_percent(), 100);
+    assert_eq!(build(Skin::Demolisher).speed_percent(), 85);
+    assert_eq!(build(Skin::Rookie).speed_percent(), 110);
+    assert_eq!(build(Skin::Classic).damage(20), 22, "commando");
+    assert_eq!(build(Skin::Survivor).damage(20), 20);
+    assert_eq!(build(Skin::Rookie).reload(50), 40, "reflexes");
+    let burns = build(Skin::Survivor).burn_ticks();
+    assert_eq!(
+        build(Skin::Exterminator).burn_ticks(),
+        burns * 2,
+        "pyromaniac"
+    );
+}
+
+#[test]
+fn the_demolisher_takes_less_damage_and_no_burst_throws_them() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Demolisher);
+    assert_eq!(world.player.hp, 140);
+    let start = world.player.position;
+    world.burst(start + Vec2::new(1.0, 0.0));
+    assert_eq!(world.player.hp, 140 - burst::DAMAGE * 90 / 100);
+    assert_eq!(world.player.position, start, "not thrown");
 }

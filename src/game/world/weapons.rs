@@ -5,11 +5,11 @@ use rand::RngExt;
 
 use super::super::body::{in_sight, slide, touch};
 use super::super::build::Weapon;
-use super::super::enemy::Enemy;
+use super::super::enemy::{Enemy, EnemyKind};
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
-use super::super::{Vec2, drones, flamethrower};
+use super::super::{Vec2, baton, drones, flamethrower, hammer, knife};
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
@@ -38,11 +38,12 @@ impl World {
             bottle.left > 0
         });
         self.puddles.extend(landed);
+        let burns = self.player.build.burn_ticks();
         for puddle in &mut self.puddles {
             puddle.left = puddle.left.saturating_sub(1);
             for enemy in &mut self.enemies {
                 if (enemy.position - puddle.centre).length() <= puddle.radius {
-                    enemy.ignite();
+                    enemy.ignite_for(burns);
                 }
             }
         }
@@ -168,7 +169,11 @@ impl World {
             if !hit {
                 continue;
             }
+            let standing = enemy.hp > 0;
             enemy.hit(against(damage, enemy, hunter));
+            if standing && enemy.hp == 0 && enemy.kind == EnemyKind::Abomination {
+                self.abominations_smashed += 1;
+            }
             enemy.stunned = enemy.stunned.max(stats.stun);
             if stats.knockback > 0.0 {
                 let away = offset.normalized() * stats.knockback;
@@ -238,7 +243,7 @@ impl World {
             if magazine.rounds == 0 {
                 // Reloaded, the gun shoots at once: the reload is its wait.
                 magazine.wait = 0;
-                magazine.reloading = build.cooldown(gun.reload).max(1);
+                magazine.reloading = build.reload(gun.reload).max(1);
             }
         }
     }
@@ -298,6 +303,21 @@ impl World {
             let every = build.cooldown(molotov::at(level).every).max(1);
             waits.push((Weapon::Molotov, self.molotov_wait.min(every), every));
         }
+        let level = build.weapon_level(Weapon::Knife);
+        if level > 0 {
+            let every = build.cooldown(knife::at(level).every).max(1);
+            waits.push((Weapon::Knife, self.knife_wait.min(every), every));
+        }
+        let level = build.weapon_level(Weapon::Baton);
+        if level > 0 {
+            let every = build.cooldown(baton::at(level).every).max(1);
+            waits.push((Weapon::Baton, self.baton_wait.min(every), every));
+        }
+        let level = build.weapon_level(Weapon::Hammer);
+        if level > 0 {
+            let every = build.cooldown(hammer::at(level).every).max(1);
+            waits.push((Weapon::Hammer, self.hammer_wait.min(every), every));
+        }
         let level = build.weapon_level(Weapon::Drones);
         if level > 0 {
             let repair = build.cooldown(drones::repair(level)).max(1);
@@ -318,7 +338,7 @@ impl World {
                     rounds: gun.magazine,
                     ..Magazine::default()
                 });
-                let reload = self.player.build.cooldown(gun.reload).max(1);
+                let reload = self.player.build.reload(gun.reload).max(1);
                 Some((weapon, magazine, gun.magazine, reload))
             })
             .chain(self.tank())

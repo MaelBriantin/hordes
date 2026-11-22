@@ -83,7 +83,7 @@ const WEATHER_AHEAD: f32 = 0.18;
 const WEATHER_NEXT: f32 = 0.8;
 /// The dawn's icon, at the end of the row: the rising sun's gold.
 const DAWN_COLOR: Color = Color::Rgb(255, 210, 90);
-/// Below this share of their HP, the player's HP bar blinks.
+/// Below this share of their HP, the player's HP bar blinks, and their heart beats.
 const LOW_HP_PERCENT: u32 = 30;
 /// The frames the low HP bar stays lit, then dimmed, as it blinks.
 const LOW_HP_BLINK: u32 = 8;
@@ -105,6 +105,12 @@ const HURT_TICKS: u32 = 15;
 const HURT_EDGE: u16 = 4;
 const HURT_STRENGTH: f32 = 0.6;
 const HURT_RED: (u8, u8, u8) = (200, 20, 30);
+/// Low on HP (under `LOW_HP_PERCENT`), the player's heart beats on the screen's edges, red: a beat
+/// every so many ticks, from at that share to near 0 HP; how strong a beat is, and how much of
+/// the time between two it takes to fade.
+const HEARTBEAT_TICKS: (u32, u32) = (36, 15);
+const HEARTBEAT_STRENGTH: f32 = 0.35;
+const HEARTBEAT_FADE: f32 = 0.4;
 /// The game's own background and text, whatever the terminal's theme: a light one would wash
 /// the night out.
 const SCREEN: Style = Style::new()
@@ -152,6 +158,12 @@ pub fn collection_row(screen: Rect) -> usize {
     collection::in_a_row(Block::bordered().inner(areas(screen).field).width)
 }
 
+/// The collection's tile under or over the one at `at`, rows of `per_row` tiles: the one standing
+/// there on the screen.
+pub fn collection_beside(at: usize, per_row: usize, down: bool) -> usize {
+    collection::beside(at, per_row, down)
+}
+
 /// Whether the collection shows on the title screen, on a screen of that size.
 pub fn collection_shows(screen: Rect) -> bool {
     menu::collection_shows(Block::bordered().inner(areas(screen).field))
@@ -185,11 +197,10 @@ pub struct ViewState {
     pub ground: bool,
     /// How the hero looks.
     pub skin: Skin,
-    /// The mode the next run is played in, and whether it skips the dusk; whether the arcade
-    /// can be chosen, its achievement reached.
+    /// The mode the next run is played in; whether the arcade can be chosen, its achievement
+    /// reached.
     pub mode: Mode,
     pub arcade: bool,
-    pub skip_dusk: bool,
     /// Whether the gear shows over the top left of the map; as a list rather than icons.
     pub gear: bool,
     pub gear_list: bool,
@@ -267,7 +278,11 @@ pub fn render(
             view
         };
         pixels::render_map(frame.buffer_mut(), map, world, sprites, view);
+        if !announce::showing(world) {
+            render_torch_hint(frame, map, world, view.frame);
+        }
         render_hurt(frame.buffer_mut(), map, world);
+        render_heartbeat(frame.buffer_mut(), map, world);
     }
     // The keys below, but for the run going on: its XP bar, all along the screen.
     let help = match screen {
@@ -324,6 +339,31 @@ pub fn render(
     }
 }
 
+/// The rows under the middle of the map, where the player stands, that F shows on.
+const TORCH_HINT_ROWS: u16 = 3;
+
+/// The night fallen, the torch never lit yet this run: F under the player, blinking as the
+/// title's prompt, with what it does.
+fn render_torch_hint(frame: &mut Frame, map: Rect, world: &World, frames: u32) {
+    if !world.torch_hint() || frames % 30 >= 20 {
+        return;
+    }
+    let y = map.y + map.height / 2 + TORCH_HINT_ROWS;
+    if y >= map.bottom() {
+        return;
+    }
+    let line = Line::from(vec![
+        Span::styled(format!(" {} ", fl!("key-f")), KEY_CAP),
+        Span::styled(
+            format!(" {}", fl!("torch-hint").to_uppercase()),
+            Style::new()
+                .fg(Color::Rgb(225, 225, 230))
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]);
+    frame.render_widget(line.centered(), Rect::new(map.x, y, map.width, 1));
+}
+
 /// The edges of the map flushing red a moment after the player is hurt, fading: the blow is
 /// felt.
 fn render_hurt(buffer: &mut Buffer, map: Rect, world: &World) {
@@ -337,7 +377,55 @@ fn render_hurt(buffer: &mut Buffer, map: Rect, world: &World) {
     let share = |part: u32, whole: u32| {
         f32::from(u16::try_from(part).unwrap_or(0)) / f32::from(u16::try_from(whole).unwrap_or(1))
     };
-    let strength = HURT_STRENGTH * (1.0 - share(since, HURT_TICKS));
+    redden_edges(
+        buffer,
+        map,
+        HURT_STRENGTH * (1.0 - share(since, HURT_TICKS)),
+    );
+}
+
+/// How low the player's HP is, under `LOW_HP_PERCENT` of it: from 0, just under, to 1, near
+/// none; none above, or fallen.
+pub(super) fn low_hp(world: &World) -> Option<f32> {
+    let (hp, most) = (world.player.hp, world.player.max_hp().max(1));
+    if hp == 0 || hp * 100 >= most * LOW_HP_PERCENT {
+        return None;
+    }
+    let share = |part: u32, whole: u32| {
+        f32::from(u16::try_from(part).unwrap_or(u16::MAX))
+            / f32::from(u16::try_from(whole).unwrap_or(u16::MAX).max(1))
+    };
+    Some(1.0 - share(hp * 100, most * LOW_HP_PERCENT))
+}
+
+/// Low on HP, the player's heart beats on the edges of the map, red, faster the lower.
+fn render_heartbeat(buffer: &mut Buffer, map: Rect, world: &World) {
+    let Some(low) = low_hp(world) else {
+        return;
+    };
+    let (slowest, fastest) = (
+        f32::from(u16::try_from(HEARTBEAT_TICKS.0).unwrap_or(1)),
+        f32::from(u16::try_from(HEARTBEAT_TICKS.1).unwrap_or(1)),
+    );
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "a few dozen ticks"
+    )]
+    let every = (slowest + (fastest - slowest) * low).round().max(1.0) as u32;
+    let since = f32::from(u16::try_from(world.ticks() % every).unwrap_or(0));
+    let fade = f32::from(u16::try_from(every).unwrap_or(1)) * HEARTBEAT_FADE;
+    let beat = (1.0 - since / fade).max(0.0);
+    if beat > 0.0 {
+        redden_edges(buffer, map, HEARTBEAT_STRENGTH * beat);
+    }
+}
+
+/// The edges of the map reddened, `strength` at the very edge, fading inwards.
+fn redden_edges(buffer: &mut Buffer, map: Rect, strength: f32) {
+    let share = |part: u32, whole: u32| {
+        f32::from(u16::try_from(part).unwrap_or(0)) / f32::from(u16::try_from(whole).unwrap_or(1))
+    };
     for y in map.top()..map.bottom() {
         for x in map.left()..map.right() {
             // In cells across, and in half cells down: a cell is twice as tall as wide.
@@ -657,6 +745,20 @@ pub fn clock(seconds: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_heart_beats_under_30_percent_of_hp_harder_the_lower() {
+        let mut world = World::new(1);
+        assert_eq!(low_hp(&world), None);
+        world.player.hp = 30;
+        assert_eq!(low_hp(&world), None, "at 30 %, not yet");
+        world.player.hp = 29;
+        let just_under = low_hp(&world).unwrap();
+        world.player.hp = 3;
+        assert!(low_hp(&world).unwrap() > just_under);
+        world.player.hp = 0;
+        assert_eq!(low_hp(&world), None, "fallen");
+    }
 
     #[test]
     fn a_clock_shows_minutes_and_seconds() {

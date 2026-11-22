@@ -13,31 +13,30 @@ use super::collection::{
 };
 use super::level_up::{COMMON, LEGENDARY};
 use super::sprites::{self, Skin, SpriteId, Sprites};
-use super::{achievement, pixels};
-use crate::game::{Achievement, Facing, Progress};
+use super::{achievement, level_up, pixels};
+use crate::game::{Facing, Perk, Progress};
 
 /// Every skin, in the order the tiles show them.
-pub const SKINS: [Skin; 3] = [Skin::Survivor, Skin::Classic, Skin::Exterminator];
+pub const SKINS: [Skin; 5] = Skin::ALL;
 /// The frames the hero picked waits, from the front, before turning round: a second; and the
 /// frames they show each way as they turn.
 const TURN_AFTER: u32 = 30;
 const TURN_FRAMES: u32 = 16;
+/// The box under the tiles: as the collection's, four rows taller, room for what the hero
+/// plays with: their weapon, their HP and speed, their perk.
+const SKIN_BOX_HEIGHT: u16 = BOX_HEIGHT + 4;
+/// The rows the skins take: their title and a row of room, the tiles, a row of room and the box.
+pub const HEIGHT: u16 = 2 + TILE_HEIGHT + 1 + SKIN_BOX_HEIGHT;
+
 /// The cells the check on the skin worn takes.
 const CHECK: (u16, u16) = (5, 2);
 /// The ways the hero picked faces as they turn round.
 const TURN: [Facing; 4] = [Facing::Down, Facing::Right, Facing::Up, Facing::Left];
 
-/// The achievement a skin waits for; none for those there from the start.
-pub fn achievement_of(skin: Skin) -> Option<Achievement> {
-    match skin {
-        Skin::Survivor | Skin::Classic => None,
-        Skin::Exterminator => Some(Achievement::Cleaner),
-    }
-}
-
 /// Whether the player may wear a skin: there from the start, or its achievement reached.
 pub fn unlocked(progress: &Progress, skin: Skin) -> bool {
-    achievement_of(skin).is_none_or(|achievement| progress.achieved.contains(&achievement))
+    skin.achievement()
+        .is_none_or(|achievement| progress.achieved.contains(&achievement))
 }
 
 /// The skins, the tile at `picked` framed, its hero turning round once picked `since` frames,
@@ -51,7 +50,7 @@ pub fn render(
     worn: Skin,
     since: u32,
 ) {
-    if area.height < collection::height_of(1) {
+    if area.height < HEIGHT {
         return;
     }
     let had = SKINS
@@ -109,6 +108,11 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
     let longest = SKINS
         .iter()
         .flat_map(|skin| words(*skin))
+        .chain(
+            SKINS
+                .iter()
+                .flat_map(|skin| [weapon_line(*skin), stats_line(*skin), perk_line(*skin)]),
+        )
         .map(|line| u16::try_from(line.chars().count()).unwrap_or(u16::MAX))
         .max()
         .unwrap_or(0);
@@ -120,7 +124,7 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
     } else {
         collection::grey(COMMON)
     };
-    for row in y..y + BOX_HEIGHT {
+    for row in y..y + SKIN_BOX_HEIGHT {
         buffer.set_string(x, row, " ".repeat(usize::from(width)), ground);
         buffer.set_string(x, row, "▌", ground.fg(edge));
     }
@@ -144,6 +148,11 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
         let fg = if row == 1 && has { WHITE } else { GREY };
         buffer.set_string(left, top + row, line, ground.fg(fg));
     }
+    // Under where it comes from: the weapon the hero starts with.
+    // What the hero plays with: their weapon, their HP and speed, their perk.
+    buffer.set_string(left, top + 4, weapon_line(skin), ground.fg(WHITE));
+    buffer.set_string(left, top + 5, stats_line(skin), ground.fg(WHITE));
+    buffer.set_string(left, top + 6, perk_line(skin), ground.fg(GREY));
     let (status, fg) = if skin == worn {
         (fl!("skin-worn"), LEGENDARY)
     } else if has {
@@ -151,7 +160,7 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
     } else {
         (fl!("collection-locked"), GREY)
     };
-    let last = Rect::new(left, top + 4, width.saturating_sub(2 * BOX_PADDING), 1);
+    let last = Rect::new(left, top + 8, width.saturating_sub(2 * BOX_PADDING), 1);
     let style = ground.fg(fg).add_modifier(Modifier::BOLD);
     collection::centred(buffer, last, last.y, &status.to_uppercase(), style);
 }
@@ -160,7 +169,7 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
 /// from.
 fn words(skin: Skin) -> Vec<String> {
     let mut lines = vec![format!("{}  {}", name(skin), fl!("card-skin"))];
-    match achievement_of(skin) {
+    match skin.achievement() {
         None => lines.push(fl!("collection-from-start")),
         Some(achievement) => {
             lines.push(fl!(
@@ -173,12 +182,40 @@ fn words(skin: Skin) -> Vec<String> {
     lines
 }
 
+/// The line telling the weapon a hero starts with.
+fn weapon_line(skin: Skin) -> String {
+    fl!("skin-weapon", weapon = level_up::weapon_name(skin.weapon()))
+}
+
+/// The line telling a hero's HP and speed.
+fn stats_line(skin: Skin) -> String {
+    let speed = match skin.speed_percent() {
+        0 => fl!("skin-speed-normal"),
+        more if more > 0 => fl!("skin-speed-more", percent = more),
+        less => fl!("skin-speed-less", percent = less.unsigned_abs()),
+    };
+    fl!("skin-stats", hp = skin.hp(), speed = speed)
+}
+
+/// The line telling what sets a hero apart.
+fn perk_line(skin: Skin) -> String {
+    match skin.perk() {
+        Perk::Versatile => fl!("perk-versatile"),
+        Perk::Commando => fl!("perk-commando"),
+        Perk::Pyromaniac => fl!("perk-pyromaniac"),
+        Perk::Unshakable => fl!("perk-unshakable"),
+        Perk::Reflexes => fl!("perk-reflexes"),
+    }
+}
+
 /// A skin's name, its first letter a capital.
-fn name(skin: Skin) -> String {
+pub fn name(skin: Skin) -> String {
     let word = match skin {
         Skin::Survivor => fl!("skin-survivor"),
         Skin::Classic => fl!("skin-classic"),
         Skin::Exterminator => fl!("skin-exterminator"),
+        Skin::Demolisher => fl!("skin-demolisher"),
+        Skin::Rookie => fl!("skin-rookie"),
     };
     let mut letters = word.chars();
     letters.next().map_or_else(String::new, |first| {
@@ -189,6 +226,7 @@ fn name(skin: Skin) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::Achievement;
 
     #[test]
     fn the_exterminator_waits_for_cleaner_the_others_are_there_from_the_start() {
@@ -198,9 +236,8 @@ mod tests {
         assert!(!unlocked(&progress, Skin::Exterminator));
         progress.reach(Achievement::Cleaner);
         assert!(unlocked(&progress, Skin::Exterminator));
-        assert_eq!(
-            unlocked(&progress, Skin::Exterminator),
-            progress.exterminator()
-        );
+        assert!(!unlocked(&progress, Skin::Demolisher));
+        progress.reach(Achievement::Demolisher);
+        assert!(unlocked(&progress, Skin::Demolisher));
     }
 }

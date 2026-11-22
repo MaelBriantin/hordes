@@ -57,7 +57,7 @@ impl World {
     }
 
     /// A strike of lightning falls at `at`, hurting the enemies around it and setting them on
-    /// fire, and hurting the player, if `hurts`.
+    /// fire, if `hurts`; never the player, whose torch it puts out if they are in its ring.
     pub(super) fn strike(&mut self, at: Vec2, hurts: bool) {
         self.lightning = Some(Lightning {
             tick: self.ticks,
@@ -65,24 +65,26 @@ impl World {
         });
         // The whole map lit: every enemy on screen sees the player.
         self.give_away(self.view.x.max(self.view.y));
+        // In its ring, the player's torch goes out.
+        if (self.player.position - at).length() <= weather::STRIKE_RADIUS {
+            self.cut_torch();
+        }
         if !hurts {
             return;
         }
+        let burns = self.player.build.burn_ticks();
         for enemy in &mut self.enemies {
             if (enemy.position - at).length() <= weather::STRIKE_RADIUS {
                 enemy.hit(weather::STRIKE_DAMAGE);
-                enemy.ignite();
+                enemy.ignite_for(burns);
             }
         }
+        // It never hurts the player: struck, they have the achievement.
         if (self.player.position - at).length() <= weather::STRIKE_RADIUS
-            && !self.unhurt
             && !self.daybreak()
             && self.player.dash.is_none()
         {
-            self.wound_player(weather::STRIKE_PLAYER_DAMAGE);
-            if self.player.hp > 0 {
-                self.progress.reach(Achievement::Struck);
-            }
+            self.progress.reach(Achievement::Struck);
         }
     }
 

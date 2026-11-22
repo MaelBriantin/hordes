@@ -5,10 +5,10 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## Controls
 
 - **Move**: the arrows, WASD or ZQSD, in **4 directions**, no diagonal: of the keys held down, the last one pressed wins (D then W goes up; letting go of W goes right again).
-- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in the clear night's grey, as its word is told, or **Arcade** in gold, a gleam sweeping across it now and then. At the bottom left, the key and the other mode it changes to. The game's name, the mode and the prompt stand in the middle of the screen with what shows under them (the arcade's leaderboard, the collection or the skins once opened): they slide at a steady pace (a row and a half a frame, so a short way at once) whenever what shows under them changes (the collection or the skins opening or closing, Tab changing the mode and so showing the arcade's leaderboard or not), what shows under them appearing once they are in place.
+- **Start**: the game opens on its title screen; Enter starts a run, in the mode chosen with Tab (see Modes). Under the game's name, the mode as its subtitle, in small pixel letters: **Survive the night** in the clear night's grey, as its word is told, or **Endless Night** in gold, a gleam sweeping across it now and then. At the bottom left, the key and the other mode it changes to. The game's name, the mode and the prompt stand in the middle of the screen with what shows under them (the arcade's leaderboard, the collection or the skins once opened): they slide at a steady pace (a row and a half a frame, so a short way at once) whenever what shows under them changes (the collection or the skins opening or closing, Tab changing the mode and so showing the arcade's leaderboard or not), what shows under them appearing once they are in place.
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
-- **Torch**: F, once it has lit up of itself, at 0:26 (see The night).
+- **Torch**: F, once the night has fallen, at 0:26 (see The night).
 - **Dash**: Shift, the way the player faces, once the Dash card is taken and a dash is ready (see The player). Without kitty's keyboard protocol, a terminal doesn't tell Shift alone: Shift with a way (a capital W, A, S, D, Z or Q) dashes.
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
@@ -17,9 +17,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
   - **Arrow**: a small arrow over the player's head, bouncing, to see them at once in the crowd: off, white, yellow or red. Whatever the setting, **E** shows the arrow for **2 s** (white, if off): the player found again in the crowd.
   - **Announcements**: how a new weather and a horde are told: big, with a pause (in big letters, the world standing still 2 s); big, no pause (in big letters 2 s, the run going on); or a banner (on the top row of the map 3 s, the run going on). Big, no pause, at first. The opening is always told big, with a pause.
   - **Gear**: hidden, as icons, or as a list over the top left of the map (I in a run shows or hides it); hidden at first. As a list, a line a card: its name, its level (MAX in gold at the last), its gauge if it has one. A gauge under each weapon and the Dash: a gun's rounds, then its reload filling from empty; the melee weapons, the Molotov and the drones (one broken) filling between two blows, full once ready; the dashes ready, then coming back. The opening and the hordes are always told in big letters.
-  - **HP over the hero**: shown or hidden: the player's HP in a small bar over their head (over the arrow, when it shows).
+  - **HP over the hero**: shown or hidden: the player's HP in a small bar over their head (over the arrow, when it shows), blinking under **30%** of their HP.
   - **Coloured ground** (experimental): off or on: on, the bare ground is dark grass speckled with earth, lit as the rest, rather than the screen's dark. Off at first: it redraws most of the screen at every step, for a modern, fast terminal (Ghostty, kitty, WezTerm…).
-  - **Dusk**: played or skipped: skipped, a run opens on the night, the torch lit.
   - **Erase the progress**, from the title screen's options alone: Enter asks to confirm, Enter again erases the achievements, their counts and so the collection (not the settings nor the leaderboard); any other key keeps them.
   - **Language**: English or French. At first, the system's language if the game speaks it (`LANG`), English otherwise.
 - These choices are kept for the next runs (`settings.txt` in the game's data folder).
@@ -31,7 +30,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 ## Modes
 
 - **Standard**: from dusk to dawn, as below; no score, no leaderboard: the death screen tells the time survived, the level and the kills. The only mode at first.
-- **Arcade**: unlocked by an achievement, the dawn reached in a standard run (see Progress); until then, no Tab on the title screen, the standard alone. Endless, for the score. The stages of weather last **3 minutes** and go up to the tempest and back down to the night, again and again (night, drizzle, rain, storm, tempest, storm, rain, drizzle, night…), with no dawn. The run grows harder with the time, **7% a minute**, compounded (×2 at 10 minutes, ×3.9 at 20): as many more enemies appear (1.5 a second at first), as many more HP they have, and the score's weather multiplier is that pressure. The leaderboard is the arcade's.
+- **Arcade**, shown as **Endless Night**: unlocked by an achievement, opening on the night, the dusk skipped, the torch lit (a standard run always opens on the dusk); the dawn reached in a standard run (see Progress); until then, no Tab on the title screen, the standard alone. Endless, for the score. The stages of weather last **3 minutes** and go up to the tempest and back down to the night, again and again (night, drizzle, rain, storm, tempest, storm, rain, drizzle, night…), with no dawn. The run grows harder with the time, **7% a minute**, compounded (×2 at 10 minutes, ×3.9 at 20): as many more enemies appear (1.5 a second at first), as many more HP they have, and the score's weather multiplier is that pressure. The leaderboard is the arcade's.
 
 ## The run
 
@@ -79,15 +78,16 @@ In arcade, every run is played for its score.
 
 - Runs start at **dusk**, for half a minute, just enough to look around: for its first 24 s, the setting sun lights the whole map, warm, less and less, down to half its light; then the night falls all of a sudden, in **6 s**, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**, a torch, out at dusk: it lights up of itself at **0:26**, as the night falls. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
+- The player carries a **light**, a torch, out at dusk. It no longer lights up of itself: as the night falls, at **0:26**, it is **for the player to light it**, **F** shown under them, blinking ("[F] light the torch"), until they first do in the run; an Endless Night run, skipping the dusk, opens on it lit. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
 - **No battery**: the torch stays lit as long as the player wants, and lights again whenever they want. The status line shows the torch, on or out, as a bulb: green while it is on, grey-blue while it is out. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (10% of their brightness).
 - **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **8**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the crowbar and the machete still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
 - **Shadows** go the other way round, at night: they hunt the player in the dark, wherever they are, their eyes shining red, faster the longer they hunt (up to **50%** faster after 5 s; back to their speed once lit). The torch lit, they keep away from it: caught in its light, a Shadow **bolts** out of it, 2.5 times its speed for a third of a second.
 - **Gems, bullets and the machete's swings glow**: they show in the dark. A gem casts a small glow of its colour on the ground around it, two tiles or so, and lights what passes by it, an enemy, out of the dark.
 - **What burns casts a halo**: orange, flickering, on the ground around it: a puddle of fire, a campfire, an enemy burning. A bottle bursts in a flash of fire, lighting **6 tiles** around and fading in a quarter of a second. Where halos meet, the strongest shows, not their sum.
-- **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s.
+- **Lightning** (see Weather) lights the whole map at once as it strikes, fading back to the dark in 0.8 s. A strike falling with the player **in its ring** (2.5 tiles, see Weather) **puts their torch out**, lit, as F does: the ring tells where to step out of to keep the light; up to them to light it again (F), quick, flickering as it does (up to 1.5 s). Meanwhile the guns hold their fire, the enemies no longer see the player from afar.
 - **Blood** (red, ketchup, mayo or pesto, as the settings say; or none): a stain where an enemy falls (bigger for an abomination) and where the player is hit, fading away in **30 s**. A hit player also spurts a few drops every way, for a third of a second.
 - **A blow** to the player flushes the edges of the screen red for half a second, whatever the blood setting.
+- **Low on HP**, under **30%** (as the HP bar blinks), the player's **heart beats** on the edges of the screen: a soft red pulse, every 1.2 s just under, faster and faster down to every 0.5 s near 0 HP.
 
 ## Weather
 
@@ -104,16 +104,26 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 | 10:30 | Dawn | — | — | — | the run is won (see The run) |
 
 - A strike falls somewhere the player sees, at a moment of its own: between half and one and a half times the weather's wait.
-- From the storm on, a strike is foretold: **half a second** before it falls, the ring of the ground it will hurt, **2.5 tiles** around, blinks where it will, faster and faster, dim. Falling, it takes **30 HP** from every enemy within those 2.5 tiles and sets it **on fire** (the ring shows again), and **20 HP** from the player, if they are still in it (not at daybreak). A strike in three falls where the player stands as it is foretold, one in two in the tempest; the others, anywhere the player sees.
+- From the storm on, a strike is foretold: **half a second** before it falls, the ring of the ground it will hurt, **2.5 tiles** around, blinks where it will, faster and faster, dim. Falling, it takes **30 HP** from every enemy within those 2.5 tiles and sets it **on fire** (the ring shows again); it never hurts the player. A strike in three falls where the player stands as it is foretold, one in two in the tempest; the others, anywhere the player sees.
 - The light never falls under **4 tiles**.
 
 ## The player
 
+The player plays a **hero**, as the skin worn has it (see Progress): each their own HP, speed, weapon and perk.
+
+| Hero | HP | Speed | Weapon | Perk |
+|---|---|---|---|---|
+| Survivor | 100 | normal | crowbar | **Versatile**: no weakness, the measure of the others |
+| Classic hero | 90 | +5% | machete | **Commando**: every weapon hurts 10% more |
+| Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, lightning) |
+| Demolisher | 140 | −15% | sledgehammer | **Unshakable**: 10% less damage taken, and never thrown by a burst |
+| Rookie | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
+
 | Stat | Value |
 |---|---|
-| Speed | 6 tiles/s (+8% per level of Swiftness) |
+| Speed | 6 tiles/s, the survivor's (the hero's own, then +8% per level of Swiftness) |
 | Body | 0.9 × 0.9 tile, smaller than the sprite (2 × 2 tiles): brushing past an obstacle is forgiven |
-| HP | 100 (+20 per level of Vitality); the HP bar blinks under 30% |
+| HP | The hero's (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
 | Dashes | None at first: the Dash card brings them (see Passives). One, ready as the card is taken, back 8 s after it is taken (6 s from level 2, 4.5 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
 | Dash | Space or Enter: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
@@ -153,19 +163,19 @@ The weather worsens as the run goes on, a stage every **2 minutes**, as the diff
 
 ## Weapons
 
-They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **crowbar**; the others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
+They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **hero's own weapon**, at level 1, as the skin worn has it (see Progress), a melee one: the survivor's **crowbar**, the classic hero's **machete**, the exterminator's **stun baton**, the demolisher's **sledgehammer**, the rookie's **combat knife**. A hero's own weapon is **theirs alone**: its next levels are dealt to them, never to another hero. The others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
 
 **Obstacles and shots**: the guns and the drones aim only at enemies in sight, no tree nor rock between (a Shadow over a rock is out of sight); a bullet that meets a tree or a rock stops there, a spark where it hits. The melee weapons and the Molotov's bottles, thrown over, don't care.
 
 ### Crowbar
 
-The weapon every run starts with: a heavy blow in an arc before the player, once an enemy is within **2.5 tiles**, every **1.5 s** (less with Haste): **18 damage** to every enemy in the arc (90°), each pushed back **a tile**. Its blow shows iron grey.
+The survivor's own weapon, and so the one most runs start with: a heavy blow in an arc before the player, once an enemy is within **2.5 tiles**, every **1.5 s** (less with Haste): **18 damage** to every enemy in the arc (90°), each pushed back **a tile**. Its blow shows iron grey.
 
 **Levels**: 2: a wider arc (120°) · 3: 24 damage · 4: a backhand behind the player after the blow · 5: the enemies hit stand stunned half a second.
 
 ### Machete
 
-A swing in an arc before the player, the way they face, hitting **every enemy in it** for **12 damage**: within reach of the player (plus the enemy's half width) and within the arc. It swings every **1.2 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
+The classic hero's own weapon. A swing in an arc before the player, the way they face, hitting **every enemy in it** for **12 damage**: within reach of the player (plus the enemy's half width) and within the arc. It swings every **1.2 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
 
 | Level | Swing |
 |---|---|
@@ -210,6 +220,24 @@ Every **3 s** (less with Haste), a bottle thrown at an enemy at random within **
 A **rare** weapon. A **cone of fire** ahead of the player, the way they face, **4.5 tiles** long, 60° wide, lit by an enemy in it, in sight (trees and rocks hide what stands behind them; a barricade doesn't), then burning its **whole tank**, enemies left or not; its fire leaves the nozzle, almost a tile ahead of the player, a stream as from a hose, widening as it goes, a yellow core, orange around, its end red and ragged, the nozzle sweeping from side to side (20° each way, about 1.6 s there and back), its far end lagging, so the stream bends: every enemy in the cone takes **2 damage** about 4 times a second (every 8 ticks, the first at once) and catches fire (see Fire). Its **tank** holds **3 s** of fire; empty, it fills again in **2 s** (less with Haste), its fuel then its filling under its icon, as a gun's rounds and reload. It burns **in the dark** too, the torch out (to be tried).
 
 **Levels**: 2: the cone 5.5 tiles long · 3: 3 damage · 4: a 5 s tank · 5: **the tank leaks**: a small fire on the ground every 0.8 tile the player goes, 0.6 tile around, burning 2 s, setting on fire every enemy in it, as a Molotov's puddle without its burst.
+
+### Stun baton
+
+The exterminator's own weapon. Every **1.2 s** (less with Haste), once an enemy stands on its line, a **thrust** straight ahead of the player, the way they face, **3 tiles** long and a tile wide: every enemy on the line takes **10 damage** and stands **paralysed 1 s**, blinking blue the while. In the dark too. It shows as the baton held out, its double prong ahead, a jagged bolt running from it to the end of its reach, white then cyan, a spark on each enemy it paralyses.
+
+**Levels**: 2: 3.5 tiles long · 3: 14 damage · 4: a thrust every 0.9 s · 5: paralysed 2 s.
+
+### Combat knife
+
+The rookie's own weapon. Every **0.4 s** (less with Haste), a quick **stab** at the **nearest enemy** within **1.5 tiles**, whichever way: **8 damage**. Little a stab, but many: the weapon of the tight melee. In the dark too. It shows as the blade flicking out from the hero towards the enemy stabbed, and a drop of blood falling from it (as the blood setting has it; none when off).
+
+**Levels**: 2: 2 tiles · 3: 12 damage · 4: the 2 nearest enemies · 5: a stab every 0.2 s.
+
+### Sledgehammer
+
+The demolisher's own weapon, a melee one. Every **2 s** (less with Haste), once an enemy stands where it would land, the hammer is **raised** over the player's head **0.2 s**, then falls on the ground **2.5 tiles** ahead of them, the way they face then: its **shock** takes **28 HP** from every enemy within **2 tiles** of where it lands and throws them **1.5 tiles** back, away from it, over **0.2 s**, as its wave goes out. In the dark too. It shows as the hammer raised, then down on the ground a moment, its head three pixels wide; and the **wave** of its shock, a thick band on the ground, white at its front, going out to its reach as fast as it throws the enemies out, fading where it stops. Its wait shows under its icon.
+
+**Levels**: 2: the shock 2.5 tiles around · 3: 40 HP · 4: a blow every 1.5 s · 5: the shock **stuns** the enemies it hits 1 s.
 
 ### Fire
 
@@ -261,7 +289,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 
 ## Progress
 
-- **Achievements**: goals reached once, kept from one run to the next, in both modes; each unlocks a card, dealt from then on, or a reroll more a run. At first, the cards dealt are four weapons, the **crowbar**, the **machete**, the **pistol** and the **shotgun**; Vitality, Swiftness, Magnet, Flashlight, Wisdom, Loot; and the heal.
+- **Achievements**: goals reached once, kept from one run to the next, in both modes; each unlocks a card, dealt from then on, or a reroll more a run. At first, the cards dealt are two weapons, the **pistol** and the **shotgun** (and the hero's own weapon, see Weapons); Vitality, Swiftness, Magnet, Flashlight, Wisdom, Loot; and the heal.
 
 | Achievement | Goal | Unlocks |
 |---|---|---|
@@ -272,17 +300,19 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Rain of lead | Hold out until the rain | Machine gun |
 | In the eye | Hold out until the storm | Molotov |
 | Untouchable | 2 minutes without a hit, counted from nightfall (the dusk's end) or from the last hit after it | Barricade |
-| Struck | Struck by lightning, and standing | Dash |
+| Struck | Be struck by lightning (within its 2.5 tiles as it falls) | Dash |
 | A thousand down | 1,000 enemies down, in all (every run counted) | Regeneration |
 | Raw light | 50 Shadows down, in all (every run counted) | Glare |
 | Dawn | Hold out until dawn | The arcade mode (legendary) |
 | Cleaner | Wipe out every horde of a standard run: none left standing and none to come before the dawn | The flamethrower, and the exterminator's skin |
+| Demolisher | Fell 10 abominations by a melee blow (the crowbar's, the machete's, the sledgehammer's, the baton's, the knife's) in one run | The demolisher, with their sledgehammer |
+| Cold blood | Hold a minute under 30% of HP in one run (every tick counted, not in a row) | The rookie, with their combat knife |
 | A regular | 25 runs played | A second reroll a run |
 | Veteran | Reach level 25 in a single run | Illumination |
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
-- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, the drones, machine gun, Molotov, Barricade, Dash, the reroll, Glare, Regeneration, the flamethrower), and last those of the hidden achievements: Illumination, then the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 22): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's (the arcade) and the veteran's (Illumination): their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
-- The **skins**, on the title screen in either mode, where the collection fits: **S** shows them in the collection's place (or the leaderboard's), at the skin worn (in the collection open, S goes down a row instead). A tile each, as the collection's: the hero from the front (the survivor in a leather jacket and jeans, the classic hero in a red headband, the exterminator in a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back), twice as big, in colour once unlocked, grey until then; the tile picked framed, its hero turning round once it has been picked a second (front, side, back, side). The skin worn has a green check on the bottom right of its picture. While they show, the blinking prompt says Space wears the skin picked (nothing for a locked one). ←→ go from tile to tile; **Enter**, Space or S wear the one picked, once unlocked, and hide them; Esc hides them. The skin worn is kept for the next runs; the exterminator chosen, the progress erased since, the survivor shows. A box under the tiles tells it, as the collection's: its name, SKIN on the right; available from the start, or the achievement unlocking it and its goal; a row apart, **Worn** in gold, Unlocked in green or Locked in grey. Its key at the bottom of the screen, after the collection's: [S] SKINS 2 / 3.
+- The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build but the heroes' own weapons, and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, the drones, machine gun, Molotov, Barricade, Dash, the reroll, Glare, Regeneration, the flamethrower), and last those of the hidden achievements: Illumination, then the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 22): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's (the arcade) and the veteran's (Illumination): their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
+- The **skins**, on the title screen in either mode, where the collection fits: **S** shows them in the collection's place (or the leaderboard's), at the skin worn (in the collection open, S goes down a row instead). A tile each, as the collection's: the hero from the front (the survivor in a leather jacket and jeans, the classic hero in a red headband, the exterminator in a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back, the demolisher bald and bearded, in a grey tank top and jeans, the rookie a young police officer, fair hair, a blue uniform), twice as big, in colour once unlocked, grey until then; the tile picked framed, its hero turning round once it has been picked a second (front, side, back, side). The skin worn has a green check on the bottom right of its picture. While they show, the blinking prompt says Space wears the skin picked (nothing for a locked one). ←→ go from tile to tile; **Enter**, Space or S wear the one picked, once unlocked, and hide them; Esc hides them. Each hero starts a run with a **weapon of their own** (see Weapons), and plays with their own HP, speed and perk (see The player): the box under the tiles says them, under where the hero comes from: their starting weapon, their HP and speed, their perk. The skin worn is kept for the next runs; the exterminator chosen, the progress erased since, the survivor shows. A box under the tiles tells it, as the collection's: its name, SKIN on the right; available from the start, or the achievement unlocking it and its goal; a row apart, **Worn** in gold, Unlocked in green or Locked in grey. Its key at the bottom of the screen, after the collection's: [S] SKINS 2 / 3.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience
@@ -291,7 +321,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 - A gem shows by its worth: **silver** for a point, **blue** for 2 to 4 (a Shadow's), **gold** for 5 and more (an abomination's). Each glows its colour around it in the dark.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, Barricade, the heal. Rare: the flamethrower, Might, Haste, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, Barricade, the heal. Rare: the flamethrower, the sledgehammer, the stun baton, the combat knife, Might, Haste, Wisdom, Regeneration, Glare. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

@@ -105,7 +105,10 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         | Weapon::Machete
         | Weapon::Drones
         | Weapon::Molotov
-        | Weapon::Flamethrower => None,
+        | Weapon::Flamethrower
+        | Weapon::Hammer
+        | Weapon::Baton
+        | Weapon::Knife => None,
     }
 }
 

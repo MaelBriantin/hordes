@@ -7,9 +7,9 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
-use super::pixels;
-use super::sprites::{SpriteId, Sprites};
-use crate::game::{Achievement, Rarity, Unlock};
+use super::sprites::{self, SpriteId, Sprites};
+use super::{pixels, skins};
+use crate::game::{Achievement, Facing, Rarity, Unlock};
 
 /// The frames the box takes to rise, stays up, takes to go down: all of them, its time on screen.
 const RISE: u32 = 8;
@@ -63,6 +63,11 @@ pub fn render(
             fl!("achievement-unlocked"),
             fl!("achievement-arcade"),
             Some(SpriteId::IconArcade),
+        ),
+        Unlock::Skin(skin) => (
+            fl!("achievement-unlocked"),
+            skins::name(skin),
+            Some(sprites::hero(Facing::Down, skin).sprite),
         ),
     };
     let width_of = |text: &str| u16::try_from(text.chars().count()).unwrap_or(u16::MAX);
@@ -147,6 +152,8 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Shadows => fl!("achievement-shadows-goal"),
         Achievement::Dawn => fl!("achievement-dawn-goal"),
         Achievement::Cleaner => fl!("achievement-cleaner-goal"),
+        Achievement::Demolisher => fl!("achievement-demolisher-goal"),
+        Achievement::ColdBlood => fl!("achievement-cold-blood-goal"),
         Achievement::Regular => fl!("achievement-regular-goal"),
         Achievement::Veteran => fl!("achievement-veteran-goal"),
     }
@@ -167,6 +174,8 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Shadows => fl!("achievement-shadows"),
         Achievement::Dawn => fl!("achievement-dawn"),
         Achievement::Cleaner => fl!("achievement-cleaner"),
+        Achievement::Demolisher => fl!("achievement-demolisher"),
+        Achievement::ColdBlood => fl!("achievement-cold-blood"),
         Achievement::Regular => fl!("achievement-regular"),
         Achievement::Veteran => fl!("achievement-veteran"),
     }

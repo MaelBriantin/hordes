@@ -7,6 +7,7 @@ use serde::de::IgnoredAny;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::build::{Action, Choice, Legendary, Passive, Rarity, Weapon};
+use super::skin::Skin;
 
 /// The rerolls of a run before any achievement.
 const REROLLS: u8 = 1;
@@ -17,16 +18,20 @@ const RUNS_GOAL: u32 = 25;
 /// The enemies down in a single run for Carnage; the hordes wiped out in a single run for Swarm.
 pub const CARNAGE_KILLS: u32 = 300;
 pub const SWARM_HORDES: u32 = 2;
+/// The abominations to fell by a melee blow in a single run for Demolisher.
+pub const DEMOLISHER_ABOMINATIONS: u32 = 10;
+/// The share of their HP the player stays under, in percent, and the seconds they do in a single
+/// run, all counted, for Cold blood.
+pub const COLD_BLOOD_PERCENT: u32 = 30;
+pub const COLD_BLOOD_SECONDS: u32 = 60;
 /// The level to reach in a single run for Veteran.
 pub const VETERAN_LEVEL: u32 = 25;
 /// The seconds without a hit, the night fallen, for Untouchable.
 pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
-/// Every card, and the reroll, as the collection shows them: those there from the start, then
+/// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 24] = [
-    Unlock::Card(Choice::Weapon(Weapon::Crowbar)),
-    Unlock::Card(Choice::Weapon(Weapon::Machete)),
+pub const COLLECTION: [Unlock; 22] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -78,6 +83,10 @@ pub enum Achievement {
     Dawn,
     /// Cleaner: every horde of a standard run wiped out.
     Cleaner,
+    /// Demolisher: 10 abominations felled by a melee blow in a single run.
+    Demolisher,
+    /// Cold blood: a minute under 30% of HP in a single run, all counted, and standing.
+    ColdBlood,
     /// A regular: 25 runs played.
     Regular,
     /// Veteran: level 25 reached in a single run.
@@ -93,10 +102,12 @@ pub enum Unlock {
     Reroll,
     /// The arcade mode, to be played from then on.
     Arcade,
+    /// A hero, to be played from then on, with their own weapon.
+    Skin(Skin),
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 14] = [
+    pub const ALL: [Achievement; 16] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
@@ -108,6 +119,8 @@ impl Achievement {
         Achievement::ThousandDown,
         Achievement::Shadows,
         Achievement::Cleaner,
+        Achievement::Demolisher,
+        Achievement::ColdBlood,
         Achievement::Regular,
         Achievement::Veteran,
         Achievement::Dawn,
@@ -128,6 +141,8 @@ impl Achievement {
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
             Achievement::Dawn => Unlock::Arcade,
             Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
+            Achievement::Demolisher => Unlock::Skin(Skin::Demolisher),
+            Achievement::ColdBlood => Unlock::Skin(Skin::Rookie),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
@@ -150,7 +165,7 @@ impl Unlock {
     pub fn rarity(self) -> Rarity {
         match self {
             Unlock::Card(choice) => choice.rarity(),
-            Unlock::Reroll => Rarity::Rare,
+            Unlock::Reroll | Unlock::Skin(_) => Rarity::Rare,
             Unlock::Arcade => Rarity::Legendary,
         }
     }
@@ -234,11 +249,6 @@ impl Progress {
     /// Reaches an achievement, if not yet.
     pub fn reach(&mut self, achievement: Achievement) {
         self.achieved.insert(achievement);
-    }
-
-    /// Whether the exterminator's skin can be worn: Cleaner reached, as the flamethrower.
-    pub fn exterminator(&self) -> bool {
-        self.achieved.contains(&Achievement::Cleaner)
     }
 
     /// Whether the arcade mode can be played: its achievement reached.
@@ -333,9 +343,18 @@ mod tests {
             .iter()
             .filter(|unlock| progress.has(**unlock))
             .count();
-        assert_eq!(from_start, COLLECTION.len() - Achievement::ALL.len());
+        // Every achievement's card in it; not the heroes, who show among the skins.
+        let cards = Achievement::ALL
+            .iter()
+            .filter(|achievement| !matches!(achievement.unlocks(), Unlock::Skin(_)))
+            .count();
+        assert_eq!(from_start, COLLECTION.len() - cards);
         for achievement in Achievement::ALL {
-            assert!(COLLECTION.contains(&achievement.unlocks()));
+            let unlock = achievement.unlocks();
+            assert!(matches!(unlock, Unlock::Skin(_)) || COLLECTION.contains(&unlock));
+        }
+        for skin in Skin::ALL {
+            assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(skin.weapon()))));
         }
         assert!(!COLLECTION.contains(&Unlock::Card(Choice::Heal)));
         assert!(Progress::everything().has(Unlock::Reroll));

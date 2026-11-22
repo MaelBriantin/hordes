@@ -10,13 +10,21 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
 ### New
+- A strike of lightning falling with the player in its ring puts their torch out, up to them to light it again (F): the night all at once, the guns holding their fire. It no longer hurts the player.
 - The Barricade, a second action card, unlocked by a new achievement, Untouchable (2 minutes without a hit after nightfall): Space or Enter heaps three crates just ahead, stopping the walking enemies, which batter it until it breaks; the Shadows fly over it, the shots go over it. The next in 8 s, two at most at once; more HP, a third, and unbreakable metal crates at the last level.
 
 - The flamethrower, a rare weapon, unlocked by a new achievement, Cleaner (every horde of a run wiped out): a cone of fire ahead of the player setting every enemy in it on fire, its tank filling again once empty; at the last level, the tank leaks a trail of fire behind the player.
+- The rookie, a new hero (fair hair, a blue uniform), unlocked by a new achievement, Cold blood (a minute under 30% of HP in one run), with a weapon of their own, the combat knife: quick stabs at the nearest enemy, whichever way.
+- The demolisher, a new hero (bald, bearded, a grey tank top and jeans), unlocked by a new achievement, Demolisher (10 abominations felled in melee in one run), with a weapon of their own, the sledgehammer: a blow on the ground ahead, its shock hurting and throwing back every enemy around; stunning them at the last level.
 - The exterminator, a skin for the hero once Cleaner is reached: a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back.
 - The skins on the title screen, S showing them as the collection shows its cards: the hero picked turning round, the locked ones in grey with the achievement that unlocks them, Enter to wear one.
 
 ### Changed
+- Each hero plays with their own HP, speed and perk, shown in the skin picker: the survivor versatile, the classic hero a commando (+10% damage), the exterminator a pyromaniac (fire burns twice as long), the demolisher unshakable (140 HP, slower, less damage taken, never thrown), the rookie quick (80 HP, faster, guns reloading 20% faster).
+- Each hero starts a run with a melee weapon of their own, theirs alone, never dealt to another hero, as the skin picker tells: the survivor the crowbar, the classic hero the machete, the exterminator a new stun baton (a thrust ahead, paralysing what it hits), the demolisher the sledgehammer. The crowbar and the machete leave the common cards and the collection.
+- The arcade mode shown as Endless Night, and opening on the night, the dusk skipped; a standard run always opens on the dusk, the setting to skip it gone.
+- Low on HP, under 30%, the player's heart beats on the edges of the screen, faster the lower; the HP over the hero blinks too.
+- The torch no longer lights up of itself as the night falls: up to the player, F shown under them until they first do in the run.
 - The skin chosen on the title screen alone (S), no longer in the options.
 - The arcade mode unlocked by reaching the dawn, the game won, rather than by seeing every weather; Illumination by a new achievement, Veteran (level 25 in one run). Come rain or shine (every weather seen) is gone, a progress holding it still read.
 - The title screen in the middle of the screen when nothing shows under it, rather than over an empty room kept for the collection: it slides as the collection or the skins open and close, and as Tab changes the mode.

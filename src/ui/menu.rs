@@ -75,8 +75,6 @@ pub enum OptionItem {
     Arrow,
     /// How a new weather is told: in big letters, the run standing still or not; or on a banner.
     Announcements,
-    /// Whether runs open on the dusk or on the night.
-    Dusk,
     /// Whether the gear shows over the top left of the map, as icons or as a list.
     Gear,
     /// Whether the player's HP shows in a small bar over their head.
@@ -96,12 +94,11 @@ pub enum OptionItem {
 impl OptionItem {
     /// The items opened from the title screen; from the pause menu, the same but for erasing
     /// the progress and quitting.
-    const TITLE: [OptionItem; 12] = [
+    const TITLE: [OptionItem; 11] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
         OptionItem::Announcements,
-        OptionItem::Dusk,
         OptionItem::Gear,
         OptionItem::MiniBars,
         OptionItem::Ground,
@@ -110,12 +107,11 @@ impl OptionItem {
         OptionItem::Back,
         OptionItem::Quit,
     ];
-    const PAUSE: [OptionItem; 10] = [
+    const PAUSE: [OptionItem; 9] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
         OptionItem::Announcements,
-        OptionItem::Dusk,
         OptionItem::Gear,
         OptionItem::MiniBars,
         OptionItem::Ground,
@@ -144,14 +140,6 @@ impl OptionItem {
                     WeatherNews::Paused => fl!("announcements-paused"),
                     WeatherNews::Big => fl!("announcements-big"),
                     WeatherNews::Banner => fl!("announcements-banner"),
-                }
-            ),
-            OptionItem::Dusk => fl!(
-                "option-dusk",
-                value = if view.skip_dusk {
-                    fl!("dusk-skipped")
-                } else {
-                    fl!("dusk-played")
                 }
             ),
             OptionItem::Gear => fl!(
@@ -268,7 +256,7 @@ pub fn render_title(
     let rows_under = |mode: Mode, opened: bool| {
         let closed = if mode == Mode::Arcade { board_rows } else { 0 };
         if opened {
-            collection_rows.max(closed)
+            collection_rows.max(skins::HEIGHT).max(closed)
         } else {
             closed
         }
@@ -307,7 +295,7 @@ pub fn render_title(
         // The skins shown take the place of the leaderboard or the collection.
         _ if view.skins.is_some() => {
             let board = Rect {
-                height: collection_rows,
+                height: collection_rows.max(skins::HEIGHT),
                 ..board
             };
             let (picked, since) = view.skins.unwrap_or_default();

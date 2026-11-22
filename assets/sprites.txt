@@ -63,6 +63,11 @@ s 90 90 95      ashes
 4 175 220 150   a parasite's wet shine
 5 220 200 60    hazmat yellow
 6 110 200 110   a check's green
+1 255 226 190   a bald head's shine
+7 185 145 70    fair hair, darker
+8 95 145 225    a uniform's light blue
+9 60 95 175     a uniform's blue
+0 35 50 115     a uniform's dark blue
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -119,6 +124,42 @@ exterminator_side
 .5n.
 r55.
 .nn.
+
+demolisher_front
+.FF.
+.SS.
+FjjF
+.zz.
+
+demolisher_back
+.F1.
+.FF.
+FjjF
+.zz.
+
+demolisher_side
+.1F.
+.FS.
+.Fj.
+.zz.
+
+rookie_front
+.77.
+.FF.
+8998
+.00.
+
+rookie_back
+.77.
+.77.
+8998
+.00.
+
+rookie_side
+.77.
+.7F.
+.89.
+.00.
 
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
@@ -347,6 +388,36 @@ nnnqq...
 u.q.....
 u.......
 ........
+........
+
+icon_hammer
+........
+.njjjn..
+.njjjn..
+...u....
+...u....
+...u....
+...u....
+........
+
+icon_baton
+........
+........
+......jj
+qqqnnnj.
+......jj
+........
+........
+........
+
+icon_knife
+...j....
+...jj...
+...jj...
+...jj...
+..nnnn..
+...qq...
+...qq...
 ........
 
 icon_molotov

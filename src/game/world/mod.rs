@@ -5,6 +5,7 @@ use rand::{RngExt, SeedableRng};
 
 use super::announce::{Announcement, News, WeatherNews};
 use super::barricade::Barricade;
+use super::baton::Thrust;
 use super::body::{slide, touch};
 use super::build::{
     BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
@@ -14,23 +15,31 @@ use super::dash::{Dash, Dashes};
 use super::enemy::Enemy;
 use super::gem::Gem;
 use super::guns::{Bullet, Magazine};
+use super::hammer::Blow;
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
 use super::horde::{self, Tally, Warning};
+use super::knife::Stab;
 use super::level::xp_to_next;
 use super::machete::Swing;
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
-use super::progress::{Achievement, CARNAGE_KILLS, Progress, UNTOUCHABLE_SECONDS, VETERAN_LEVEL};
+use super::progress::{
+    Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
+    Progress, UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
+};
 use super::score;
 use super::stain::Stain;
 use super::weather::{self, Weather};
-use super::{Facing, Map, TICKS_PER_SECOND, Vec2, tick_seconds};
+use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 mod barricades;
+mod blows;
 mod debug;
 mod enemies;
 mod flames;
+mod jabs;
+mod stabs;
 mod storm;
 mod weapons;
 
@@ -50,7 +59,7 @@ const ARCADE_GROWTH: f32 = 1.07;
 const ARCADE_RATE: f32 = 1.5;
 /// The cards a run can deal again on a level-up, R on the cards.
 const REROLLS: u8 = 1;
-/// The seconds into the run the torch lights up of itself at, the night falling.
+/// The seconds into the run the night falls at: the torch can be lit from then.
 const TORCH_SECONDS: u32 = 26;
 
 /// How far the torch's light fades into the dark beyond its radius, in tiles.
@@ -65,7 +74,7 @@ pub enum Veil {
     Steady,
 }
 
-/// The tick the torch lights up of itself at.
+/// The tick the night falls at, the torch to be lit.
 fn torch_lights_up() -> u32 {
     TORCH_SECONDS * u32::from(TICKS_PER_SECOND)
 }
@@ -142,6 +151,10 @@ impl Player {
 }
 
 #[derive(Debug)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "states of the run, each on its own"
+)]
 pub struct World {
     pub map: Map,
     pub player: Player,
@@ -179,6 +192,22 @@ pub struct World {
     pub bottles: Vec<Bottle>,
     pub puddles: Vec<Puddle>,
     molotov_wait: u32,
+    /// The hammer's last blow, while it shows, and the ticks before the next.
+    pub blow: Option<Blow>,
+    hammer_wait: u32,
+    /// The ticks the hammer stays raised over the player's head before it falls; 0 when it isn't.
+    pub hammer_raised: u32,
+    /// The stun baton's last thrust, while it shows, and the ticks before the next.
+    pub thrust: Option<Thrust>,
+    baton_wait: u32,
+    /// The combat knife's last stabs, while they show, and the ticks before the next.
+    pub stabs: Vec<Stab>,
+    knife_wait: u32,
+    /// The ticks the player has stood low on HP this run, for Cold blood.
+    low_hp_ticks: u32,
+    /// The abominations felled by a melee blow this run: the crowbar's, the machete's, the
+    /// hammer's.
+    abominations_smashed: u32,
     /// Whether the flamethrower burns this tick; the ticks it has burnt, for its bursts of
     /// damage; and where its trail left its last fire.
     pub flaming: bool,
@@ -223,6 +252,8 @@ pub struct World {
     /// Whether the player wants their torch on; the tick it holds from, lit, flickering until
     /// then, as long as luck has it; and that luck, for the flicker.
     torch_switch: bool,
+    /// Whether the player has lit their torch this run: until they do, F is shown to them.
+    torch_lit_once: bool,
     pub(super) torch_steady_at: u32,
     torch_luck: u32,
     /// Nothing hurts the player: a debug tool.
@@ -253,6 +284,8 @@ pub struct World {
     offer_rare: u32,
     /// The times left this run the cards on offer can be dealt again.
     pub rerolls: u8,
+    /// The weapon the run started with, the hero's own: its levels dealt whatever the progress.
+    start: Weapon,
     /// What the player has reached, this run counted; and what they had as it started: the
     /// cards it deals, set for the whole run.
     pub progress: Progress,
@@ -283,6 +316,10 @@ impl World {
         world.progress.runs += 1;
         world.progress.count();
         world.rerolls = world.progress.rerolls();
+        // The night falling, the torch waits for the player to light it; the dusk skipped, it
+        // is lit already.
+        world.torch_switch = skip_dusk;
+        world.torch_lit_once = skip_dusk;
         world.dealt = world.progress.clone();
         world.next_horde = horde::first(mode);
         // A run opens on the dusk, told; or on the night, the dusk skipped.
@@ -335,6 +372,15 @@ impl World {
             swellings: Vec::new(),
             blasts: Vec::new(),
             molotov_wait: 0,
+            blow: None,
+            hammer_wait: 0,
+            hammer_raised: 0,
+            thrust: None,
+            baton_wait: 0,
+            stabs: Vec::new(),
+            knife_wait: 0,
+            low_hp_ticks: 0,
+            abominations_smashed: 0,
             flaming: false,
             flame_ticks: 0,
             trail_from: start,
@@ -354,6 +400,7 @@ impl World {
             hurt_at: None,
             healed_at: None,
             torch_switch: true,
+            torch_lit_once: true,
             torch_steady_at: 0,
             torch_luck: 0,
             unhurt: false,
@@ -370,6 +417,7 @@ impl World {
             rare_levels: 0,
             offer_rare: RARE_PERCENT,
             rerolls: REROLLS,
+            start: Weapon::Crowbar,
             progress: Progress::everything(),
             dealt: Progress::everything(),
             ticks: 0,
@@ -377,9 +425,17 @@ impl World {
             spawn_debt: 0.0,
             view: DEFAULT_VIEW,
         };
-        // It lights up of itself as the night falls, flickering as luck has it.
+        // Lit as the night falls, flickering as luck has it: as a run that skips the dusk has it.
         world.light_up_torch();
         world
+    }
+
+    /// The run played by a hero: their HP, their speed, their perk, and their own weapon rather
+    /// than the crowbar, dealt again to them alone.
+    pub fn play_as(&mut self, hero: Skin) {
+        self.start = hero.weapon();
+        self.player.build = Build::playing(hero);
+        self.player.hp = self.player.build.max_hp();
     }
 
     /// Tells the world how much of it the player sees: half of it each way, in tiles.
@@ -459,8 +515,8 @@ impl World {
         (percent > 0 && self.torch_lit()).then(|| (self.light_radius() + TORCH_FADE, percent))
     }
 
-    /// Whether the player's torch is lit, and holds: not at dusk; it lights up of itself as the
-    /// night falls, and when the player lights it again, after flickering a while.
+    /// Whether the player's torch is lit, and holds: not at dusk; once the player lights it, after
+    /// flickering a while.
     pub fn torch_lit(&self) -> bool {
         let Some(true) = self.torch_on() else {
             return false;
@@ -489,19 +545,33 @@ impl World {
         self.torch_luck = self.rng.random();
     }
 
-    /// Whether the player has their torch on: none before it lights up of itself, the night
-    /// falling.
+    /// A strike of lightning with the player in its ring puts their torch out: up to them to light
+    /// it again, quick, flickering as it does.
+    pub(super) fn cut_torch(&mut self) {
+        if self.torch_on() == Some(true) {
+            self.torch_switch = false;
+        }
+    }
+
+    /// Whether F is shown to the player under them: the night fallen, their torch never lit yet
+    /// this run.
+    pub fn torch_hint(&self) -> bool {
+        self.torch_on() == Some(false) && !self.torch_lit_once
+    }
+
+    /// Whether the player has their torch on: none before the night falls.
     pub fn torch_on(&self) -> Option<bool> {
         (self.ticks >= torch_lights_up()).then_some(self.torch_switch)
     }
 
-    /// Puts the torch out, or lights it again, flickering: once it has lit up of itself.
+    /// Puts the torch out, or lights it, flickering: once the night has fallen.
     pub fn switch_torch(&mut self) {
         match self.torch_on() {
             None => {}
             Some(true) => self.torch_switch = false,
             Some(false) => {
                 self.torch_switch = true;
+                self.torch_lit_once = true;
                 self.light_up_torch();
             }
         }
@@ -605,6 +675,9 @@ impl World {
         self.relocate_stragglers();
         self.storm();
         self.swing_melee();
+        self.swing_hammer();
+        self.thrust_baton();
+        self.stab_knife();
         self.throw_molotovs();
         self.throw_flames();
         self.fire_guns();
@@ -636,6 +709,17 @@ impl World {
         }
         if self.kills >= CARNAGE_KILLS {
             self.progress.reach(Achievement::Carnage);
+        }
+        // Low on HP and standing, a while, every tick counted.
+        let (hp, most) = (self.player.hp, self.player.max_hp());
+        if hp > 0 && hp * 100 < most * COLD_BLOOD_PERCENT {
+            self.low_hp_ticks += 1;
+        }
+        if self.low_hp_ticks >= COLD_BLOOD_SECONDS * u32::from(TICKS_PER_SECOND) {
+            self.progress.reach(Achievement::ColdBlood);
+        }
+        if self.abominations_smashed >= DEMOLISHER_ABOMINATIONS {
+            self.progress.reach(Achievement::Demolisher);
         }
         if self.player.level >= VETERAN_LEVEL {
             self.progress.reach(Achievement::Veteran);
@@ -706,12 +790,14 @@ impl World {
     fn deal_as(&mut self, rare: u32) -> Vec<Choice> {
         let dusk = self.weather() == Weather::Dusk;
         let percent = LEGENDARY_PERCENT + self.without_legendary;
-        let progress = &self.dealt;
+        let (progress, start) = (&self.dealt, self.start);
         let offer = self
             .player
             .build
-            .offers(&mut self.rng, dusk, rare, percent, |choice| {
-                progress.deals(choice)
+            .offers(&mut self.rng, dusk, rare, percent, |choice| match choice {
+                // A hero's own weapon, to them alone.
+                Choice::Weapon(weapon) if Skin::owning(weapon).is_some() => weapon == start,
+                _ => progress.deals(choice),
             });
         if offer
             .iter()
@@ -927,6 +1013,7 @@ impl World {
     /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second.
     fn wound_player(&mut self, damage: u32) {
         let player = &mut self.player;
+        let damage = damage * player.build.hero().perk().hurt_percent() / 100;
         player.hp = player.hp.saturating_sub(damage);
         player.invincible = u32::from(TICKS_PER_SECOND) / 2;
         self.hurt_at = Some(self.ticks);

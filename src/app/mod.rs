@@ -176,10 +176,12 @@ impl App {
                 pinged: self
                     .pinged_at
                     .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
-                skin: self.settings.skin.worn(self.progress.exterminator()),
+                skin: self
+                    .settings
+                    .skin
+                    .worn(skin_unlocked(&self.progress, self.settings.skin)),
                 mode: self.mode(),
                 arcade: self.progress.arcade(),
-                skip_dusk: self.settings.skip_dusk,
                 gear: self.settings.gear,
                 gear_list: self.settings.gear_list,
                 mini_bars: self.settings.mini_bars,
@@ -307,7 +309,8 @@ impl App {
             // open, S goes down a row.
             KeyCode::Char('s' | 'S') if self.collection_shows && !(collection && self.browsing) => {
                 self.browsing = false;
-                let worn = self.settings.skin.worn(self.progress.exterminator());
+                let skin = self.settings.skin;
+                let worn = skin.worn(skin_unlocked(&self.progress, skin));
                 self.skin_picked = Some(SKINS.iter().position(|skin| *skin == worn).unwrap_or(0));
                 self.skin_picked_at = self.frames;
             }
@@ -359,8 +362,10 @@ impl App {
         self.picked = match code {
             KeyCode::Left | KeyCode::Char('a' | 'A' | 'q' | 'Q') => at.saturating_sub(1),
             KeyCode::Right | KeyCode::Char('d' | 'D') => (at + 1).min(last),
-            KeyCode::Down | KeyCode::Char('s' | 'S') if at + row <= last => at + row,
-            KeyCode::Up | KeyCode::Char('w' | 'W' | 'z' | 'Z') if at >= row => at - row,
+            KeyCode::Down | KeyCode::Char('s' | 'S') => ui::collection_beside(at, row, true),
+            KeyCode::Up | KeyCode::Char('w' | 'W' | 'z' | 'Z') => {
+                ui::collection_beside(at, row, false)
+            }
             _ => at,
         };
     }
@@ -506,10 +511,6 @@ impl App {
             OptionItem::Arrow => self.change_arrow(Arrow::previous),
             OptionItem::Announcements if forward => self.change_weather_news(WeatherNews::next),
             OptionItem::Announcements => self.change_weather_news(WeatherNews::previous),
-            OptionItem::Dusk => {
-                self.settings.skip_dusk = !self.settings.skip_dusk;
-                self.keep_settings();
-            }
             // Hidden, as icons, as a list, and round again.
             OptionItem::Gear => {
                 let settings = &mut self.settings;
@@ -702,12 +703,18 @@ impl App {
     fn new_run(&mut self) {
         self.scored = false;
         self.highlight = None;
+        // A standard run opens on the dusk; the endless night skips it.
+        let skip_dusk = self.mode() == Mode::Arcade;
         self.world = World::with(
             rand::random(),
             self.mode(),
-            self.settings.skip_dusk,
+            skip_dusk,
             self.progress.clone(),
         );
+        // The hero worn starts with their own weapon.
+        let skin = self.settings.skin;
+        let worn = skin.worn(skin_unlocked(&self.progress, skin));
+        self.world.play_as(worn);
         self.world.weather_news = self.settings.weather_news;
         self.selected = 0;
         self.dealt_at = None;

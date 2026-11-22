@@ -241,6 +241,9 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Shotgun => SpriteId::IconShotgun,
             Weapon::Molotov => SpriteId::IconMolotov,
             Weapon::Flamethrower => SpriteId::IconFlamethrower,
+            Weapon::Hammer => SpriteId::IconHammer,
+            Weapon::Baton => SpriteId::IconBaton,
+            Weapon::Knife => SpriteId::IconKnife,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -295,6 +298,9 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Shotgun => fl!("weapon-shotgun"),
         Weapon::Molotov => fl!("weapon-molotov"),
         Weapon::Flamethrower => fl!("weapon-flamethrower"),
+        Weapon::Hammer => fl!("weapon-hammer"),
+        Weapon::Baton => fl!("weapon-baton"),
+        Weapon::Knife => fl!("weapon-knife"),
     }
 }
 
@@ -356,6 +362,9 @@ fn gain_of(choice: Choice, level: u8) -> String {
             4 => fl!("gain-flamethrower-4"),
             _ => fl!("gain-flamethrower-5"),
         },
+        Choice::Weapon(Weapon::Hammer) => hammer_gain(level),
+        Choice::Weapon(Weapon::Baton) => baton_gain(level),
+        Choice::Weapon(Weapon::Knife) => knife_gain(level),
         // A passive's gain, and the total it brings the player to at that level.
         Choice::Passive(passive) => {
             let level = u32::from(level);
@@ -398,6 +407,39 @@ fn gain_of(choice: Choice, level: u8) -> String {
         Choice::Action(action) => action_gain(action, level),
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
         Choice::Heal => fl!("gain-heal"),
+    }
+}
+
+/// What the hammer brings, taken at `level`.
+fn hammer_gain(level: u8) -> String {
+    match level {
+        1 => fl!("gain-hammer-1"),
+        2 => fl!("gain-hammer-2"),
+        3 => fl!("gain-hammer-3"),
+        4 => fl!("gain-hammer-4"),
+        _ => fl!("gain-hammer-5"),
+    }
+}
+
+/// What the stun baton brings, taken at `level`.
+fn baton_gain(level: u8) -> String {
+    match level {
+        1 => fl!("gain-baton-1"),
+        2 => fl!("gain-baton-2"),
+        3 => fl!("gain-baton-3"),
+        4 => fl!("gain-baton-4"),
+        _ => fl!("gain-baton-5"),
+    }
+}
+
+/// What the combat knife brings, taken at `level`.
+fn knife_gain(level: u8) -> String {
+    match level {
+        1 => fl!("gain-knife-1"),
+        2 => fl!("gain-knife-2"),
+        3 => fl!("gain-knife-3"),
+        4 => fl!("gain-knife-4"),
+        _ => fl!("gain-knife-5"),
     }
 }
 

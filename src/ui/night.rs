@@ -84,7 +84,7 @@ impl BloodLook {
     }
 
     /// The two colours its stains are made of; none when it doesn't show.
-    fn colours(self) -> Option<[Color; 2]> {
+    pub(super) fn colours(self) -> Option<[Color; 2]> {
         match self {
             BloodLook::Red => Some([Color::Rgb(115, 10, 16), Color::Rgb(155, 20, 26)]),
             BloodLook::Ketchup => Some([Color::Rgb(205, 30, 22), Color::Rgb(240, 55, 35)]),

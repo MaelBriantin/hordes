@@ -1,9 +1,12 @@
 //! The map in pixels: a tile is 2 × 2 pixels, a cell holds 2 pixels one above the other. The
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
+mod blows;
 mod figures;
 mod fire;
 mod gear;
+mod stabs;
+mod thrust;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -425,11 +428,15 @@ pub fn render_map(
         canvas.paint_blast(blast);
     }
 
+    // The hammer's wave on the ground, under the enemies it throws out.
+    canvas.paint_blow(world);
     let covered = canvas.paint_figures(world, view.skin);
     if let Some(hurt_at) = world.hurt_at {
         let since = world.ticks().saturating_sub(hurt_at);
         night::paint_spurt(&mut canvas, centre, since, hurt_at, blood);
     }
+    canvas.paint_thrust(world);
+    canvas.paint_stabs(world, blood);
     for (drone, broken) in world.drones() {
         let look = Look {
             tint: broken.then_some(BROKEN),

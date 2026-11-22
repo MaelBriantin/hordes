@@ -8,9 +8,9 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
-use super::sprites::{SpriteId, Sprites};
-use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, thousands};
-use crate::game::{COLLECTION, Choice, Progress, Rarity, Unlock};
+use super::sprites::{self, SpriteId, Sprites};
+use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, skins, thousands};
+use crate::game::{COLLECTION, Choice, Facing, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
 /// rows, a corner's row.
@@ -41,6 +41,26 @@ pub fn in_a_row(width: u16) -> usize {
     let fit = (usize::from(room) / usize::from(TILE_WIDTH)).clamp(1, MOST_IN_A_ROW);
     let rows = COLLECTION.len().div_ceil(fit);
     COLLECTION.len().div_ceil(rows)
+}
+
+/// The tile under (`down`) or over the one at `at`, rows of `per_row` tiles, each row centred:
+/// the one that stands there on the screen, the nearest to it if none quite does; `at` itself on
+/// the last row or the first.
+pub fn beside(at: usize, per_row: usize, down: bool) -> usize {
+    let total = COLLECTION.len();
+    let per_row = per_row.max(1);
+    let (row, column) = (at / per_row, at % per_row);
+    let rows = total.div_ceil(per_row);
+    let next = match (down, row) {
+        (true, row) if row + 1 < rows => row + 1,
+        (false, row) if row > 0 => row - 1,
+        _ => return at,
+    };
+    let length = |row: usize| (total - row * per_row).min(per_row);
+    // Where it stands, in half tiles from the left of a full row: a shorter row is centred.
+    let standing = column * 2 + (per_row - length(row));
+    let below = standing.saturating_sub(per_row - length(next)) / 2;
+    next * per_row + below.min(length(next) - 1)
 }
 
 /// The rows the collection takes, `rows` rows of tiles shown: its title and a row of room, the
@@ -368,6 +388,7 @@ fn icon(unlock: Unlock) -> SpriteId {
         Unlock::Card(choice) => level_up::icon(choice),
         Unlock::Reroll => SpriteId::IconReroll,
         Unlock::Arcade => SpriteId::IconArcade,
+        Unlock::Skin(skin) => sprites::hero(Facing::Down, skin).sprite,
     }
 }
 
@@ -381,6 +402,7 @@ fn kind(unlock: Unlock) -> String {
         Unlock::Card(Choice::Heal) => fl!("heal"),
         Unlock::Reroll => fl!("collection-kind-bonus"),
         Unlock::Arcade => fl!("collection-kind-mode"),
+        Unlock::Skin(_) => fl!("card-skin"),
     }
 }
 
@@ -390,6 +412,7 @@ fn name(unlock: Unlock) -> String {
         Unlock::Card(choice) => level_up::name(choice),
         Unlock::Reroll => fl!("collection-reroll"),
         Unlock::Arcade => fl!("collection-arcade"),
+        Unlock::Skin(skin) => skins::name(skin),
     }
 }
 
@@ -405,6 +428,26 @@ fn colour(unlock: Unlock) -> Color {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn up_and_down_go_to_the_tile_standing_there_on_a_shorter_centred_row() {
+        // 22 tiles, 8 a row: the last row of 6 stands a tile in on each side.
+        assert_eq!(COLLECTION.len(), 22);
+        assert_eq!(
+            beside(10, 8, true),
+            17,
+            "the third tile over the second of the last row"
+        );
+        assert_eq!(
+            beside(8, 8, true),
+            16,
+            "none quite under the first: the nearest"
+        );
+        assert_eq!(beside(17, 8, false), 10);
+        assert_eq!(beside(2, 8, true), 10, "full rows: straight down");
+        assert_eq!(beside(17, 8, true), 17, "the last row");
+        assert_eq!(beside(3, 8, false), 3, "the first row");
+    }
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
