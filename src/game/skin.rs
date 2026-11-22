@@ -23,8 +23,11 @@ pub enum Perk {
     Dodge,
     /// Healing heals half again as much, and HP come back of themselves, one every 5 s.
     Healer,
-    /// The torch out, they see around them all the same, in green.
-    NightVision,
+    /// The torch out, they see around them all the same, in green; the enemies lose them at
+    /// once, but those right on them; the Shadows come for them a while later.
+    Ghost,
+    /// Their shield takes a share of the blows of the enemies ahead of them.
+    Shield,
 }
 
 impl Perk {
@@ -63,9 +66,15 @@ impl Perk {
         if self == Perk::Dodge { 15 } else { 0 }
     }
 
-    /// Whether they see in the dark, the torch out.
-    pub fn night_vision(self) -> bool {
-        self == Perk::NightVision
+    /// Whether they see in the dark, the torch out, the enemies losing them, the Shadows slow
+    /// to come.
+    pub fn ghost(self) -> bool {
+        self == Perk::Ghost
+    }
+
+    /// The damage taken from an enemy ahead of them, against what it would be, in percent.
+    pub fn front_hurt_percent(self) -> u32 {
+        if self == Perk::Shield { 70 } else { 100 }
     }
 
     /// How long a gun takes to reload, against how long it would, in percent.
@@ -96,10 +105,12 @@ pub enum Skin {
     /// An infiltrator, all in dark, a balaclava, green goggles on the forehead, over the eyes
     /// once the torch is out: once Shadow is reached.
     Infiltrator,
+    /// A riot officer, a helmet, a red visor, a shield on the arm: once Hold the line is reached.
+    Riot,
 }
 
 impl Skin {
-    pub const ALL: [Skin; 8] = [
+    pub const ALL: [Skin; 9] = [
         Skin::Survivor,
         Skin::Classic,
         Skin::Exterminator,
@@ -108,6 +119,7 @@ impl Skin {
         Skin::Ninja,
         Skin::Medic,
         Skin::Infiltrator,
+        Skin::Riot,
     ];
 
     /// The hero a weapon belongs to, if it is one's own: never dealt to the others.
@@ -131,6 +143,7 @@ impl Skin {
             Skin::Ninja => Weapon::Katana,
             Skin::Medic => Weapon::Defibrillator,
             Skin::Infiltrator => Weapon::Fists,
+            Skin::Riot => Weapon::Truncheon,
         }
     }
 
@@ -141,6 +154,7 @@ impl Skin {
             Skin::Classic => 120,
             Skin::Medic | Skin::Infiltrator => 90,
             Skin::Demolisher => 140,
+            Skin::Riot => 110,
             Skin::Agent | Skin::Ninja => 80,
         }
     }
@@ -152,6 +166,7 @@ impl Skin {
             Skin::Classic | Skin::Infiltrator => 5,
             Skin::Exterminator => -5,
             Skin::Demolisher => -15,
+            Skin::Riot => -10,
             Skin::Agent => 10,
             Skin::Ninja => 15,
         }
@@ -168,7 +183,8 @@ impl Skin {
             Skin::Agent => Perk::Reflexes,
             Skin::Ninja => Perk::Dodge,
             Skin::Medic => Perk::Healer,
-            Skin::Infiltrator => Perk::NightVision,
+            Skin::Infiltrator => Perk::Ghost,
+            Skin::Riot => Perk::Shield,
         }
     }
 
@@ -183,6 +199,7 @@ impl Skin {
             Skin::Ninja => Some(Achievement::ShadowHunter),
             Skin::Medic => Some(Achievement::FirstAid),
             Skin::Infiltrator => Some(Achievement::Shadow),
+            Skin::Riot => Some(Achievement::HoldTheLine),
         }
     }
 
@@ -197,6 +214,7 @@ impl Skin {
             Skin::Ninja => "ninja",
             Skin::Medic => "medic",
             Skin::Infiltrator => "infiltrator",
+            Skin::Riot => "riot",
         }
     }
 }

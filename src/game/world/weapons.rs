@@ -98,7 +98,7 @@ impl World {
                 self.swing = None;
             }
         }
-        for weapon in [Weapon::Crowbar, Weapon::Machete] {
+        for weapon in [Weapon::Crowbar, Weapon::Machete, Weapon::Truncheon] {
             let level = self.player.build.weapon_level(weapon);
             let Some(stats) = machete::melee(weapon, level).filter(|_| level > 0) else {
                 continue;
@@ -318,7 +318,7 @@ impl World {
     pub fn waits(&self) -> Vec<(Weapon, u32, u32)> {
         let build = &self.player.build;
         let mut waits = Vec::new();
-        for weapon in [Weapon::Crowbar, Weapon::Machete] {
+        for weapon in [Weapon::Crowbar, Weapon::Machete, Weapon::Truncheon] {
             let level = build.weapon_level(weapon);
             if let Some(stats) = machete::melee(weapon, level).filter(|_| level > 0) {
                 let left = self.melee.get(&weapon).map_or(0, |swinging| swinging.wait);

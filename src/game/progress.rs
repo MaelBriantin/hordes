@@ -26,6 +26,11 @@ pub const COLD_BLOOD_PERCENT: u32 = 30;
 pub const COLD_BLOOD_SECONDS: u32 = 60;
 /// Shadow: the seconds the torch has to be out in a single run, all counted.
 pub const SHADOW_SECONDS: u32 = 180;
+/// Hold the line: the seconds the player has to stand surrounded in a single run, all counted; by
+/// how many enemies, within how far, in tiles.
+pub const HOLD_THE_LINE_SECONDS: u32 = 30;
+pub const HOLD_THE_LINE_ENEMIES: usize = 12;
+pub const HOLD_THE_LINE_REACH: f32 = 3.0;
 /// The Shadows to fell in a single run for Shadow hunter.
 pub const SHADOW_HUNTER_SHADOWS: u32 = 25;
 /// The HP to get back in a single run for First aid.
@@ -39,7 +44,7 @@ pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 28] = [
+pub const COLLECTION: [Unlock; 29] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -66,6 +71,7 @@ pub const COLLECTION: [Unlock; 28] = [
     Unlock::Card(Choice::Weapon(Weapon::C4)),
     Unlock::Card(Choice::Weapon(Weapon::Napalm)),
     Unlock::Card(Choice::Passive(Passive::Stealth)),
+    Unlock::Card(Choice::Action(Action::Ram)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -109,6 +115,8 @@ pub enum Achievement {
     FirstAid,
     /// Shadow: three minutes with the torch out in a single run, all counted.
     Shadow,
+    /// Hold the line: thirty seconds surrounded by a dozen enemies in a single run, all counted.
+    HoldTheLine,
     /// A regular: 25 runs played.
     Regular,
     /// Veteran: level 25 reached in a single run.
@@ -127,7 +135,7 @@ pub enum Unlock {
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 20] = [
+    pub const ALL: [Achievement; 21] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
@@ -145,6 +153,7 @@ impl Achievement {
         Achievement::Legend,
         Achievement::FirstAid,
         Achievement::Shadow,
+        Achievement::HoldTheLine,
         Achievement::Regular,
         Achievement::Veteran,
         Achievement::Dawn,
@@ -171,6 +180,7 @@ impl Achievement {
             Achievement::Legend => Unlock::Card(Choice::Weapon(Weapon::Napalm)),
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
             Achievement::Shadow => Unlock::Card(Choice::Passive(Passive::Stealth)),
+            Achievement::HoldTheLine => Unlock::Card(Choice::Action(Action::Ram)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }

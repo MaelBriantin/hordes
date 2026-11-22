@@ -31,6 +31,7 @@ mod mode;
 mod molotov;
 mod napalm;
 mod progress;
+pub mod ram;
 mod score;
 mod skin;
 mod spawn;
@@ -56,6 +57,11 @@ pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
 pub use progress::{Achievement, COLLECTION, Progress, Unlock};
+
+/// The ticks the ram takes to come back, by its level, before Haste.
+pub fn ram_recharge(level: u8) -> u32 {
+    ram::at(level).recharge
+}
 
 pub use skin::{Perk, Skin};
 pub use stain::{Stain, lasts as stain_lasts};

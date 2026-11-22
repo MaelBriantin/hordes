@@ -156,6 +156,7 @@ impl Settings {
                 ("skin", "ninja") => settings.skin = Skin::Ninja,
                 ("skin", "medic") => settings.skin = Skin::Medic,
                 ("skin", "infiltrator") => settings.skin = Skin::Infiltrator,
+                ("skin", "riot") => settings.skin = Skin::Riot,
                 ("mode", "standard") => settings.mode = Mode::Standard,
                 ("mode", "arcade") => settings.mode = Mode::Arcade,
                 ("gear", "shown") => settings.gear = true,

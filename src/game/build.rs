@@ -45,10 +45,11 @@ pub enum Weapon {
     C4,
     Napalm,
     Fists,
+    Truncheon,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 18] = [
+    pub const ALL: [Weapon; 19] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -67,6 +68,7 @@ impl Weapon {
         Weapon::C4,
         Weapon::Napalm,
         Weapon::Fists,
+        Weapon::Truncheon,
     ];
 }
 
@@ -126,10 +128,12 @@ pub enum Action {
     Dash,
     /// A crate set down just ahead, stopping the enemies that walk until they break it.
     Barricade,
+    /// A charge, shield ahead, nothing hurting the player, the enemies in the way thrown aside.
+    Ram,
 }
 
 impl Action {
-    pub const ALL: [Action; 2] = [Action::Dash, Action::Barricade];
+    pub const ALL: [Action; 3] = [Action::Dash, Action::Barricade, Action::Ram];
 }
 
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the

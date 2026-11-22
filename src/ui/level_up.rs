@@ -251,6 +251,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::C4 => SpriteId::IconC4,
             Weapon::Napalm => SpriteId::IconNapalm,
             Weapon::Fists => SpriteId::IconFists,
+            Weapon::Truncheon => SpriteId::IconTruncheon,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -269,6 +270,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
         Choice::Action(Action::Barricade) => SpriteId::IconBarricade,
+        Choice::Action(Action::Ram) => SpriteId::IconRam,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -294,6 +296,7 @@ pub fn name(choice: Choice) -> String {
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
         Choice::Action(Action::Barricade) => fl!("action-barricade"),
+        Choice::Action(Action::Ram) => fl!("action-ram"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -319,6 +322,7 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::C4 => fl!("weapon-c4"),
         Weapon::Napalm => fl!("weapon-napalm"),
         Weapon::Fists => fl!("weapon-fists"),
+        Weapon::Truncheon => fl!("weapon-truncheon"),
     }
 }
 
@@ -473,6 +477,13 @@ fn later_weapon_gain(weapon: Weapon, level: u8) -> String {
             4 => fl!("gain-fists-4"),
             _ => fl!("gain-fists-5"),
         },
+        Weapon::Truncheon => match level {
+            1 => fl!("gain-truncheon-1"),
+            2 => fl!("gain-truncheon-2"),
+            3 => fl!("gain-truncheon-3"),
+            4 => fl!("gain-truncheon-4"),
+            _ => fl!("gain-truncheon-5"),
+        },
         _ => shuriken_gain(level),
     }
 }
@@ -554,6 +565,14 @@ fn action_gain(action: Action, level: u8) -> String {
             3 => fl!("gain-barricade-third"),
             4 => fl!("gain-barricade-hp", from = 120, to = 180),
             _ => fl!("gain-barricade-metal"),
+        },
+        // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
+        Action::Ram => match level {
+            0 | 1 => fl!("gain-ram-1"),
+            2 => fl!("gain-ram-2"),
+            3 => fl!("gain-ram-3"),
+            4 => fl!("gain-ram-4"),
+            _ => fl!("gain-ram-5"),
         },
     }
 }

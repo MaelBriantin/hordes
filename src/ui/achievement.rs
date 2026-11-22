@@ -153,6 +153,7 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Legend => fl!("achievement-legend-goal"),
         Achievement::FirstAid => fl!("achievement-first-aid-goal"),
         Achievement::Shadow => fl!("achievement-shadow-goal"),
+        Achievement::HoldTheLine => fl!("achievement-hold-the-line-goal"),
         Achievement::Regular => fl!("achievement-regular-goal"),
         Achievement::Veteran => fl!("achievement-veteran-goal"),
     }
@@ -179,6 +180,7 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Legend => fl!("achievement-legend"),
         Achievement::FirstAid => fl!("achievement-first-aid"),
         Achievement::Shadow => fl!("achievement-shadow"),
+        Achievement::HoldTheLine => fl!("achievement-hold-the-line"),
         Achievement::Regular => fl!("achievement-regular"),
         Achievement::Veteran => fl!("achievement-veteran"),
     }

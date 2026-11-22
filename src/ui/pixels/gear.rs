@@ -91,6 +91,21 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
             GEAR_RELOADING,
         )
     };
+    // The ram fills back between two charges, full once ready.
+    let ram_whole = build
+        .cooldown(crate::game::ram_recharge(
+            build.action_level(Action::Ram).max(1),
+        ))
+        .max(1);
+    let ram = if world.ram_wait > 0 {
+        (
+            ram_whole.saturating_sub(world.ram_wait),
+            ram_whole,
+            GEAR_RELOADING,
+        )
+    } else {
+        (1, 1, GEAR_ROUNDS)
+    };
     // The Barricade card fills back between two barricades, full once one is ready.
     let whole = barricade_recharge(build.action_level(Action::Barricade));
     let barricade = if world.barricade_wait > 0 {
@@ -149,6 +164,7 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
                 gauge: Some(match action {
                     Action::Dash => dashes,
                     Action::Barricade => barricade,
+                    Action::Ram => ram,
                 }),
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {

@@ -9,6 +9,7 @@ mod fists;
 mod gear;
 mod napalm;
 mod ninja;
+mod ram;
 mod saw;
 mod stabs;
 mod thrust;
@@ -232,6 +233,7 @@ impl<'a> Canvas<'a> {
         self.paint_shock(world);
         self.paint_stabs(world, blood);
         self.paint_punch(world);
+        self.paint_brace(world);
     }
 
     /// A sprite with its top-left pixel at a pixel of the map.
@@ -273,8 +275,8 @@ impl<'a> Canvas<'a> {
     fn paint_swing(&mut self, swing: &Swing, centre: Vec2) {
         let shown = SWING_TICKS - swing.left;
         let sweeping = shown < SWING_TICKS / 2;
-        // The crowbar's blow, iron grey; the machete's slash, a blade's white.
-        let (bright, fading) = if swing.weapon == Weapon::Crowbar {
+        // The crowbar's and the truncheon's blow, iron grey; the machete's slash, a blade's white.
+        let (bright, fading) = if matches!(swing.weapon, Weapon::Crowbar | Weapon::Truncheon) {
             CROWBAR_BLOW
         } else {
             (SLASH, SLASH_FADING)
@@ -448,6 +450,7 @@ impl Canvas<'_> {
         &mut self,
         world: &World,
         frame: u32,
+        outfit: Outfit,
     ) -> (Vec<night::Light>, Vec<night::Halo>, Vec<night::Glow>) {
         let mut lights = Vec::new();
         if world.torch_shines() {
@@ -457,10 +460,17 @@ impl Canvas<'_> {
             ));
         }
         // The infiltrator, their torch out, sees around them in green.
-        if world.player.build.hero().perk().night_vision() && world.torch_on() == Some(false) {
+        if world.night_vision() {
+            // The second outfit's goggles are amber.
+            let goggles = if outfit.colours == 1 {
+                night::YELLOW_GOGGLES
+            } else {
+                night::GREEN_GOGGLES
+            };
             lights.push(night::Light::night_vision(
                 pixel(world.player.position),
                 NIGHT_VISION_RADIUS,
+                goggles,
             ));
         }
         let campfires = self.paint_healing(world, frame);
@@ -514,7 +524,7 @@ pub fn render_map(
 
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
-    let (lights, halos, glows) = canvas.lights(world, frame);
+    let (lights, halos, glows) = canvas.lights(world, frame, view.outfit());
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
     night::paint_halos(&mut canvas, &halos);
     // Where lightning will strike, a moment before: its ring on the ground, blinking, under the

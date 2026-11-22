@@ -119,7 +119,8 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Demolisher | 140 | −15% | sledgehammer | **Unshakable**: 10% less damage taken, and never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
 | Medic | 90 | normal | defibrillator | **Healer**: herbs, campfires and the heal give back half again as much, and 1 HP comes back of itself every 5 s |
-| Infiltrator | 90 | +5% | fists | **Night vision**: the torch out, they see 7 tiles around them all the same, in green; the enemies still don't see them from afar. Their goggles come down over their eyes |
+| Infiltrator | 90 | +5% | fists | **Ghost**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the enemies further than 2 tiles lose them at once and notice them no further, the hordes apart; the Shadows hunt them only after 4 s of dark |
+| Riot officer | 110 | −10% | truncheon | **Shield**: 30% less damage from an enemy ahead, the way they face |
 | Ninja | 80 | +15% | katana | **Dodge**: a 15% chance to avoid a blow altogether (enemies, a burst), unhurt half a second after as after a hit; a dark ghost of the ninja left aside a moment shows it |
 
 | Stat | Value |
@@ -137,6 +138,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 |---|---|---|---|---|---|---|
 | Zombie | 15 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
 | Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
+| Hold the line | Stand 30 s among 12 enemies within 3 tiles in one run (every tick counted, not in a row) | The shield ram (Space: the player braces 0.3 s, standing still, then charges 5 tiles straight ahead the way they faced (7 from level 4), nothing hurting them, every enemy within a tile of the way hurt, stunned 0.6 s and thrown 4 tiles aside in a V), and the riot officer with their truncheon |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 | Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
 
@@ -267,6 +269,12 @@ A gun of a kind, unlocked by Shadow hunter: volleys of **3 stars** thrown at the
 The medic's own weapon. Every **1 s** (less with Haste), a **shock** at the nearest enemy within **2 tiles**, leaping on to the nearest to it within 2 tiles, and so on, **3** enemies at most, **12 damage** each; each enemy it fells gives the medic back **1 HP**. In the dark too. It shows as a jagged bolt leaping from the hero through each enemy shocked, white then cyan.
 
 **Levels**: 2: 4 enemies · 3: 16 damage · 4: a shock every 0.8 s · 5: 2 HP a kill.
+
+### Truncheon
+
+The riot officer's own weapon. Every **1 s** (less with Haste), once an enemy is within its reach, a **blow** in an arc ahead, the way they face, **2 tiles**, 120° wide: every enemy in it takes **14 damage** and is thrown **1.5 tiles** back. It shows as the crowbar's blow, iron grey.
+
+**Levels**: 2: 2.5 tiles · 3: 20 damage · 4: a wider blow (180°) · 5: the blow **stuns** 0.5 s.
 
 ### Fists
 

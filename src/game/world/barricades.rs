@@ -7,10 +7,13 @@ use super::super::{TICKS_PER_SECOND, Vec2};
 use super::{PLAYER_HALF_WIDTH, World};
 
 impl World {
-    /// The player plays their action card: a dash, or a barricade set down.
+    /// The player plays their action card: a dash, a barricade set down, or a ram.
     pub fn act(&mut self) {
-        if self.player.build.action_level(Action::Barricade) > 0 {
+        let build = &self.player.build;
+        if build.action_level(Action::Barricade) > 0 {
             self.put_barricade();
+        } else if build.action_level(Action::Ram) > 0 {
+            self.ram();
         } else {
             self.dash();
         }

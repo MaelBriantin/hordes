@@ -31,8 +31,8 @@ use super::molotov::{Bottle, Puddle};
 use super::napalm::Bomb;
 use super::progress::{
     Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
-    FIRST_AID_HP, LEGEND_KILLS, Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS,
-    UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
+    FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH, HOLD_THE_LINE_SECONDS, LEGEND_KILLS,
+    Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
 };
 use super::score;
 use super::stain::Stain;
@@ -42,17 +42,22 @@ use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 mod barricades;
 mod blows;
 mod bombs;
+mod cards;
 mod charges;
 mod cuts;
 mod debug;
 mod enemies;
 mod flames;
+mod goals;
 mod jabs;
+mod player;
 mod punches;
+mod rams;
 mod saws;
 mod shocks;
 mod stabs;
 mod storm;
+mod torch;
 mod weapons;
 
 #[cfg(test)]
@@ -92,6 +97,8 @@ fn torch_lights_up() -> u32 {
 }
 
 /// The most ticks the torch flickers as it lights up, before it holds: a second and a half.
+/// The ticks the infiltrator's goggles stay blank once struck by lightning: 4 s.
+const GOGGLES_OUT_TICKS: u32 = 120;
 const TORCH_FLICKER_MOST: u32 = 45;
 /// The seconds a horde wiped out waits before its level comes, for the news to be read first;
 /// and the chance, in percent, of a rare card on that level.
@@ -245,13 +252,26 @@ pub struct World {
     shadows_down: u32,
     /// The ticks the player has stood low on HP this run, for Cold blood.
     low_hp_ticks: u32,
-    /// The ticks the torch has been out this run, the night fallen, for Shadow.
+    /// The ticks the torch has been out this run, the night fallen, for Shadow; and since it was
+    /// put out last, for the infiltrator.
     dark_ticks: u32,
+    pub(super) dark_streak: u32,
+    /// The ticks left the infiltrator's goggles stay blank, struck by lightning.
+    goggles_out: u32,
     /// The fists' last punch, while it shows; the ticks before the next; the punches so far this
     /// run: every third is a heavier one.
     pub punch: Option<Punch>,
     pub(super) fists_wait: u32,
     punches: u32,
+    /// The ram: the ticks before it can be played again; whether the player is charging, and the
+    /// enemies the charge has hit, each once.
+    pub ram_wait: u32,
+    /// Braced before a charge: the way it will go, and the ticks left.
+    ram_windup: Option<(Vec2, u32)>,
+    ramming: bool,
+    rammed: Vec<u32>,
+    /// The ticks the player has stood surrounded this run, for Hold the line.
+    surrounded_ticks: u32,
     /// The abominations felled by a melee blow this run: the crowbar's, the machete's, the
     /// hammer's.
     abominations_smashed: u32,
@@ -452,9 +472,16 @@ impl World {
             shadows_down: 0,
             low_hp_ticks: 0,
             dark_ticks: 0,
+            dark_streak: 0,
+            goggles_out: 0,
             punch: None,
             fists_wait: 0,
             punches: 0,
+            ram_wait: 0,
+            ram_windup: None,
+            ramming: false,
+            rammed: Vec::new(),
+            surrounded_ticks: 0,
             abominations_smashed: 0,
             flaming: false,
             flame_way: Vec2::new(1.0, 0.0),
@@ -578,87 +605,6 @@ impl World {
         }
     }
 
-    /// How far around the player the night is lit, in tiles: their light, less what the
-    /// weather takes, never under 4.
-    pub fn light_radius(&self) -> f32 {
-        (self.player.build.light_radius() - self.weather().light_loss()).max(4.0)
-    }
-
-    /// Where Glare slows the enemies, and how much, in percent: around the player, as far as
-    /// their torch's light shows, fading included, as a campfire heals; none without Glare, or
-    /// the torch not lit.
-    fn glare(&self) -> Option<(f32, u32)> {
-        let percent = self.player.build.glare_percent();
-        (percent > 0 && self.torch_lit()).then(|| (self.light_radius() + TORCH_FADE, percent))
-    }
-
-    /// Whether the player's torch is lit, and holds: not at dusk; once the player lights it, after
-    /// flickering a while.
-    pub fn torch_lit(&self) -> bool {
-        let Some(true) = self.torch_on() else {
-            return false;
-        };
-        self.ticks >= self.torch_steady_at
-    }
-
-    /// Whether the torch shines now: lit, or flickering as it lights up, on and off as luck has
-    /// it. Flickering, it lights nothing for the run: the player isn't seen, the guns hold.
-    pub fn torch_shines(&self) -> bool {
-        if self.torch_lit() {
-            return true;
-        }
-        let flickering = self.torch_on() == Some(true) && self.ticks < self.torch_steady_at;
-        let luck = ((self.ticks / 2) ^ self.torch_luck)
-            .wrapping_mul(0x9E37_79B9)
-            .rotate_left(7);
-        flickering && luck.is_multiple_of(3)
-    }
-
-    /// The torch starts to light up: it flickers, as long as luck has it (maybe not at all),
-    /// before it holds.
-    fn light_up_torch(&mut self) {
-        self.torch_steady_at =
-            self.ticks.max(torch_lights_up()) + self.rng.random_range(0..=TORCH_FLICKER_MOST);
-        self.torch_luck = self.rng.random();
-    }
-
-    /// A strike of lightning with the player in its ring puts their torch out: up to them to light
-    /// it again, quick, flickering as it does.
-    pub(super) fn cut_torch(&mut self) {
-        if self.torch_on() == Some(true) {
-            self.torch_switch = false;
-        }
-    }
-
-    /// Whether F is shown to the player under them: the night fallen, their torch never lit yet
-    /// this run.
-    pub fn torch_hint(&self) -> bool {
-        self.torch_on() == Some(false) && !self.torch_lit_once
-    }
-
-    /// Whether the player has their torch on: none before the night falls.
-    pub fn torch_on(&self) -> Option<bool> {
-        (self.ticks >= torch_lights_up()).then_some(self.torch_switch)
-    }
-
-    /// Puts the torch out, or lights it, flickering: once the night has fallen.
-    pub fn switch_torch(&mut self) {
-        match self.torch_on() {
-            None => {}
-            Some(true) => self.torch_switch = false,
-            Some(false) => {
-                self.torch_switch = true;
-                self.torch_lit_once = true;
-                self.light_up_torch();
-            }
-        }
-    }
-
-    /// Whether the enemies see the player from afar: by daylight, or by their torch.
-    fn seen_from_afar(&self) -> bool {
-        self.torch_on().is_none() || self.torch_lit()
-    }
-
     /// Tells news, as the player wants it: the world standing still while it shows, or going on.
     fn tell(&mut self, news: News) {
         if self.weather_news == WeatherNews::Paused {
@@ -742,6 +688,7 @@ impl World {
             self.tell(News::Weather(self.weather()));
         }
         self.move_player(input);
+        self.charge();
         self.spawn();
         self.hordes();
         self.move_enemies();
@@ -779,138 +726,6 @@ impl World {
         if self.pending_levels > 0 && !self.is_over() {
             self.offer = Some(self.deal());
         }
-    }
-
-    /// The achievements of the run reached so far: the weather held out until, and those
-    /// counted over every run. The cards they unlock are dealt at once.
-    fn reach_goals(&mut self) {
-        let weather = self.weather();
-        if weather >= Weather::Drizzle {
-            self.progress.reach(Achievement::Drizzle);
-        }
-        if matches!(weather, Weather::Rain | Weather::Storm | Weather::Tempest) {
-            self.progress.reach(Achievement::Rain);
-        }
-        if self.kills >= CARNAGE_KILLS {
-            self.progress.reach(Achievement::Carnage);
-        }
-        // Low on HP and standing, a while, every tick counted.
-        let (hp, most) = (self.player.hp, self.player.max_hp());
-        if hp > 0 && hp * 100 < most * COLD_BLOOD_PERCENT {
-            self.low_hp_ticks += 1;
-        }
-        if self.low_hp_ticks >= COLD_BLOOD_SECONDS * u32::from(TICKS_PER_SECOND) {
-            self.progress.reach(Achievement::ColdBlood);
-        }
-        if self.healed >= FIRST_AID_HP {
-            self.progress.reach(Achievement::FirstAid);
-        }
-        // The torch out, the night fallen, every tick counted.
-        if self.torch_on() == Some(false) {
-            self.dark_ticks += 1;
-        }
-        if self.dark_ticks >= SHADOW_SECONDS * u32::from(TICKS_PER_SECOND) {
-            self.progress.reach(Achievement::Shadow);
-        }
-        if self.kills >= LEGEND_KILLS {
-            self.progress.reach(Achievement::Legend);
-        }
-        if self.shadows_down >= SHADOW_HUNTER_SHADOWS {
-            self.progress.reach(Achievement::ShadowHunter);
-        }
-        if self.abominations_smashed >= DEMOLISHER_ABOMINATIONS {
-            self.progress.reach(Achievement::Demolisher);
-        }
-        if self.player.level >= VETERAN_LEVEL {
-            self.progress.reach(Achievement::Veteran);
-        }
-        if matches!(weather, Weather::Storm | Weather::Tempest) {
-            self.progress.reach(Achievement::Storm);
-        }
-        // Untouched since the night fell, or since the last hit after it.
-        let second = u32::from(TICKS_PER_SECOND);
-        let since = self
-            .hurt_at
-            .unwrap_or(0)
-            .max(weather::DUSK_SECONDS * second);
-        if self.ticks >= since + UNTOUCHABLE_SECONDS * second {
-            self.progress.reach(Achievement::Untouchable);
-        }
-        self.progress.count();
-    }
-
-    /// Picks the choice at `index` of the offer: then the next level's offer, or the world
-    /// goes on.
-    pub fn choose(&mut self, index: usize) {
-        let Some(choice) = self
-            .offer
-            .as_ref()
-            .and_then(|offer| offer.get(index))
-            .copied()
-        else {
-            return;
-        };
-        let heal = HEAL * self.player.build.hero().perk().heal_percent() / 100;
-        let player = &mut self.player;
-        match choice {
-            Choice::Heal => {
-                self.heal(heal);
-            }
-            Choice::Passive(Passive::Vitality) => {
-                player.build.take(choice);
-                player.hp += VITALITY_HP;
-            }
-            _ => player.build.take(choice),
-        }
-        self.pending_levels -= 1;
-        self.offer = (self.pending_levels > 0).then(|| self.deal());
-    }
-
-    /// The cards on offer dealt again, as rare as they were, if the run has a reroll left.
-    pub fn reroll(&mut self) {
-        if self.offer.is_none() || self.rerolls == 0 {
-            return;
-        }
-        self.rerolls -= 1;
-        self.offer = Some(self.deal_as(self.offer_rare));
-    }
-
-    /// The cards of a level-up: rarer for a level a horde brought.
-    fn deal(&mut self) -> Vec<Choice> {
-        let rare = if self.rare_levels > 0 {
-            self.rare_levels -= 1;
-            HORDE_RARE_PERCENT
-        } else {
-            RARE_PERCENT
-        };
-        self.offer_rare = rare;
-        self.deal_as(rare)
-    }
-
-    /// Cards, each a rare one `rare` percent of the time. The longer without a legendary, the
-    /// likelier one: a point of percent more for each level-up without, from the first chance
-    /// on.
-    fn deal_as(&mut self, rare: u32) -> Vec<Choice> {
-        let dusk = self.weather() == Weather::Dusk;
-        let percent = LEGENDARY_PERCENT + self.without_legendary;
-        let (progress, start) = (&self.dealt, self.start);
-        let offer = self
-            .player
-            .build
-            .offers(&mut self.rng, dusk, rare, percent, |choice| match choice {
-                // A hero's own weapon, to them alone.
-                Choice::Weapon(weapon) if Skin::owning(weapon).is_some() => weapon == start,
-                _ => progress.deals(choice),
-            });
-        if offer
-            .iter()
-            .any(|choice| matches!(choice, Choice::Legendary(_)))
-        {
-            self.without_legendary = 0;
-        } else {
-            self.without_legendary += 1;
-        }
-        offer
     }
 
     /// The score's multiplier now, in tenths: the weather's times the combo's.
@@ -960,19 +775,6 @@ impl World {
         }
     }
 
-    /// Regeneration gives HP back of itself, every second, tenths kept until they make a whole
-    /// one.
-    fn regenerate(&mut self) {
-        if !self.ticks.is_multiple_of(u32::from(TICKS_PER_SECOND)) {
-            return;
-        }
-        let build = &self.player.build;
-        self.hp_tenths += build.regeneration_tenths() + build.hero().perk().regeneration_tenths();
-        let whole = self.hp_tenths / 10;
-        self.hp_tenths %= 10;
-        self.heal(whole);
-    }
-
     /// Illumination gives XP of itself, a point a second.
     fn illuminate(&mut self) {
         if self.player.build.has(Legendary::Illumination)
@@ -980,57 +782,6 @@ impl World {
         {
             self.give_xp(100);
         }
-    }
-
-    /// XP for the player, in hundredths of a point: the whole points now, the rest kept for the
-    /// next.
-    fn give_xp(&mut self, hundredths: u32) {
-        self.xp_hundredths += hundredths;
-        let whole = self.xp_hundredths / 100;
-        self.xp_hundredths %= 100;
-        self.pending_levels += self.player.gain(whole);
-    }
-
-    fn move_player(&mut self, input: Input) {
-        let player = &mut self.player;
-        let (most, recharge) = (player.build.dashes(), player.build.dash_recharge());
-        player.dashes.tick(most, recharge);
-        // Dashing, the player goes on the way they dash, whatever the keys say.
-        if let Some(dash) = &mut player.dash {
-            let step = dash.step();
-            dash.left -= 1;
-            if dash.left == 0 {
-                player.dash = None;
-            }
-            player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
-            return;
-        }
-        player.facing = player.facing.after(input.direction);
-        // Normalized, so a diagonal is no faster than a straight line.
-        // With Stealth, faster with the torch out.
-        let stealth = if self.torch_on() == Some(false) {
-            self.player.build.stealth_percent()
-        } else {
-            0
-        };
-        let player = &mut self.player;
-        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent() + stealth) / 100.0;
-        let step = input.direction.normalized() * (speed * tick_seconds());
-        player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
-    }
-
-    /// The player dashes the way they face, if they have the Dash card and a dash is ready:
-    /// nothing hurts them while they do.
-    pub fn dash(&mut self) {
-        let player = &mut self.player;
-        if self.announcement.is_some()
-            || player.dash.is_some()
-            || player.build.dashes() == 0
-            || !player.dashes.take()
-        {
-            return;
-        }
-        player.dash = Some(Dash::new(player.facing.way()));
     }
 
     /// What lies on the ground between two tiles, by tile, as it is now: the herbs not yet
@@ -1044,118 +795,5 @@ impl World {
     /// The HP a campfire still has to give: none once it is out.
     pub fn campfire_left(&self, tile: (i32, i32)) -> u32 {
         CAMPFIRE_HP - self.burnt.get(&tile).copied().unwrap_or(0).min(CAMPFIRE_HP)
-    }
-
-    /// A hurt player picks up the herbs within their reach, and is healed by a burning campfire
-    /// they stay by, which gives of itself as it does.
-    fn heal_player(&mut self) {
-        let player = self.player.position;
-        let (x, y) = player.tile();
-        // As far as a campfire's light shows at its brightest, fading included: it heals within.
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "a campfire's light, a few tiles"
-        )]
-        let around = (2.0 * CAMPFIRE_LIGHT).ceil() as i32 + 1;
-        let mut fire = None;
-        for (tile, feature) in self.features_in((x - around, y - around), (x + around, y + around))
-        {
-            let middle = Vec2::middle_of(tile);
-            let apart = (middle - player).length();
-            let hurt = self.player.hp < self.player.max_hp();
-            match feature {
-                Feature::Herb if hurt && apart <= HERB_REACH => {
-                    let herb = HERB_HP * self.player.build.hero().perk().heal_percent() / 100;
-                    self.heal(herb);
-                    self.picked.insert(tile);
-                    self.healed_at = Some(self.ticks);
-                }
-                Feature::Campfire
-                    if hurt
-                        && self.campfire_left(tile) > 0
-                        && apart <= heal::reach(self.campfire_left(tile)) =>
-                {
-                    fire = Some(tile);
-                }
-                _ => {}
-            }
-        }
-        let Some(tile) = fire else {
-            self.by_the_fire = 0;
-            return;
-        };
-        self.by_the_fire += 1;
-        let percent = self.player.build.hero().perk().heal_percent();
-        if self.by_the_fire >= heal::ticks_per_hp() * 100 / percent {
-            self.by_the_fire = 0;
-            self.heal(1);
-            *self.burnt.entry(tile).or_insert(0) += 1;
-            self.healed_at = Some(self.ticks);
-        }
-    }
-
-    /// The player loses the HP of the hardest-hitting enemy touching them, then nothing hurts
-    /// them for half a second.
-    fn hurt_player(&mut self) {
-        if self.unhurt || self.daybreak() || self.player.dash.is_some() {
-            return;
-        }
-        let player = &mut self.player;
-        if player.invincible > 0 {
-            player.invincible -= 1;
-            return;
-        }
-        let hit = self
-            .enemies
-            .iter()
-            .filter(|enemy| {
-                touch(
-                    enemy.position,
-                    enemy.kind.stats().half_width,
-                    player.position,
-                    PLAYER_HALF_WIDTH,
-                )
-            })
-            .map(|enemy| enemy.kind.stats().damage)
-            .max();
-        if let Some(damage) = hit {
-            self.wound_player(damage);
-        }
-    }
-
-    /// The player gets back `amount` HP, never over their most: how many they did, counted for
-    /// First aid.
-    fn heal(&mut self, amount: u32) -> u32 {
-        let player = &mut self.player;
-        let healed = amount.min(player.max_hp().saturating_sub(player.hp));
-        player.hp += healed;
-        self.healed += healed;
-        healed
-    }
-
-    /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second; nothing
-    /// while their chainsaw grinds: they charge into the crowd.
-    fn wound_player(&mut self, damage: u32) {
-        if self.sawing {
-            return;
-        }
-        // The ninja dodges a blow now and then: nothing taken, but as long unhurt after.
-        let dodge = self.player.build.hero().perk().dodge_percent();
-        if dodge > 0 && self.rng.random_range(0..100) < dodge {
-            self.player.invincible = u32::from(TICKS_PER_SECOND) / 2;
-            self.dodged_at = Some(self.ticks);
-            return;
-        }
-        let player = &mut self.player;
-        let damage = damage * player.build.hero().perk().hurt_percent() / 100;
-        player.hp = player.hp.saturating_sub(damage);
-        player.invincible = u32::from(TICKS_PER_SECOND) / 2;
-        self.hurt_at = Some(self.ticks);
-        self.stains.push(Stain {
-            position: player.position,
-            tick: self.ticks,
-            size: 1,
-            ash: false,
-        });
     }
 }

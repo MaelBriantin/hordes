@@ -17,7 +17,7 @@ use super::{ViewState, achievement, level_up, pixels};
 use crate::game::{Facing, Perk, Progress};
 
 /// Every skin, in the order the tiles show them.
-pub const SKINS: [Skin; 8] = Skin::ALL;
+pub const SKINS: [Skin; 9] = Skin::ALL;
 /// The frames the hero picked waits, from the front, before turning round: a second; and the
 /// frames they show each way as they turn.
 const TURN_AFTER: u32 = 30;
@@ -254,7 +254,8 @@ fn perk_line(skin: Skin) -> String {
         Perk::Reflexes => fl!("perk-reflexes"),
         Perk::Dodge => fl!("perk-dodge"),
         Perk::Healer => fl!("perk-healer"),
-        Perk::NightVision => fl!("perk-night-vision"),
+        Perk::Ghost => fl!("perk-ghost"),
+        Perk::Shield => fl!("perk-shield"),
     }
 }
 
@@ -272,7 +273,8 @@ pub fn outfit_name(outfit: Outfit) -> String {
         Skin::Agent => fl!("outfit-agent"),
         Skin::Ninja => fl!("outfit-ninja"),
         Skin::Medic => fl!("outfit-medic"),
-        Skin::Infiltrator => fl!("skin-infiltrator"),
+        Skin::Infiltrator => fl!("outfit-infiltrator"),
+        Skin::Riot => fl!("skin-riot"),
     };
     capitalised(&word)
 }
@@ -288,6 +290,7 @@ pub fn name(skin: Skin) -> String {
         Skin::Ninja => fl!("skin-ninja"),
         Skin::Medic => fl!("skin-medic"),
         Skin::Infiltrator => fl!("skin-infiltrator"),
+        Skin::Riot => fl!("skin-riot"),
     };
     capitalised(&word)
 }

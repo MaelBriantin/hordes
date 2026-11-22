@@ -53,20 +53,28 @@ impl Dashes {
 pub struct Dash {
     pub way: Vec2,
     pub left: u32,
+    /// How far it goes in all, in tiles.
+    pub tiles: f32,
 }
 
 impl Dash {
     /// A dash the way `way` goes, whole.
     pub fn new(way: Vec2) -> Self {
+        Self::of(way, DASH_TILES)
+    }
+
+    /// A dash the way `way` goes, `tiles` long, in a dash's time: a charge.
+    pub fn of(way: Vec2, tiles: f32) -> Self {
         Self {
             way: way.normalized(),
             left: DASH_TICKS,
+            tiles,
         }
     }
 
     /// The step a tick of dashing takes, in tiles.
     pub fn step(self) -> Vec2 {
-        self.way * (DASH_TILES / f32::from(u16::try_from(DASH_TICKS).unwrap_or(1)))
+        self.way * (self.tiles / f32::from(u16::try_from(DASH_TICKS).unwrap_or(1)))
     }
 }
 

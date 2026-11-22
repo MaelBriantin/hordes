@@ -37,6 +37,10 @@ const SEPARATION_CELL: f32 = 2.0;
 /// tiles.
 const NOTICE_REACH: f32 = 6.0;
 const LOSE_REACH: f32 = 8.0;
+/// The infiltrator, their torch out: how near an enemy has to be to notice them, in tiles, any
+/// further losing them at once; and the ticks of dark before the Shadows hunt them: 4 s.
+const GHOST_REACH: f32 = 2.0;
+const GHOST_SHADOW_TICKS: u32 = 120;
 const LURE_REACH: f32 = 20.0;
 const WANDER_PACE: f32 = 0.5;
 /// The parasites a felled abomination lets out.
@@ -360,8 +364,12 @@ impl World {
         // In the dark, those that haven't seen the player go for the campfires, or wander.
         let seen = self.seen_from_afar();
         let fires = if seen { Vec::new() } else { self.fires_near() };
-        // At night, whether Shadows hunt: with the torch out; lit, they shun it.
-        let dark_hunt = self.torch_on().map(|_| !self.torch_lit());
+        // At night, whether Shadows hunt: with the torch out; lit, they shun it. The infiltrator,
+        // their torch out, slips away from the others, and the Shadows are slow to come.
+        let ghost = self.player.build.hero().perk().ghost() && self.torch_on() == Some(false);
+        let dark_hunt = self
+            .torch_on()
+            .map(|_| !self.torch_lit() && (!ghost || self.dark_streak >= GHOST_SHADOW_TICKS));
         // With Glare, those in the torch's light go slower.
         let glare = self.glare();
         let ticks = self.ticks;
@@ -381,6 +389,8 @@ impl World {
                 }
                 enemy.hunting = if hunts { enemy.hunting + 1 } else { 0 };
                 enemy.noticed = hunts;
+            } else if ghost {
+                enemy.noticed = apart <= GHOST_REACH;
             } else if seen || apart <= NOTICE_REACH {
                 enemy.noticed = true;
             } else if apart > LOSE_REACH {

@@ -139,7 +139,8 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         | Weapon::Chainsaw
         | Weapon::C4
         | Weapon::Napalm
-        | Weapon::Fists => None,
+        | Weapon::Fists
+        | Weapon::Truncheon => None,
     }
 }
 

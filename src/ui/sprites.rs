@@ -69,6 +69,15 @@ pub enum SpriteId {
     InfiltratorDarkFront,
     InfiltratorDarkBack,
     InfiltratorDarkSide,
+    InfiltratorJungleFront,
+    InfiltratorJungleBack,
+    InfiltratorJungleSide,
+    InfiltratorJungleDarkFront,
+    InfiltratorJungleDarkBack,
+    InfiltratorJungleDarkSide,
+    RiotFront,
+    RiotBack,
+    RiotSide,
     MedicGreenFront,
     MedicGreenBack,
     /// Facing right.
@@ -122,6 +131,7 @@ pub enum SpriteId {
     IconGlare,
     IconDrain,
     IconStealth,
+    IconRam,
     IconDash,
     IconFlamethrower,
     IconHammer,
@@ -132,6 +142,7 @@ pub enum SpriteId {
     IconDefibrillator,
     IconChainsaw,
     IconFists,
+    IconTruncheon,
     IconC4,
     IconNapalm,
     IconBarricade,
@@ -151,7 +162,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 117] = [
+    const ALL: [SpriteId; 128] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -197,6 +208,15 @@ impl SpriteId {
         SpriteId::InfiltratorDarkFront,
         SpriteId::InfiltratorDarkBack,
         SpriteId::InfiltratorDarkSide,
+        SpriteId::InfiltratorJungleFront,
+        SpriteId::InfiltratorJungleBack,
+        SpriteId::InfiltratorJungleSide,
+        SpriteId::InfiltratorJungleDarkFront,
+        SpriteId::InfiltratorJungleDarkBack,
+        SpriteId::InfiltratorJungleDarkSide,
+        SpriteId::RiotFront,
+        SpriteId::RiotBack,
+        SpriteId::RiotSide,
         SpriteId::MedicGreenFront,
         SpriteId::MedicGreenBack,
         SpriteId::MedicGreenSide,
@@ -244,6 +264,7 @@ impl SpriteId {
         SpriteId::IconGlare,
         SpriteId::IconDrain,
         SpriteId::IconStealth,
+        SpriteId::IconRam,
         SpriteId::IconDash,
         SpriteId::IconFlamethrower,
         SpriteId::IconHammer,
@@ -254,6 +275,7 @@ impl SpriteId {
         SpriteId::IconDefibrillator,
         SpriteId::IconChainsaw,
         SpriteId::IconFists,
+        SpriteId::IconTruncheon,
         SpriteId::IconC4,
         SpriteId::IconNapalm,
         SpriteId::IconBarricade,
@@ -319,6 +341,15 @@ impl SpriteId {
             SpriteId::InfiltratorDarkFront => "infiltrator_dark_front",
             SpriteId::InfiltratorDarkBack => "infiltrator_dark_back",
             SpriteId::InfiltratorDarkSide => "infiltrator_dark_side",
+            SpriteId::InfiltratorJungleFront => "infiltrator_jungle_front",
+            SpriteId::InfiltratorJungleBack => "infiltrator_jungle_back",
+            SpriteId::InfiltratorJungleSide => "infiltrator_jungle_side",
+            SpriteId::InfiltratorJungleDarkFront => "infiltrator_jungle_dark_front",
+            SpriteId::InfiltratorJungleDarkBack => "infiltrator_jungle_dark_back",
+            SpriteId::InfiltratorJungleDarkSide => "infiltrator_jungle_dark_side",
+            SpriteId::RiotFront => "riot_front",
+            SpriteId::RiotBack => "riot_back",
+            SpriteId::RiotSide => "riot_side",
             SpriteId::MedicGreenFront => "medic_green_front",
             SpriteId::MedicGreenBack => "medic_green_back",
             SpriteId::MedicGreenSide => "medic_green_side",
@@ -366,6 +397,7 @@ impl SpriteId {
             SpriteId::IconGlare => "icon_glare",
             SpriteId::IconDrain => "icon_drain",
             SpriteId::IconStealth => "icon_stealth",
+            SpriteId::IconRam => "icon_ram",
             SpriteId::IconDash => "icon_dash",
             SpriteId::IconFlamethrower => "icon_flamethrower",
             SpriteId::IconHammer => "icon_hammer",
@@ -376,6 +408,7 @@ impl SpriteId {
             SpriteId::IconDefibrillator => "icon_defibrillator",
             SpriteId::IconChainsaw => "icon_chainsaw",
             SpriteId::IconFists => "icon_fists",
+            SpriteId::IconTruncheon => "icon_truncheon",
             SpriteId::IconC4 => "icon_c4",
             SpriteId::IconNapalm => "icon_napalm",
             SpriteId::IconBarricade => "icon_barricade",
@@ -458,10 +491,10 @@ pub struct Outfit {
     pub colours: u8,
 }
 
-/// How many colours a hero comes in: two each, their own and a second; the infiltrator one so
+/// How many colours a hero comes in: two each, their own and a second; the riot officer one so
 /// far.
 pub fn colours_of(skin: Skin) -> u8 {
-    if skin == Skin::Infiltrator { 1 } else { 2 }
+    if skin == Skin::Riot { 1 } else { 2 }
 }
 
 /// The hero, as `outfit` says, turned the way they face, in the dark or not: the infiltrator's
@@ -474,7 +507,10 @@ pub fn hero_in(facing: Facing, outfit: Outfit, dark: bool) -> Look {
     let sprite = match look.sprite {
         SpriteId::InfiltratorFront => SpriteId::InfiltratorDarkFront,
         SpriteId::InfiltratorBack => SpriteId::InfiltratorDarkBack,
-        _ => SpriteId::InfiltratorDarkSide,
+        SpriteId::InfiltratorSide => SpriteId::InfiltratorDarkSide,
+        SpriteId::InfiltratorJungleFront => SpriteId::InfiltratorJungleDarkFront,
+        SpriteId::InfiltratorJungleBack => SpriteId::InfiltratorJungleDarkBack,
+        _ => SpriteId::InfiltratorJungleDarkSide,
     };
     Look { sprite, ..look }
 }
@@ -548,11 +584,17 @@ pub fn hero(facing: Facing, outfit: Outfit) -> Look {
             SpriteId::MedicBack,
             SpriteId::MedicSide,
         ),
+        Skin::Infiltrator if outfit.colours == 1 => (
+            SpriteId::InfiltratorJungleFront,
+            SpriteId::InfiltratorJungleBack,
+            SpriteId::InfiltratorJungleSide,
+        ),
         Skin::Infiltrator => (
             SpriteId::InfiltratorFront,
             SpriteId::InfiltratorBack,
             SpriteId::InfiltratorSide,
         ),
+        Skin::Riot => (SpriteId::RiotFront, SpriteId::RiotBack, SpriteId::RiotSide),
     };
     match facing {
         Facing::Down => Look::plain(front),
@@ -786,12 +828,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_hero_but_the_infiltrator_comes_in_two_outfits_each_its_own_sprites_every_way() {
-        assert_eq!(colours_of(Skin::Infiltrator), 1, "one so far");
-        for skin in Skin::ALL
-            .into_iter()
-            .filter(|skin| *skin != Skin::Infiltrator)
-        {
+    fn every_hero_but_the_riot_officer_comes_in_two_outfits_each_its_own_sprites_every_way() {
+        assert_eq!(colours_of(Skin::Riot), 1, "one so far");
+        for skin in Skin::ALL.into_iter().filter(|skin| *skin != Skin::Riot) {
             assert_eq!(colours_of(skin), 2);
             let looks = |colours| {
                 [Facing::Down, Facing::Up, Facing::Right]
@@ -807,11 +846,13 @@ mod tests {
 
     #[test]
     fn the_infiltrator_s_goggles_come_down_over_their_eyes_in_the_dark() {
-        let outfit = Outfit {
-            skin: Skin::Infiltrator,
-            colours: 0,
-        };
-        for facing in [Facing::Down, Facing::Up, Facing::Right, Facing::Left] {
+        for (colours, facing) in [0, 1].into_iter().flat_map(|colours| {
+            [Facing::Down, Facing::Up, Facing::Right, Facing::Left].map(|facing| (colours, facing))
+        }) {
+            let outfit = Outfit {
+                skin: Skin::Infiltrator,
+                colours,
+            };
             let (lit, dark) = (
                 hero_in(facing, outfit, false).sprite,
                 hero_in(facing, outfit, true).sprite,

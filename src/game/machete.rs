@@ -46,6 +46,16 @@ pub fn melee(weapon: Weapon, level: u8) -> Option<Melee> {
             knockback: 0.0,
             stun: 0,
         }),
+        // The truncheon: a blow ahead throwing back what it hits.
+        Weapon::Truncheon => Some(Melee {
+            cooldown: second,
+            damage: if level >= 3 { 20 } else { 14 },
+            reach: if level >= 2 { 2.5 } else { 2.0 },
+            half_arc: if level >= 4 { FRAC_PI_2 } else { FRAC_PI_3 },
+            slashes: 1,
+            knockback: 1.5,
+            stun: if level >= 5 { second / 2 } else { 0 },
+        }),
         Weapon::Crowbar => Some(Melee {
             cooldown: second * 3 / 2,
             damage: if level >= 3 { 24 } else { 18 },
