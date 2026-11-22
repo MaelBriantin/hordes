@@ -9,6 +9,8 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.9.1 · November 22, 2026
+
 ### New
 - The gear on the pause screen, beside its menu: the hero with their perk and action, then each card taken with its icon, its level and what it brings at it.
 
