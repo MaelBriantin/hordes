@@ -47,7 +47,12 @@ pub fn in_a_row(width: u16) -> usize {
 /// the one that stands there on the screen, the nearest to it if none quite does; `at` itself on
 /// the last row or the first.
 pub fn beside(at: usize, per_row: usize, down: bool) -> usize {
-    let total = COLLECTION.len();
+    beside_among(at, per_row, COLLECTION.len(), down)
+}
+
+/// The tile under or over the one at `at`, among `total` tiles in rows of `per_row`, each row
+/// centred.
+fn beside_among(at: usize, per_row: usize, total: usize, down: bool) -> usize {
     let per_row = per_row.max(1);
     let (row, column) = (at / per_row, at % per_row);
     let rows = total.div_ceil(per_row);
@@ -222,7 +227,10 @@ pub(super) fn overlay(
                 continue;
             }
             let (symbol, fg, bg) = (from.symbol().to_string(), from.fg, from.bg);
-            let cell = &mut buffer[(area.x + column, area.y + row)];
+            // Off the screen, nothing: the room may run out under it.
+            let Some(cell) = buffer.cell_mut((area.x + column, area.y + row)) else {
+                continue;
+            };
             cell.set_symbol(&symbol).set_fg(shade(fg));
             if bg != Color::Reset {
                 cell.set_bg(shade(bg));
@@ -388,7 +396,7 @@ fn icon(unlock: Unlock) -> SpriteId {
         Unlock::Card(choice) => level_up::icon(choice),
         Unlock::Reroll => SpriteId::IconReroll,
         Unlock::Arcade => SpriteId::IconArcade,
-        Unlock::Skin(skin) => sprites::hero(Facing::Down, skin).sprite,
+        Unlock::Skin(skin) => sprites::hero(Facing::Down, sprites::Outfit::plain(skin)).sprite,
     }
 }
 
@@ -430,28 +438,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_picture_running_off_the_screen_is_cut_rather_than_failing() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 10));
+        let sprites = Sprites::load().unwrap();
+        // Its lower rows under the screen's last.
+        let off = Rect::new(4, 8, PICTURE.0, PICTURE.1);
+        overlay(&mut buffer, off, true, |drawn, apart| {
+            pixels::render_sprite(drawn, apart, &sprites, SpriteId::IconPistol);
+        });
+        assert_ne!(buffer[(5, 9)].symbol(), " ", "what fits is drawn");
+    }
+
+    #[test]
     fn up_and_down_go_to_the_tile_standing_there_on_a_shorter_centred_row() {
         // 22 tiles, 8 a row: the last row of 6 stands a tile in on each side.
-        assert_eq!(COLLECTION.len(), 22);
+        let beside = |at, down| beside_among(at, 8, 22, down);
         assert_eq!(
-            beside(10, 8, true),
+            beside(10, true),
             17,
             "the third tile over the second of the last row"
         );
         assert_eq!(
-            beside(8, 8, true),
+            beside(8, true),
             16,
             "none quite under the first: the nearest"
         );
-        assert_eq!(beside(17, 8, false), 10);
-        assert_eq!(beside(2, 8, true), 10, "full rows: straight down");
-        assert_eq!(beside(17, 8, true), 17, "the last row");
-        assert_eq!(beside(3, 8, false), 3, "the first row");
+        assert_eq!(beside(17, false), 10);
+        assert_eq!(beside(2, true), 10, "full rows: straight down");
+        assert_eq!(beside(17, true), 17, "the last row");
+        assert_eq!(beside(3, false), 3, "the first row");
     }
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
-        assert_eq!(in_a_row(108), 8, "three even rows rather than 10, 10 and 2");
+        assert_eq!(in_a_row(108), 9, "three even rows rather than 10, 10 and 5");
         assert_eq!(in_a_row(63), 5);
         assert_eq!(height(108, 40), height_of(3));
         assert_eq!(height(108, 20), height_of(1));

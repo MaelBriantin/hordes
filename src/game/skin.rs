@@ -1,5 +1,7 @@
 //! The heroes: how they look, and the weapon each starts a run with, theirs alone. The survivor
-//! and the classic hero from the start; the others once an achievement is reached.
+//! from the start; the others once an achievement is reached.
+
+use serde::{Deserialize, Serialize};
 
 use super::build::Weapon;
 use super::progress::Achievement;
@@ -17,6 +19,10 @@ pub enum Perk {
     Unshakable,
     /// The guns reload 20% faster.
     Reflexes,
+    /// A blow in seven dodged, nothing taken.
+    Dodge,
+    /// Healing heals half again as much, and HP come back of themselves, one every 5 s.
+    Healer,
 }
 
 impl Perk {
@@ -40,6 +46,21 @@ impl Perk {
         self != Perk::Unshakable
     }
 
+    /// What healing gives back, against what it would, in percent: herbs, campfires, the heal.
+    pub fn heal_percent(self) -> u32 {
+        if self == Perk::Healer { 150 } else { 100 }
+    }
+
+    /// The HP that come back of themselves, in tenths a second.
+    pub fn regeneration_tenths(self) -> u32 {
+        if self == Perk::Healer { 2 } else { 0 }
+    }
+
+    /// The chance of dodging a blow, in percent.
+    pub fn dodge_percent(self) -> u32 {
+        if self == Perk::Dodge { 15 } else { 0 }
+    }
+
     /// How long a gun takes to reload, against how long it would, in percent.
     pub fn reload_percent(self) -> u32 {
         if self == Perk::Reflexes { 80 } else { 100 }
@@ -47,28 +68,35 @@ impl Perk {
 }
 
 /// A hero, as they look: a setting, the survivor at first.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Skin {
     /// In a leather jacket and jeans.
     Survivor,
-    /// The hero of the first versions, in a red headband.
+    /// The hero of the first versions, in a red headband: once Legend is reached.
     Classic,
     /// In a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back: once
     /// Cleaner is reached.
     Exterminator,
     /// Bald and bearded, in a grey tank top and jeans: once Demolisher is reached.
     Demolisher,
-    /// A young police officer, fair hair, a blue uniform: once Cold blood is reached.
-    Rookie,
+    /// A special agent, fair hair, a brown leather jacket; in their second colours a young police
+    /// officer's blue uniform: once Cold blood is reached.
+    Agent,
+    /// A ninja, all in dark, the eyes alone showing: once Shadow hunter is reached.
+    Ninja,
+    /// A medic: once First aid is reached.
+    Medic,
 }
 
 impl Skin {
-    pub const ALL: [Skin; 5] = [
+    pub const ALL: [Skin; 7] = [
         Skin::Survivor,
         Skin::Classic,
         Skin::Exterminator,
         Skin::Demolisher,
-        Skin::Rookie,
+        Skin::Agent,
+        Skin::Ninja,
+        Skin::Medic,
     ];
 
     /// The hero a weapon belongs to, if it is one's own: never dealt to the others.
@@ -88,7 +116,9 @@ impl Skin {
             Skin::Classic => Weapon::Machete,
             Skin::Exterminator => Weapon::Baton,
             Skin::Demolisher => Weapon::Hammer,
-            Skin::Rookie => Weapon::Knife,
+            Skin::Agent => Weapon::Knife,
+            Skin::Ninja => Weapon::Katana,
+            Skin::Medic => Weapon::Defibrillator,
         }
     }
 
@@ -96,42 +126,48 @@ impl Skin {
     pub fn hp(self) -> u32 {
         match self {
             Skin::Survivor | Skin::Exterminator => 100,
-            Skin::Classic => 90,
+            Skin::Classic | Skin::Medic => 90,
             Skin::Demolisher => 140,
-            Skin::Rookie => 80,
+            Skin::Agent | Skin::Ninja => 80,
         }
     }
 
     /// How much faster than the survivor they go, in percent: less than 0, slower.
     pub fn speed_percent(self) -> i16 {
         match self {
-            Skin::Survivor => 0,
+            Skin::Survivor | Skin::Medic => 0,
             Skin::Classic => 5,
             Skin::Exterminator => -5,
             Skin::Demolisher => -15,
-            Skin::Rookie => 10,
+            Skin::Agent => 10,
+            Skin::Ninja => 15,
         }
     }
 
     /// What sets them apart besides: the classic hero's damage, the exterminator's fire, the
-    /// demolisher's hide, the rookie's reloads; none for the survivor.
+    /// demolisher's hide, the special agent's reloads; none for the survivor.
     pub fn perk(self) -> Perk {
         match self {
             Skin::Survivor => Perk::Versatile,
             Skin::Classic => Perk::Commando,
             Skin::Exterminator => Perk::Pyromaniac,
             Skin::Demolisher => Perk::Unshakable,
-            Skin::Rookie => Perk::Reflexes,
+            Skin::Agent => Perk::Reflexes,
+            Skin::Ninja => Perk::Dodge,
+            Skin::Medic => Perk::Healer,
         }
     }
 
     /// The achievement they wait for; none for those there from the start.
     pub fn achievement(self) -> Option<Achievement> {
         match self {
-            Skin::Survivor | Skin::Classic => None,
+            Skin::Survivor => None,
+            Skin::Classic => Some(Achievement::Legend),
             Skin::Exterminator => Some(Achievement::Cleaner),
             Skin::Demolisher => Some(Achievement::Demolisher),
-            Skin::Rookie => Some(Achievement::ColdBlood),
+            Skin::Agent => Some(Achievement::ColdBlood),
+            Skin::Ninja => Some(Achievement::ShadowHunter),
+            Skin::Medic => Some(Achievement::FirstAid),
         }
     }
 
@@ -142,7 +178,9 @@ impl Skin {
             Skin::Classic => "classic",
             Skin::Exterminator => "exterminator",
             Skin::Demolisher => "demolisher",
-            Skin::Rookie => "rookie",
+            Skin::Agent => "agent",
+            Skin::Ninja => "ninja",
+            Skin::Medic => "medic",
         }
     }
 }

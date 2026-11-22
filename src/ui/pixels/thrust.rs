@@ -1,5 +1,7 @@
-//! The stun baton's thrust: the baton held out, its double prong ahead, a jagged bolt running
-//! from it to the end of its reach, a spark on each enemy it paralyses.
+//! The electric strikes: the stun baton's thrust, the baton held out, its double prong ahead, a
+//! jagged bolt running from it to the end of its reach, a spark on each enemy it paralyses; the
+//! defibrillator's shock, a jagged bolt leaping from the hero through each enemy it goes
+//! through.
 
 use ratatui::style::Color;
 
@@ -66,6 +68,35 @@ impl Canvas<'_> {
                 let (ex, ey) = pixel(enemy.position);
                 self.set((ex + 1, ey - 3), WHITE);
                 self.set((ex + 2, ey - 4), CYAN);
+            }
+        }
+    }
+
+    /// The defibrillator's last shock: a jagged bolt from the hero to the first enemy shocked,
+    /// then on through each next one, white then cyan.
+    pub(super) fn paint_shock(&mut self, world: &World) {
+        let Some(shock) = &world.shock else {
+            return;
+        };
+        let colour = if shock.age < 2 { WHITE } else { CYAN };
+        for (leg, pair) in (0_u32..).zip(shock.path.windows(2)) {
+            let (from, to) = (pixel(pair[0]), pixel(pair[1]));
+            let steps = (to.0 - from.0).abs().max((to.1 - from.1).abs()).max(1);
+            let (across_x, across_y) = ((to.1 - from.1).signum(), -(to.0 - from.0).signum());
+            let mut stray = 0;
+            for step in 0..=steps {
+                let luck = u32::try_from(step).unwrap_or(0).wrapping_mul(73_856_093)
+                    ^ leg.wrapping_mul(19_349_663)
+                    ^ world.ticks().wrapping_mul(83_492_791);
+                stray = (stray + i32::try_from(luck % 3).unwrap_or(1) - 1)
+                    .clamp(-BOLT_STRAY, BOLT_STRAY);
+                // Back to the line at either end.
+                let stray = if step == 0 || step == steps { 0 } else { stray };
+                let point = (
+                    from.0 + (to.0 - from.0) * step / steps + across_x * stray,
+                    from.1 + (to.1 - from.1) * step / steps + across_y * stray,
+                );
+                self.set(point, colour);
             }
         }
     }

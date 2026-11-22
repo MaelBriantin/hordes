@@ -101,6 +101,20 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             speed: 18.0,
             range: 6.0,
         }),
+        Weapon::Shuriken => Some(Gun {
+            weapon,
+            // A few stars thrown in a row, then the next ones taken out.
+            magazine: if level >= 2 { 4 } else { 3 },
+            interval: tenths(3),
+            reload: if level >= 3 { tenths(10) } else { tenths(14) },
+            damage: if level >= 5 { 12 } else { 9 },
+            bullets: if level >= 4 { 2 } else { 1 },
+            pellets: 1,
+            spread: 0.0,
+            pierce: if level >= 5 { 2 } else { 1 },
+            speed: 14.0,
+            range: 8.0,
+        }),
         Weapon::Crowbar
         | Weapon::Machete
         | Weapon::Drones
@@ -108,7 +122,10 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         | Weapon::Flamethrower
         | Weapon::Hammer
         | Weapon::Baton
-        | Weapon::Knife => None,
+        | Weapon::Knife
+        | Weapon::Katana
+        | Weapon::Defibrillator
+        | Weapon::Chainsaw => None,
     }
 }
 

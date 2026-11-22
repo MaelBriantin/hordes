@@ -68,6 +68,8 @@ s 90 90 95      ashes
 8 95 145 225    a uniform's light blue
 9 60 95 175     a uniform's blue
 0 35 50 115     a uniform's dark blue
+% 55 58 66      a ninja's charcoal
++ 70 150 110    scrubs green
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -107,6 +109,24 @@ RRR.
 .TF.
 .BB.
 
+classic_bare_front
+.88.
+.FF.
+FuFF
+.dd.
+
+classic_bare_back
+.88.
+.HH.
+FFuF
+.dd.
+
+classic_bare_side
+888.
+.HF.
+.uF.
+.dd.
+
 exterminator_front
 .55.
 .nn.
@@ -143,23 +163,95 @@ demolisher_side
 .Fj.
 .zz.
 
-rookie_front
+agent_front
+.77.
+.FF.
+JqqJ
+.%%.
+
+agent_back
+.77.
+.77.
+JqqJ
+.%%.
+
+agent_side
+.77.
+.7F.
+.Jq.
+.%%.
+
+agent_uniform_front
 .77.
 .FF.
 8998
 .00.
 
-rookie_back
+agent_uniform_back
 .77.
 .77.
 8998
 .00.
 
-rookie_side
+agent_uniform_side
 .77.
 .7F.
 .89.
 .00.
+
+ninja_front
+.%%.
+.FF.
+%qq%
+.%%.
+
+ninja_back
+.%%.
+.%%.
+%qq%
+.%%.
+
+ninja_side
+.%%.
+.%F.
+.%q.
+.%%.
+
+medic_front
+.xx.
+.FF.
+xxxx
+.xx.
+
+medic_back
+.xx.
+.HH.
+xLLx
+.xx.
+
+medic_side
+.xx.
+.HF.
+Lxx.
+.xx.
+
+medic_green_front
+.++.
+.FF.
+++++
+.++.
+
+medic_green_back
+.++.
+.HH.
++rr+
+.++.
+
+medic_green_side
+.++.
+.HF.
+r++.
+.++.
 
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
@@ -420,6 +512,46 @@ icon_knife
 ...qq...
 ........
 
+icon_katana
+.......j
+......j.
+.....j..
+....j...
+...j....
+..nn....
+.q......
+q.......
+
+icon_shuriken
+........
+...j....
+...jj...
+.jjnjj..
+...jj...
+...j....
+........
+........
+
+icon_defibrillator
+........
+.qq..qq.
+.qq..qq.
+.nn..nn.
+..e..e..
+.e.ee.e.
+........
+........
+
+icon_chainsaw
+........
+.qq.....
+fffnjnjn
+fffjjjjj
+fffnjnjn
+.q......
+........
+........
+
 icon_molotov
 ...r....
 ..fYf...
@@ -540,6 +672,16 @@ jWWqqWWj
 ........
 ........
 
+icon_drain
+.gggg...
+gggggg..
+gqggqg..
+gggggg..
+.gggg.r.
+.g.g.rrr
+.....rrr
+......r.
+
 icon_dash
 ........
 ........
@@ -611,6 +753,16 @@ www
 www
 ww.
 w..
+
+# Arrows, 3 × 2: a hero in more colours than one, up and down for them.
+
+arrow_up
+.w.
+www
+
+arrow_down
+www
+.w.
 
 # A hidden achievement's tile, until reached: a question mark.
 

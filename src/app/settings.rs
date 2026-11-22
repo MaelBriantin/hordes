@@ -7,7 +7,7 @@ use std::io;
 use std::path::PathBuf;
 
 use crate::game::{Mode, WeatherNews};
-use crate::ui::{Arrow, BloodLook, RainDisplay, Skin};
+use crate::ui::{Arrow, BloodLook, RainDisplay, SKINS, Skin, colours_of};
 
 /// Where the settings go instead of the data folder, if set: for tests.
 const DATA_DIR_VARIABLE: &str = "HORDES_DATA_DIR";
@@ -72,8 +72,9 @@ pub struct Settings {
     pub rain: RainDisplay,
     /// The arrow over the player, in its colour.
     pub arrow: Arrow,
-    /// How the hero looks.
+    /// How the hero looks; and in which colours each hero shows, by their place among the skins.
     pub skin: Skin,
+    pub colours: [u8; SKINS.len()],
     /// The mode runs are played in.
     pub mode: Mode,
     /// Whether the gear shows over the top left of the map; as a list rather than icons.
@@ -95,6 +96,7 @@ impl Default for Settings {
             rain: RainDisplay::Full,
             arrow: Arrow::Off,
             skin: Skin::Survivor,
+            colours: [0; SKINS.len()],
             mode: Mode::Standard,
             gear: false,
             gear_list: false,
@@ -150,7 +152,9 @@ impl Settings {
                 ("skin", "classic") => settings.skin = Skin::Classic,
                 ("skin", "exterminator") => settings.skin = Skin::Exterminator,
                 ("skin", "demolisher") => settings.skin = Skin::Demolisher,
-                ("skin", "rookie") => settings.skin = Skin::Rookie,
+                ("skin", "agent") => settings.skin = Skin::Agent,
+                ("skin", "ninja") => settings.skin = Skin::Ninja,
+                ("skin", "medic") => settings.skin = Skin::Medic,
                 ("mode", "standard") => settings.mode = Mode::Standard,
                 ("mode", "arcade") => settings.mode = Mode::Arcade,
                 ("gear", "shown") => settings.gear = true,
@@ -167,6 +171,7 @@ impl Settings {
                 ("announcements", "banner" | "quiet") => {
                     settings.weather_news = WeatherNews::Banner;
                 }
+                ("colours", list) => settings.colours = colours_from(list),
                 _ => {}
             }
         }
@@ -175,12 +180,13 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\nmode = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\ncolours = {}\nmode = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
             self.arrow.id(),
             self.skin.id(),
+            colours_text(self.colours),
             self.mode.id(),
             if self.gear { "shown" } else { "hidden" },
             if self.gear_list { "list" } else { "icons" },
@@ -189,6 +195,35 @@ impl Settings {
             self.weather_news.id()
         )
     }
+}
+
+/// Each hero's colours, as written: `medic:1`, comma apart, only those not in their first.
+fn colours_text(colours: [u8; SKINS.len()]) -> String {
+    SKINS
+        .iter()
+        .zip(colours)
+        .filter(|(_, colour)| *colour > 0)
+        .map(|(skin, colour)| format!("{}:{colour}", skin.id()))
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Each hero's colours, as read; one unknown or past their colours stays at their first.
+fn colours_from(list: &str) -> [u8; SKINS.len()] {
+    let mut colours = [0; SKINS.len()];
+    for pair in list.split(',') {
+        let Some((id, colour)) = pair.split_once(':') else {
+            continue;
+        };
+        let place = SKINS.iter().position(|skin| skin.id() == id.trim());
+        let colour = colour.trim().parse::<u8>().ok();
+        if let (Some(place), Some(colour)) = (place, colour)
+            && colour < colours_of(SKINS[place])
+        {
+            colours[place] = colour;
+        }
+    }
+    colours
 }
 
 fn path() -> Option<PathBuf> {
@@ -220,6 +255,11 @@ mod tests {
             rain: RainDisplay::Reduced,
             arrow: Arrow::Yellow,
             skin: Skin::Exterminator,
+            colours: {
+                let mut colours = [0; SKINS.len()];
+                colours[6] = 1;
+                colours
+            },
             mode: Mode::Arcade,
             gear: false,
             gear_list: false,
@@ -242,6 +282,19 @@ mod tests {
         assert_eq!(blood("blood = pesto"), BloodLook::Pesto);
         assert_eq!(blood("blood = on"), BloodLook::Red);
         assert_eq!(blood("blood = off"), BloodLook::Off);
+    }
+
+    #[test]
+    fn a_hero_s_colours_read_back_and_one_out_of_their_range_stays_at_their_first() {
+        let colours = colours_from("medic:1, ninja:1, nobody:3, survivor:x");
+        let medic = SKINS.iter().position(|skin| *skin == Skin::Medic).unwrap();
+        assert_eq!(colours[medic], 1);
+        assert_eq!(
+            colours.iter().filter(|colour| **colour > 0).count(),
+            1,
+            "the ninja has one"
+        );
+        assert_eq!(colours_text(colours), "medic:1");
     }
 
     #[test]

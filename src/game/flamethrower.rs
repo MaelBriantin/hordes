@@ -1,6 +1,9 @@
-//! The flamethrower: a cone of fire ahead of the player, the way they face, lit by an enemy in
-//! it and burning its whole tank once lit; every enemy in the cone burns. Empty, the tank fills
-//! again. At the last level, the tank leaks: a trail of small fires behind the player.
+//! The flamethrower: a cone of fire from the player, lit at the nearest enemy and burning its
+//! whole tank once lit, turning after the nearest enemy as it burns; every enemy in the cone
+//! burns. Empty, the tank fills again. At the last level, the tank leaks: a trail of small fires
+//! behind the player.
+
+use std::f32::consts::{PI, TAU};
 
 use super::{TICKS_PER_SECOND, Vec2};
 
@@ -19,6 +22,8 @@ const REFILL_SECONDS: u32 = 2;
 pub const TRAIL_STEP: f32 = 0.8;
 pub const TRAIL_RADIUS: f32 = 0.6;
 const TRAIL_SECONDS: u32 = 2;
+/// How fast its fire turns after the nearest enemy as it burns, in degrees a tick: 180° a second.
+pub const TURN_DEGREES: f32 = 6.0;
 
 /// The flamethrower at a level.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -72,9 +77,31 @@ pub fn in_cone(from: Vec2, way: Vec2, range: f32, at: Vec2, half: f32) -> bool {
     along > 0.0 && along >= distance * widened.cos()
 }
 
+/// The way `way` (length 1) goes, turned towards `toward` the short way round, by `most`
+/// radians at most.
+pub fn turn(way: Vec2, toward: Vec2, most: f32) -> Vec2 {
+    let (from, to) = (way.y.atan2(way.x), toward.y.atan2(toward.x));
+    let apart = (to - from + PI).rem_euclid(TAU) - PI;
+    let angle = from + apart.clamp(-most, most);
+    Vec2::new(angle.cos(), angle.sin())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn its_fire_turns_towards_the_enemy_the_short_way_and_no_faster_than_it_may() {
+        let most = TURN_DEGREES.to_radians();
+        let way = turn(Vec2::new(1.0, 0.0), Vec2::new(0.0, 3.0), most);
+        assert!((way.y.atan2(way.x) - most).abs() < 1e-5, "{way:?}");
+        let way = turn(Vec2::new(1.0, 0.0), Vec2::new(0.0, -3.0), most);
+        assert!((way.y.atan2(way.x) + most).abs() < 1e-5, "{way:?}");
+        let near = Vec2::new(1.0, 0.05);
+        let way = turn(Vec2::new(1.0, 0.0), near, most);
+        assert!((way.y.atan2(way.x) - near.y.atan2(near.x)).abs() < 1e-5);
+        assert!((way.length() - 1.0).abs() < 1e-5);
+    }
 
     #[test]
     fn the_cone_reaches_ahead_within_its_opening_not_behind_nor_beyond() {

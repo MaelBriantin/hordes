@@ -12,19 +12,20 @@ use super::collection::{
     UNLOCKED, WHITE,
 };
 use super::level_up::{COMMON, LEGENDARY};
-use super::sprites::{self, Skin, SpriteId, Sprites};
-use super::{achievement, level_up, pixels};
+use super::sprites::{self, Outfit, Skin, SpriteId, Sprites};
+use super::{ViewState, achievement, level_up, pixels};
 use crate::game::{Facing, Perk, Progress};
 
 /// Every skin, in the order the tiles show them.
-pub const SKINS: [Skin; 5] = Skin::ALL;
+pub const SKINS: [Skin; 7] = Skin::ALL;
 /// The frames the hero picked waits, from the front, before turning round: a second; and the
 /// frames they show each way as they turn.
 const TURN_AFTER: u32 = 30;
 const TURN_FRAMES: u32 = 16;
-/// The box under the tiles: as the collection's, four rows taller, room for what the hero
-/// plays with: their weapon, their HP and speed, their perk.
-const SKIN_BOX_HEIGHT: u16 = BOX_HEIGHT + 4;
+/// The box under the tiles: as the collection's, six rows taller, room for what the hero plays
+/// with (their weapon, their HP and speed, their perk) and, apart, how to unlock the colours
+/// shown.
+const SKIN_BOX_HEIGHT: u16 = BOX_HEIGHT + 6;
 /// The rows the skins take: their title and a row of room, the tiles, a row of room and the box.
 pub const HEIGHT: u16 = 2 + TILE_HEIGHT + 1 + SKIN_BOX_HEIGHT;
 
@@ -46,10 +47,10 @@ pub fn render(
     area: Rect,
     sprites: &Sprites,
     progress: &Progress,
-    picked: usize,
-    worn: Skin,
-    since: u32,
+    view: ViewState,
 ) {
+    let (picked, since) = view.skins.unwrap_or_default();
+    let (worn, colours) = (view.skin, view.colours);
     if area.height < HEIGHT {
         return;
     }
@@ -74,9 +75,34 @@ pub fn render(
             Facing::Down
         };
         let inside = Rect::new(at.0 + 1, at.1 + 1, PICTURE.0, PICTURE.1);
-        collection::overlay(buffer, inside, has, |drawn, apart| {
-            pixels::render_look_scaled(drawn, apart, sprites, sprites::hero(facing, skin), 2);
+        // A hero still locked shows in their first colours alone, the others hidden.
+        let outfit = Outfit {
+            skin,
+            colours: if has { colours[index] } else { 0 },
+        };
+        // In grey until the hero and their colours are unlocked.
+        let shown = has && progress.wears(skin, outfit.colours);
+        collection::overlay(buffer, inside, shown, |drawn, apart| {
+            pixels::render_look_scaled(drawn, apart, sprites, sprites::hero(facing, outfit), 2);
         });
+        // The hero picked in more colours than one: arrows over and under the tile, up and down
+        // going through them.
+        if index == picked && has && sprites::colours_of(skin) > 1 {
+            let middle = at.0 + TILE_WIDTH / 2 - 1;
+            for (sprite, row) in [
+                (SpriteId::ArrowUp, at.1.saturating_sub(1)),
+                (SpriteId::ArrowDown, at.1 + TILE_HEIGHT),
+            ] {
+                collection::overlay(
+                    buffer,
+                    Rect::new(middle, row, 3, 1),
+                    true,
+                    |drawn, apart| {
+                        pixels::render_sprite(drawn, apart, sprites, sprite);
+                    },
+                );
+            }
+        }
         // The one worn, a green check on the bottom right of its picture.
         if skin == worn {
             let check = Rect::new(
@@ -90,19 +116,28 @@ pub fn render(
             });
         }
     }
+    let picked_skin = SKINS[picked];
+    let colours_locked =
+        unlocked(progress, picked_skin) && !progress.wears(picked_skin, colours[picked]);
+    let below = y + TILE_HEIGHT + 1;
     tell(
         buffer,
         area,
         progress,
-        SKINS[picked],
-        worn,
-        y + TILE_HEIGHT + 1,
+        (SKINS[picked], worn, colours_locked),
+        below,
     );
 }
 
 /// The box under the tiles, at row `y`, telling `skin`: its name, where it comes from, and, a
 /// row apart, worn, unlocked or locked.
-fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: Skin, y: u16) {
+fn tell(
+    buffer: &mut Buffer,
+    area: Rect,
+    progress: &Progress,
+    (skin, worn, colours_locked): (Skin, Skin, bool),
+    y: u16,
+) {
     let has = unlocked(progress, skin);
     let lines = words(skin);
     let longest = SKINS
@@ -113,6 +148,7 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
                 .iter()
                 .flat_map(|skin| [weapon_line(*skin), stats_line(*skin), perk_line(*skin)]),
         )
+        .chain([fl!("skin-colours-locked")])
         .map(|line| u16::try_from(line.chars().count()).unwrap_or(u16::MAX))
         .max()
         .unwrap_or(0);
@@ -153,6 +189,11 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
     buffer.set_string(left, top + 4, weapon_line(skin), ground.fg(WHITE));
     buffer.set_string(left, top + 5, stats_line(skin), ground.fg(WHITE));
     buffer.set_string(left, top + 6, perk_line(skin), ground.fg(GREY));
+    // The colours shown, still locked: how to have them.
+    if colours_locked {
+        let line = fl!("skin-colours-locked");
+        buffer.set_string(left, top + 8, line, ground.fg(GREY));
+    }
     let (status, fg) = if skin == worn {
         (fl!("skin-worn"), LEGENDARY)
     } else if has {
@@ -160,7 +201,7 @@ fn tell(buffer: &mut Buffer, area: Rect, progress: &Progress, skin: Skin, worn: 
     } else {
         (fl!("collection-locked"), GREY)
     };
-    let last = Rect::new(left, top + 8, width.saturating_sub(2 * BOX_PADDING), 1);
+    let last = Rect::new(left, top + 10, width.saturating_sub(2 * BOX_PADDING), 1);
     let style = ground.fg(fg).add_modifier(Modifier::BOLD);
     collection::centred(buffer, last, last.y, &status.to_uppercase(), style);
 }
@@ -205,6 +246,8 @@ fn perk_line(skin: Skin) -> String {
         Perk::Pyromaniac => fl!("perk-pyromaniac"),
         Perk::Unshakable => fl!("perk-unshakable"),
         Perk::Reflexes => fl!("perk-reflexes"),
+        Perk::Dodge => fl!("perk-dodge"),
+        Perk::Healer => fl!("perk-healer"),
     }
 }
 
@@ -215,7 +258,9 @@ pub fn name(skin: Skin) -> String {
         Skin::Classic => fl!("skin-classic"),
         Skin::Exterminator => fl!("skin-exterminator"),
         Skin::Demolisher => fl!("skin-demolisher"),
-        Skin::Rookie => fl!("skin-rookie"),
+        Skin::Agent => fl!("skin-agent"),
+        Skin::Ninja => fl!("skin-ninja"),
+        Skin::Medic => fl!("skin-medic"),
     };
     let mut letters = word.chars();
     letters.next().map_or_else(String::new, |first| {
@@ -229,9 +274,11 @@ mod tests {
     use crate::game::Achievement;
 
     #[test]
-    fn the_exterminator_waits_for_cleaner_the_others_are_there_from_the_start() {
+    fn the_survivor_is_there_from_the_start_each_other_hero_waits_for_their_achievement() {
         let mut progress = Progress::default();
         assert!(unlocked(&progress, Skin::Survivor));
+        assert!(!unlocked(&progress, Skin::Classic));
+        progress.reach(Achievement::Legend);
         assert!(unlocked(&progress, Skin::Classic));
         assert!(!unlocked(&progress, Skin::Exterminator));
         progress.reach(Achievement::Cleaner);

@@ -3,7 +3,7 @@
 
 use ratatui::style::Color;
 
-use super::super::sprites::{self, Look, Skin};
+use super::super::sprites::{self, Look, Outfit};
 use super::super::{ViewState, night};
 use super::{Arrow, Canvas, FLAME_COLOURS, FLAMES, burst_pixels, pixel};
 use crate::game::{BURST_REACH, Blast, EnemyKind, Vec2, Veil, World};
@@ -46,7 +46,7 @@ impl Canvas<'_> {
     /// moment once pinged; and their HP in a small bar over it all, if it shows.
     pub(super) fn mark(&mut self, world: &World, view: ViewState) {
         let player = &world.player;
-        let look = sprites::hero(player.facing, view.skin);
+        let look = sprites::hero(player.facing, view.outfit());
         let arrow = view.arrow != Arrow::Off || view.pinged;
         if arrow {
             self.arrow(look, player.position, world.ticks(), view.arrow.colour());
@@ -198,7 +198,7 @@ impl Canvas<'_> {
     /// above them.
     /// While lightning is about to strike, which pixels they cover, for its ring to show on the
     /// ground under them; none otherwise.
-    pub(super) fn paint_figures(&mut self, world: &World, skin: Skin) -> Vec<bool> {
+    pub(super) fn paint_figures(&mut self, world: &World, outfit: Outfit) -> Vec<bool> {
         let player = &world.player;
         let mut figures: Vec<(Vec2, Look)> = world
             .enemies
@@ -220,7 +220,7 @@ impl Canvas<'_> {
         // Blinking while nothing can hurt them.
         let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
         if player.dash.is_some() || !blinks_out {
-            figures.push((player.position, sprites::hero(player.facing, skin)));
+            figures.push((player.position, sprites::hero(player.facing, outfit)));
         }
         let mut figures: Vec<(f32, Look, (i32, i32))> = figures
             .into_iter()
@@ -230,7 +230,7 @@ impl Canvas<'_> {
         figures.sort_by(|a, b| a.0.total_cmp(&b.0));
         // Dashing, the player leaves fading silhouettes of themselves behind.
         if let Some(dash) = player.dash {
-            let look = sprites::hero(player.facing, skin);
+            let look = sprites::hero(player.facing, outfit);
             for (behind, colour) in AFTERIMAGES {
                 let at = player.position - dash.way * behind;
                 self.paint_at(

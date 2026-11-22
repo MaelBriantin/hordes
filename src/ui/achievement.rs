@@ -67,7 +67,7 @@ pub fn render(
         Unlock::Skin(skin) => (
             fl!("achievement-unlocked"),
             skins::name(skin),
-            Some(sprites::hero(Facing::Down, skin).sprite),
+            Some(sprites::hero(Facing::Down, sprites::Outfit::plain(skin)).sprite),
         ),
     };
     let width_of = |text: &str| u16::try_from(text.chars().count()).unwrap_or(u16::MAX);
@@ -154,6 +154,9 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Cleaner => fl!("achievement-cleaner-goal"),
         Achievement::Demolisher => fl!("achievement-demolisher-goal"),
         Achievement::ColdBlood => fl!("achievement-cold-blood-goal"),
+        Achievement::ShadowHunter => fl!("achievement-shadow-hunter-goal"),
+        Achievement::Legend => fl!("achievement-legend-goal"),
+        Achievement::FirstAid => fl!("achievement-first-aid-goal"),
         Achievement::Regular => fl!("achievement-regular-goal"),
         Achievement::Veteran => fl!("achievement-veteran-goal"),
     }
@@ -176,6 +179,9 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Cleaner => fl!("achievement-cleaner"),
         Achievement::Demolisher => fl!("achievement-demolisher"),
         Achievement::ColdBlood => fl!("achievement-cold-blood"),
+        Achievement::ShadowHunter => fl!("achievement-shadow-hunter"),
+        Achievement::Legend => fl!("achievement-legend"),
+        Achievement::FirstAid => fl!("achievement-first-aid"),
         Achievement::Regular => fl!("achievement-regular"),
         Achievement::Veteran => fl!("achievement-veteran"),
     }

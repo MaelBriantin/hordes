@@ -27,7 +27,7 @@ use crate::game::{
 };
 use crate::ui::{
     self, Arrow, BloodLook, OptionItem, PauseItem, RainDisplay, SKINS, Screen, Sprites, ViewState,
-    skin_unlocked,
+    colours_of, skin_unlocked,
 };
 use keys::Keys;
 use settings::Settings;
@@ -52,8 +52,8 @@ pub struct App {
     /// the screen is wide.
     picked: usize,
     browsing: bool,
-    /// The skin's tile the arrows are on, while the skins show on the title screen: S shows
-    /// them, at the skin worn; Enter, Space or S wear the one picked, Esc hides them.
+    /// The hero's tile the arrows are on, while the heroes show on the title screen: H shows
+    /// them, at the one worn; Enter or Space wear the one picked, Esc hides them.
     skin_picked: Option<usize>,
     /// The frame the skin's tile the arrows are on was picked at: its hero turns round a second
     /// after.
@@ -176,6 +176,8 @@ impl App {
                 pinged: self
                     .pinged_at
                     .is_some_and(|at| self.world.ticks().saturating_sub(at) < PING_TICKS),
+                colours: self.settings.colours,
+                worn_colours: self.worn_colours(),
                 skin: self
                     .settings
                     .skin
@@ -305,9 +307,8 @@ impl App {
                 self.picked = 0;
             }
             KeyCode::Esc if self.browsing => self.browsing = false,
-            // The skins shown, at the one worn, in the collection's place; in the collection
-            // open, S goes down a row.
-            KeyCode::Char('s' | 'S') if self.collection_shows && !(collection && self.browsing) => {
+            // The heroes shown, at the one worn, in the collection's place.
+            KeyCode::Char('h' | 'H') if self.collection_shows => {
                 self.browsing = false;
                 let skin = self.settings.skin;
                 let worn = skin.worn(skin_unlocked(&self.progress, skin));
@@ -330,14 +331,30 @@ impl App {
         }
     }
 
-    /// The skins showing: the arrows go from tile to tile; Enter, Space or S wear the one picked,
-    /// once unlocked, and hide them; Esc hides them.
+    /// The colours the hero worn wears in a run: those chosen, once unlocked; their first
+    /// otherwise.
+    fn worn_colours(&self) -> u8 {
+        let skin = self
+            .settings
+            .skin
+            .worn(skin_unlocked(&self.progress, self.settings.skin));
+        let place = SKINS.iter().position(|hero| *hero == skin).unwrap_or(0);
+        let chosen = self.settings.colours[place];
+        if self.progress.wears(skin, chosen) {
+            chosen
+        } else {
+            0
+        }
+    }
+
+    /// The heroes showing: left and right go from tile to tile, up and down through the hero's
+    /// colours; Enter or Space wear the one picked, once unlocked, and hide them; Esc hides them.
     fn on_skins(&mut self, code: KeyCode, at: usize) {
         let last = SKINS.len() - 1;
         self.skin_picked = match code {
             KeyCode::Left | KeyCode::Char('a' | 'A' | 'q' | 'Q') => Some(at.saturating_sub(1)),
             KeyCode::Right | KeyCode::Char('d' | 'D') => Some((at + 1).min(last)),
-            KeyCode::Enter | KeyCode::Char(' ' | 's' | 'S') => {
+            KeyCode::Enter | KeyCode::Char(' ') => {
                 let skin = SKINS[at];
                 if skin_unlocked(&self.progress, skin) {
                     self.settings.skin = skin;
@@ -346,6 +363,21 @@ impl App {
                 } else {
                     Some(at)
                 }
+            }
+            // Up and down: the hero picked, unlocked, in their other colours, kept at once.
+            KeyCode::Up | KeyCode::Down | KeyCode::Char('w' | 'W' | 'z' | 'Z' | 's' | 'S')
+                if colours_of(SKINS[at]) > 1 && skin_unlocked(&self.progress, SKINS[at]) =>
+            {
+                let count = colours_of(SKINS[at]);
+                let colour = &mut self.settings.colours[at];
+                let up = matches!(code, KeyCode::Up | KeyCode::Char('w' | 'W' | 'z' | 'Z'));
+                *colour = if up {
+                    (*colour + count - 1) % count
+                } else {
+                    (*colour + 1) % count
+                };
+                self.keep_settings();
+                Some(at)
             }
             KeyCode::Esc => None,
             _ => Some(at),

@@ -1664,6 +1664,33 @@ fn regeneration_gives_hp_back_of_itself() {
     assert_eq!(world.player.hp, 56);
 }
 
+/// The HP got back as `count` enemies fall far from the player, at `level` of Drain.
+fn drained(level: u8, count: usize) -> u32 {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.player.hp = 1;
+    for _ in 0..level {
+        world.player.build.take(Choice::Passive(Passive::Drain));
+    }
+    for _ in 0..count {
+        let mut felled = enemy(EnemyKind::Zombie, Vec2::new(130.0, 50.0));
+        felled.hp = 0;
+        world.enemies.push(felled);
+    }
+    wait(&mut world, 1);
+    world.player.hp - 1
+}
+
+#[test]
+fn with_life_drain_some_enemies_felled_give_a_hp_back() {
+    assert_eq!(drained(0, 200), 0, "none without it");
+    let first = drained(1, 200);
+    assert!((5..=40).contains(&first), "about 10%: {first}");
+    let last = drained(5, 200);
+    assert!((35..=90).contains(&last), "about 30%: {last}");
+}
+
 #[test]
 fn an_enemy_burnt_to_death_leaves_ash() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
@@ -1954,6 +1981,36 @@ fn lit_by_one_enemy_the_flamethrower_burns_its_whole_tank() {
 }
 
 #[test]
+fn the_flamethrower_lights_at_the_nearest_enemy_whichever_way_the_player_faces() {
+    let mut world = flaming(1);
+    world.enemies.drain(..3);
+    wait(&mut world, 1);
+    assert!(world.flaming, "lit at the one behind");
+    assert_eq!(world.enemies[0].hp, 1_000 - 2);
+    let (_, way, _) = world.flame_cone().unwrap();
+    assert!(way.x < -0.99, "{way:?}");
+}
+
+#[test]
+fn burning_the_flamethrower_turns_after_the_nearest_enemy_no_faster_than_it_may() {
+    let mut world = flaming(1);
+    world.enemies.truncate(1);
+    wait(&mut world, 1);
+    // Now the only one stands behind the player.
+    world.enemies[0].position = Vec2::new(98.5, 50.5);
+    wait(&mut world, 1);
+    let (_, way, _) = world.flame_cone().unwrap();
+    let turned = way.y.atan2(way.x).abs().to_degrees();
+    assert!(
+        (turned - flamethrower::TURN_DEGREES).abs() < 0.01,
+        "{turned}"
+    );
+    wait(&mut world, 30);
+    let (_, way, _) = world.flame_cone().unwrap();
+    assert!(way.x < -0.99, "round at last: {way:?}");
+}
+
+#[test]
 fn the_flamethrower_burns_in_the_dark_too() {
     let mut world = flaming(1);
     world.ticks = 30 * 40;
@@ -2148,7 +2205,7 @@ fn the_knife_stabs_the_nearest_enemy_whichever_way_quick_and_often() {
 }
 
 #[test]
-fn a_minute_under_30_percent_of_hp_in_a_run_unlocks_the_rookie() {
+fn a_minute_under_30_percent_of_hp_in_a_run_unlocks_the_special_agent_and_the_chainsaw() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
     world.next_horde = u32::MAX;
@@ -2156,9 +2213,11 @@ fn a_minute_under_30_percent_of_hp_in_a_run_unlocks_the_rookie() {
     world.weather_news = WeatherNews::Banner;
     world.player.hp = 29;
     wait(&mut world, 30 * 60 - 1);
-    assert!(!world.progress.has(Unlock::Skin(Skin::Rookie)));
+    assert!(!world.progress.achieved.contains(&Achievement::ColdBlood));
     wait(&mut world, 1);
-    assert!(world.progress.has(Unlock::Skin(Skin::Rookie)));
+    assert!(world.progress.achieved.contains(&Achievement::ColdBlood));
+    assert_eq!(Skin::Agent.achievement(), Some(Achievement::ColdBlood));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Chainsaw)));
 }
 
 #[test]
@@ -2166,13 +2225,13 @@ fn each_hero_plays_with_their_own_hp_speed_and_perk() {
     let build = |hero| Build::playing(hero);
     assert_eq!(build(Skin::Survivor).max_hp(), BASE_HP);
     assert_eq!(build(Skin::Demolisher).max_hp(), 140);
-    assert_eq!(build(Skin::Rookie).max_hp(), 80);
+    assert_eq!(build(Skin::Agent).max_hp(), 80);
     assert_eq!(build(Skin::Survivor).speed_percent(), 100);
     assert_eq!(build(Skin::Demolisher).speed_percent(), 85);
-    assert_eq!(build(Skin::Rookie).speed_percent(), 110);
+    assert_eq!(build(Skin::Agent).speed_percent(), 110);
     assert_eq!(build(Skin::Classic).damage(20), 22, "commando");
     assert_eq!(build(Skin::Survivor).damage(20), 20);
-    assert_eq!(build(Skin::Rookie).reload(50), 40, "reflexes");
+    assert_eq!(build(Skin::Agent).reload(50), 40, "reflexes");
     let burns = build(Skin::Survivor).burn_ticks();
     assert_eq!(
         build(Skin::Exterminator).burn_ticks(),
@@ -2190,4 +2249,201 @@ fn the_demolisher_takes_less_damage_and_no_burst_throws_them() {
     world.burst(start + Vec2::new(1.0, 0.0));
     assert_eq!(world.player.hp, 140 - burst::DAMAGE * 90 / 100);
     assert_eq!(world.player.position, start, "not thrown");
+}
+
+#[test]
+fn the_katana_cuts_the_nearest_then_chains_through_the_next_ones_near() {
+    let mut world = armed_with(Weapon::Katana, 1);
+    world.next_horde = u32::MAX;
+    // The nearest, then each within a leap of the last; one too far from the chain.
+    for (x, y) in [
+        (101.2, 50.0),
+        (103.0, 50.0),
+        (105.0, 50.5),
+        (106.8, 51.0),
+        (115.0, 50.0),
+    ] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    let taken: Vec<u32> = world.enemies.iter().map(|e| 1_000 - e.hp).collect();
+    assert_eq!(
+        taken,
+        [14, 10, 7, 0, 0],
+        "three at the first level, each less"
+    );
+    assert_eq!(world.cuts.as_ref().map(|cuts| cuts.path.len()), Some(4));
+}
+
+#[test]
+fn shadow_hunter_unlocks_the_shurikens_and_the_ninja() {
+    let mut progress = Progress::default();
+    assert!(!progress.deals(Choice::Weapon(Weapon::Shuriken)));
+    progress.reach(Achievement::ShadowHunter);
+    assert!(progress.deals(Choice::Weapon(Weapon::Shuriken)));
+    assert_eq!(Skin::Ninja.achievement(), Some(Achievement::ShadowHunter));
+}
+
+#[test]
+fn the_ninja_dodges_a_blow_now_and_then_taking_nothing() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Ninja);
+    let (mut dodged, mut taken) = (0, 0);
+    for _ in 0..200 {
+        let hp = world.player.hp;
+        world.player.invincible = 0;
+        world.wound_player(1);
+        if world.player.hp == hp {
+            dodged += 1;
+        } else {
+            taken += 1;
+            world.player.hp = hp;
+        }
+    }
+    // About one in seven dodged.
+    assert!((10..60).contains(&dodged), "{dodged} dodged, {taken} taken");
+}
+
+#[test]
+fn seven_hundred_enemies_felled_in_a_run_unlock_the_classic_hero() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.progress = Progress::default();
+    world.kills = 699;
+    wait(&mut world, 1);
+    assert!(!world.progress.has(Unlock::Skin(Skin::Classic)));
+    world.kills = 700;
+    wait(&mut world, 1);
+    assert!(world.progress.has(Unlock::Skin(Skin::Classic)));
+}
+
+#[test]
+fn the_defibrillator_leaps_through_the_enemies_near_and_heals_for_each_it_fells() {
+    let mut world = armed_with(Weapon::Defibrillator, 1);
+    world.next_horde = u32::MAX;
+    world.player.hp = 50;
+    for (x, hp) in [(101.5, 1), (103.2, 1000), (104.9, 1), (110.0, 1)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+        let last = world.enemies.len() - 1;
+        world.enemies[last].hp = hp;
+        world.enemies[last].stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    assert_eq!(world.shock.as_ref().map(|shock| shock.path.len()), Some(4));
+    // The two felled are gone; the one between stands, shocked.
+    let between = world
+        .enemies
+        .iter()
+        .find(|e| (e.position.x - 103.2).abs() < 0.1);
+    assert_eq!(between.map(|e| e.hp), Some(1_000 - 12));
+    assert_eq!(world.player.hp, 52, "two felled, a point each");
+}
+
+#[test]
+fn the_medic_heals_half_again_as_much_and_gets_hp_back_of_themselves() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Medic);
+    world.next_horde = u32::MAX;
+    world.player.hp = 40;
+    world.map.put_feature((100, 51), Feature::Herb);
+    wait(&mut world, 1);
+    assert_eq!(world.player.hp, 40 + HERB_HP * 3 / 2, "a herb, half again");
+    let hp = world.player.hp;
+    wait(&mut world, 30 * 5);
+    assert_eq!(world.player.hp, hp + 1, "a point in 5 s");
+}
+
+#[test]
+fn three_hundred_hp_got_back_in_a_run_unlock_the_medic_and_life_drain() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.progress = Progress::default();
+    for _ in 0..3 {
+        world.player.hp = 1;
+        world.heal(99);
+    }
+    wait(&mut world, 1);
+    assert!(
+        !world.progress.achieved.contains(&Achievement::FirstAid),
+        "297"
+    );
+    assert!(!world.progress.deals(Choice::Passive(Passive::Drain)));
+    world.player.hp = 1;
+    world.heal(3);
+    wait(&mut world, 1);
+    assert!(world.progress.achieved.contains(&Achievement::FirstAid));
+    assert!(world.progress.deals(Choice::Passive(Passive::Drain)));
+}
+
+#[test]
+fn the_dawn_reached_with_a_hero_unlocks_their_second_colours() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::default());
+    world.play_as(Skin::Medic);
+    world.announcement = None;
+    world.ticks = weather::dawn() + weather::daybreak() - 1;
+    world.update(Input::default());
+    assert!(world.survived());
+    assert!(world.progress.wears(Skin::Medic, 1));
+    assert!(!world.progress.wears(Skin::Survivor, 1));
+}
+
+#[test]
+fn every_hero_plays_a_minute_of_a_run_taking_every_card_without_failing() {
+    for (seed, hero) in (1_u64..).zip(Skin::ALL) {
+        let mut world = World::with(seed, Mode::Standard, false, Progress::everything());
+        world.play_as(hero);
+        world.weather_news = WeatherNews::Banner;
+        world.announcement = None;
+        world.unhurt = true;
+        let ways = [
+            moving(1.0, 0.0),
+            moving(0.0, 1.0),
+            moving(-1.0, 0.0),
+            moving(0.0, -1.0),
+        ];
+        for tick in 0..30 * 60 {
+            if world.offer.is_some() {
+                world.choose(tick % 3);
+                continue;
+            }
+            world.update(ways[(tick / 45) % 4]);
+            if tick % 200 == 0 {
+                world.act();
+            }
+        }
+        assert!(world.seconds() >= 50, "{hero:?} played on");
+    }
+}
+
+#[test]
+fn the_chainsaw_grinds_what_touches_it_ahead_a_bite_every_few_ticks_slowing_it() {
+    let mut world = armed_with(Weapon::Chainsaw, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    for x in [101.2, 98.8] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    assert!(world.sawing);
+    assert_eq!(world.enemies[0].hp, 1_000 - 4, "a bite at once");
+    assert!(world.enemies[0].slowed > 0, "slowed");
+    assert_eq!(world.enemies[1].hp, 1_000, "behind, untouched");
+    wait(&mut world, 6);
+    assert_eq!(world.enemies[0].hp, 1_000 - 8, "the next bite, 0.2 s on");
 }

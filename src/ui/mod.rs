@@ -34,7 +34,7 @@ pub use menu::{OptionItem, PauseItem};
 pub use night::{BloodLook, RainDisplay};
 pub use pixels::Arrow;
 pub use skins::{SKINS, unlocked as skin_unlocked};
-pub use sprites::{Skin, Sprites};
+pub use sprites::{Outfit, Skin, Sprites, colours_of};
 
 /// Where the player is, outside the run itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,8 +195,11 @@ pub struct ViewState {
     pub mini_bars: bool,
     /// Whether the ground is coloured: grass speckled with earth, rather than the screen's dark.
     pub ground: bool,
-    /// How the hero looks.
+    /// How the hero looks; in which colours each hero shows among the heroes, by their place,
+    /// unlocked or not; and the colours the hero worn wears in a run, theirs unlocked.
     pub skin: Skin,
+    pub colours: [u8; SKINS.len()],
+    pub worn_colours: u8,
     /// The mode the next run is played in; whether the arcade can be chosen, its achievement
     /// reached.
     pub mode: Mode,
@@ -225,6 +228,16 @@ pub struct ViewState {
     pub panel_since: u32,
     /// Whether the options ask to confirm erasing the progress.
     pub confirm_reset: bool,
+}
+
+impl ViewState {
+    /// The hero worn, in their colours.
+    pub fn outfit(&self) -> Outfit {
+        Outfit {
+            skin: self.skin,
+            colours: self.worn_colours,
+        }
+    }
 }
 
 pub fn render(

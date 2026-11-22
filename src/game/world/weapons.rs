@@ -9,11 +9,16 @@ use super::super::enemy::{Enemy, EnemyKind};
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
-use super::super::{Vec2, baton, drones, flamethrower, hammer, knife};
+use super::super::{Vec2, baton, defibrillator, drones, flamethrower, hammer, katana, knife};
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
-const GUNS: [Weapon; 3] = [Weapon::Pistol, Weapon::MachineGun, Weapon::Shotgun];
+const GUNS: [Weapon; 4] = [
+    Weapon::Pistol,
+    Weapon::MachineGun,
+    Weapon::Shotgun,
+    Weapon::Shuriken,
+];
 
 /// The ticks a spark shows where a bullet hit a tree or a rock.
 const SPARK_TICKS: u32 = 4;
@@ -302,6 +307,20 @@ impl World {
         if level > 0 {
             let every = build.cooldown(molotov::at(level).every).max(1);
             waits.push((Weapon::Molotov, self.molotov_wait.min(every), every));
+        }
+        let level = build.weapon_level(Weapon::Defibrillator);
+        if level > 0 {
+            let every = build.cooldown(defibrillator::at(level).every).max(1);
+            waits.push((
+                Weapon::Defibrillator,
+                self.defibrillator_wait.min(every),
+                every,
+            ));
+        }
+        let level = build.weapon_level(Weapon::Katana);
+        if level > 0 {
+            let every = build.cooldown(katana::at(level).every).max(1);
+            waits.push((Weapon::Katana, self.katana_wait.min(every), every));
         }
         let level = build.weapon_level(Weapon::Knife);
         if level > 0 {

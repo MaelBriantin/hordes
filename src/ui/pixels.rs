@@ -5,6 +5,8 @@ mod blows;
 mod figures;
 mod fire;
 mod gear;
+mod ninja;
+mod saw;
 mod stabs;
 mod thrust;
 
@@ -13,8 +15,8 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
 use super::ViewState;
-use super::night;
-use super::sprites::{self, Look, SpriteId, Sprites};
+use super::night::{self, BloodLook};
+use super::sprites::{self, Look, Outfit, SpriteId, Sprites};
 use crate::game::{
     Barricade, Bullet, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2,
     Weapon, World,
@@ -114,6 +116,12 @@ const CROWBAR_BLOW: (Color, Color) = (Color::Rgb(160, 165, 180), Color::Rgb(90, 
 /// A shotgun's pellets, every other one: the gold and the red of its shells.
 const PELLETS: (Color, Color) = (Color::Rgb(240, 190, 60), Color::Rgb(220, 50, 50));
 /// A machine gun's tracer, from its head to the end of its trail.
+/// A shuriken in flight: the star, then its streak.
+const SHURIKEN: [Color; 3] = [
+    Color::Rgb(245, 245, 250),
+    Color::Rgb(205, 205, 215),
+    Color::Rgb(110, 112, 120),
+];
 const TRACER: [Color; 3] = [
     Color::Rgb(255, 225, 160),
     Color::Rgb(230, 140, 60),
@@ -189,6 +197,17 @@ impl<'a> Canvas<'a> {
             self.paint_at(Look::plain(SpriteId::Bullet), bullet.position);
             return;
         }
+        // A shuriken: a small star, a streak behind it.
+        if bullet.weapon == Weapon::Shuriken {
+            let way = bullet.way();
+            for (step, colour) in (0_u8..).zip(SHURIKEN) {
+                self.set(
+                    pixel(bullet.position - way * (0.5 * f32::from(step))),
+                    colour,
+                );
+            }
+            return;
+        }
         if bullet.weapon == Weapon::Shotgun {
             let colour = if bullet.other { PELLETS.1 } else { PELLETS.0 };
             self.set(pixel(bullet.position), colour);
@@ -199,6 +218,16 @@ impl<'a> Canvas<'a> {
             let behind = bullet.position - way * (0.5 * f32::from(u8::try_from(step).unwrap_or(0)));
             self.set(pixel(behind), colour);
         }
+    }
+
+    /// The melee weapons' strikes over the figures: the katana's cuts, the chainsaw grinding,
+    /// the baton's thrust, the defibrillator's shock, the knife's stabs.
+    fn paint_strikes(&mut self, world: &World, outfit: Outfit, blood: BloodLook) {
+        self.paint_cuts(world, outfit);
+        self.paint_saw(world, blood);
+        self.paint_thrust(world);
+        self.paint_shock(world);
+        self.paint_stabs(world, blood);
     }
 
     /// A sprite with its top-left pixel at a pixel of the map.
@@ -428,15 +457,16 @@ pub fn render_map(
         canvas.paint_blast(blast);
     }
 
-    // The hammer's wave on the ground, under the enemies it throws out.
+    // The hammer's wave on the ground, under the enemies it throws out; a dodge's ghost, under
+    // the hero.
     canvas.paint_blow(world);
-    let covered = canvas.paint_figures(world, view.skin);
+    canvas.paint_dodge(world, view.outfit());
+    let covered = canvas.paint_figures(world, view.outfit());
     if let Some(hurt_at) = world.hurt_at {
         let since = world.ticks().saturating_sub(hurt_at);
         night::paint_spurt(&mut canvas, centre, since, hurt_at, blood);
     }
-    canvas.paint_thrust(world);
-    canvas.paint_stabs(world, blood);
+    canvas.paint_strikes(world, view.outfit(), blood);
     for (drone, broken) in world.drones() {
         let look = Look {
             tint: broken.then_some(BROKEN),
@@ -567,7 +597,7 @@ pub fn render_death_scene(
         })
         .collect();
     if dawn {
-        figures.push((player.position, sprites::hero(player.facing, view.skin)));
+        figures.push((player.position, sprites::hero(player.facing, view.outfit())));
     } else {
         night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
     }

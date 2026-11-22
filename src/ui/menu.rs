@@ -294,13 +294,10 @@ pub fn render_title(
         _ if !settled => {}
         // The skins shown take the place of the leaderboard or the collection.
         _ if view.skins.is_some() => {
-            let board = Rect {
-                height: collection_rows.max(skins::HEIGHT),
-                ..board
-            };
-            let (picked, since) = view.skins.unwrap_or_default();
-            let buffer = frame.buffer_mut();
-            skins::render(buffer, board, sprites, progress, picked, view.skin, since);
+            // As tall as the heroes want, but never off the screen.
+            let height = collection_rows.max(skins::HEIGHT);
+            let room = Rect { height, ..board }.intersection(area);
+            skins::render(frame.buffer_mut(), room, sprites, progress, view);
         }
         Mode::Arcade if shown > 0 => {
             let board = Rect {
@@ -320,8 +317,22 @@ pub fn render_title(
     }
     pixels::render_sprite_scaled(frame.buffer_mut(), name, sprites, SpriteId::Title, scale);
     render_mode(frame, mode, sprites, view.mode, frames);
-    // Blinking, as on an arcade cabinet: shown two thirds of each second. The skins showing,
-    // Space wears the one picked: so it says, but for a locked one, which it can't.
+    render_prompt(frame, start, view, progress);
+    // At the bottom, the keys: the one changing the mode, once the arcade can be chosen; the one
+    // showing or hiding the collection, in standard, where it fits.
+    let collection = view.mode == Mode::Standard && collection_rows > 0;
+    render_title_keys(frame, last, view, progress, collection, collection_rows > 0);
+    frame.render_widget(
+        Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
+        last,
+    );
+}
+
+/// The prompt under the title, blinking as on an arcade cabinet: shown two thirds of each
+/// second. The skins showing, Space wears the one picked: so it says, but for a locked one,
+/// which it can't.
+fn render_prompt(frame: &mut Frame, start: Rect, view: ViewState, progress: &Progress) {
+    let frames = view.frame;
     let picked_skin = view.skins.map(|(picked, _)| skins::SKINS[picked]);
     let after = match picked_skin {
         None => Some(fl!("title-start-after")),
@@ -340,14 +351,6 @@ pub fn render_title(
         ];
         centred_spans(frame, spans, start);
     }
-    // At the bottom, the keys: the one changing the mode, once the arcade can be chosen; the one
-    // showing or hiding the collection, in standard, where it fits.
-    let collection = view.mode == Mode::Standard && collection_rows > 0;
-    render_title_keys(frame, last, view, progress, collection, collection_rows > 0);
-    frame.render_widget(
-        Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
-        last,
-    );
 }
 
 /// How fast the title slides as what shows under it changes: so many rows in so many frames,
@@ -450,7 +453,7 @@ fn render_title_keys(
             .filter(|skin| skins::unlocked(progress, **skin))
             .count();
         let words = format!("  {}  {had} / {}", fl!("skins-title"), skins::SKINS.len());
-        spans.push(Span::styled(format!(" {} ", fl!("key-s")), KEY_CAP));
+        spans.push(Span::styled(format!(" {} ", fl!("key-h")), KEY_CAP));
         spans.push(Span::styled(words, Style::new().fg(GREY)));
     }
     frame.render_widget(Line::from(spans), area);

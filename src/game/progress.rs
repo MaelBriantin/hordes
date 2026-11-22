@@ -24,6 +24,12 @@ pub const DEMOLISHER_ABOMINATIONS: u32 = 10;
 /// run, all counted, for Cold blood.
 pub const COLD_BLOOD_PERCENT: u32 = 30;
 pub const COLD_BLOOD_SECONDS: u32 = 60;
+/// The Shadows to fell in a single run for Shadow hunter.
+pub const SHADOW_HUNTER_SHADOWS: u32 = 25;
+/// The HP to get back in a single run for First aid.
+pub const FIRST_AID_HP: u32 = 300;
+/// The enemies to fell in a single run for Legend.
+pub const LEGEND_KILLS: u32 = 700;
 /// The level to reach in a single run for Veteran.
 pub const VETERAN_LEVEL: u32 = 25;
 /// The seconds without a hit, the night fallen, for Untouchable.
@@ -31,7 +37,7 @@ pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 22] = [
+pub const COLLECTION: [Unlock; 25] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -52,6 +58,9 @@ pub const COLLECTION: [Unlock; 22] = [
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
     Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
+    Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
+    Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
+    Unlock::Card(Choice::Passive(Passive::Drain)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -87,6 +96,12 @@ pub enum Achievement {
     Demolisher,
     /// Cold blood: a minute under 30% of HP in a single run, all counted, and standing.
     ColdBlood,
+    /// Shadow hunter: 25 Shadows felled in a single run.
+    ShadowHunter,
+    /// Legend: 700 enemies felled in a single run.
+    Legend,
+    /// First aid: 300 HP got back in a single run.
+    FirstAid,
     /// A regular: 25 runs played.
     Regular,
     /// Veteran: level 25 reached in a single run.
@@ -107,7 +122,7 @@ pub enum Unlock {
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 16] = [
+    pub const ALL: [Achievement; 19] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
@@ -121,6 +136,9 @@ impl Achievement {
         Achievement::Cleaner,
         Achievement::Demolisher,
         Achievement::ColdBlood,
+        Achievement::ShadowHunter,
+        Achievement::Legend,
+        Achievement::FirstAid,
         Achievement::Regular,
         Achievement::Veteran,
         Achievement::Dawn,
@@ -142,7 +160,10 @@ impl Achievement {
             Achievement::Dawn => Unlock::Arcade,
             Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
             Achievement::Demolisher => Unlock::Skin(Skin::Demolisher),
-            Achievement::ColdBlood => Unlock::Skin(Skin::Rookie),
+            Achievement::ColdBlood => Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
+            Achievement::ShadowHunter => Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
+            Achievement::Legend => Unlock::Skin(Skin::Classic),
+            Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
@@ -190,23 +211,30 @@ pub struct Progress {
     pub shadows: u64,
     /// The runs played to their end.
     pub runs: u32,
+    /// The heroes the dawn has been reached with: their second colours, theirs.
+    #[serde(deserialize_with = "known")]
+    pub dawns: BTreeSet<Skin>,
 }
 
-/// The achievements read, but those no longer in the game: a progress kept by an older version
-/// still reads, rather than being lost.
-fn known<'de, D: Deserializer<'de>>(reader: D) -> Result<BTreeSet<Achievement>, D::Error> {
-    /// An achievement as read: one the game has, or one it no longer has.
+/// What is read, but what is no longer in the game (an achievement, a hero): a progress kept by
+/// an older version still reads, rather than being lost.
+fn known<'de, D, T>(reader: D) -> Result<BTreeSet<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de> + Ord,
+{
+    /// A thing as read: one the game has, or one it no longer has.
     #[derive(Deserialize)]
     #[serde(untagged)]
-    enum Read {
-        Known(Achievement),
+    enum Read<T> {
+        Known(T),
         Gone(IgnoredAny),
     }
-    let read = Vec::<Read>::deserialize(reader)?;
+    let read = Vec::<Read<T>>::deserialize(reader)?;
     Ok(read
         .into_iter()
-        .filter_map(|achievement| match achievement {
-            Read::Known(achievement) => Some(achievement),
+        .filter_map(|thing| match thing {
+            Read::Known(thing) => Some(thing),
             Read::Gone(_) => None,
         })
         .collect())
@@ -249,6 +277,12 @@ impl Progress {
     /// Reaches an achievement, if not yet.
     pub fn reach(&mut self, achievement: Achievement) {
         self.achieved.insert(achievement);
+    }
+
+    /// Whether a hero may wear their colours at `colours` (from 0): their first always, their
+    /// second once the dawn has been reached with them.
+    pub fn wears(&self, skin: Skin, colours: u8) -> bool {
+        colours == 0 || self.dawns.contains(&skin)
     }
 
     /// Whether the arcade mode can be played: its achievement reached.
@@ -378,6 +412,25 @@ mod tests {
         assert!(COLLECTION[first_hidden..].iter().all(hidden));
         let first_hidden = Achievement::ALL.iter().position(|a| a.hidden()).unwrap();
         assert!(Achievement::ALL[first_hidden..].iter().all(|a| a.hidden()));
+    }
+
+    #[test]
+    fn a_hero_s_second_colours_wait_for_the_dawn_reached_with_them() {
+        let mut progress = Progress::default();
+        assert!(progress.wears(Skin::Medic, 0));
+        assert!(!progress.wears(Skin::Medic, 1));
+        progress.dawns.insert(Skin::Medic);
+        assert!(progress.wears(Skin::Medic, 1));
+        assert!(!progress.wears(Skin::Ninja, 1));
+        let text = ron::to_string(&progress).unwrap();
+        assert_eq!(ron::from_str::<Progress>(&text).unwrap(), progress);
+        let old = "(dawns: [Medic, Somebody])";
+        let read = ron::from_str::<Progress>(old).unwrap();
+        assert_eq!(
+            read.dawns,
+            BTreeSet::from([Skin::Medic]),
+            "a hero gone, left out"
+        );
     }
 
     #[test]

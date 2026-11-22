@@ -1,10 +1,13 @@
-//! The flamethrower at work: its cone of fire ahead of the player, its tank, and the trail of
-//! fires its tank leaves at the last level.
+//! The flamethrower at work: its cone of fire after the nearest enemy, its tank, and the trail
+//! of fires its tank leaves at the last level.
 
 use super::super::Vec2;
 use super::super::body::in_sight;
 use super::super::build::Weapon;
-use super::super::flamethrower::{self, BURN_EVERY, NOZZLE, TRAIL_RADIUS, TRAIL_STEP};
+use super::super::flamethrower::{
+    self, BURN_EVERY, NOZZLE, TRAIL_RADIUS, TRAIL_STEP, TURN_DEGREES,
+};
+use super::super::guns;
 use super::super::guns::Magazine;
 use super::super::molotov::Puddle;
 use super::World;
@@ -16,16 +19,16 @@ impl World {
     pub fn flame_cone(&self) -> Option<(Vec2, Vec2, f32)> {
         let level = self.player.build.weapon_level(Weapon::Flamethrower);
         (self.flaming && level > 0).then(|| {
-            let way = self.player.facing.way();
+            let way = self.flame_way;
             let range = flamethrower::at(level).range;
             (self.player.position + way * NOZZLE, way, range - NOZZLE)
         })
     }
 
-    /// Lit by an enemy in its cone, the flamethrower burns its whole tank ahead of the player,
-    /// the way they face, enemies or not: every enemy in the cone, in sight, takes its damage
-    /// and catches fire, a few times a second. Empty, the tank fills again. In the dark too: its
-    /// fire lights what it burns.
+    /// Lit at the nearest enemy in its reach and in sight, the flamethrower burns its whole
+    /// tank, enemies or not, its fire turning after the nearest enemy as it burns: every enemy
+    /// in the cone, in sight, takes its damage and catches fire, a few times a second. Empty,
+    /// the tank fills again. In the dark too: its fire lights what it burns.
     pub(super) fn throw_flames(&mut self) {
         let lit = self.flaming;
         self.flaming = false;
@@ -40,6 +43,7 @@ impl World {
             enemies,
             magazines,
             map,
+            flame_way,
             ..
         } = self;
         let build = &player.build;
@@ -54,7 +58,20 @@ impl World {
             }
             return;
         }
-        let (from, way) = (player.position, player.facing.way());
+        let from = player.position;
+        let nearest = guns::targets(enemies, from, 1, stats.range, |at| in_sight(map, from, at));
+        if let Some(target) = nearest
+            .first()
+            .filter(|target| (**target - from).length() > f32::EPSILON)
+        {
+            // Lit, right at it; burning, it turns after it.
+            *flame_way = if lit {
+                flamethrower::turn(*flame_way, *target - from, TURN_DEGREES.to_radians())
+            } else {
+                (*target - from).normalized()
+            };
+        }
+        let way = *flame_way;
         let burning: Vec<usize> = enemies
             .iter()
             .enumerate()

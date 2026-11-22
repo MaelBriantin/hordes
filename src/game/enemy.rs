@@ -115,6 +115,8 @@ pub struct Enemy {
     /// How far it is thrown each tick by a shock, the hammer's, and for how many ticks more.
     pub knock: Vec2,
     pub knocked: u32,
+    /// Ticks left it goes slower, ground by the chainsaw.
+    pub slowed: u32,
     /// The horde it came with, if it did.
     pub horde: Option<u32>,
     /// A number of its own, drawn as it appears, in radians: where it starts to wander.
@@ -153,6 +155,7 @@ impl Enemy {
             shocked: 0,
             knock: Vec2::ZERO,
             knocked: 0,
+            slowed: 0,
             hunting: 0,
             bolting: 0,
         }
@@ -163,6 +166,16 @@ impl Enemy {
         let ramped = u16::try_from(self.hunting.min(HUNT_RAMP_TICKS)).unwrap_or(0);
         let ramp = u16::try_from(HUNT_RAMP_TICKS).unwrap_or(u16::MAX);
         1.0 + f32::from(ramped) / f32::from(ramp) * f32::from(HUNT_MOST_PERCENT) / 100.0
+    }
+
+    /// How much slower it goes this tick for the chainsaw grinding it, in percent: none once
+    /// out of it a moment.
+    pub fn sawn(&mut self) -> u32 {
+        if self.slowed == 0 {
+            return 0;
+        }
+        self.slowed -= 1;
+        super::chainsaw::SLOW_PERCENT
     }
 
     /// Catches fire for `ticks`, or burns anew: never longer than that.

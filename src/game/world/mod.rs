@@ -12,12 +12,14 @@ use super::build::{
 };
 use super::burst::{Blast, Swelling};
 use super::dash::{Dash, Dashes};
+use super::defibrillator::Shock;
 use super::enemy::Enemy;
 use super::gem::Gem;
 use super::guns::{Bullet, Magazine};
 use super::hammer::Blow;
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
 use super::horde::{self, Tally, Warning};
+use super::katana::Cuts;
 use super::knife::Stab;
 use super::level::xp_to_next;
 use super::machete::Swing;
@@ -26,7 +28,8 @@ use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
 use super::progress::{
     Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
-    Progress, UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
+    FIRST_AID_HP, LEGEND_KILLS, Progress, SHADOW_HUNTER_SHADOWS, UNTOUCHABLE_SECONDS,
+    VETERAN_LEVEL,
 };
 use super::score;
 use super::stain::Stain;
@@ -35,10 +38,13 @@ use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 mod barricades;
 mod blows;
+mod cuts;
 mod debug;
 mod enemies;
 mod flames;
 mod jabs;
+mod saws;
+mod shocks;
 mod stabs;
 mod storm;
 mod weapons;
@@ -203,14 +209,28 @@ pub struct World {
     /// The combat knife's last stabs, while they show, and the ticks before the next.
     pub stabs: Vec<Stab>,
     knife_wait: u32,
+    /// The katana's last chain of cuts, while it shows, and the ticks before the next.
+    pub cuts: Option<Cuts>,
+    katana_wait: u32,
+    /// The defibrillator's last shock, while it shows, and the ticks before the next.
+    pub shock: Option<Shock>,
+    defibrillator_wait: u32,
+    /// Whether the chainsaw grinds an enemy this tick, and the ticks before its next bite.
+    pub sawing: bool,
+    chainsaw_wait: u32,
+    /// The HP the player has got back this run, for First aid.
+    healed: u32,
+    /// The Shadows felled this run, for Shadow hunter.
+    shadows_down: u32,
     /// The ticks the player has stood low on HP this run, for Cold blood.
     low_hp_ticks: u32,
     /// The abominations felled by a melee blow this run: the crowbar's, the machete's, the
     /// hammer's.
     abominations_smashed: u32,
-    /// Whether the flamethrower burns this tick; the ticks it has burnt, for its bursts of
-    /// damage; and where its trail left its last fire.
+    /// Whether the flamethrower burns this tick; the way its fire goes (length 1); the ticks it
+    /// has burnt, for its bursts of damage; and where its trail left its last fire.
     pub flaming: bool,
+    flame_way: Vec2,
     flame_ticks: u32,
     trail_from: Vec2,
     /// The barricades standing, oldest first, and the ticks before the next can be set down.
@@ -249,6 +269,8 @@ pub struct World {
     /// The tick the player was last hurt at, and last healed at, if they have been.
     pub hurt_at: Option<u32>,
     pub healed_at: Option<u32>,
+    /// The tick the player last dodged a blow at, if they have: the ninja's.
+    pub dodged_at: Option<u32>,
     /// Whether the player wants their torch on; the tick it holds from, lit, flickering until
     /// then, as long as luck has it; and that luck, for the flicker.
     torch_switch: bool,
@@ -334,6 +356,10 @@ impl World {
     }
 
     /// A run on a given map, the player at `start`.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "every field of the world, one a line"
+    )]
     fn on(map: Map, start: Vec2, rng: StdRng) -> Self {
         let mut world = Self {
             map,
@@ -379,9 +405,18 @@ impl World {
             baton_wait: 0,
             stabs: Vec::new(),
             knife_wait: 0,
+            cuts: None,
+            katana_wait: 0,
+            shock: None,
+            defibrillator_wait: 0,
+            sawing: false,
+            chainsaw_wait: 0,
+            healed: 0,
+            shadows_down: 0,
             low_hp_ticks: 0,
             abominations_smashed: 0,
             flaming: false,
+            flame_way: Vec2::new(1.0, 0.0),
             flame_ticks: 0,
             trail_from: start,
             barricades: Vec::new(),
@@ -399,6 +434,7 @@ impl World {
             told: None,
             hurt_at: None,
             healed_at: None,
+            dodged_at: None,
             torch_switch: true,
             torch_lit_once: true,
             torch_steady_at: 0,
@@ -658,6 +694,7 @@ impl World {
             self.score += bonus;
             self.dawn_bonus = Some(bonus);
             self.progress.reach(Achievement::Dawn);
+            self.progress.dawns.insert(self.player.build.hero());
             return;
         }
         if self.weather() != weather {
@@ -678,6 +715,9 @@ impl World {
         self.swing_hammer();
         self.thrust_baton();
         self.stab_knife();
+        self.cut_katana();
+        self.shock_defibrillator();
+        self.grind_chainsaw();
         self.throw_molotovs();
         self.throw_flames();
         self.fire_guns();
@@ -718,6 +758,15 @@ impl World {
         if self.low_hp_ticks >= COLD_BLOOD_SECONDS * u32::from(TICKS_PER_SECOND) {
             self.progress.reach(Achievement::ColdBlood);
         }
+        if self.healed >= FIRST_AID_HP {
+            self.progress.reach(Achievement::FirstAid);
+        }
+        if self.kills >= LEGEND_KILLS {
+            self.progress.reach(Achievement::Legend);
+        }
+        if self.shadows_down >= SHADOW_HUNTER_SHADOWS {
+            self.progress.reach(Achievement::ShadowHunter);
+        }
         if self.abominations_smashed >= DEMOLISHER_ABOMINATIONS {
             self.progress.reach(Achievement::Demolisher);
         }
@@ -750,9 +799,12 @@ impl World {
         else {
             return;
         };
+        let heal = HEAL * self.player.build.hero().perk().heal_percent() / 100;
         let player = &mut self.player;
         match choice {
-            Choice::Heal => player.hp = (player.hp + HEAL).min(player.max_hp()),
+            Choice::Heal => {
+                self.heal(heal);
+            }
             Choice::Passive(Passive::Vitality) => {
                 player.build.take(choice);
                 player.hp += VITALITY_HP;
@@ -863,10 +915,11 @@ impl World {
         if !self.ticks.is_multiple_of(u32::from(TICKS_PER_SECOND)) {
             return;
         }
-        self.hp_tenths += self.player.build.regeneration_tenths();
+        let build = &self.player.build;
+        self.hp_tenths += build.regeneration_tenths() + build.hero().perk().regeneration_tenths();
         let whole = self.hp_tenths / 10;
         self.hp_tenths %= 10;
-        self.player.hp = (self.player.hp + whole).min(self.player.max_hp());
+        self.heal(whole);
     }
 
     /// Illumination gives XP of itself, a point a second.
@@ -954,7 +1007,8 @@ impl World {
             let hurt = self.player.hp < self.player.max_hp();
             match feature {
                 Feature::Herb if hurt && apart <= HERB_REACH => {
-                    self.player.hp = (self.player.hp + HERB_HP).min(self.player.max_hp());
+                    let herb = HERB_HP * self.player.build.hero().perk().heal_percent() / 100;
+                    self.heal(herb);
                     self.picked.insert(tile);
                     self.healed_at = Some(self.ticks);
                 }
@@ -973,9 +1027,10 @@ impl World {
             return;
         };
         self.by_the_fire += 1;
-        if self.by_the_fire >= heal::ticks_per_hp() {
+        let percent = self.player.build.hero().perk().heal_percent();
+        if self.by_the_fire >= heal::ticks_per_hp() * 100 / percent {
             self.by_the_fire = 0;
-            self.player.hp += 1;
+            self.heal(1);
             *self.burnt.entry(tile).or_insert(0) += 1;
             self.healed_at = Some(self.ticks);
         }
@@ -1010,8 +1065,25 @@ impl World {
         }
     }
 
+    /// The player gets back `amount` HP, never over their most: how many they did, counted for
+    /// First aid.
+    fn heal(&mut self, amount: u32) -> u32 {
+        let player = &mut self.player;
+        let healed = amount.min(player.max_hp().saturating_sub(player.hp));
+        player.hp += healed;
+        self.healed += healed;
+        healed
+    }
+
     /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second.
     fn wound_player(&mut self, damage: u32) {
+        // The ninja dodges a blow now and then: nothing taken, but as long unhurt after.
+        let dodge = self.player.build.hero().perk().dodge_percent();
+        if dodge > 0 && self.rng.random_range(0..100) < dodge {
+            self.player.invincible = u32::from(TICKS_PER_SECOND) / 2;
+            self.dodged_at = Some(self.ticks);
+            return;
+        }
         let player = &mut self.player;
         let damage = damage * player.build.hero().perk().hurt_percent() / 100;
         player.hp = player.hp.saturating_sub(damage);

@@ -23,6 +23,10 @@ pub enum SpriteId {
     ClassicBack,
     /// Facing right.
     ClassicSide,
+    ClassicBareFront,
+    ClassicBareBack,
+    /// Facing right.
+    ClassicBareSide,
     ExterminatorFront,
     ExterminatorBack,
     /// Facing right.
@@ -31,10 +35,26 @@ pub enum SpriteId {
     DemolisherBack,
     /// Facing right.
     DemolisherSide,
-    RookieFront,
-    RookieBack,
+    AgentUniformFront,
+    AgentUniformBack,
     /// Facing right.
-    RookieSide,
+    AgentUniformSide,
+    AgentFront,
+    AgentBack,
+    /// Facing right.
+    AgentSide,
+    NinjaFront,
+    NinjaBack,
+    /// Facing right.
+    NinjaSide,
+    MedicFront,
+    MedicBack,
+    /// Facing right.
+    MedicSide,
+    MedicGreenFront,
+    MedicGreenBack,
+    /// Facing right.
+    MedicGreenSide,
     /// Facing right.
     ZombieSide,
     ZombieFront,
@@ -82,11 +102,16 @@ pub enum SpriteId {
     IconLoot,
     IconRegeneration,
     IconGlare,
+    IconDrain,
     IconDash,
     IconFlamethrower,
     IconHammer,
     IconBaton,
     IconKnife,
+    IconKatana,
+    IconShuriken,
+    IconDefibrillator,
+    IconChainsaw,
     IconBarricade,
     IconIllumination,
     IconHeal,
@@ -97,27 +122,44 @@ pub enum SpriteId {
     /// The skin worn, on its tile.
     Check,
     ArrowLeft,
+    ArrowUp,
+    ArrowDown,
     ArrowRight,
     Title,
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 73] = [
+    const ALL: [SpriteId; 95] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
         SpriteId::ClassicFront,
         SpriteId::ClassicBack,
         SpriteId::ClassicSide,
+        SpriteId::ClassicBareFront,
+        SpriteId::ClassicBareBack,
+        SpriteId::ClassicBareSide,
         SpriteId::ExterminatorFront,
         SpriteId::ExterminatorBack,
         SpriteId::ExterminatorSide,
         SpriteId::DemolisherFront,
         SpriteId::DemolisherBack,
         SpriteId::DemolisherSide,
-        SpriteId::RookieFront,
-        SpriteId::RookieBack,
-        SpriteId::RookieSide,
+        SpriteId::AgentUniformFront,
+        SpriteId::AgentUniformBack,
+        SpriteId::AgentUniformSide,
+        SpriteId::AgentFront,
+        SpriteId::AgentBack,
+        SpriteId::AgentSide,
+        SpriteId::NinjaFront,
+        SpriteId::NinjaBack,
+        SpriteId::NinjaSide,
+        SpriteId::MedicFront,
+        SpriteId::MedicBack,
+        SpriteId::MedicSide,
+        SpriteId::MedicGreenFront,
+        SpriteId::MedicGreenBack,
+        SpriteId::MedicGreenSide,
         SpriteId::ZombieSide,
         SpriteId::ZombieFront,
         SpriteId::GhoulSide,
@@ -160,11 +202,16 @@ impl SpriteId {
         SpriteId::IconLoot,
         SpriteId::IconRegeneration,
         SpriteId::IconGlare,
+        SpriteId::IconDrain,
         SpriteId::IconDash,
         SpriteId::IconFlamethrower,
         SpriteId::IconHammer,
         SpriteId::IconBaton,
         SpriteId::IconKnife,
+        SpriteId::IconKatana,
+        SpriteId::IconShuriken,
+        SpriteId::IconDefibrillator,
+        SpriteId::IconChainsaw,
         SpriteId::IconBarricade,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
@@ -174,6 +221,8 @@ impl SpriteId {
         SpriteId::IconHidden,
         SpriteId::Check,
         SpriteId::ArrowLeft,
+        SpriteId::ArrowUp,
+        SpriteId::ArrowDown,
         SpriteId::ArrowRight,
         SpriteId::Title,
     ];
@@ -186,15 +235,30 @@ impl SpriteId {
             SpriteId::ClassicFront => "classic_front",
             SpriteId::ClassicBack => "classic_back",
             SpriteId::ClassicSide => "classic_side",
+            SpriteId::ClassicBareFront => "classic_bare_front",
+            SpriteId::ClassicBareBack => "classic_bare_back",
+            SpriteId::ClassicBareSide => "classic_bare_side",
             SpriteId::ExterminatorFront => "exterminator_front",
             SpriteId::ExterminatorBack => "exterminator_back",
             SpriteId::ExterminatorSide => "exterminator_side",
             SpriteId::DemolisherFront => "demolisher_front",
             SpriteId::DemolisherBack => "demolisher_back",
             SpriteId::DemolisherSide => "demolisher_side",
-            SpriteId::RookieFront => "rookie_front",
-            SpriteId::RookieBack => "rookie_back",
-            SpriteId::RookieSide => "rookie_side",
+            SpriteId::AgentUniformFront => "agent_uniform_front",
+            SpriteId::AgentUniformBack => "agent_uniform_back",
+            SpriteId::AgentUniformSide => "agent_uniform_side",
+            SpriteId::AgentFront => "agent_front",
+            SpriteId::AgentBack => "agent_back",
+            SpriteId::AgentSide => "agent_side",
+            SpriteId::NinjaFront => "ninja_front",
+            SpriteId::NinjaBack => "ninja_back",
+            SpriteId::NinjaSide => "ninja_side",
+            SpriteId::MedicFront => "medic_front",
+            SpriteId::MedicBack => "medic_back",
+            SpriteId::MedicSide => "medic_side",
+            SpriteId::MedicGreenFront => "medic_green_front",
+            SpriteId::MedicGreenBack => "medic_green_back",
+            SpriteId::MedicGreenSide => "medic_green_side",
             SpriteId::ZombieSide => "zombie_side",
             SpriteId::ZombieFront => "zombie_front",
             SpriteId::GhoulSide => "ghoul_side",
@@ -237,11 +301,16 @@ impl SpriteId {
             SpriteId::IconLoot => "icon_loot",
             SpriteId::IconRegeneration => "icon_regeneration",
             SpriteId::IconGlare => "icon_glare",
+            SpriteId::IconDrain => "icon_drain",
             SpriteId::IconDash => "icon_dash",
             SpriteId::IconFlamethrower => "icon_flamethrower",
             SpriteId::IconHammer => "icon_hammer",
             SpriteId::IconBaton => "icon_baton",
             SpriteId::IconKnife => "icon_knife",
+            SpriteId::IconKatana => "icon_katana",
+            SpriteId::IconShuriken => "icon_shuriken",
+            SpriteId::IconDefibrillator => "icon_defibrillator",
+            SpriteId::IconChainsaw => "icon_chainsaw",
             SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
@@ -251,6 +320,8 @@ impl SpriteId {
             SpriteId::IconHidden => "icon_hidden",
             SpriteId::Check => "check",
             SpriteId::ArrowLeft => "arrow_left",
+            SpriteId::ArrowUp => "arrow_up",
+            SpriteId::ArrowDown => "arrow_down",
             SpriteId::ArrowRight => "arrow_right",
             SpriteId::Title => "title",
         }
@@ -313,10 +384,38 @@ impl Look {
     }
 }
 
-/// The hero, as `skin` says, turned the way they face.
-pub fn hero(facing: Facing, skin: Skin) -> Look {
-    let (front, back, side) = match skin {
+/// A hero as they look: who, and in which of their colours (0, their first).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Outfit {
+    pub skin: Skin,
+    pub colours: u8,
+}
+
+impl Outfit {
+    /// A hero in their first colours.
+    pub fn plain(skin: Skin) -> Self {
+        Self { skin, colours: 0 }
+    }
+}
+
+/// How many colours a hero comes in: the veteran, the special agent and the medic two, the others one.
+pub fn colours_of(skin: Skin) -> u8 {
+    if matches!(skin, Skin::Classic | Skin::Agent | Skin::Medic) {
+        2
+    } else {
+        1
+    }
+}
+
+/// The hero, as `outfit` says, turned the way they face.
+pub fn hero(facing: Facing, outfit: Outfit) -> Look {
+    let (front, back, side) = match outfit.skin {
         Skin::Survivor => (SpriteId::HeroFront, SpriteId::HeroBack, SpriteId::HeroSide),
+        Skin::Classic if outfit.colours == 1 => (
+            SpriteId::ClassicBareFront,
+            SpriteId::ClassicBareBack,
+            SpriteId::ClassicBareSide,
+        ),
         Skin::Classic => (
             SpriteId::ClassicFront,
             SpriteId::ClassicBack,
@@ -332,10 +431,30 @@ pub fn hero(facing: Facing, skin: Skin) -> Look {
             SpriteId::DemolisherBack,
             SpriteId::DemolisherSide,
         ),
-        Skin::Rookie => (
-            SpriteId::RookieFront,
-            SpriteId::RookieBack,
-            SpriteId::RookieSide,
+        Skin::Agent if outfit.colours == 1 => (
+            SpriteId::AgentUniformFront,
+            SpriteId::AgentUniformBack,
+            SpriteId::AgentUniformSide,
+        ),
+        Skin::Agent => (
+            SpriteId::AgentFront,
+            SpriteId::AgentBack,
+            SpriteId::AgentSide,
+        ),
+        Skin::Ninja => (
+            SpriteId::NinjaFront,
+            SpriteId::NinjaBack,
+            SpriteId::NinjaSide,
+        ),
+        Skin::Medic if outfit.colours == 1 => (
+            SpriteId::MedicGreenFront,
+            SpriteId::MedicGreenBack,
+            SpriteId::MedicGreenSide,
+        ),
+        Skin::Medic => (
+            SpriteId::MedicFront,
+            SpriteId::MedicBack,
+            SpriteId::MedicSide,
         ),
     };
     match facing {

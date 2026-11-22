@@ -38,10 +38,14 @@ pub enum Weapon {
     Hammer,
     Baton,
     Knife,
+    Katana,
+    Shuriken,
+    Defibrillator,
+    Chainsaw,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 11] = [
+    pub const ALL: [Weapon; 15] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -53,6 +57,10 @@ impl Weapon {
         Weapon::Hammer,
         Weapon::Baton,
         Weapon::Knife,
+        Weapon::Katana,
+        Weapon::Shuriken,
+        Weapon::Defibrillator,
+        Weapon::Chainsaw,
     ];
 }
 
@@ -78,13 +86,15 @@ pub enum Passive {
     Regeneration,
     /// The enemies in the torch's light slowed, 10% per level.
     Glare,
+    /// A chance for each enemy felled to give back 1 HP: 10%, 5% more per level.
+    Drain,
     /// +10% damage to the hordes per level; their last ones targeted in red, more with the
     /// levels.
     HordeHunter,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 11] = [
+    pub const ALL: [Passive; 12] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -95,6 +105,7 @@ impl Passive {
         Passive::Loot,
         Passive::Regeneration,
         Passive::Glare,
+        Passive::Drain,
         Passive::HordeHunter,
     ];
 }
@@ -128,13 +139,16 @@ impl Choice {
     /// How rare its card is.
     pub fn rarity(self) -> Rarity {
         match self {
-            Choice::Weapon(Weapon::Flamethrower | Weapon::Hammer | Weapon::Baton)
+            Choice::Weapon(
+                Weapon::Flamethrower | Weapon::Hammer | Weapon::Baton | Weapon::Chainsaw,
+            )
             | Choice::Passive(
                 Passive::Might
                 | Passive::Haste
                 | Passive::Wisdom
                 | Passive::Regeneration
-                | Passive::Glare,
+                | Passive::Glare
+                | Passive::Drain,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Action(_) | Choice::Heal => {
@@ -360,6 +374,15 @@ impl Build {
     /// Regeneration.
     pub fn regeneration_tenths(&self) -> u32 {
         4 * u32::from(self.passive_level(Passive::Regeneration))
+    }
+
+    /// The chance for each enemy felled to give back 1 HP, in percent: none without Drain, 10
+    /// at its first level and 5 more each level after.
+    pub fn drain_percent(&self) -> u32 {
+        match self.passive_level(Passive::Drain) {
+            0 => 0,
+            level => 5 + 5 * u32::from(level),
+        }
     }
 
     /// How much likelier an enemy is to leave a gem, in points of percent: 10 per level of Loot.

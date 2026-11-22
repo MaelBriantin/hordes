@@ -244,6 +244,10 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Hammer => SpriteId::IconHammer,
             Weapon::Baton => SpriteId::IconBaton,
             Weapon::Knife => SpriteId::IconKnife,
+            Weapon::Katana => SpriteId::IconKatana,
+            Weapon::Shuriken => SpriteId::IconShuriken,
+            Weapon::Defibrillator => SpriteId::IconDefibrillator,
+            Weapon::Chainsaw => SpriteId::IconChainsaw,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -256,6 +260,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Loot => SpriteId::IconLoot,
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
+            Passive::Drain => SpriteId::IconDrain,
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
@@ -279,6 +284,7 @@ pub fn name(choice: Choice) -> String {
             Passive::Loot => fl!("passive-loot"),
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
+            Passive::Drain => fl!("passive-drain"),
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
@@ -301,6 +307,10 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Hammer => fl!("weapon-hammer"),
         Weapon::Baton => fl!("weapon-baton"),
         Weapon::Knife => fl!("weapon-knife"),
+        Weapon::Katana => fl!("weapon-katana"),
+        Weapon::Shuriken => fl!("weapon-shuriken"),
+        Weapon::Defibrillator => fl!("weapon-defibrillator"),
+        Weapon::Chainsaw => fl!("weapon-chainsaw"),
     }
 }
 
@@ -355,17 +365,8 @@ fn gain_of(choice: Choice, level: u8) -> String {
             4 => fl!("gain-molotov-4"),
             _ => fl!("gain-molotov-5"),
         },
-        Choice::Weapon(Weapon::Flamethrower) => match level {
-            1 => fl!("gain-flamethrower-1"),
-            2 => fl!("gain-flamethrower-2"),
-            3 => fl!("gain-flamethrower-3"),
-            4 => fl!("gain-flamethrower-4"),
-            _ => fl!("gain-flamethrower-5"),
-        },
-        Choice::Weapon(Weapon::Hammer) => hammer_gain(level),
-        Choice::Weapon(Weapon::Baton) => baton_gain(level),
-        Choice::Weapon(Weapon::Knife) => knife_gain(level),
-        // A passive's gain, and the total it brings the player to at that level.
+        // The weapons come later: the flamethrower, the heroes' own, the shurikens.
+        Choice::Weapon(weapon) => later_weapon_gain(weapon, level),
         Choice::Passive(passive) => {
             let level = u32::from(level);
             let total: u32 = match passive {
@@ -379,6 +380,7 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 | Passive::HordeHunter => 10 * level,
                 // In tenths of HP a second.
                 Passive::Regeneration => 4 * level,
+                Passive::Drain => 5 + 5 * level,
                 Passive::Flashlight => 9 + 2 * level,
             };
             match passive {
@@ -395,6 +397,7 @@ fn gain_of(choice: Choice, level: u8) -> String {
                     fl!("gain-regeneration", whole = whole, tenth = tenth)
                 }
                 Passive::Glare => fl!("gain-glare", total = total),
+                Passive::Drain => fl!("gain-drain", total = total),
                 Passive::HordeHunter => match level {
                     1 => fl!("gain-horde-hunter-1"),
                     2 => fl!("gain-horde-hunter-2", total = total),
@@ -407,6 +410,39 @@ fn gain_of(choice: Choice, level: u8) -> String {
         Choice::Action(action) => action_gain(action, level),
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
         Choice::Heal => fl!("gain-heal"),
+    }
+}
+
+/// What a weapon come later brings, taken at `level`: the flamethrower, the heroes' own, the
+/// shurikens.
+fn later_weapon_gain(weapon: Weapon, level: u8) -> String {
+    match weapon {
+        Weapon::Flamethrower => match level {
+            1 => fl!("gain-flamethrower-1"),
+            2 => fl!("gain-flamethrower-2"),
+            3 => fl!("gain-flamethrower-3"),
+            4 => fl!("gain-flamethrower-4"),
+            _ => fl!("gain-flamethrower-5"),
+        },
+        Weapon::Hammer => hammer_gain(level),
+        Weapon::Baton => baton_gain(level),
+        Weapon::Knife => knife_gain(level),
+        Weapon::Katana => katana_gain(level),
+        Weapon::Defibrillator => match level {
+            1 => fl!("gain-defibrillator-1"),
+            2 => fl!("gain-defibrillator-2"),
+            3 => fl!("gain-defibrillator-3"),
+            4 => fl!("gain-defibrillator-4"),
+            _ => fl!("gain-defibrillator-5"),
+        },
+        Weapon::Chainsaw => match level {
+            1 => fl!("gain-chainsaw-1"),
+            2 => fl!("gain-chainsaw-2"),
+            3 => fl!("gain-chainsaw-3"),
+            4 => fl!("gain-chainsaw-4"),
+            _ => fl!("gain-chainsaw-5"),
+        },
+        _ => shuriken_gain(level),
     }
 }
 
@@ -440,6 +476,28 @@ fn knife_gain(level: u8) -> String {
         3 => fl!("gain-knife-3"),
         4 => fl!("gain-knife-4"),
         _ => fl!("gain-knife-5"),
+    }
+}
+
+/// What the katana brings, taken at `level`.
+fn katana_gain(level: u8) -> String {
+    match level {
+        1 => fl!("gain-katana-1"),
+        2 => fl!("gain-katana-2"),
+        3 => fl!("gain-katana-3"),
+        4 => fl!("gain-katana-4"),
+        _ => fl!("gain-katana-5"),
+    }
+}
+
+/// What the shurikens bring, taken at `level`.
+fn shuriken_gain(level: u8) -> String {
+    match level {
+        1 => fl!("gain-shuriken-1"),
+        2 => fl!("gain-shuriken-2"),
+        3 => fl!("gain-shuriken-3"),
+        4 => fl!("gain-shuriken-4"),
+        _ => fl!("gain-shuriken-5"),
     }
 }
 

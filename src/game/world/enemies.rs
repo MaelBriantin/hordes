@@ -49,13 +49,16 @@ const BURN_FLASH: u32 = 6;
 const MAX_GEMS: usize = 500;
 
 impl World {
-    /// Enemies out of HP fall, each worth its points, some leaving a gem. The combo closes when
+    /// Enemies out of HP fall, each worth its points, some leaving a gem, some, with Drain,
+    /// giving the player back a HP. The combo closes when
     /// no enemy has fallen for a while.
     pub(super) fn fell_enemies(&mut self) {
         if self.ticks - self.last_kill > score::combo_window() {
             self.combo = 0;
         }
         let mut wiped_out = 0;
+        let mut drained = 0;
+        let drain = self.player.build.drain_percent();
         let weather = self.weather();
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
             // Worth the combo as it stood before this kill.
@@ -63,6 +66,7 @@ impl World {
             self.progress.kills += 1;
             if enemy.kind == EnemyKind::Shadow {
                 self.progress.shadows += 1;
+                self.shadows_down += 1;
             }
             self.score += worth;
             self.combo += 1;
@@ -111,7 +115,14 @@ impl World {
                 size: stats.stain,
                 ash: enemy.burning > 0,
             });
+            // With Drain, some give the player back a HP.
+            if drain > 0 && self.rng.random_range(0..100) < drain {
+                drained += 1;
+            }
             self.kills += 1;
+        }
+        if drained > 0 && self.heal(drained) > 0 {
+            self.healed_at = Some(self.ticks);
         }
         let lasts = stain::lasts();
         let now = self.ticks;
@@ -426,7 +437,8 @@ impl World {
                 Some((reach, percent)) if apart <= reach => percent,
                 _ => 0,
             };
-            let glared = f32::from(u16::try_from(100 - slowed.min(100)).unwrap_or(100)) / 100.0;
+            let slowed = (slowed + enemy.sawn()).min(100);
+            let glared = f32::from(u16::try_from(100 - slowed).unwrap_or(100)) / 100.0;
             let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace * glared;
             // Thrown by a shock, it goes on its way out, whatever else it does.
             let knock = if enemy.knocked > 0 {

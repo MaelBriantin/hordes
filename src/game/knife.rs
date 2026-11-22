@@ -1,4 +1,4 @@
-//! The combat knife, the rookie's own: quick stabs at the nearest enemy, whichever way, close
+//! The combat knife, the special agent's own: quick stabs at the nearest enemy, whichever way, close
 //! by; little a stab, but many.
 
 use super::{TICKS_PER_SECOND, Vec2};

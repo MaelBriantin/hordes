@@ -13,25 +13,32 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - A strike of lightning falling with the player in its ring puts their torch out, up to them to light it again (F): the night all at once, the guns holding their fire. It no longer hurts the player.
 - The Barricade, a second action card, unlocked by a new achievement, Untouchable (2 minutes without a hit after nightfall): Space or Enter heaps three crates just ahead, stopping the walking enemies, which batter it until it breaks; the Shadows fly over it, the shots go over it. The next in 8 s, two at most at once; more HP, a third, and unbreakable metal crates at the last level.
 
-- The flamethrower, a rare weapon, unlocked by a new achievement, Cleaner (every horde of a run wiped out): a cone of fire ahead of the player setting every enemy in it on fire, its tank filling again once empty; at the last level, the tank leaks a trail of fire behind the player.
-- The rookie, a new hero (fair hair, a blue uniform), unlocked by a new achievement, Cold blood (a minute under 30% of HP in one run), with a weapon of their own, the combat knife: quick stabs at the nearest enemy, whichever way.
+- The flamethrower, a rare weapon, unlocked by a new achievement, Cleaner (every horde of a run wiped out): a cone of fire lit at the nearest enemy and turning after the nearest as it burns, setting every enemy in it on fire, its tank filling again once empty; at the last level, the tank leaks a trail of fire behind the player.
+- Colours for the heroes, gone through with up and down among the heroes on the title screen, a hero's second colours unlocked by the dawn reached with them: the veteran bare-chested in dark green trousers, a blue headband and a strap across; the special agent in a young police officer's blue uniform; the medic in white with a green bag, or in green with a red bag.
+- The medic, a new hero (all in white, a green bag on the back; healing half again as much, HP coming back of themselves), unlocked by a new achievement, First aid (300 HP got back in one run), with a weapon of their own, the defibrillator: a shock leaping through the nearest enemies, each one felled giving HP back.
+- The ninja, a new hero (all in dark, the eyes alone showing; 80 HP, faster, dodging a blow in seven), unlocked by a new achievement, Shadow hunter (25 Shadows felled in one run), with a weapon of their own, the katana: a cut chaining through the nearest enemies. The same achievement deals the shurikens to every hero: volleys of stars piercing the enemies.
+- Life drain, a rare passive, unlocked with the medic by First aid: each enemy felled has a chance to give back 1 HP, 10% at first, 30% at the last level.
+- The chainsaw, a rare melee weapon for every hero, unlocked with the special agent by Cold blood: it grinds on and on what touches it ahead, slowing it.
+- The special agent, a new hero (fair hair, a brown leather jacket, a dark harness across, charcoal trousers), unlocked by a new achievement, Cold blood (a minute under 30% of HP in one run), with a weapon of their own, the combat knife: quick stabs at the nearest enemy, whichever way.
 - The demolisher, a new hero (bald, bearded, a grey tank top and jeans), unlocked by a new achievement, Demolisher (10 abominations felled in melee in one run), with a weapon of their own, the sledgehammer: a blow on the ground ahead, its shock hurting and throwing back every enemy around; stunning them at the last level.
 - The exterminator, a skin for the hero once Cleaner is reached: a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back.
-- The skins on the title screen, S showing them as the collection shows its cards: the hero picked turning round, the locked ones in grey with the achievement that unlocks them, Enter to wear one.
+- The heroes on the title screen, H showing them as the collection shows its cards: the hero picked turning round, the locked ones in grey with the achievement that unlocks them, Enter to wear one.
 
 ### Changed
-- Each hero plays with their own HP, speed and perk, shown in the skin picker: the survivor versatile, the classic hero a commando (+10% damage), the exterminator a pyromaniac (fire burns twice as long), the demolisher unshakable (140 HP, slower, less damage taken, never thrown), the rookie quick (80 HP, faster, guns reloading 20% faster).
-- Each hero starts a run with a melee weapon of their own, theirs alone, never dealt to another hero, as the skin picker tells: the survivor the crowbar, the classic hero the machete, the exterminator a new stun baton (a thrust ahead, paralysing what it hits), the demolisher the sledgehammer. The crowbar and the machete leave the common cards and the collection.
+- The veteran no longer there from the start: unlocked by a new achievement, Legend (700 enemies felled in one run).
+- Each hero plays with their own HP, speed and perk, shown among the heroes on the title screen: the survivor versatile, the veteran a commando (+10% damage), the exterminator a pyromaniac (fire burns twice as long), the demolisher unshakable (140 HP, slower, less damage taken, never thrown), the special agent quick (80 HP, faster, guns reloading 20% faster).
+- Each hero starts a run with a melee weapon of their own, theirs alone, never dealt to another hero, as the heroes on the title screen tell: the survivor the crowbar, the veteran the machete, the exterminator a new stun baton (a thrust ahead, paralysing what it hits), the demolisher the sledgehammer. The crowbar and the machete leave the common cards and the collection.
 - The arcade mode shown as Endless Night, and opening on the night, the dusk skipped; a standard run always opens on the dusk, the setting to skip it gone.
 - Low on HP, under 30%, the player's heart beats on the edges of the screen, faster the lower; the HP over the hero blinks too.
 - The torch no longer lights up of itself as the night falls: up to the player, F shown under them until they first do in the run.
-- The skin chosen on the title screen alone (S), no longer in the options.
-- The arcade mode unlocked by reaching the dawn, the game won, rather than by seeing every weather; Illumination by a new achievement, Veteran (level 25 in one run). Come rain or shine (every weather seen) is gone, a progress holding it still read.
+- The hero chosen on the title screen alone (H), no longer in the options.
+- The arcade mode unlocked by reaching the dawn, the game won, rather than by seeing every weather; Illumination by a new achievement, Seasoned (level 25 in one run). Come rain or shine (every weather seen) is gone, a progress holding it still read.
 - The title screen in the middle of the screen when nothing shows under it, rather than over an empty room kept for the collection: it slides as the collection or the skins open and close, and as Tab changes the mode.
 - Trees and rocks stop the shots: the guns and the drones aim only at enemies in sight, and a bullet meeting an obstacle stops there, in a spark; a Shadow over a rock can't be shot.
 - The drones reworked, dealt again once unlocked by a new achievement, Swarm (2 hordes wiped out in one run): one at first, each shooting at the nearest enemy within 6 tiles, a bullet every 0.4 s, but in the dark; an enemy touching one takes a blow from it and breaks it for 3 s (2 at level 4). More drones at levels 2, 4 and 5, more damage at level 3.
 
 ### Fixed
+- The game could crash opening the heroes on a screen too short for them: they no longer reach past its bottom.
 - A gauge under an icon went wrong a moment (and the game could crash, built for debugging) when a level-up shortened a wait under way: Haste during a reload or between two swings.
 
 ## v0.8.2 · November 21, 2026
