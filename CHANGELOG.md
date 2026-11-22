@@ -9,6 +9,11 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.9.2 · November 22, 2026
+
+### Fixed
+- The gear's cards cut short: in two columns, each with its icon, as tall as its words need, a long name's level on a line of its own; a passive telling its own level's total alone.
+
 ## v0.9.1 · November 22, 2026
 
 ### New
