@@ -249,6 +249,8 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Defibrillator => SpriteId::IconDefibrillator,
             Weapon::Chainsaw => SpriteId::IconChainsaw,
             Weapon::C4 => SpriteId::IconC4,
+            Weapon::Napalm => SpriteId::IconNapalm,
+            Weapon::Fists => SpriteId::IconFists,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -262,6 +264,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
             Passive::Drain => SpriteId::IconDrain,
+            Passive::Stealth => SpriteId::IconStealth,
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
@@ -286,6 +289,7 @@ pub fn name(choice: Choice) -> String {
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
             Passive::Drain => fl!("passive-drain"),
+            Passive::Stealth => fl!("passive-stealth"),
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
@@ -313,6 +317,8 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Defibrillator => fl!("weapon-defibrillator"),
         Weapon::Chainsaw => fl!("weapon-chainsaw"),
         Weapon::C4 => fl!("weapon-c4"),
+        Weapon::Napalm => fl!("weapon-napalm"),
+        Weapon::Fists => fl!("weapon-fists"),
     }
 }
 
@@ -379,6 +385,7 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 | Passive::Wisdom
                 | Passive::Loot
                 | Passive::Glare
+                | Passive::Stealth
                 | Passive::HordeHunter => 10 * level,
                 // In tenths of HP a second.
                 Passive::Regeneration => 4 * level,
@@ -400,6 +407,7 @@ fn gain_of(choice: Choice, level: u8) -> String {
                 }
                 Passive::Glare => fl!("gain-glare", total = total),
                 Passive::Drain => fl!("gain-drain", total = total),
+                Passive::Stealth => fl!("gain-stealth", total = total),
                 Passive::HordeHunter => match level {
                     1 => fl!("gain-horde-hunter-1"),
                     2 => fl!("gain-horde-hunter-2", total = total),
@@ -450,6 +458,20 @@ fn later_weapon_gain(weapon: Weapon, level: u8) -> String {
             3 => fl!("gain-c4-3"),
             4 => fl!("gain-c4-4"),
             _ => fl!("gain-c4-5"),
+        },
+        Weapon::Napalm => match level {
+            1 => fl!("gain-napalm-1"),
+            2 => fl!("gain-napalm-2"),
+            3 => fl!("gain-napalm-3"),
+            4 => fl!("gain-napalm-4"),
+            _ => fl!("gain-napalm-5"),
+        },
+        Weapon::Fists => match level {
+            1 => fl!("gain-fists-1"),
+            2 => fl!("gain-fists-2"),
+            3 => fl!("gain-fists-3"),
+            4 => fl!("gain-fists-4"),
+            _ => fl!("gain-fists-5"),
         },
         _ => shuriken_gain(level),
     }

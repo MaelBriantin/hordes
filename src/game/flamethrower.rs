@@ -16,11 +16,11 @@ pub const BURN_EVERY: u32 = 8;
 /// How far ahead of the player's middle its nozzle is, in tiles: its fire starts there.
 pub const NOZZLE: f32 = 0.9;
 /// The seconds an empty tank takes to fill again, before Haste.
-const REFILL_SECONDS: u32 = 2;
-/// At the last level, how far the player goes between two fires of the trail, in tiles; how far
-/// each spreads, in tiles; and how many seconds it burns.
-pub const TRAIL_STEP: f32 = 0.8;
-pub const TRAIL_RADIUS: f32 = 0.6;
+const REFILL_SECONDS: u32 = 3;
+/// At the last level, how far the player goes between two drops of fire, in tiles; how far each
+/// spreads, in tiles; and how many seconds it burns.
+pub const TRAIL_STEP: f32 = 2.0;
+pub const TRAIL_RADIUS: f32 = 0.4;
 const TRAIL_SECONDS: u32 = 2;
 /// How fast its fire turns after the nearest enemy as it burns, in degrees a tick: 180° a second.
 pub const TURN_DEGREES: f32 = 6.0;
@@ -44,7 +44,7 @@ pub fn at(level: u8) -> Flamethrower {
     Flamethrower {
         range: if level >= 2 { 5.5 } else { 4.5 },
         damage: if level >= 3 { 3 } else { 2 },
-        tank: if level >= 4 { 5 } else { 3 } * second,
+        tank: if level >= 4 { 3 } else { 2 } * second,
         leaks: level >= 5,
     }
 }
@@ -129,8 +129,8 @@ mod tests {
     #[test]
     fn the_flamethrower_grows_with_its_levels() {
         let (first, last) = (at(1), at(5));
-        assert_eq!((first.range, first.damage, first.tank), (4.5, 2, 90));
-        assert_eq!((last.range, last.damage, last.tank), (5.5, 3, 150));
+        assert_eq!((first.range, first.damage, first.tank), (4.5, 2, 60));
+        assert_eq!((last.range, last.damage, last.tank), (5.5, 3, 90));
         assert!(last.leaks && !first.leaks);
     }
 }

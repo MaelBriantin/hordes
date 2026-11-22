@@ -1,16 +1,20 @@
 use super::super::Obstacle;
 use super::super::announce::{News, WeatherNews};
 use super::super::barricade;
+use super::super::baton;
 use super::super::body::fits;
 use super::super::build::{Action, BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::burst;
 use super::super::c4;
 use super::super::enemy::EnemyKind;
+use super::super::fists;
 use super::super::gem::Gem;
 use super::super::guns::{self, Bullet};
 use super::super::hammer;
+use super::super::machete;
 use super::super::mode::Mode;
-use super::super::progress::{Achievement, Progress, Unlock};
+use super::super::napalm;
+use super::super::progress::{Achievement, Progress};
 use super::super::spawn::{MARGIN, MAX_ENEMIES};
 use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -540,7 +544,7 @@ fn at_level_five_a_swing_strikes_ahead_behind_then_ahead() {
         (40 - 24, 40 - 12)
     );
     // The swing is over until the machete is ready again.
-    wait(&mut world, 20);
+    wait(&mut world, machete::cooldown() - 14);
     assert_eq!(
         (world.enemies[0].hp, world.enemies[1].hp),
         (40 - 24, 40 - 12)
@@ -699,21 +703,35 @@ fn drones_shoot_at_the_enemies_within_their_reach_again_and_again() {
 }
 
 #[test]
-fn a_drone_touched_by_an_enemy_breaks_and_repairs_in_three_seconds() {
+fn nothing_breaks_a_drone_its_shots_come_from_a_magazine_reloaded_once_empty() {
     let mut world = armed_with(Weapon::Drones, 1);
+    // Right where the drone comes: it shoots on, unharmed.
     let next = drones::positions(world.player.position, 1, drones::turn_per_tick(1))[0];
     world.enemies.push(enemy(EnemyKind::Abomination, next));
-    world.enemies[0].hp = 1_000;
-    world.enemies[0].stunned = 1_000;
-    wait(&mut world, 1);
-    assert!(world.drones()[0].1, "broken");
-    assert_eq!(world.enemies[0].hp, 1_000 - 4, "struck a last time");
-    // Out of the way, the drone repairs.
-    world.enemies[0].position = Vec2::new(150.0, 50.0);
-    wait(&mut world, 89);
-    assert!(world.drones()[0].1, "still broken");
-    wait(&mut world, 1);
-    assert!(!world.drones()[0].1, "repaired");
+    world.enemies[0].hp = 100_000;
+    world.enemies[0].stunned = u32::MAX;
+    let drone = |world: &World| world.ammo()[0];
+    let (weapon, full, _, reload) = {
+        let (weapon, magazine, full, reload) = drone(&world);
+        (weapon, magazine, full, reload)
+    };
+    assert_eq!(weapon, Weapon::Drones);
+    assert_eq!(full.rounds, 6, "six shots for one drone");
+    // A shot every 0.4 s: six, then the reload.
+    wait(&mut world, 12 * 5 + 1);
+    let (_, magazine, _, _) = drone(&world);
+    assert_eq!(magazine.rounds, 0);
+    assert!(magazine.reloading > 0, "reloading");
+    assert_eq!(reload, 90, "in three seconds");
+    // The last shot landed, none while reloading.
+    wait(&mut world, 10);
+    let hp = world.enemies[0].hp;
+    wait(&mut world, magazine.reloading - 11);
+    assert_eq!(world.enemies[0].hp, hp, "none while reloading");
+    wait(&mut world, 2);
+    assert_eq!(drone(&world).1.reloading, 0, "reloaded");
+    wait(&mut world, 12);
+    assert!(drone(&world).1.rounds < 6, "shooting on");
 }
 
 #[test]
@@ -1928,15 +1946,15 @@ fn the_flamethrower_burns_the_enemies_ahead_and_sets_them_on_fire_not_those_behi
 }
 
 #[test]
-fn the_flamethrower_s_tank_empties_in_three_seconds_and_fills_again_in_two() {
+fn the_flamethrower_s_tank_empties_in_two_seconds_and_fills_again_in_three() {
     let mut world = flaming(1);
-    wait(&mut world, 30 * 3);
+    wait(&mut world, 30 * 2);
     let tank = world.magazines[&Weapon::Flamethrower];
     assert_eq!(tank.rounds, 0);
     assert!(tank.reloading > 0);
     wait(&mut world, 1);
     assert!(!world.flaming, "empty");
-    wait(&mut world, 30 * 2);
+    wait(&mut world, 30 * 3);
     assert!(world.flaming, "full again");
 }
 
@@ -1973,7 +1991,7 @@ fn lit_by_one_enemy_the_flamethrower_burns_its_whole_tank() {
     wait(&mut world, 1);
     assert!(world.flaming, "lit by one");
     world.enemies.clear();
-    wait(&mut world, 30 * 3 - 2);
+    wait(&mut world, 30 * 2 - 2);
     assert!(world.flaming, "on, the tank not yet empty");
     wait(&mut world, 1);
     assert_eq!(world.magazines[&Weapon::Flamethrower].rounds, 0);
@@ -2022,16 +2040,19 @@ fn the_flamethrower_burns_in_the_dark_too() {
 }
 
 #[test]
-fn at_level_5_the_flamethrower_s_tank_leaks_a_trail_of_fires() {
+fn at_level_5_the_flamethrower_s_tank_leaks_drops_of_fire_apart() {
     let mut world = flaming(5);
     world.enemies.clear();
-    for _ in 0..15 {
+    for _ in 0..45 {
         world.spawn_debt = 0.0;
         world.update(moving(1.0, 0.0));
     }
-    assert!(world.puddles.len() >= 3, "{} fires", world.puddles.len());
+    assert!(world.puddles.len() >= 2, "{} drops", world.puddles.len());
     assert!(world.puddles.iter().all(|puddle| !puddle.burst));
     assert!(world.puddles.iter().all(|puddle| puddle.centre.x > 100.0));
+    // Drops, a couple of tiles apart, not a trail.
+    let apart = world.puddles[1].centre.x - world.puddles[0].centre.x;
+    assert!(apart >= flamethrower::TRAIL_STEP, "{apart}");
 }
 
 #[test]
@@ -2121,6 +2142,75 @@ fn the_hammer_lands_ahead_hurting_and_throwing_back_every_enemy_around_not_those
 }
 
 #[test]
+fn from_level_3_shocks_follow_the_hammer_s_blow_on_ahead_one_after_the_other_each_enemy_hit_once() {
+    let mut world = armed_with(Weapon::Hammer, 3);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // Where it lands, 2.5 tiles ahead; where its first shock does, 2 tiles on; its second; aside.
+    for (x, y) in [(102.5, 50.0), (104.5, 50.0), (106.5, 50.0), (104.5, 53.0)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1 + hammer::RAISE_TICKS);
+    assert_eq!(world.enemies[0].hp, 1_000 - 40, "the blow");
+    assert_eq!(world.enemies[2].hp, 1_000, "not yet");
+    wait(&mut world, hammer::SHOCK_EVERY * 2);
+    assert_eq!(world.enemies[2].hp, 1_000 - 40, "the second shock");
+    assert_eq!(world.enemies[0].hp, 1_000 - 40, "hit once");
+    assert_eq!(world.enemies[3].hp, 1_000, "aside");
+    assert!(!world.quake_waves.is_empty(), "their waves show");
+}
+
+#[test]
+fn below_level_3_no_shock_follows_the_hammer_s_blow() {
+    let mut world = armed_with(Weapon::Hammer, 2);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    for x in [102.5, 106.5] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(
+        &mut world,
+        1 + hammer::RAISE_TICKS + hammer::SHOCK_EVERY * 3,
+    );
+    assert_eq!(world.enemies[0].hp, 1_000 - 40, "the blow");
+    assert_eq!(world.enemies[1].hp, 1_000, "no shock");
+}
+
+#[test]
+fn at_level_5_the_hammer_s_shocks_go_left_and_right_too() {
+    let mut world = armed_with(Weapon::Hammer, 5);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // Where it lands; 4 tiles to its left and its right, beyond the blow, where its second
+    // shocks land.
+    for (x, y) in [(102.5, 50.0), (102.5, 46.0), (102.5, 54.0)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1 + hammer::RAISE_TICKS);
+    assert_eq!(world.enemies[1].hp, 1_000, "beyond the blow");
+    wait(&mut world, hammer::SHOCK_EVERY * 2);
+    assert!(world.enemies.iter().all(|enemy| enemy.hp < 1_000));
+}
+
+#[test]
 fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher_and_the_c4() {
     let mut world = armed_with(Weapon::Crowbar, 1);
     world.next_horde = u32::MAX;
@@ -2164,6 +2254,68 @@ fn charged(level: u8) -> World {
     world
 }
 
+/// The napalm at `level`, a crowd stunned and tough 5 tiles right of the player, one apart
+/// off its strip, and one well out of reach.
+fn napalm_on_a_crowd(level: u8) -> World {
+    let mut world = armed_with(Weapon::Napalm, level);
+    world.next_horde = u32::MAX;
+    for (x, y) in [
+        (105.0, 50.0),
+        (105.5, 50.0),
+        (105.0, 50.5),
+        (104.0, 53.0),
+        (130.0, 50.0),
+    ] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    world
+}
+
+#[test]
+fn the_napalm_drops_a_line_of_bombs_on_the_crowd_setting_its_strip_on_fire() {
+    let mut world = napalm_on_a_crowd(1);
+    wait(&mut world, 1);
+    assert_eq!(world.bombs.len(), 5, "a bomb a tile, 5 tiles");
+    // The last one lands once the others have, a bomb every few ticks.
+    wait(&mut world, napalm::FALL_TICKS + 4 * napalm::BOMB_EVERY);
+    assert!(world.bombs.is_empty(), "all landed");
+    let crowd = &world.enemies[..3];
+    assert!(
+        crowd
+            .iter()
+            .all(|enemy| enemy.hp < 1_000 && enemy.burning > 0)
+    );
+    assert_eq!(world.enemies[3].hp, 1_000, "off its strip");
+    assert_eq!(world.enemies[4].hp, 1_000, "out of reach");
+    assert_eq!(world.puddles.len(), 5, "its strip burning");
+    wait(&mut world, napalm::fire_lasts());
+    assert!(world.puddles.is_empty(), "burnt out");
+}
+
+#[test]
+fn the_napalm_strikes_nothing_with_no_enemy_within_reach() {
+    let mut world = napalm_on_a_crowd(1);
+    world.enemies.clear();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(130.0, 50.0)));
+    wait(&mut world, 30);
+    assert!(world.bombs.is_empty(), "none within reach");
+}
+
+#[test]
+fn at_level_5_the_napalm_drops_two_lines_crossed() {
+    let mut world = napalm_on_a_crowd(5);
+    wait(&mut world, 1);
+    assert_eq!(world.bombs.len(), 14, "two lines of 7");
+}
+
 #[test]
 fn the_c4_sets_a_charge_down_at_the_player_s_feet_only_with_an_enemy_near() {
     let mut world = armed_with(Weapon::C4, 1);
@@ -2188,11 +2340,11 @@ fn a_charge_blows_after_its_fuse_hurting_and_throwing_back_what_is_around_not_be
     assert_eq!(world.enemies[0].hp, 1_000, "not yet");
     wait(&mut world, 1);
     assert!(world.charges.is_empty() && world.c4_blasts.len() == 1);
-    assert_eq!(world.enemies[0].hp, 1_000 - 40);
-    assert_eq!(world.enemies[1].hp, 1_000 - 40);
+    assert_eq!(world.enemies[0].hp, 1_000 - 25);
+    assert_eq!(world.enemies[1].hp, 1_000 - 25);
     assert_eq!(world.enemies[2].hp, 1_000, "beyond its blast");
     wait(&mut world, c4::WAVE_TICKS);
-    assert!(world.enemies[1].position.x > 103.5, "thrown back");
+    assert!(world.enemies[1].position.x > 104.5, "thrown back 3 tiles");
 }
 
 #[test]
@@ -2240,6 +2392,39 @@ fn the_baton_thrusts_straight_ahead_hurting_and_paralysing_the_enemies_on_its_li
     assert!(world.enemies[0].stunned > 0, "paralysed");
     assert!(world.enemies[0].shocked > 0, "shown shocked");
     assert_eq!(world.enemies[2].stunned, 0);
+}
+
+#[test]
+fn from_its_third_level_every_third_strike_of_the_baton_is_a_whirlwind_hitting_all_around() {
+    let mut world = armed_with(Weapon::Baton, 3);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // On its line; behind, within the whirlwind; aside, out of it.
+    for (x, y) in [(101.5, 50.0), (98.5, 50.0), (100.0, 53.5)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    let every = world.player.build.cooldown(baton::at(3).every);
+    wait(&mut world, 1 + every);
+    assert_eq!(world.enemies[1].hp, 1_000, "two thrusts ahead");
+    assert!(!world.thrust.is_some_and(|thrust| thrust.whirl));
+    wait(&mut world, every);
+    assert!(world.thrust.is_some_and(|thrust| thrust.whirl), "the third");
+    assert_eq!(
+        world.enemies[1].hp,
+        1_000 - 22,
+        "behind, hit by the whirlwind"
+    );
+    assert_eq!(world.enemies[2].hp, 1_000, "out of it");
+    // The player shows spinning round, from the way they face.
+    assert_eq!(world.hero_facing(), Facing::Right);
+    wait(&mut world, 3);
+    assert_eq!(world.hero_facing(), Facing::Up);
 }
 
 #[test]
@@ -2373,17 +2558,19 @@ fn the_ninja_dodges_a_blow_now_and_then_taking_nothing() {
 }
 
 #[test]
-fn seven_hundred_enemies_felled_in_a_run_unlock_the_classic_hero() {
+fn seven_hundred_enemies_felled_in_a_run_unlock_the_veteran_and_the_napalm() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
     world.next_horde = u32::MAX;
     world.progress = Progress::default();
     world.kills = 699;
     wait(&mut world, 1);
-    assert!(!world.progress.has(Unlock::Skin(Skin::Classic)));
+    assert!(!world.progress.achieved.contains(&Achievement::Legend));
+    assert!(!world.progress.deals(Choice::Weapon(Weapon::Napalm)));
     world.kills = 700;
     wait(&mut world, 1);
-    assert!(world.progress.has(Unlock::Skin(Skin::Classic)));
+    assert!(world.progress.achieved.contains(&Achievement::Legend));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Napalm)));
 }
 
 #[test]
@@ -2460,6 +2647,17 @@ fn the_dawn_reached_with_a_hero_unlocks_their_second_colours() {
 }
 
 #[test]
+fn a_hero_once_with_one_outfit_has_their_second_unlocked_by_the_dawn_too() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::default());
+    world.announcement = None;
+    assert!(!world.progress.wears(Skin::Survivor, 1));
+    world.ticks = weather::dawn() + weather::daybreak() - 1;
+    world.update(Input::default());
+    assert!(world.survived());
+    assert!(world.progress.wears(Skin::Survivor, 1));
+}
+
+#[test]
 fn every_hero_plays_a_minute_of_a_run_taking_every_card_without_failing() {
     for (seed, hero) in (1_u64..).zip(Skin::ALL) {
         let mut world = World::with(seed, Mode::Standard, false, Progress::everything());
@@ -2508,4 +2706,168 @@ fn the_chainsaw_grinds_what_touches_it_ahead_a_bite_every_few_ticks_slowing_it()
     assert_eq!(world.enemies[1].hp, 1_000, "behind, untouched");
     wait(&mut world, 6);
     assert_eq!(world.enemies[0].hp, 1_000 - 8, "the next bite, 0.2 s on");
+}
+
+#[test]
+fn the_chainsaw_s_tank_empties_only_as_it_grinds_and_fills_again_in_three_seconds() {
+    let mut world = armed_with(Weapon::Chainsaw, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    wait(&mut world, 30);
+    let full = world.ammo()[0].2;
+    assert_eq!(
+        world.ammo()[0].1.rounds,
+        full,
+        "nothing to grind: still full"
+    );
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(101.2, 50.0)));
+    world.enemies[0].hp = 100_000;
+    world.enemies[0].stunned = u32::MAX;
+    wait(&mut world, 30 * 5);
+    let (_, tank, _, _) = world.ammo()[0];
+    assert_eq!(tank.rounds, 0);
+    assert!(tank.reloading > 0, "filling again");
+    // Empty, it bites no more, nor slows, until full again.
+    let hp = world.enemies[0].hp;
+    wait(&mut world, 30 * 3 - 1);
+    assert!(!world.sawing);
+    assert_eq!(world.enemies[0].hp, hp);
+    wait(&mut world, 1);
+    assert_eq!(world.ammo()[0].1.rounds, full, "full again");
+    wait(&mut world, 1);
+    assert!(world.sawing);
+    assert!(world.enemies[0].hp < hp);
+}
+
+#[test]
+fn nothing_hurts_the_player_while_their_chainsaw_grinds_its_tank_empty_it_does_again() {
+    let mut world = armed_with(Weapon::Chainsaw, 1);
+    world.next_horde = u32::MAX;
+    world.player.facing = Facing::Right;
+    // One ahead, ground; one touching the player from behind.
+    for x in [101.2, 99.4] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 100_000;
+        enemy.stunned = u32::MAX;
+    }
+    let hp = world.player.hp;
+    wait(&mut world, 30 * 5 - 1);
+    assert!(world.sawing);
+    assert_eq!(world.player.hp, hp, "charging, unhurt");
+    wait(&mut world, 2);
+    assert!(!world.sawing, "its tank empty");
+    assert!(world.player.hp < hp, "hurt again");
+}
+
+#[test]
+fn from_level_4_the_shurikens_ricochet_on_an_enemy_off_their_line() {
+    for (level, ricochets) in [(3, false), (4, true)] {
+        let mut world = armed_with(Weapon::Shuriken, level);
+        world.next_horde = u32::MAX;
+        // One within range, shot at; one beyond range, off its line, near it.
+        for (x, y) in [(107.0, 50.0), (109.0, 52.5)] {
+            world
+                .enemies
+                .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+        }
+        for enemy in &mut world.enemies {
+            enemy.hp = 100_000;
+            enemy.stunned = u32::MAX;
+        }
+        wait(&mut world, 30);
+        assert!(world.enemies[0].hp < 100_000, "level {level}: shot at");
+        assert_eq!(
+            world.enemies[1].hp < 100_000,
+            ricochets,
+            "level {level}: ricocheted on"
+        );
+    }
+}
+
+#[test]
+fn the_fists_punch_the_nearest_enemy_every_third_punch_heavier_throwing_it_back() {
+    let mut world = armed_with(Weapon::Fists, 1);
+    world.next_horde = u32::MAX;
+    // Within arm's reach, behind the player; further, out of reach.
+    for x in [99.0, 102.0] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 8, "a punch, whichever way");
+    assert_eq!(world.enemies[1].hp, 1_000, "out of reach");
+    let every = world.player.build.cooldown(fists::at(1).every);
+    wait(&mut world, every);
+    assert_eq!(world.enemies[0].hp, 1_000 - 16);
+    assert!(!world.punch.is_some_and(|punch| punch.heavy));
+    wait(&mut world, every);
+    assert_eq!(world.enemies[0].hp, 1_000 - 32, "the third, twice as hard");
+    assert!(world.punch.is_some_and(|punch| punch.heavy));
+    wait(&mut world, fists::KNOCK_TICKS);
+    assert!(world.enemies[0].position.x < 98.5, "thrown back");
+}
+
+#[test]
+fn with_stealth_the_player_goes_faster_with_their_torch_out() {
+    let speed = |stealth: bool, torch: bool| {
+        let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+        disarm(&mut world);
+        world.next_horde = u32::MAX;
+        world.ticks = 30 * 40;
+        world.torch_switch = torch;
+        if stealth {
+            world.player.build.take(Choice::Passive(Passive::Stealth));
+        }
+        let from = world.player.position.x;
+        world.update(moving(1.0, 0.0));
+        world.player.position.x - from
+    };
+    let plain = speed(false, false);
+    assert!(
+        (speed(true, false) - plain * 1.1).abs() < 1e-4,
+        "10% faster in the dark"
+    );
+    assert!(
+        (speed(true, true) - speed(false, true)).abs() < 1e-6,
+        "not with the torch lit"
+    );
+}
+
+#[test]
+fn three_minutes_with_the_torch_out_in_a_run_unlock_the_infiltrator_and_stealth() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.unhurt = true;
+    world.progress = Progress::default();
+    world.ticks = 30 * 40;
+    world.torch_switch = false;
+    world.announcement = None;
+    // Until the tick asked for: an announcement holds the ticks back a while.
+    let until = |world: &mut World, tick: u32| {
+        while world.ticks < tick {
+            world.spawn_debt = 0.0;
+            world.update(Input::default());
+        }
+    };
+    let start = world.ticks;
+    until(&mut world, start + 30 * 180 - 1);
+    assert!(!world.progress.achieved.contains(&Achievement::Shadow));
+    until(&mut world, start + 30 * 180);
+    assert!(world.progress.achieved.contains(&Achievement::Shadow));
+    assert!(world.progress.deals(Choice::Passive(Passive::Stealth)));
+    assert_eq!(Skin::Infiltrator.achievement(), Some(Achievement::Shadow));
+    assert_eq!(Skin::Infiltrator.weapon(), Weapon::Fists);
+    assert!(Skin::Infiltrator.perk().night_vision());
 }

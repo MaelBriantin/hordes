@@ -5,7 +5,9 @@ mod blows;
 mod c4;
 mod figures;
 mod fire;
+mod fists;
 mod gear;
+mod napalm;
 mod ninja;
 mod saw;
 mod stabs;
@@ -45,6 +47,8 @@ fn sway(frame: u32, (x, y): (i32, i32)) -> f32 {
     (time * 0.21 + seed).sin() * 0.6 + (time * 0.67 + seed * 1.7).sin() * 0.4
 }
 
+/// How far the infiltrator sees around them, their torch out, in tiles: less than a torch.
+const NIGHT_VISION_RADIUS: f32 = 7.0;
 /// The ground: dark grass, and the earth showing through it, out of 256 pixels.
 const GRASS: Color = Color::Rgb(32, 46, 28);
 const EARTH: Color = Color::Rgb(44, 38, 28);
@@ -128,8 +132,6 @@ const TRACER: [Color; 3] = [
     Color::Rgb(230, 140, 60),
     Color::Rgb(130, 70, 30),
 ];
-/// The colour of a broken drone, repairing.
-const BROKEN: Color = Color::Rgb(75, 75, 82);
 /// A barricade that can't be set down, blinking every so many ticks.
 const REFUSED: Color = Color::Rgb(220, 50, 50);
 const REFUSED_BLINK: u32 = 3;
@@ -229,6 +231,7 @@ impl<'a> Canvas<'a> {
         self.paint_thrust(world);
         self.paint_shock(world);
         self.paint_stabs(world, blood);
+        self.paint_punch(world);
     }
 
     /// A sprite with its top-left pixel at a pixel of the map.
@@ -453,6 +456,13 @@ impl Canvas<'_> {
                 world.light_radius(),
             ));
         }
+        // The infiltrator, their torch out, sees around them in green.
+        if world.player.build.hero().perk().night_vision() && world.torch_on() == Some(false) {
+            lights.push(night::Light::night_vision(
+                pixel(world.player.position),
+                NIGHT_VISION_RADIUS,
+            ));
+        }
         let campfires = self.paint_healing(world, frame);
         let (shining, mut halos) = Canvas::shines(world, &campfires, frame);
         lights.extend(campfires);
@@ -498,12 +508,8 @@ pub fn render_map(
         night::paint_spurt(&mut canvas, centre, since, hurt_at, blood);
     }
     canvas.paint_strikes(world, view.outfit(), blood);
-    for (drone, broken) in world.drones() {
-        let look = Look {
-            tint: broken.then_some(BROKEN),
-            ..Look::plain(SpriteId::Drone)
-        };
-        canvas.paint_at(look, drone);
+    for drone in world.drones() {
+        canvas.paint_at(Look::plain(SpriteId::Drone), drone);
     }
 
     // The night falls on all of that; what glows is painted after it, untouched.
@@ -529,7 +535,8 @@ pub fn render_map(
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
     canvas.paint_flamethrower(world, frame);
-    canvas.paint_c4_blasts(world);
+    canvas.paint_fireballs(world);
+    canvas.paint_bombs(world);
     // Each gem on screen glows its colour around it, then shows over its glow; each charge's
     // light, lit, too.
     night::paint_glows(&mut canvas, &glows);
@@ -622,7 +629,10 @@ pub fn render_death_scene(
         })
         .collect();
     if dawn {
-        figures.push((player.position, sprites::hero(player.facing, view.outfit())));
+        figures.push((
+            player.position,
+            sprites::hero(world.hero_facing(), view.outfit()),
+        ));
     } else {
         night::paint_stains(&mut canvas, &[pool], world.ticks(), blood);
     }

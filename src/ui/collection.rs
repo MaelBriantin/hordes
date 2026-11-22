@@ -8,9 +8,9 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
-use super::sprites::{self, SpriteId, Sprites};
-use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, skins, thousands};
-use crate::game::{COLLECTION, Choice, Facing, Progress, Rarity, Unlock};
+use super::sprites::{SpriteId, Sprites};
+use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, thousands};
+use crate::game::{COLLECTION, Choice, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
 /// rows, a corner's row.
@@ -396,7 +396,6 @@ fn icon(unlock: Unlock) -> SpriteId {
         Unlock::Card(choice) => level_up::icon(choice),
         Unlock::Reroll => SpriteId::IconReroll,
         Unlock::Arcade => SpriteId::IconArcade,
-        Unlock::Skin(skin) => sprites::hero(Facing::Down, sprites::Outfit::plain(skin)).sprite,
     }
 }
 
@@ -410,7 +409,6 @@ fn kind(unlock: Unlock) -> String {
         Unlock::Card(Choice::Heal) => fl!("heal"),
         Unlock::Reroll => fl!("collection-kind-bonus"),
         Unlock::Arcade => fl!("collection-kind-mode"),
-        Unlock::Skin(_) => fl!("card-skin"),
     }
 }
 
@@ -420,7 +418,6 @@ fn name(unlock: Unlock) -> String {
         Unlock::Card(choice) => level_up::name(choice),
         Unlock::Reroll => fl!("collection-reroll"),
         Unlock::Arcade => fl!("collection-arcade"),
-        Unlock::Skin(skin) => skins::name(skin),
     }
 }
 
@@ -471,7 +468,7 @@ mod tests {
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
-        assert_eq!(in_a_row(108), 9, "three even rows rather than 10, 10 and 5");
+        assert_eq!(in_a_row(108), 10, "three rows of 10, 10 and 8");
         assert_eq!(in_a_row(63), 5);
         assert_eq!(height(108, 40), height_of(3));
         assert_eq!(height(108, 20), height_of(1));

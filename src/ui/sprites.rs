@@ -19,6 +19,9 @@ pub enum SpriteId {
     HeroBack,
     /// Facing right.
     HeroSide,
+    HeroBikerFront,
+    HeroBikerBack,
+    HeroBikerSide,
     ClassicFront,
     ClassicBack,
     /// Facing right.
@@ -31,10 +34,16 @@ pub enum SpriteId {
     ExterminatorBack,
     /// Facing right.
     ExterminatorSide,
+    ExterminatorPhysicistFront,
+    ExterminatorPhysicistBack,
+    ExterminatorPhysicistSide,
     DemolisherFront,
     DemolisherBack,
     /// Facing right.
     DemolisherSide,
+    DemolisherSmithFront,
+    DemolisherSmithBack,
+    DemolisherSmithSide,
     AgentUniformFront,
     AgentUniformBack,
     /// Facing right.
@@ -47,10 +56,19 @@ pub enum SpriteId {
     NinjaBack,
     /// Facing right.
     NinjaSide,
+    NinjaScarletFront,
+    NinjaScarletBack,
+    NinjaScarletSide,
     MedicFront,
     MedicBack,
     /// Facing right.
     MedicSide,
+    InfiltratorFront,
+    InfiltratorBack,
+    InfiltratorSide,
+    InfiltratorDarkFront,
+    InfiltratorDarkBack,
+    InfiltratorDarkSide,
     MedicGreenFront,
     MedicGreenBack,
     /// Facing right.
@@ -103,6 +121,7 @@ pub enum SpriteId {
     IconRegeneration,
     IconGlare,
     IconDrain,
+    IconStealth,
     IconDash,
     IconFlamethrower,
     IconHammer,
@@ -112,7 +131,9 @@ pub enum SpriteId {
     IconShuriken,
     IconDefibrillator,
     IconChainsaw,
+    IconFists,
     IconC4,
+    IconNapalm,
     IconBarricade,
     IconIllumination,
     IconHeal,
@@ -130,10 +151,13 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 96] = [
+    const ALL: [SpriteId; 117] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
+        SpriteId::HeroBikerFront,
+        SpriteId::HeroBikerBack,
+        SpriteId::HeroBikerSide,
         SpriteId::ClassicFront,
         SpriteId::ClassicBack,
         SpriteId::ClassicSide,
@@ -143,9 +167,15 @@ impl SpriteId {
         SpriteId::ExterminatorFront,
         SpriteId::ExterminatorBack,
         SpriteId::ExterminatorSide,
+        SpriteId::ExterminatorPhysicistFront,
+        SpriteId::ExterminatorPhysicistBack,
+        SpriteId::ExterminatorPhysicistSide,
         SpriteId::DemolisherFront,
         SpriteId::DemolisherBack,
         SpriteId::DemolisherSide,
+        SpriteId::DemolisherSmithFront,
+        SpriteId::DemolisherSmithBack,
+        SpriteId::DemolisherSmithSide,
         SpriteId::AgentUniformFront,
         SpriteId::AgentUniformBack,
         SpriteId::AgentUniformSide,
@@ -155,9 +185,18 @@ impl SpriteId {
         SpriteId::NinjaFront,
         SpriteId::NinjaBack,
         SpriteId::NinjaSide,
+        SpriteId::NinjaScarletFront,
+        SpriteId::NinjaScarletBack,
+        SpriteId::NinjaScarletSide,
         SpriteId::MedicFront,
         SpriteId::MedicBack,
         SpriteId::MedicSide,
+        SpriteId::InfiltratorFront,
+        SpriteId::InfiltratorBack,
+        SpriteId::InfiltratorSide,
+        SpriteId::InfiltratorDarkFront,
+        SpriteId::InfiltratorDarkBack,
+        SpriteId::InfiltratorDarkSide,
         SpriteId::MedicGreenFront,
         SpriteId::MedicGreenBack,
         SpriteId::MedicGreenSide,
@@ -204,6 +243,7 @@ impl SpriteId {
         SpriteId::IconRegeneration,
         SpriteId::IconGlare,
         SpriteId::IconDrain,
+        SpriteId::IconStealth,
         SpriteId::IconDash,
         SpriteId::IconFlamethrower,
         SpriteId::IconHammer,
@@ -213,7 +253,9 @@ impl SpriteId {
         SpriteId::IconShuriken,
         SpriteId::IconDefibrillator,
         SpriteId::IconChainsaw,
+        SpriteId::IconFists,
         SpriteId::IconC4,
+        SpriteId::IconNapalm,
         SpriteId::IconBarricade,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
@@ -229,11 +271,15 @@ impl SpriteId {
         SpriteId::Title,
     ];
 
+    #[allow(clippy::too_many_lines, reason = "an arm a sprite")]
     fn name(self) -> &'static str {
         match self {
             SpriteId::HeroFront => "hero_front",
             SpriteId::HeroBack => "hero_back",
             SpriteId::HeroSide => "hero_side",
+            SpriteId::HeroBikerFront => "hero_biker_front",
+            SpriteId::HeroBikerBack => "hero_biker_back",
+            SpriteId::HeroBikerSide => "hero_biker_side",
             SpriteId::ClassicFront => "classic_front",
             SpriteId::ClassicBack => "classic_back",
             SpriteId::ClassicSide => "classic_side",
@@ -243,9 +289,15 @@ impl SpriteId {
             SpriteId::ExterminatorFront => "exterminator_front",
             SpriteId::ExterminatorBack => "exterminator_back",
             SpriteId::ExterminatorSide => "exterminator_side",
+            SpriteId::ExterminatorPhysicistFront => "exterminator_physicist_front",
+            SpriteId::ExterminatorPhysicistBack => "exterminator_physicist_back",
+            SpriteId::ExterminatorPhysicistSide => "exterminator_physicist_side",
             SpriteId::DemolisherFront => "demolisher_front",
             SpriteId::DemolisherBack => "demolisher_back",
             SpriteId::DemolisherSide => "demolisher_side",
+            SpriteId::DemolisherSmithFront => "demolisher_smith_front",
+            SpriteId::DemolisherSmithBack => "demolisher_smith_back",
+            SpriteId::DemolisherSmithSide => "demolisher_smith_side",
             SpriteId::AgentUniformFront => "agent_uniform_front",
             SpriteId::AgentUniformBack => "agent_uniform_back",
             SpriteId::AgentUniformSide => "agent_uniform_side",
@@ -255,9 +307,18 @@ impl SpriteId {
             SpriteId::NinjaFront => "ninja_front",
             SpriteId::NinjaBack => "ninja_back",
             SpriteId::NinjaSide => "ninja_side",
+            SpriteId::NinjaScarletFront => "ninja_scarlet_front",
+            SpriteId::NinjaScarletBack => "ninja_scarlet_back",
+            SpriteId::NinjaScarletSide => "ninja_scarlet_side",
             SpriteId::MedicFront => "medic_front",
             SpriteId::MedicBack => "medic_back",
             SpriteId::MedicSide => "medic_side",
+            SpriteId::InfiltratorFront => "infiltrator_front",
+            SpriteId::InfiltratorBack => "infiltrator_back",
+            SpriteId::InfiltratorSide => "infiltrator_side",
+            SpriteId::InfiltratorDarkFront => "infiltrator_dark_front",
+            SpriteId::InfiltratorDarkBack => "infiltrator_dark_back",
+            SpriteId::InfiltratorDarkSide => "infiltrator_dark_side",
             SpriteId::MedicGreenFront => "medic_green_front",
             SpriteId::MedicGreenBack => "medic_green_back",
             SpriteId::MedicGreenSide => "medic_green_side",
@@ -304,6 +365,7 @@ impl SpriteId {
             SpriteId::IconRegeneration => "icon_regeneration",
             SpriteId::IconGlare => "icon_glare",
             SpriteId::IconDrain => "icon_drain",
+            SpriteId::IconStealth => "icon_stealth",
             SpriteId::IconDash => "icon_dash",
             SpriteId::IconFlamethrower => "icon_flamethrower",
             SpriteId::IconHammer => "icon_hammer",
@@ -313,7 +375,9 @@ impl SpriteId {
             SpriteId::IconShuriken => "icon_shuriken",
             SpriteId::IconDefibrillator => "icon_defibrillator",
             SpriteId::IconChainsaw => "icon_chainsaw",
+            SpriteId::IconFists => "icon_fists",
             SpriteId::IconC4 => "icon_c4",
+            SpriteId::IconNapalm => "icon_napalm",
             SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",
@@ -394,25 +458,35 @@ pub struct Outfit {
     pub colours: u8,
 }
 
-impl Outfit {
-    /// A hero in their first colours.
-    pub fn plain(skin: Skin) -> Self {
-        Self { skin, colours: 0 }
-    }
+/// How many colours a hero comes in: two each, their own and a second; the infiltrator one so
+/// far.
+pub fn colours_of(skin: Skin) -> u8 {
+    if skin == Skin::Infiltrator { 1 } else { 2 }
 }
 
-/// How many colours a hero comes in: the veteran, the special agent and the medic two, the others one.
-pub fn colours_of(skin: Skin) -> u8 {
-    if matches!(skin, Skin::Classic | Skin::Agent | Skin::Medic) {
-        2
-    } else {
-        1
+/// The hero, as `outfit` says, turned the way they face, in the dark or not: the infiltrator's
+/// goggles over their eyes once the torch is out.
+pub fn hero_in(facing: Facing, outfit: Outfit, dark: bool) -> Look {
+    let look = hero(facing, outfit);
+    if !(dark && outfit.skin == Skin::Infiltrator) {
+        return look;
     }
+    let sprite = match look.sprite {
+        SpriteId::InfiltratorFront => SpriteId::InfiltratorDarkFront,
+        SpriteId::InfiltratorBack => SpriteId::InfiltratorDarkBack,
+        _ => SpriteId::InfiltratorDarkSide,
+    };
+    Look { sprite, ..look }
 }
 
 /// The hero, as `outfit` says, turned the way they face.
 pub fn hero(facing: Facing, outfit: Outfit) -> Look {
     let (front, back, side) = match outfit.skin {
+        Skin::Survivor if outfit.colours == 1 => (
+            SpriteId::HeroBikerFront,
+            SpriteId::HeroBikerBack,
+            SpriteId::HeroBikerSide,
+        ),
         Skin::Survivor => (SpriteId::HeroFront, SpriteId::HeroBack, SpriteId::HeroSide),
         Skin::Classic if outfit.colours == 1 => (
             SpriteId::ClassicBareFront,
@@ -424,10 +498,20 @@ pub fn hero(facing: Facing, outfit: Outfit) -> Look {
             SpriteId::ClassicBack,
             SpriteId::ClassicSide,
         ),
+        Skin::Exterminator if outfit.colours == 1 => (
+            SpriteId::ExterminatorPhysicistFront,
+            SpriteId::ExterminatorPhysicistBack,
+            SpriteId::ExterminatorPhysicistSide,
+        ),
         Skin::Exterminator => (
             SpriteId::ExterminatorFront,
             SpriteId::ExterminatorBack,
             SpriteId::ExterminatorSide,
+        ),
+        Skin::Demolisher if outfit.colours == 1 => (
+            SpriteId::DemolisherSmithFront,
+            SpriteId::DemolisherSmithBack,
+            SpriteId::DemolisherSmithSide,
         ),
         Skin::Demolisher => (
             SpriteId::DemolisherFront,
@@ -444,6 +528,11 @@ pub fn hero(facing: Facing, outfit: Outfit) -> Look {
             SpriteId::AgentBack,
             SpriteId::AgentSide,
         ),
+        Skin::Ninja if outfit.colours == 1 => (
+            SpriteId::NinjaScarletFront,
+            SpriteId::NinjaScarletBack,
+            SpriteId::NinjaScarletSide,
+        ),
         Skin::Ninja => (
             SpriteId::NinjaFront,
             SpriteId::NinjaBack,
@@ -458,6 +547,11 @@ pub fn hero(facing: Facing, outfit: Outfit) -> Look {
             SpriteId::MedicFront,
             SpriteId::MedicBack,
             SpriteId::MedicSide,
+        ),
+        Skin::Infiltrator => (
+            SpriteId::InfiltratorFront,
+            SpriteId::InfiltratorBack,
+            SpriteId::InfiltratorSide,
         ),
     };
     match facing {
@@ -690,6 +784,50 @@ impl Sprite {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_hero_but_the_infiltrator_comes_in_two_outfits_each_its_own_sprites_every_way() {
+        assert_eq!(colours_of(Skin::Infiltrator), 1, "one so far");
+        for skin in Skin::ALL
+            .into_iter()
+            .filter(|skin| *skin != Skin::Infiltrator)
+        {
+            assert_eq!(colours_of(skin), 2);
+            let looks = |colours| {
+                [Facing::Down, Facing::Up, Facing::Right]
+                    .map(|facing| hero(facing, Outfit { skin, colours }).sprite)
+            };
+            let (first, second) = (looks(0), looks(1));
+            assert!(
+                first.iter().all(|sprite| !second.contains(sprite)),
+                "{skin:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_infiltrator_s_goggles_come_down_over_their_eyes_in_the_dark() {
+        let outfit = Outfit {
+            skin: Skin::Infiltrator,
+            colours: 0,
+        };
+        for facing in [Facing::Down, Facing::Up, Facing::Right, Facing::Left] {
+            let (lit, dark) = (
+                hero_in(facing, outfit, false).sprite,
+                hero_in(facing, outfit, true).sprite,
+            );
+            assert_eq!(lit, hero(facing, outfit).sprite);
+            assert_ne!(lit, dark, "{facing:?}");
+        }
+        let survivor = Outfit {
+            skin: Skin::Survivor,
+            colours: 0,
+        };
+        assert_eq!(
+            hero_in(Facing::Down, survivor, true).sprite,
+            hero(Facing::Down, survivor).sprite
+        );
+    }
 
     const PALETTE_ONLY: &str = "palette\nA 1 2 3  a comment\n\n";
 

@@ -68,8 +68,7 @@ impl Canvas<'_> {
     pub(super) fn blast_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
         let (colour, strength, reach) = BLAST_HALO;
         world
-            .c4_blasts
-            .iter()
+            .fireballs()
             .filter(|blast| blast.age < FIREBALL_TICKS)
             .map(|blast| {
                 let centre = pixel(blast.at);
@@ -89,8 +88,8 @@ impl Canvas<'_> {
 
     /// The blasts: a white flash over the whole blast, then a fireball shrinking, red, orange,
     /// a yellow heart; smoke rising from it, thinning out.
-    pub(super) fn paint_c4_blasts(&mut self, world: &World) {
-        for blast in &world.c4_blasts {
+    pub(super) fn paint_fireballs(&mut self, world: &World) {
+        for blast in world.fireballs() {
             let centre = pixel(blast.at);
             let reach = blast.radius * 2.0;
             if blast.age < FLASH_TICKS {

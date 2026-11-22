@@ -17,7 +17,7 @@ use super::{ViewState, achievement, level_up, pixels};
 use crate::game::{Facing, Perk, Progress};
 
 /// Every skin, in the order the tiles show them.
-pub const SKINS: [Skin; 7] = Skin::ALL;
+pub const SKINS: [Skin; 8] = Skin::ALL;
 /// The frames the hero picked waits, from the front, before turning round: a second; and the
 /// frames they show each way as they turn.
 const TURN_AFTER: u32 = 30;
@@ -120,24 +120,23 @@ pub fn render(
     let colours_locked =
         unlocked(progress, picked_skin) && !progress.wears(picked_skin, colours[picked]);
     let below = y + TILE_HEIGHT + 1;
-    tell(
-        buffer,
-        area,
-        progress,
-        (SKINS[picked], worn, colours_locked),
-        below,
-    );
+    let shown = Outfit {
+        skin: picked_skin,
+        colours: colours[picked],
+    };
+    tell(buffer, area, progress, (shown, worn, colours_locked), below);
 }
 
-/// The box under the tiles, at row `y`, telling `skin`: its name, where it comes from, and, a
-/// row apart, worn, unlocked or locked.
+/// The box under the tiles, at row `y`, telling the hero in `outfit`: the outfit's name, where
+/// the hero comes from, and, a row apart, worn, unlocked or locked.
 fn tell(
     buffer: &mut Buffer,
     area: Rect,
     progress: &Progress,
-    (skin, worn, colours_locked): (Skin, Skin, bool),
+    (outfit, worn, colours_locked): (Outfit, Skin, bool),
     y: u16,
 ) {
+    let skin = outfit.skin;
     let has = unlocked(progress, skin);
     let lines = words(skin);
     let longest = SKINS
@@ -149,6 +148,13 @@ fn tell(
                 .flat_map(|skin| [weapon_line(*skin), stats_line(*skin), perk_line(*skin)]),
         )
         .chain([fl!("skin-colours-locked")])
+        .chain(SKINS.iter().map(|skin| {
+            let outfit = Outfit {
+                skin: *skin,
+                colours: 1,
+            };
+            format!("{}  {}", outfit_name(outfit), fl!("card-skin"))
+        }))
         .map(|line| u16::try_from(line.chars().count()).unwrap_or(u16::MAX))
         .max()
         .unwrap_or(0);
@@ -169,7 +175,7 @@ fn tell(
     buffer.set_string(
         left,
         top,
-        name(skin),
+        outfit_name(outfit),
         ground.fg(name_colour).add_modifier(Modifier::BOLD),
     );
     let kind = fl!("card-skin");
@@ -248,7 +254,27 @@ fn perk_line(skin: Skin) -> String {
         Perk::Reflexes => fl!("perk-reflexes"),
         Perk::Dodge => fl!("perk-dodge"),
         Perk::Healer => fl!("perk-healer"),
+        Perk::NightVision => fl!("perk-night-vision"),
     }
+}
+
+/// What a hero in `outfit` is called, its first letter a capital: the hero's own name in their
+/// first colours, the outfit's in their second; the hero plays the same.
+pub fn outfit_name(outfit: Outfit) -> String {
+    if outfit.colours == 0 {
+        return name(outfit.skin);
+    }
+    let word = match outfit.skin {
+        Skin::Survivor => fl!("outfit-survivor"),
+        Skin::Classic => fl!("outfit-classic"),
+        Skin::Exterminator => fl!("outfit-exterminator"),
+        Skin::Demolisher => fl!("outfit-demolisher"),
+        Skin::Agent => fl!("outfit-agent"),
+        Skin::Ninja => fl!("outfit-ninja"),
+        Skin::Medic => fl!("outfit-medic"),
+        Skin::Infiltrator => fl!("skin-infiltrator"),
+    };
+    capitalised(&word)
 }
 
 /// A skin's name, its first letter a capital.
@@ -261,7 +287,13 @@ pub fn name(skin: Skin) -> String {
         Skin::Agent => fl!("skin-agent"),
         Skin::Ninja => fl!("skin-ninja"),
         Skin::Medic => fl!("skin-medic"),
+        Skin::Infiltrator => fl!("skin-infiltrator"),
     };
+    capitalised(&word)
+}
+
+/// `word`, its first letter a capital.
+fn capitalised(word: &str) -> String {
     let mut letters = word.chars();
     letters.next().map_or_else(String::new, |first| {
         first.to_uppercase().chain(letters).collect()
@@ -272,6 +304,23 @@ pub fn name(skin: Skin) -> String {
 mod tests {
     use super::*;
     use crate::game::Achievement;
+
+    #[test]
+    fn a_hero_goes_by_their_own_name_in_their_first_outfit_by_its_own_in_their_second() {
+        let mut seconds = Vec::new();
+        for skin in SKINS
+            .into_iter()
+            .filter(|skin| sprites::colours_of(*skin) > 1)
+        {
+            let first = outfit_name(Outfit { skin, colours: 0 });
+            let second = outfit_name(Outfit { skin, colours: 1 });
+            assert_eq!(first, name(skin));
+            assert_ne!(second, first, "{skin:?}");
+            assert!(second.starts_with(char::is_uppercase), "{second}");
+            assert!(!seconds.contains(&second), "{second} twice");
+            seconds.push(second);
+        }
+    }
 
     #[test]
     fn the_survivor_is_there_from_the_start_each_other_hero_waits_for_their_achievement() {

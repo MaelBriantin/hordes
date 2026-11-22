@@ -9,6 +9,10 @@ use super::{TICKS_PER_SECOND, Vec2, tick_seconds};
 
 /// Half the width of a bullet, in tiles: a pixel.
 pub const BULLET_HALF_WIDTH: f32 = 0.25;
+/// How near the enemy it hit the next one has to be for a star to ricochet on it, in tiles; and
+/// what each ricochet takes off its damage, in points of percent of what it did first.
+pub const RICOCHET_RANGE: f32 = 4.0;
+const RICOCHET_LOSS: u32 = 25;
 
 /// What a gun is like at a level.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,6 +35,9 @@ pub struct Gun {
     pub spread: f32,
     /// How many enemies a bullet goes through before stopping at the next.
     pub pierce: u32,
+    /// How many times a bullet ricochets on the nearest enemy left once it has hit one, a
+    /// quarter of its damage less each time.
+    pub ricochets: u32,
     /// In tiles per second.
     pub speed: f32,
     /// How far a bullet flies, and how near an enemy must be to be shot at, in tiles.
@@ -66,6 +73,7 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             pellets: 1,
             spread: 0.0,
             pierce: 0,
+            ricochets: 0,
             speed: 20.0,
             range: 12.0,
         }),
@@ -84,6 +92,7 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             pellets: 1,
             spread: 0.0,
             pierce: u32::from(level >= 5),
+            ricochets: 0,
             speed: 22.0,
             range: 10.0,
         }),
@@ -98,6 +107,7 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             pellets: if level >= 2 { 7 } else { 5 },
             spread: if level >= 5 { 60.0_f32 } else { 40.0 }.to_radians(),
             pierce: u32::from(level >= 5),
+            ricochets: 0,
             speed: 18.0,
             range: 6.0,
         }),
@@ -107,11 +117,12 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             magazine: if level >= 2 { 4 } else { 3 },
             interval: tenths(3),
             reload: if level >= 3 { tenths(10) } else { tenths(14) },
-            damage: if level >= 5 { 12 } else { 9 },
-            bullets: if level >= 4 { 2 } else { 1 },
+            damage: 9,
+            bullets: if level >= 5 { 2 } else { 1 },
             pellets: 1,
             spread: 0.0,
-            pierce: if level >= 5 { 2 } else { 1 },
+            pierce: u32::from(level < 4),
+            ricochets: if level >= 4 { 3 } else { 0 },
             speed: 14.0,
             range: 8.0,
         }),
@@ -126,7 +137,9 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         | Weapon::Katana
         | Weapon::Defibrillator
         | Weapon::Chainsaw
-        | Weapon::C4 => None,
+        | Weapon::C4
+        | Weapon::Napalm
+        | Weapon::Fists => None,
     }
 }
 
@@ -149,8 +162,12 @@ pub struct Bullet {
     flown: f32,
     range: f32,
     pub damage: u32,
-    /// How many more enemies it goes through.
+    /// What it did to the first enemy it hit, before ricocheting.
+    first_damage: u32,
+    /// How many more enemies it goes through; how many more times it ricochets, and has.
     pub pierce: u32,
+    ricochets: u32,
+    bounces: u32,
     /// The enemies it has hit, by id: it hits each only once.
     pub hit: Vec<u32>,
     /// The gun it left: a pistol's slug and a machine gun's tracer don't look alike.
@@ -168,7 +185,10 @@ impl Bullet {
             flown: 0.0,
             range: gun.range,
             damage,
+            first_damage: damage,
             pierce: gun.pierce,
+            ricochets: gun.ricochets,
+            bounces: 0,
             hit: Vec::new(),
             weapon: gun.weapon,
             other: false,
@@ -209,6 +229,24 @@ impl Bullet {
         self.velocity.normalized()
     }
 
+    /// Whether it ricochets on the next enemy once it has hit one.
+    pub fn ricochets(&self) -> bool {
+        self.ricochets > 0
+    }
+
+    /// Off on a ricochet towards `target`, from where it hit: as far again as the next one may
+    /// be, a quarter of what it first did less.
+    pub fn ricochet(&mut self, target: Vec2) {
+        let speed = self.velocity.length();
+        self.velocity = (target - self.position).normalized() * speed;
+        self.flown = 0.0;
+        self.range = RICOCHET_RANGE + 1.0;
+        self.ricochets -= 1;
+        self.bounces += 1;
+        self.damage =
+            self.first_damage * 100_u32.saturating_sub(RICOCHET_LOSS * self.bounces) / 100;
+    }
+
     /// Moves it on by one tick. Whether it is still flying.
     pub fn advance(&mut self) -> bool {
         self.position += self.velocity;
@@ -239,6 +277,25 @@ pub fn targets(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn from_level_4_a_star_ricochets_three_times_a_quarter_of_its_damage_less_each() {
+        let gun = gun(Weapon::Shuriken, 4).unwrap();
+        assert_eq!((gun.pierce, gun.ricochets), (0, 3));
+        assert_eq!(gun_ricochets(3), 0, "not before");
+        let mut star = Bullet::toward(Vec2::ZERO, Vec2::new(1.0, 0.0), &gun, 12);
+        let mut damages = vec![star.damage];
+        while star.ricochets() {
+            star.ricochet(Vec2::new(0.0, 1.0));
+            damages.push(star.damage);
+        }
+        assert_eq!(damages, [12, 9, 6, 3]);
+        assert!(star.way().y > 0.99, "off towards the next");
+    }
+
+    fn gun_ricochets(level: u8) -> u32 {
+        gun(Weapon::Shuriken, level).unwrap().ricochets
+    }
 
     #[test]
     fn the_pistol_grows_with_its_levels() {

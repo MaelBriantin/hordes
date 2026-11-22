@@ -9,7 +9,10 @@ use super::super::enemy::{Enemy, EnemyKind};
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
-use super::super::{Vec2, baton, c4, defibrillator, drones, flamethrower, hammer, katana, knife};
+use super::super::{
+    Vec2, baton, c4, chainsaw, defibrillator, drones, fists, flamethrower, hammer, katana, knife,
+    napalm,
+};
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
@@ -269,6 +272,7 @@ impl World {
                 sparks.push((bullet.position, now));
                 return false;
             }
+            let mut ricochet_from = None;
             for enemy in enemies.iter_mut() {
                 let touched = touch(
                     bullet.position,
@@ -281,10 +285,28 @@ impl World {
                 }
                 enemy.hit(against(bullet.damage, enemy, hunter));
                 bullet.hit.push(enemy.id);
-                if bullet.pierce == 0 {
+                if bullet.pierce > 0 {
+                    bullet.pierce -= 1;
+                    continue;
+                }
+                if !bullet.ricochets() {
                     return false;
                 }
-                bullet.pierce -= 1;
+                ricochet_from = Some(enemy.position);
+                break;
+            }
+            // A star ricochets on the nearest enemy left near the one it hit, if any.
+            if let Some(from) = ricochet_from {
+                let next = enemies
+                    .iter()
+                    .filter(|enemy| enemy.hp > 0 && !bullet.hit.contains(&enemy.id))
+                    .map(|enemy| enemy.position)
+                    .filter(|at| (*at - from).length() <= guns::RICOCHET_RANGE)
+                    .min_by(|a, b| (*a - from).length().total_cmp(&(*b - from).length()));
+                let Some(next) = next else {
+                    return false;
+                };
+                bullet.ricochet(next);
             }
             true
         });
@@ -292,7 +314,7 @@ impl World {
 
     /// The weapons the player has that wait between two blows, the guns apart: the melee
     /// weapons between two swings, the Molotov between two throws, the C4 between two charges,
-    /// the drones while one is broken. Each with the ticks still to wait, out of a whole wait.
+    /// the napalm between two strikes, the drones while one is broken. Each with the ticks still to wait, out of a whole wait.
     pub fn waits(&self) -> Vec<(Weapon, u32, u32)> {
         let build = &self.player.build;
         let mut waits = Vec::new();
@@ -327,6 +349,11 @@ impl World {
             let every = build.cooldown(knife::at(level).every).max(1);
             waits.push((Weapon::Knife, self.knife_wait.min(every), every));
         }
+        let level = build.weapon_level(Weapon::Fists);
+        if level > 0 {
+            let every = build.cooldown(fists::at(level).every).max(1);
+            waits.push((Weapon::Fists, self.fists_wait.min(every), every));
+        }
         let level = build.weapon_level(Weapon::Baton);
         if level > 0 {
             let every = build.cooldown(baton::at(level).every).max(1);
@@ -342,11 +369,10 @@ impl World {
             let every = build.cooldown(c4::at(level).every).max(1);
             waits.push((Weapon::C4, self.c4_wait.min(every), every));
         }
-        let level = build.weapon_level(Weapon::Drones);
+        let level = build.weapon_level(Weapon::Napalm);
         if level > 0 {
-            let repair = build.cooldown(drones::repair(level)).max(1);
-            let left = self.drone_repairs.iter().copied().max().unwrap_or(0);
-            waits.push((Weapon::Drones, left.min(repair), repair));
+            let every = build.cooldown(napalm::at(level).every).max(1);
+            waits.push((Weapon::Napalm, self.napalm_wait.min(every), every));
         }
         waits
     }
@@ -355,9 +381,15 @@ impl World {
     /// ticks a whole reload takes.
     pub fn ammo(&self) -> Vec<(Weapon, Magazine, u32, u32)> {
         GUNS.into_iter()
+            .chain([Weapon::Drones])
             .filter_map(|weapon| {
                 let level = self.player.build.weapon_level(weapon);
-                let gun = guns::gun(weapon, level).filter(|_| level > 0)?;
+                let gun = if weapon == Weapon::Drones {
+                    Some(drones::gun(level))
+                } else {
+                    guns::gun(weapon, level)
+                }
+                .filter(|_| level > 0)?;
                 let magazine = self.magazines.get(&weapon).copied().unwrap_or(Magazine {
                     rounds: gun.magazine,
                     ..Magazine::default()
@@ -365,43 +397,47 @@ impl World {
                 let reload = self.player.build.reload(gun.reload).max(1);
                 Some((weapon, magazine, gun.magazine, reload))
             })
-            .chain(self.tank())
+            .chain(self.tanks())
             .collect()
     }
 
-    /// The flamethrower's tank as a gun's magazine, if the player has it: its fuel in ticks,
-    /// and its filling as a reload.
-    fn tank(&self) -> Option<(Weapon, Magazine, u32, u32)> {
-        let level = self.player.build.weapon_level(Weapon::Flamethrower);
-        let stats = (level > 0).then(|| flamethrower::at(level))?;
-        let tank = self
-            .magazines
-            .get(&Weapon::Flamethrower)
-            .copied()
-            .unwrap_or(Magazine {
-                rounds: stats.tank,
+    /// The tanks as guns' magazines, the flamethrower's and the chainsaw's, those the player
+    /// has: their fuel in ticks, and their filling as a reload.
+    fn tanks(&self) -> Vec<(Weapon, Magazine, u32, u32)> {
+        let build = &self.player.build;
+        let flamethrower = build.weapon_level(Weapon::Flamethrower);
+        let chainsaw = build.weapon_level(Weapon::Chainsaw);
+        [
+            (flamethrower > 0).then(|| {
+                (
+                    Weapon::Flamethrower,
+                    flamethrower::at(flamethrower).tank,
+                    flamethrower::refill(),
+                )
+            }),
+            (chainsaw > 0).then(|| (Weapon::Chainsaw, chainsaw::tank(), chainsaw::refill())),
+        ]
+        .into_iter()
+        .flatten()
+        .map(|(weapon, full, refill)| {
+            let tank = self.magazines.get(&weapon).copied().unwrap_or(Magazine {
+                rounds: full,
                 ..Magazine::default()
             });
-        let refill = self.player.build.cooldown(flamethrower::refill()).max(1);
-        Some((Weapon::Flamethrower, tank, stats.tank, refill))
+            (weapon, tank, full, build.cooldown(refill).max(1))
+        })
+        .collect()
     }
 
-    /// Where the drones are, if the player has them, and whether each is broken.
-    pub fn drones(&self) -> Vec<(Vec2, bool)> {
+    /// Where the drones are, if the player has them.
+    pub fn drones(&self) -> Vec<Vec2> {
         let level = self.player.build.weapon_level(Weapon::Drones);
         drones::positions(self.player.position, level, self.drone_angle)
-            .into_iter()
-            .enumerate()
-            .map(|(index, position)| {
-                let broken = self.drone_repairs.get(index).is_some_and(|left| *left > 0);
-                (position, broken)
-            })
-            .collect()
     }
 
-    /// The drones turn on; each that works shoots at the nearest enemy within its reach, as
-    /// often as it can, but in the dark: nothing to aim at. An enemy touching one takes a blow
-    /// from it and breaks it; a broken drone repairs with time.
+    /// The drones turn on; each shoots at the nearest enemy within its reach, as often as it
+    /// can, but in the dark: nothing to aim at; nothing breaks them. Their shots come from one
+    /// magazine; empty, they reload it.
     pub(super) fn turn_drones(&mut self) {
         let build = &self.player.build;
         let level = build.weapon_level(Weapon::Drones);
@@ -412,36 +448,31 @@ impl World {
             (self.drone_angle + drones::turn_per_tick(level)) % std::f32::consts::TAU;
         let gun = drones::gun(level);
         let damage = build.damage(gun.damage);
-        let hunter = build.horde_bonus();
         let interval = build.cooldown(gun.interval).max(1);
-        let repair = build.cooldown(drones::repair(level)).max(1);
+        let reload = build.reload(gun.reload).max(1);
+        let mut magazine = self
+            .magazines
+            .get(&Weapon::Drones)
+            .copied()
+            .unwrap_or(Magazine {
+                rounds: gun.magazine,
+                ..Magazine::default()
+            });
+        if magazine.reloading > 0 {
+            magazine.reloading -= 1;
+            if magazine.reloading == 0 {
+                magazine.rounds = gun.magazine;
+            }
+            self.magazines.insert(Weapon::Drones, magazine);
+            return;
+        }
         let dark = self.torch_on().is_some() && !self.torch_lit();
         let drones = self.drones();
-        self.drone_repairs.resize(drones.len(), 0);
         self.drone_waits.resize(drones.len(), 0);
-        for (index, (position, broken)) in drones.into_iter().enumerate() {
-            if broken {
-                self.drone_repairs[index] -= 1;
-                continue;
-            }
-            let touched = self.enemies.iter_mut().find(|enemy| {
-                enemy.hp > 0
-                    && touch(
-                        position,
-                        drones::HALF_WIDTH,
-                        enemy.position,
-                        enemy.kind.stats().half_width,
-                    )
-            });
-            // Touched, it strikes the enemy a last time, and breaks.
-            if let Some(enemy) = touched {
-                enemy.hit(against(damage, enemy, hunter));
-                self.drone_repairs[index] = repair;
-                continue;
-            }
+        for (index, position) in drones.into_iter().enumerate() {
             let wait = &mut self.drone_waits[index];
             *wait = wait.saturating_sub(1);
-            if *wait > 0 || dark {
+            if *wait > 0 || dark || magazine.rounds == 0 {
                 continue;
             }
             if let Some(&target) =
@@ -453,8 +484,13 @@ impl World {
                 self.bullets
                     .push(Bullet::toward(position, target, &gun, damage));
                 *wait = interval;
+                magazine.rounds -= 1;
+                if magazine.rounds == 0 {
+                    magazine.reloading = reload;
+                }
             }
         }
+        self.magazines.insert(Weapon::Drones, magazine);
     }
 }
 

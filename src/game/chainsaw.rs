@@ -1,7 +1,10 @@
 //! The chainsaw: what touches it ahead of the player, the way they face, ground on and on, a bite
-//! every few ticks, and slowed while it is.
+//! every few ticks, and slowed while it is. Its tank empties as it grinds; empty, it stops until
+//! the tank fills again.
 
 use std::f32::consts::FRAC_PI_4;
+
+use super::TICKS_PER_SECOND;
 
 /// The ticks between two bites, before Haste.
 pub const BITE_TICKS: u32 = 6;
@@ -9,6 +12,20 @@ pub const BITE_TICKS: u32 = 6;
 /// it.
 pub const SLOW_PERCENT: u32 = 50;
 pub const SLOW_TICKS: u32 = 2;
+/// The seconds of grinding a full tank holds, and the seconds an empty tank takes to fill
+/// again, before Haste.
+const TANK_SECONDS: u32 = 5;
+const REFILL_SECONDS: u32 = 3;
+
+/// The ticks of grinding a full tank holds.
+pub fn tank() -> u32 {
+    TANK_SECONDS * u32::from(TICKS_PER_SECOND)
+}
+
+/// The ticks an empty tank takes to fill again, before Haste.
+pub fn refill() -> u32 {
+    REFILL_SECONDS * u32::from(TICKS_PER_SECOND)
+}
 
 /// The chainsaw at a level.
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -74,9 +74,9 @@ pub struct Swing {
     pub half_arc: f32,
 }
 
-/// The ticks between two swings: 1.2 seconds.
+/// The ticks between two swings: 0.9 seconds.
 pub fn cooldown() -> u32 {
-    u32::from(TICKS_PER_SECOND) * 12 / 10
+    u32::from(TICKS_PER_SECOND) * 9 / 10
 }
 
 /// How far a slash reaches from the player's centre at a level, in tiles: 2.5, 3.5 from level 2.

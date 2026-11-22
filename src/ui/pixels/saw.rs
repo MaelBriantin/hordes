@@ -1,6 +1,6 @@
 //! The chainsaw, while it grinds: held out ahead of the hero, the way they face, its motor then
 //! its blade, the teeth running along its edges, blood on its end and its edge as the blood
-//! setting has it.
+//! setting has it; the hero's corners gleaming, nothing hurting them meanwhile.
 
 use ratatui::style::Color;
 
@@ -13,6 +13,10 @@ const BLADE: i32 = 4;
 const MOTOR: Color = Color::Rgb(230, 120, 40);
 const STEEL: Color = Color::Rgb(205, 205, 215);
 const TEETH: Color = Color::Rgb(90, 95, 105);
+/// Around the hero while it grinds, nothing hurting them: a pale gleam at their corners,
+/// blinking.
+const GUARD: Color = Color::Rgb(200, 225, 255);
+const GUARD_CORNERS: [(i32, i32); 4] = [(-3, -3), (2, -3), (-3, 2), (2, 2)];
 
 impl Canvas<'_> {
     /// The chainsaw held out, grinding: its motor at the hero's edge, its blade ahead, the teeth
@@ -40,6 +44,12 @@ impl Canvas<'_> {
             )
         };
         let frame = world.ticks();
+        // Nothing hurts the hero meanwhile: their corners gleam, two at a time.
+        for (corner, (cx, cy)) in (0_u32..).zip(GUARD_CORNERS) {
+            if (corner + frame / 3).is_multiple_of(2) {
+                self.set((x + cx, y + cy), GUARD);
+            }
+        }
         self.set(at(0, 0), MOTOR);
         self.set(at(0, 1), MOTOR);
         for along in 1..=BLADE {

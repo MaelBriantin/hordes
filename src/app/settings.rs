@@ -155,6 +155,7 @@ impl Settings {
                 ("skin", "agent") => settings.skin = Skin::Agent,
                 ("skin", "ninja") => settings.skin = Skin::Ninja,
                 ("skin", "medic") => settings.skin = Skin::Medic,
+                ("skin", "infiltrator") => settings.skin = Skin::Infiltrator,
                 ("mode", "standard") => settings.mode = Mode::Standard,
                 ("mode", "arcade") => settings.mode = Mode::Arcade,
                 ("gear", "shown") => settings.gear = true,
@@ -286,13 +287,13 @@ mod tests {
 
     #[test]
     fn a_hero_s_colours_read_back_and_one_out_of_their_range_stays_at_their_first() {
-        let colours = colours_from("medic:1, ninja:1, nobody:3, survivor:x");
+        let colours = colours_from("medic:1, ninja:2, nobody:3, survivor:x");
         let medic = SKINS.iter().position(|skin| *skin == Skin::Medic).unwrap();
         assert_eq!(colours[medic], 1);
         assert_eq!(
             colours.iter().filter(|colour| **colour > 0).count(),
             1,
-            "the ninja has one"
+            "the ninja has two, not three"
         );
         assert_eq!(colours_text(colours), "medic:1");
     }

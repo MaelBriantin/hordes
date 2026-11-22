@@ -1,19 +1,32 @@
-//! The chainsaw at work: what touches it ground on and on, slowed.
+//! The chainsaw at work: what touches it ground on and on, slowed, as long as its tank holds.
 
 use super::super::build::Weapon;
 use super::super::chainsaw::{self, BITE_TICKS, SLOW_TICKS};
 use super::super::enemy::EnemyKind;
+use super::super::guns::Magazine;
 use super::super::machete;
 use super::World;
 use super::weapons::against;
 
 impl World {
     /// The chainsaw: every enemy within its reach ahead of the player, the way they face, is
-    /// slowed while it is, and bitten every few ticks. In the dark too: it grinds what is near.
+    /// slowed while it is, and bitten every few ticks; its tank empties as it grinds, and empty,
+    /// it stops until the tank fills again. In the dark too: it grinds what is near.
     pub(super) fn grind_chainsaw(&mut self) {
         self.sawing = false;
         let level = self.player.build.weapon_level(Weapon::Chainsaw);
         if level == 0 {
+            return;
+        }
+        let tank = self.magazines.entry(Weapon::Chainsaw).or_insert(Magazine {
+            rounds: chainsaw::tank(),
+            ..Magazine::default()
+        });
+        if tank.reloading > 0 {
+            tank.reloading -= 1;
+            if tank.reloading == 0 {
+                tank.rounds = chainsaw::tank();
+            }
             return;
         }
         let stats = chainsaw::at(level);
@@ -45,6 +58,15 @@ impl World {
         }
         if self.sawing && bite {
             self.chainsaw_wait = self.player.build.cooldown(BITE_TICKS).max(1);
+        }
+        if self.sawing {
+            let refill = self.player.build.cooldown(chainsaw::refill()).max(1);
+            if let Some(tank) = self.magazines.get_mut(&Weapon::Chainsaw) {
+                tank.rounds = tank.rounds.saturating_sub(1);
+                if tank.rounds == 0 {
+                    tank.reloading = refill;
+                }
+            }
         }
     }
 }

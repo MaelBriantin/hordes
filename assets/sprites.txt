@@ -70,6 +70,8 @@ s 90 90 95      ashes
 0 35 50 115     a uniform's dark blue
 % 55 58 66      a ninja's charcoal
 + 70 150 110    scrubs green
+^ 190 95 40     a ginger beard
+? 80 200 90     the infiltrator's goggles
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -90,6 +92,24 @@ hero_side
 .SF.
 .Jx.
 .zz.
+
+hero_biker_front
+.SS.
+.FF.
+qxxq
+.%%.
+
+hero_biker_back
+.SS.
+.SS.
+qqqq
+.%%.
+
+hero_biker_side
+.SS.
+.SF.
+.qx.
+.%%.
 
 classic_front
 .RR.
@@ -145,23 +165,59 @@ exterminator_side
 r55.
 .nn.
 
+exterminator_physicist_front
+.ff.
+.nn.
+%ff%
+.%%.
+
+exterminator_physicist_back
+.ff.
+.ff.
+%rr%
+.%%.
+
+exterminator_physicist_side
+.ff.
+.fn.
+rf%.
+.%%.
+
 demolisher_front
 .FF.
-.SS.
-FjjF
+.^^.
+FxxF
 .zz.
 
 demolisher_back
 .F1.
 .FF.
-FjjF
+FxxF
 .zz.
 
 demolisher_side
 .1F.
-.FS.
-.Fj.
+.F^.
+.Fx.
 .zz.
+
+demolisher_smith_front
+.FF.
+.SS.
+FqqF
+.KK.
+
+demolisher_smith_back
+.F1.
+.FF.
+FqqF
+.KK.
+
+demolisher_smith_side
+.1F.
+.FS.
+.Fq.
+.KK.
 
 agent_front
 .77.
@@ -172,7 +228,7 @@ JqqJ
 agent_back
 .77.
 .77.
-JqqJ
+JJJJ
 .%%.
 
 agent_side
@@ -217,6 +273,24 @@ ninja_side
 .%q.
 .%%.
 
+ninja_scarlet_front
+.qq.
+.FF.
+qRRq
+.qq.
+
+ninja_scarlet_back
+.qq.
+.qq.
+qRRq
+.qq.
+
+ninja_scarlet_side
+.qq.
+.qF.
+.qR.
+.qq.
+
 medic_front
 .xx.
 .FF.
@@ -252,6 +326,42 @@ medic_green_side
 .HF.
 r++.
 .++.
+
+infiltrator_front
+.??.
+.FF.
+%nn%
+.qq.
+
+infiltrator_back
+.nn.
+.qq.
+%nn%
+.qq.
+
+infiltrator_side
+.n?.
+.qF.
+.%n.
+.qq.
+
+infiltrator_dark_front
+.qq.
+.??.
+%nn%
+.qq.
+
+infiltrator_dark_back
+.qq.
+.nn.
+%nn%
+.qq.
+
+infiltrator_dark_side
+.qq.
+.n?.
+.%n.
+.qq.
 
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
@@ -562,6 +672,26 @@ aqaaaaqa
 aaaaaaaa
 ........
 
+icon_napalm
+..n..n..
+..nnnn..
+...qq...
+..qqqq..
+..qqqq..
+..qrrq..
+...qq...
+........
+
+icon_fists
+........
+..FFFF..
+.FFFFFF.
+.FFFFFF.
+.FFFFF..
+..FFFF..
+...nn...
+...nn...
+
 icon_molotov
 ...r....
 ..fYf...
@@ -691,6 +821,16 @@ gggggg..
 .g.g.rrr
 .....rrr
 ......r.
+
+icon_stealth
+........
+.n.n.n..
+........
+..nnn...
+.nnnnn..
+.nnnnn..
+..nnn...
+........
 
 icon_dash
 ........

@@ -114,11 +114,12 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Hero | HP | Speed | Weapon | Perk |
 |---|---|---|---|---|
 | Survivor | 100 | normal | crowbar | **Versatile**: no weakness, the measure of the others |
-| Veteran | 90 | +5% | machete | **Commando**: every weapon hurts 10% more |
+| Veteran | 120 | +5% | machete | **Commando**: every weapon hurts 10% more |
 | Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, lightning) |
 | Demolisher | 140 | −15% | sledgehammer | **Unshakable**: 10% less damage taken, and never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
 | Medic | 90 | normal | defibrillator | **Healer**: herbs, campfires and the heal give back half again as much, and 1 HP comes back of itself every 5 s |
+| Infiltrator | 90 | +5% | fists | **Night vision**: the torch out, they see 7 tiles around them all the same, in green; the enemies still don't see them from afar. Their goggles come down over their eyes |
 | Ninja | 80 | +15% | katana | **Dodge**: a 15% chance to avoid a blow altogether (enemies, a burst), unhurt half a second after as after a hit; a dark ghost of the ninja left aside a moment shows it |
 
 | Stat | Value |
@@ -177,7 +178,7 @@ The survivor's own weapon, and so the one most runs start with: a heavy blow in 
 
 ### Machete
 
-The veteran's own weapon. A swing in an arc before the player, the way they face, hitting **every enemy in it** for **12 damage**: within reach of the player (plus the enemy's half width) and within the arc. It swings every **1.2 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
+The veteran's own weapon. A swing in an arc before the player, the way they face, hitting **every enemy in it** for **12 damage**: within reach of the player (plus the enemy's half width) and within the arc. It swings every **0.9 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
 
 | Level | Swing |
 |---|---|
@@ -207,9 +208,9 @@ A gun (see Guns: its rounds, its reload, it holds its fire in the dark) firing a
 
 ### Drones
 
-**A drone** circling the player **2.5 tiles** away, a turn every **2 s**. Each shoots at the nearest enemy within **6 tiles** of it, a bullet every **0.4 s** (less with Haste): **4 damage**, flying 16 tiles a second, 7 tiles far. Not in the dark, as the guns. An enemy **touching** a drone takes its damage a last time and **breaks** it: it keeps circling, grey and harmless, and repairs in **3 s** (less with Haste). The gauge under its icon follows the repair.
+**A drone** circling the player **2.5 tiles** away, a turn every **2 s**. Each shoots at the nearest enemy within **6 tiles** of it, a bullet every **0.4 s** (less with Haste): **4 damage**, flying 16 tiles a second, 7 tiles far. Not in the dark, as the guns. **Nothing breaks** a drone. Their shots come from one **magazine**, **6 shots** a drone; empty, it reloads in **3 s** (less with Reflexes), the drones holding their fire meanwhile, its rounds then its reload under its icon, as a gun's.
 
-**Levels**: 2: +1 drone (2) · 3: 6 damage · 4: +1 drone (3), repaired in 2 s · 5: +1 drone (4), 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
+**Levels**: 2: +1 drone (2) · 3: 6 damage · 4: +1 drone (3), reloaded in 2 s · 5: +1 drone (4), 3.5 tiles away, a turn every 1.5 s. The drones are evenly spaced on their circle.
 
 ### Molotov
 
@@ -219,15 +220,17 @@ Every **3 s** (less with Haste), a bottle thrown at an enemy at random within **
 
 ### Flamethrower
 
-A **rare** weapon. A **cone of fire** from the player, **4.5 tiles** long, 60° wide, lit at the **nearest enemy** within its reach, in sight (trees and rocks hide what stands behind them; a barricade doesn't), whichever way the player faces, then burning its **whole tank**, enemies left or not, turning after the nearest enemy as it burns, **180° a second** at most, its last way kept with none left; its fire leaves the nozzle, almost a tile ahead of the player, a stream as from a hose, widening as it goes, a yellow core, orange around, its end red and ragged, the nozzle sweeping from side to side (20° each way, about 1.6 s there and back), its far end lagging, so the stream bends: every enemy in the cone takes **2 damage** about 4 times a second (every 8 ticks, the first at once) and catches fire (see Fire). Its **tank** holds **3 s** of fire; empty, it fills again in **2 s** (less with Haste), its fuel then its filling under its icon, as a gun's rounds and reload. It burns **in the dark** too, the torch out (to be tried).
+A **rare** weapon. A **cone of fire** from the player, **4.5 tiles** long, 60° wide, lit at the **nearest enemy** within its reach, in sight (trees and rocks hide what stands behind them; a barricade doesn't), whichever way the player faces, then burning its **whole tank**, enemies left or not, turning after the nearest enemy as it burns, **180° a second** at most, its last way kept with none left; its fire leaves the nozzle, almost a tile ahead of the player, a stream as from a hose, widening as it goes, a yellow core, orange around, its end red and ragged, the nozzle sweeping from side to side (20° each way, about 1.6 s there and back), its far end lagging, so the stream bends: every enemy in the cone takes **2 damage** about 4 times a second (every 8 ticks, the first at once) and catches fire (see Fire). Its **tank** holds **2 s** of fire; empty, it fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as a gun's rounds and reload. It burns **in the dark** too, the torch out (to be tried).
 
-**Levels**: 2: the cone 5.5 tiles long · 3: 3 damage · 4: a 5 s tank · 5: **the tank leaks**: a small fire on the ground every 0.8 tile the player goes, 0.6 tile around, burning 2 s, setting on fire every enemy in it, as a Molotov's puddle without its burst.
+**Levels**: 2: the cone 5.5 tiles long · 3: 3 damage · 4: a 3 s tank · 5: **the tank leaks**: a drop of fire on the ground every 2 tiles the player goes, 0.4 tile around, burning 2 s, setting on fire every enemy in it, as a Molotov's puddle without its burst.
 
 ### Stun baton
 
-The exterminator's own weapon. Every **1.2 s** (less with Haste), once an enemy stands on its line, a **thrust** straight ahead of the player, the way they face, **3 tiles** long and a tile wide: every enemy on the line takes **10 damage** and stands **paralysed 1 s**, blinking blue the while. In the dark too. It shows as the baton held out, its double prong ahead, a jagged bolt running from it to the end of its reach, white then cyan, a spark on each enemy it paralyses.
+The exterminator's own weapon. Every **1.2 s** (less with Haste), once an enemy stands on its line, a **thrust** straight ahead of the player, the way they face, **3 tiles** long and a tile wide: every enemy on the line takes **16 damage** and stands **paralysed 1 s**, blinking blue the while. In the dark too. It shows as the baton held out, its double prong ahead, a jagged bolt running from it to the end of its reach, white then cyan, a spark on each enemy it paralyses.
 
-**Levels**: 2: 3.5 tiles long · 3: 14 damage · 4: a thrust every 0.9 s · 5: paralysed 2 s.
+From level 3, every third strike is a **whirlwind**, once an enemy stands within **2 tiles**: the player spins round, the baton held out, from the way they face (down, right, up, left), its prong leaving a white, cyan then blue trail, every enemy within 2 tiles hit and paralysed as by a thrust; every other strike at level 5.
+
+**Levels**: 2: 3.5 tiles long · 3: 22 damage, a whirlwind every third strike · 4: a thrust every 0.9 s · 5: paralysed 2 s, a whirlwind every other strike.
 
 ### Katana
 
@@ -237,27 +240,39 @@ The ninja's own weapon. Every **0.8 s** (less with Haste), a **chain of cuts**: 
 
 ### Chainsaw
 
-A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it).
+A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it). Its **tank** holds **5 s** of grinding, emptying only as it grinds; empty, it stops and fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as the flamethrower's.
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
 
 ### C4
 
-A **rare** weapon, for every hero, unlocked with the demolisher by Demolisher. Every **4 s** (less with Haste), an enemy within **6 tiles**, a **charge** set down at the player's feet: a small dark block, its red light blinking faster and faster, glowing in the dark. **1.5 s** later it blows: every enemy within **2.5 tiles** takes **40 damage** and is thrown back **2 tiles**. A trap for those on the player's heels. Its blast shows as a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. In the dark too.
+A **rare** weapon, for every hero, unlocked with the demolisher by Demolisher. Every **6 s** (less with Haste), an enemy within **6 tiles**, a **charge** set down at the player's feet: a small dark block, its red light blinking faster and faster, glowing in the dark. **1.5 s** later it blows: every enemy within **2.5 tiles** takes **25 damage** and is thrown back **3 tiles**. A trap for those on the player's heels, to break free more than to kill. Its blast shows as a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. In the dark too.
 
-**Levels**: 2: a 3-tile blast · 3: 60 damage · 4: a charge every 3 s · 5: the enemies blown **stunned 1 s**.
+**Levels**: 2: a 3-tile blast · 3: 40 damage · 4: a charge every 5 s · 5: the enemies blown **stunned 1 s**.
+
+### Napalm
+
+A **rare** weapon, for every hero, unlocked with the veteran by Legend. Every **20 s** (less with Haste), a **carpet of fire bombs** on the biggest crowd within **8 tiles** of the player (the enemy with the most others within 2 tiles, the nearest of those): a line of **5 bombs**, a tile apart, through it, the way from the player to it, falling from the player's side, one every 0.1 s. Each shows as a streak dropping from the sky, a white head, grey behind, for a quarter of a second; where it lands, every enemy within **1.25 tiles** takes **30 damage** and catches fire (see Fire), a fireball shows as the C4's, and the ground burns **2 s**, 0.9 tile around, as a Molotov's puddle: the strip left burning. In the dark too: it strikes from the sky.
+
+**Levels**: 2: a line of 7 bombs · 3: 45 damage · 4: a strike every 15 s · 5: **two lines crossed**.
 
 ### Shurikens
 
 A gun of a kind, unlocked by Shadow hunter: volleys of **3 stars** thrown at the nearest enemy in sight, every 0.3 s, **9 damage**, each piercing an enemy, flying 8 tiles, a small white star with a streak behind it; then **1.4 s** to take the next ones out. As the guns, they hold in the dark.
 
-**Levels**: 2: 4 stars a volley · 3: taken out in 1 s · 4: 2 targets at once · 5: 12 damage, piercing 2 enemies.
+**Levels**: 2: 4 stars a volley · 3: taken out in 1 s · 4: a star that hits an enemy **ricochets** on the nearest enemy left within 4 tiles, then on, 3 times: 100%, 75%, 50%, 25% of its damage, piercing no more · 5: 2 targets at once.
 
 ### Defibrillator
 
 The medic's own weapon. Every **1 s** (less with Haste), a **shock** at the nearest enemy within **2 tiles**, leaping on to the nearest to it within 2 tiles, and so on, **3** enemies at most, **12 damage** each; each enemy it fells gives the medic back **1 HP**. In the dark too. It shows as a jagged bolt leaping from the hero through each enemy shocked, white then cyan.
 
 **Levels**: 2: 4 enemies · 3: 16 damage · 4: a shock every 0.8 s · 5: 2 HP a kill.
+
+### Fists
+
+The infiltrator's own weapon. Every **0.4 s** (less with Haste), a **punch** at the nearest enemy within **1.2 tiles**, whichever way: **8 damage**; every third a **heavier** one, twice as hard, throwing the enemy **a tile** back. In the dark too. It shows as the fist out halfway to the enemy struck and a small white burst on it, bigger and yellow for a heavier one.
+
+**Levels**: 2: 1.6 tiles · 3: 12 damage · 4: a punch every 0.3 s · 5: the heavier punch **stuns** 1 s.
 
 ### Combat knife
 
@@ -269,7 +284,9 @@ The special agent's own weapon. Every **0.4 s** (less with Haste), a quick **sta
 
 The demolisher's own weapon, a melee one. Every **2 s** (less with Haste), once an enemy stands where it would land, the hammer is **raised** over the player's head **0.2 s**, then falls on the ground **2.5 tiles** ahead of them, the way they face then: its **shock** takes **28 HP** from every enemy within **2 tiles** of where it lands and throws them **1.5 tiles** back, away from it, over **0.2 s**, as its wave goes out. In the dark too. It shows as the hammer raised, then down on the ground a moment, its head three pixels wide; and the **wave** of its shock, a thick band on the ground, white at its front, going out to its reach as fast as it throws the enemies out, fading where it stops. Its wait shows under its icon.
 
-**Levels**: 2: the shock 2.5 tiles around · 3: 40 HP · 4: a blow every 1.5 s · 5: the shock **stuns** the enemies it hits 1 s.
+From level 3, **shocks** follow on, one after the other, every **2 tiles** further ahead, every **0.13 s**: **3**, each as the blow's own, 1.25 tiles around, throwing back what it hits; each enemy hit once by a blow and its shocks. Never back towards the player.
+
+**Levels**: 2: the shock 2.5 tiles around, 40 HP · 3: the shocks · 4: a blow every 1.5 s · 5: as many shocks **left and right** of where it lands too, the enemies **stunned** 1 s.
 
 ### Fire
 
@@ -299,6 +316,7 @@ Up to **4 passives**, each up to **level 5**.
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
 | Horde Hunter | +10% damage from the weapons to an enemy of a horde, per level (+50% at level 5). A horde's last ones targeted in red: its last tenth at level 1, a quarter at 2, seen in the dark too from level 3, a half at 4, the whole horde at 5 |
 | Life drain | **Rare**. Each enemy felled has a chance to give back **1 HP**: 10% at level 1, 5 points more each level (30% at level 5) |
+| Stealth | The torch out, the night fallen, +10% speed per level |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
 
@@ -341,14 +359,15 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Demolisher | Fell 10 abominations by a melee blow (the crowbar's, the machete's, the sledgehammer's, the baton's, the knife's) in one run | The C4, and the demolisher with their sledgehammer |
 | Cold blood | Hold a minute under 30% of HP in one run (every tick counted, not in a row) | The chainsaw, and the special agent with their combat knife |
 | Shadow hunter | Fell 25 Shadows in one run | The shurikens, and the ninja with their katana |
-| Legend | Fell 700 enemies in one run | The veteran, with their machete |
+| Legend | Fell 700 enemies in one run | The napalm, and the veteran with their machete |
 | First aid | Get 300 HP back in one run (herbs, campfires, regeneration, the heal, the defibrillator) | Life drain, and the medic with their defibrillator |
+| Shadow | Keep the torch out 3 minutes in one run (every tick counted, not in a row) | Stealth, and the infiltrator with their fists |
 | A regular | 25 runs played | A second reroll a run |
 | Seasoned | Reach level 25 in a single run | Illumination |
 
 - **Told as reached**: a box rises on the bottom right of the map, the picture of what it unlocks and the achievement's name, in its **rarity's** colour (the rarity of what it unlocks: white, blue for rare, gold for legendary; a reroll, rare); it stays 4 s, then goes down. Several, one after the other. What it unlocks is dealt from the next run on: a run's cards are set as it starts.
 - The **collection**, on the title screen in standard mode, where the arcade shows its leaderboard: every card of a build but the heroes' own weapons, and the reroll, a tile each: those there from the start, then those unlocked, from the easiest to the hardest (Horde Hunter, Haste, Might, the drones, machine gun, Molotov, Barricade, Dash, the reroll, Glare, Regeneration, the flamethrower, the shurikens, the chainsaw), and last those of the hidden achievements: Illumination, then the arcade mode, its tile a joystick; in colour once the player has it, grey until then. Neither the drones nor the heal. Hidden at first, its key at the bottom of the screen, by the mode's ([C] COLLECTION 16 / 22): **C** shows or hides it, shown at its first tile, the arrows going from tile to tile, Esc hiding it too; **Tab** changes the mode. The tile picked is framed. A box under the tiles tells it: its name in its rarity's colour, its kind on the right (weapon, passive, the legendary one too, action, bonus for the reroll, mode for the arcade); available from the start, or the achievement unlocking it, its goal and, for those counted over every run, a row apart, in capitals in the box's middle, **Unlocked** in green or **Locked** in grey; for those counted over every run and not yet reached, a bar as the XP bar instead, across the box, the count in its middle. The box as wide for every tile. Two achievements are **hidden** until reached, the dawn's (the arcade) and the seasoned one's (Illumination): their tiles a pixel question mark, their box saying HIDDEN ACHIEVEMENT in its middle, nothing more. Short of room, only the picked tile's row shows, arrows on its sides where more tiles lie.
-- The **heroes**, on the title screen in either mode, where the collection fits: **H** shows them in the collection's place (or the leaderboard's), at the hero worn. A tile each, as the collection's: the hero from the front (the survivor in a leather jacket and jeans, the veteran in a red headband, the exterminator in a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back, the demolisher bald and bearded, in a grey tank top and jeans, the special agent fair-haired in a brown leather jacket, a dark harness across, charcoal trousers, the ninja all in dark, the eyes alone showing, the medic all in white, a green bag on the back), twice as big, in colour once unlocked, grey until then; the tile picked framed, its hero turning round once it has been picked a second (front, side, back, side). The skin worn has a green check on the bottom right of its picture. While they show, the blinking prompt says Space wears the skin picked (nothing for a locked one). ←→ go from tile to tile; **Enter** or Space wear the one picked, once unlocked, and hide them; Esc or H again hide them. A hero in **more colours** than one (the veteran: a red headband and a blue tunic, or a blue headband, bare-chested, a leather strap across, dark green trousers; the special agent: a brown leather jacket, a dark harness across, charcoal trousers, or a young police officer's blue uniform; the medic: white and a green bag, or green and a red bag) shows little pixel arrows over and under their tile, picked: **↑↓** (or Z/W and S) go through them, kept at once, each hero their own. A hero's other colours stay hidden while the hero is locked: no arrows, their first colours alone. A hero's **second colours** wait for the **dawn** reached with them (kept in the progress): until then they show in grey, the box saying so, and the hero wears their first in a run. Each hero starts a run with a **weapon of their own** (see Weapons), and plays with their own HP, speed and perk (see The player): the box under the tiles says them, under where the hero comes from: their starting weapon, their HP and speed, their perk. The skin worn is kept for the next runs; the exterminator chosen, the progress erased since, the survivor shows. A box under the tiles tells it, as the collection's: its name, HERO on the right; available from the start, or the achievement unlocking it and its goal; a row apart, **Worn** in gold, Unlocked in green or Locked in grey. Its key at the bottom of the screen, after the collection's: [H] HEROES 2 / 7.
+- The **heroes**, on the title screen in either mode, where the collection fits: **H** shows them in the collection's place (or the leaderboard's), at the hero worn. A tile each, as the collection's: the hero from the front (the survivor in a leather jacket and jeans, the veteran in a red headband, the exterminator in a yellow hazmat suit, a dark grey gas mask and boots, a red tank on the back, the demolisher bald, a ginger beard, in a white tank top and jeans, the special agent fair-haired in a brown leather jacket, a dark harness across, charcoal trousers, the ninja all in dark, the eyes alone showing, the medic all in white, a green bag on the back), twice as big, in colour once unlocked, grey until then; the tile picked framed, its hero turning round once it has been picked a second (front, side, back, side). The skin worn has a green check on the bottom right of its picture. While they show, the blinking prompt says Space wears the skin picked (nothing for a locked one). ←→ go from tile to tile; **Enter** or Space wear the one picked, once unlocked, and hide them; Esc or H again hide them. Each hero comes in **two outfits**, the second with a **name** of its own, shown in place of the hero's in the box and on the run's end screen, the hero playing the same (the survivor, or the **biker**: a black jacket, a white tee, charcoal jeans; the veteran: a red headband and a blue tunic, or the **guerrilla**: a blue headband, bare-chested, a leather strap across, dark green trousers; the exterminator, or the **physicist**: an orange suit, dark grey arms and legs, the grey mask; the demolisher, or the **blacksmith**: a dark beard, a black tank top, brown trousers; the special agent: a brown leather jacket, a dark harness across, charcoal trousers, or the **rookie**: a young police officer's blue uniform; the ninja, or the **scarlet ninja**: all in black, red across the middle; the medic: white and a green bag, or the **surgeon**: green and a red bag). The hero picked shows little pixel arrows over and under their tile, picked: **↑↓** (or Z/W and S) go through them, kept at once, each hero their own. A hero's other colours stay hidden while the hero is locked: no arrows, their first colours alone. A hero's **second colours** wait for the **dawn** reached with them (kept in the progress): until then they show in grey, the box saying so, and the hero wears their first in a run. Each hero starts a run with a **weapon of their own** (see Weapons), and plays with their own HP, speed and perk (see The player): the box under the tiles says them, under where the hero comes from: their starting weapon, their HP and speed, their perk. The skin worn is kept for the next runs; the exterminator chosen, the progress erased since, the survivor shows. A box under the tiles tells it, as the collection's: its name, HERO on the right; available from the start, or the achievement unlocking it and its goal; a row apart, **Worn** in gold, Unlocked in green or Locked in grey. Its key at the bottom of the screen, after the collection's: [H] HEROES 2 / 7.
 - The progress is kept in `progress.ron`, in the game's data folder.
 
 ## Experience
@@ -357,7 +376,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 - A gem shows by its worth: **silver** for a point, **blue** for 2 to 4 (a Shadow's), **gold** for 5 and more (an abomination's). Each glows its colour around it in the dark.
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, Barricade, the heal. Rare: the flamethrower, the chainsaw, the C4, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, Dash, Barricade, the heal. Rare: the flamethrower, the chainsaw, the C4, the napalm, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

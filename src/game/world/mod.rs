@@ -15,9 +15,10 @@ use super::c4::{self, Charge};
 use super::dash::{Dash, Dashes};
 use super::defibrillator::Shock;
 use super::enemy::Enemy;
+use super::fists::Punch;
 use super::gem::Gem;
 use super::guns::{Bullet, Magazine};
-use super::hammer::Blow;
+use super::hammer::{Blow, Quake};
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
 use super::horde::{self, Tally, Warning};
 use super::katana::Cuts;
@@ -27,10 +28,11 @@ use super::machete::Swing;
 use super::map::Feature;
 use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
+use super::napalm::Bomb;
 use super::progress::{
     Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
-    FIRST_AID_HP, LEGEND_KILLS, Progress, SHADOW_HUNTER_SHADOWS, UNTOUCHABLE_SECONDS,
-    VETERAN_LEVEL,
+    FIRST_AID_HP, LEGEND_KILLS, Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS,
+    UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
 };
 use super::score;
 use super::stain::Stain;
@@ -39,12 +41,14 @@ use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 mod barricades;
 mod blows;
+mod bombs;
 mod charges;
 mod cuts;
 mod debug;
 mod enemies;
 mod flames;
 mod jabs;
+mod punches;
 mod saws;
 mod shocks;
 mod stabs;
@@ -191,8 +195,6 @@ pub struct World {
     pub magazines: HashMap<Weapon, Magazine>,
     /// Where the first drone is on its circle, in radians.
     drone_angle: f32,
-    /// Ticks left before each drone, broken by a blow, works again; 0 for one that works.
-    drone_repairs: Vec<u32>,
     /// Ticks left before each drone shoots again.
     drone_waits: Vec<u32>,
     /// The Molotov's bottles in the air, its puddles of fire on the ground, and the ticks before
@@ -205,14 +207,26 @@ pub struct World {
     pub charges: Vec<Charge>,
     pub c4_blasts: Vec<c4::Blast>,
     c4_wait: u32,
+    /// The napalm's bombs falling, its blasts while they show, and the ticks before its next
+    /// strike.
+    pub bombs: Vec<Bomb>,
+    pub napalm_blasts: Vec<c4::Blast>,
+    napalm_wait: u32,
     /// The hammer's last blow, while it shows, and the ticks before the next.
     pub blow: Option<Blow>,
     hammer_wait: u32,
     /// The ticks the hammer stays raised over the player's head before it falls; 0 when it isn't.
     pub hammer_raised: u32,
+    /// The shocks to come after the last blow, the waves of those come while they show, and the
+    /// enemies the blow and its shocks have hit: each once.
+    quakes: Vec<Quake>,
+    pub quake_waves: Vec<Blow>,
+    blow_hit: Vec<u32>,
     /// The stun baton's last thrust, while it shows, and the ticks before the next.
     pub thrust: Option<Thrust>,
     baton_wait: u32,
+    /// The stun baton's strikes so far this run: now and then, one is a whirlwind.
+    baton_strikes: u32,
     /// The combat knife's last stabs, while they show, and the ticks before the next.
     pub stabs: Vec<Stab>,
     knife_wait: u32,
@@ -231,6 +245,13 @@ pub struct World {
     shadows_down: u32,
     /// The ticks the player has stood low on HP this run, for Cold blood.
     low_hp_ticks: u32,
+    /// The ticks the torch has been out this run, the night fallen, for Shadow.
+    dark_ticks: u32,
+    /// The fists' last punch, while it shows; the ticks before the next; the punches so far this
+    /// run: every third is a heavier one.
+    pub punch: Option<Punch>,
+    pub(super) fists_wait: u32,
+    punches: u32,
     /// The abominations felled by a melee blow this run: the crowbar's, the machete's, the
     /// hammer's.
     abominations_smashed: u32,
@@ -396,7 +417,6 @@ impl World {
             swing: None,
             magazines: HashMap::new(),
             drone_angle: 0.0,
-            drone_repairs: Vec::new(),
             drone_waits: Vec::new(),
             lightning: None,
             strikes_coming: Vec::new(),
@@ -408,11 +428,18 @@ impl World {
             charges: Vec::new(),
             c4_blasts: Vec::new(),
             c4_wait: 0,
+            bombs: Vec::new(),
+            napalm_blasts: Vec::new(),
+            napalm_wait: 0,
             blow: None,
             hammer_wait: 0,
             hammer_raised: 0,
+            quakes: Vec::new(),
+            quake_waves: Vec::new(),
+            blow_hit: Vec::new(),
             thrust: None,
             baton_wait: 0,
+            baton_strikes: 0,
             stabs: Vec::new(),
             knife_wait: 0,
             cuts: None,
@@ -424,6 +451,10 @@ impl World {
             healed: 0,
             shadows_down: 0,
             low_hp_ticks: 0,
+            dark_ticks: 0,
+            punch: None,
+            fists_wait: 0,
+            punches: 0,
             abominations_smashed: 0,
             flaming: false,
             flame_way: Vec2::new(1.0, 0.0),
@@ -725,10 +756,12 @@ impl World {
         self.swing_hammer();
         self.thrust_baton();
         self.stab_knife();
+        self.throw_punches();
         self.cut_katana();
         self.shock_defibrillator();
         self.grind_chainsaw();
         self.set_charges();
+        self.drop_napalm();
         self.throw_molotovs();
         self.throw_flames();
         self.fire_guns();
@@ -771,6 +804,13 @@ impl World {
         }
         if self.healed >= FIRST_AID_HP {
             self.progress.reach(Achievement::FirstAid);
+        }
+        // The torch out, the night fallen, every tick counted.
+        if self.torch_on() == Some(false) {
+            self.dark_ticks += 1;
+        }
+        if self.dark_ticks >= SHADOW_SECONDS * u32::from(TICKS_PER_SECOND) {
+            self.progress.reach(Achievement::Shadow);
         }
         if self.kills >= LEGEND_KILLS {
             self.progress.reach(Achievement::Legend);
@@ -967,7 +1007,14 @@ impl World {
         }
         player.facing = player.facing.after(input.direction);
         // Normalized, so a diagonal is no faster than a straight line.
-        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent()) / 100.0;
+        // With Stealth, faster with the torch out.
+        let stealth = if self.torch_on() == Some(false) {
+            self.player.build.stealth_percent()
+        } else {
+            0
+        };
+        let player = &mut self.player;
+        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent() + stealth) / 100.0;
         let step = input.direction.normalized() * (speed * tick_seconds());
         player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
     }
@@ -1086,8 +1133,12 @@ impl World {
         healed
     }
 
-    /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second.
+    /// The player loses `damage` HP, bleeds, and can't be hurt again for half a second; nothing
+    /// while their chainsaw grinds: they charge into the crowd.
     fn wound_player(&mut self, damage: u32) {
+        if self.sawing {
+            return;
+        }
         // The ninja dodges a blow now and then: nothing taken, but as long unhurt after.
         let dodge = self.player.build.hero().perk().dodge_percent();
         if dodge > 0 && self.rng.random_range(0..100) < dodge {

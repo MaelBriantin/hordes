@@ -17,13 +17,23 @@ const STICK: Color = Color::Rgb(45, 45, 52);
 const METAL: Color = Color::Rgb(205, 205, 215);
 const WHITE: Color = Color::Rgb(235, 245, 255);
 const CYAN: Color = Color::Rgb(120, 220, 255);
+const BLUE: Color = Color::Rgb(70, 120, 230);
+/// A whirlwind: how far out from the hero's middle the baton's prong goes round, in pixels; the
+/// points of the trail it leaves behind, and how far apart, in radians.
+const WHIRL_PRONG: f32 = 3.2;
+const WHIRL_TRAIL: u16 = 18;
+const WHIRL_TRAIL_STEP: f32 = 0.12;
 
 impl Canvas<'_> {
-    /// The baton's last thrust, while it shows.
+    /// The baton's last thrust, while it shows; or its whirlwind.
     pub(super) fn paint_thrust(&mut self, world: &World) {
         let Some(thrust) = world.thrust else {
             return;
         };
+        if let Some(angle) = thrust.whirl_angle() {
+            self.paint_whirl(world, angle);
+            return;
+        }
         let (x, y) = pixel(world.player.position);
         #[allow(clippy::cast_possible_truncation, reason = "a way: -1, 0 or 1")]
         let (dx, dy) = (thrust.way.x.round() as i32, thrust.way.y.round() as i32);
@@ -69,6 +79,38 @@ impl Canvas<'_> {
                 self.set((ex + 1, ey - 3), WHITE);
                 self.set((ex + 2, ey - 4), CYAN);
             }
+        }
+    }
+
+    /// A whirlwind: the baton held out from the hero, pointing `angle` radians round, the way they
+    /// face as they spin; its prong leaving a trail behind it, white, cyan, then blue; a spark on
+    /// each enemy it paralyses.
+    fn paint_whirl(&mut self, world: &World, angle: f32) {
+        let (x, y) = pixel(world.player.position);
+        #[allow(clippy::cast_possible_truncation, reason = "a few pixels")]
+        let point = |radius: f32, angle: f32| {
+            (
+                x + (radius * angle.cos()).round() as i32,
+                y + (radius * angle.sin()).round() as i32,
+            )
+        };
+        for step in 0..WHIRL_TRAIL {
+            let colour = match step {
+                0 | 1 => WHITE,
+                2..=7 => CYAN,
+                _ => BLUE,
+            };
+            let behind = angle + f32::from(step) * WHIRL_TRAIL_STEP;
+            self.set(point(WHIRL_PRONG, behind), colour);
+        }
+        for radius in [2.0, 2.6] {
+            self.set(point(radius, angle), STICK);
+        }
+        self.set(point(WHIRL_PRONG, angle), METAL);
+        for enemy in world.enemies.iter().filter(|enemy| enemy.shocked > 0) {
+            let (ex, ey) = pixel(enemy.position);
+            self.set((ex + 1, ey - 3), WHITE);
+            self.set((ex + 2, ey - 4), CYAN);
         }
     }
 

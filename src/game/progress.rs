@@ -24,6 +24,8 @@ pub const DEMOLISHER_ABOMINATIONS: u32 = 10;
 /// run, all counted, for Cold blood.
 pub const COLD_BLOOD_PERCENT: u32 = 30;
 pub const COLD_BLOOD_SECONDS: u32 = 60;
+/// Shadow: the seconds the torch has to be out in a single run, all counted.
+pub const SHADOW_SECONDS: u32 = 180;
 /// The Shadows to fell in a single run for Shadow hunter.
 pub const SHADOW_HUNTER_SHADOWS: u32 = 25;
 /// The HP to get back in a single run for First aid.
@@ -37,7 +39,7 @@ pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 26] = [
+pub const COLLECTION: [Unlock; 28] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -62,6 +64,8 @@ pub const COLLECTION: [Unlock; 26] = [
     Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
     Unlock::Card(Choice::Passive(Passive::Drain)),
     Unlock::Card(Choice::Weapon(Weapon::C4)),
+    Unlock::Card(Choice::Weapon(Weapon::Napalm)),
+    Unlock::Card(Choice::Passive(Passive::Stealth)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -103,6 +107,8 @@ pub enum Achievement {
     Legend,
     /// First aid: 300 HP got back in a single run.
     FirstAid,
+    /// Shadow: three minutes with the torch out in a single run, all counted.
+    Shadow,
     /// A regular: 25 runs played.
     Regular,
     /// Veteran: level 25 reached in a single run.
@@ -118,12 +124,10 @@ pub enum Unlock {
     Reroll,
     /// The arcade mode, to be played from then on.
     Arcade,
-    /// A hero, to be played from then on, with their own weapon.
-    Skin(Skin),
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 19] = [
+    pub const ALL: [Achievement; 20] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
@@ -140,6 +144,7 @@ impl Achievement {
         Achievement::ShadowHunter,
         Achievement::Legend,
         Achievement::FirstAid,
+        Achievement::Shadow,
         Achievement::Regular,
         Achievement::Veteran,
         Achievement::Dawn,
@@ -163,8 +168,9 @@ impl Achievement {
             Achievement::Demolisher => Unlock::Card(Choice::Weapon(Weapon::C4)),
             Achievement::ColdBlood => Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
             Achievement::ShadowHunter => Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
-            Achievement::Legend => Unlock::Skin(Skin::Classic),
+            Achievement::Legend => Unlock::Card(Choice::Weapon(Weapon::Napalm)),
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
+            Achievement::Shadow => Unlock::Card(Choice::Passive(Passive::Stealth)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
@@ -187,7 +193,7 @@ impl Unlock {
     pub fn rarity(self) -> Rarity {
         match self {
             Unlock::Card(choice) => choice.rarity(),
-            Unlock::Reroll | Unlock::Skin(_) => Rarity::Rare,
+            Unlock::Reroll => Rarity::Rare,
             Unlock::Arcade => Rarity::Legendary,
         }
     }
@@ -378,15 +384,10 @@ mod tests {
             .iter()
             .filter(|unlock| progress.has(**unlock))
             .count();
-        // Every achievement's card in it; not the heroes, who show among the skins.
-        let cards = Achievement::ALL
-            .iter()
-            .filter(|achievement| !matches!(achievement.unlocks(), Unlock::Skin(_)))
-            .count();
-        assert_eq!(from_start, COLLECTION.len() - cards);
+        // Every achievement's card in it.
+        assert_eq!(from_start, COLLECTION.len() - Achievement::ALL.len());
         for achievement in Achievement::ALL {
-            let unlock = achievement.unlocks();
-            assert!(matches!(unlock, Unlock::Skin(_)) || COLLECTION.contains(&unlock));
+            assert!(COLLECTION.contains(&achievement.unlocks()));
         }
         for skin in Skin::ALL {
             assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(skin.weapon()))));

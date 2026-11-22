@@ -23,6 +23,8 @@ pub enum Perk {
     Dodge,
     /// Healing heals half again as much, and HP come back of themselves, one every 5 s.
     Healer,
+    /// The torch out, they see around them all the same, in green.
+    NightVision,
 }
 
 impl Perk {
@@ -61,6 +63,11 @@ impl Perk {
         if self == Perk::Dodge { 15 } else { 0 }
     }
 
+    /// Whether they see in the dark, the torch out.
+    pub fn night_vision(self) -> bool {
+        self == Perk::NightVision
+    }
+
     /// How long a gun takes to reload, against how long it would, in percent.
     pub fn reload_percent(self) -> u32 {
         if self == Perk::Reflexes { 80 } else { 100 }
@@ -86,10 +93,13 @@ pub enum Skin {
     Ninja,
     /// A medic: once First aid is reached.
     Medic,
+    /// An infiltrator, all in dark, a balaclava, green goggles on the forehead, over the eyes
+    /// once the torch is out: once Shadow is reached.
+    Infiltrator,
 }
 
 impl Skin {
-    pub const ALL: [Skin; 7] = [
+    pub const ALL: [Skin; 8] = [
         Skin::Survivor,
         Skin::Classic,
         Skin::Exterminator,
@@ -97,6 +107,7 @@ impl Skin {
         Skin::Agent,
         Skin::Ninja,
         Skin::Medic,
+        Skin::Infiltrator,
     ];
 
     /// The hero a weapon belongs to, if it is one's own: never dealt to the others.
@@ -119,6 +130,7 @@ impl Skin {
             Skin::Agent => Weapon::Knife,
             Skin::Ninja => Weapon::Katana,
             Skin::Medic => Weapon::Defibrillator,
+            Skin::Infiltrator => Weapon::Fists,
         }
     }
 
@@ -126,7 +138,8 @@ impl Skin {
     pub fn hp(self) -> u32 {
         match self {
             Skin::Survivor | Skin::Exterminator => 100,
-            Skin::Classic | Skin::Medic => 90,
+            Skin::Classic => 120,
+            Skin::Medic | Skin::Infiltrator => 90,
             Skin::Demolisher => 140,
             Skin::Agent | Skin::Ninja => 80,
         }
@@ -136,7 +149,7 @@ impl Skin {
     pub fn speed_percent(self) -> i16 {
         match self {
             Skin::Survivor | Skin::Medic => 0,
-            Skin::Classic => 5,
+            Skin::Classic | Skin::Infiltrator => 5,
             Skin::Exterminator => -5,
             Skin::Demolisher => -15,
             Skin::Agent => 10,
@@ -155,6 +168,7 @@ impl Skin {
             Skin::Agent => Perk::Reflexes,
             Skin::Ninja => Perk::Dodge,
             Skin::Medic => Perk::Healer,
+            Skin::Infiltrator => Perk::NightVision,
         }
     }
 
@@ -168,6 +182,7 @@ impl Skin {
             Skin::Agent => Some(Achievement::ColdBlood),
             Skin::Ninja => Some(Achievement::ShadowHunter),
             Skin::Medic => Some(Achievement::FirstAid),
+            Skin::Infiltrator => Some(Achievement::Shadow),
         }
     }
 
@@ -181,6 +196,7 @@ impl Skin {
             Skin::Agent => "agent",
             Skin::Ninja => "ninja",
             Skin::Medic => "medic",
+            Skin::Infiltrator => "infiltrator",
         }
     }
 }

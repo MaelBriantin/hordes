@@ -1,9 +1,12 @@
-//! The demolition hammer at work: its blows on the ground ahead of the player, and their shock.
+//! The demolition hammer at work: its blows on the ground ahead of the player, their shock, and
+//! the shocks following on.
 
 use super::super::Vec2;
 use super::super::build::Weapon;
 use super::super::enemy::EnemyKind;
-use super::super::hammer::{self, AHEAD, BLOW_TICKS, Blow, KNOCKBACK, RAISE_TICKS, WAVE_TICKS};
+use super::super::hammer::{
+    self, AHEAD, BLOW_TICKS, Blow, KNOCKBACK, RAISE_TICKS, SHOCK_RADIUS, WAVE_TICKS,
+};
 use super::World;
 use super::weapons::against;
 
@@ -19,11 +22,17 @@ impl World {
                 self.blow = None;
             }
         }
+        for wave in &mut self.quake_waves {
+            wave.age += 1;
+        }
+        self.quake_waves.retain(|wave| wave.age < BLOW_TICKS);
         let level = self.player.build.weapon_level(Weapon::Hammer);
         if level == 0 {
+            self.quakes.clear();
             return;
         }
         let stats = hammer::at(level);
+        self.shake(stats);
         let at = self.player.position + self.player.facing.way() * AHEAD;
         let reaches = |position: Vec2, half: f32| (position - at).length() <= stats.radius + half;
         // Raised, it falls once the moment is over.
@@ -45,11 +54,13 @@ impl World {
         }
         let build = &self.player.build;
         let (damage, hunter) = (build.damage(stats.damage), build.horde_bonus());
+        self.blow_hit.clear();
         for enemy in &mut self.enemies {
             let enemy_stats = enemy.kind.stats();
             if !reaches(enemy.position, enemy_stats.half_width) {
                 continue;
             }
+            self.blow_hit.push(enemy.id);
             let standing = enemy.hp > 0;
             enemy.hit(against(damage, enemy, hunter));
             enemy.stunned = enemy.stunned.max(stats.stun);
@@ -66,6 +77,44 @@ impl World {
             radius: stats.radius,
             age: 0,
         });
+        let way = self.player.facing.way();
+        self.quakes = hammer::quakes(at, way, stats.shocks, stats.sideways);
         self.hammer_wait = self.player.build.cooldown(stats.every);
+    }
+
+    /// The shocks following the last blow, each once its time comes: every enemy around it not
+    /// yet hit by the blow is, thrown back, stunned at the last level.
+    fn shake(&mut self, stats: hammer::Hammer) {
+        for quake in &mut self.quakes {
+            quake.left = quake.left.saturating_sub(1);
+        }
+        let build = &self.player.build;
+        let (damage, hunter) = (build.damage(stats.damage), build.horde_bonus());
+        let ticks = f32::from(u16::try_from(WAVE_TICKS).unwrap_or(1));
+        for quake in self.quakes.iter().filter(|quake| quake.left == 0) {
+            for enemy in &mut self.enemies {
+                let apart = enemy.position - quake.at;
+                if apart.length() > SHOCK_RADIUS + enemy.kind.stats().half_width
+                    || self.blow_hit.contains(&enemy.id)
+                {
+                    continue;
+                }
+                self.blow_hit.push(enemy.id);
+                let standing = enemy.hp > 0;
+                enemy.hit(against(damage, enemy, hunter));
+                enemy.stunned = enemy.stunned.max(stats.stun);
+                enemy.knock = apart.normalized() * (KNOCKBACK / ticks);
+                enemy.knocked = WAVE_TICKS;
+                if standing && enemy.hp == 0 && enemy.kind == EnemyKind::Abomination {
+                    self.abominations_smashed += 1;
+                }
+            }
+            self.quake_waves.push(Blow {
+                at: quake.at,
+                radius: SHOCK_RADIUS,
+                age: 0,
+            });
+        }
+        self.quakes.retain(|quake| quake.left > 0);
     }
 }

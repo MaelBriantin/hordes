@@ -216,6 +216,8 @@ const SCREEN_GROUND: (u8, u8, u8) = (12, 12, 18);
 const ASH: [Color; 2] = [Color::Rgb(60, 58, 56), Color::Rgb(95, 92, 88)];
 /// A fire's light, against the torch's white: orange.
 const FIRE_TINT: (f32, f32, f32) = (1.3, 0.95, 0.55);
+/// Night vision's green, as shares of a colour's brightness: bright, a little lifted.
+const GOGGLES: (f32, f32, f32) = (0.35, 1.4, 0.4);
 /// How a strike's ring blinks while it foretells it: every so many ticks at first, and at the
 /// end; and its colour then, lightning's glow, dimmed.
 const WARNING_BLINK: (f32, f32) = (4.0, 2.0);
@@ -435,6 +437,8 @@ pub struct Light {
     pub fade: f32,
     /// How warm its light, from 0 (white, the torch's) to 1 (a fire's orange).
     warmth: f32,
+    /// How much it shows as through night vision goggles, from 0 to 1: all in green.
+    vision: f32,
 }
 
 impl Light {
@@ -445,6 +449,7 @@ impl Light {
             radius,
             fade: LIGHT_FADE,
             warmth: 0.0,
+            vision: 0.0,
         }
     }
 
@@ -455,6 +460,18 @@ impl Light {
             radius,
             fade: radius,
             warmth: 1.0,
+            vision: 0.0,
+        }
+    }
+
+    /// What the infiltrator sees, their torch out: `radius` tiles around them, in green.
+    pub fn night_vision(centre: (i32, i32), radius: f32) -> Self {
+        Self {
+            centre,
+            radius,
+            fade: LIGHT_FADE,
+            warmth: 0.0,
+            vision: 1.0,
         }
     }
 
@@ -466,6 +483,7 @@ impl Light {
             radius: GEM_LIGHT.0,
             fade: GEM_LIGHT.1,
             warmth: 0.0,
+            vision: 0.0,
         }
     }
 
@@ -477,6 +495,7 @@ impl Light {
             radius: BURST_LIGHT.0 * left,
             fade: BURST_LIGHT.1,
             warmth: 1.0,
+            vision: 0.0,
         }
     }
 
@@ -508,6 +527,7 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
     // warmest.
     let mut lit = vec![0.0_f32; canvas.pixels.len()];
     let mut warm = vec![0.0_f32; canvas.pixels.len()];
+    let mut green = vec![0.0_f32; canvas.pixels.len()];
     for light in lights {
         let reach = light.reach();
         let (cx, cy) = (light.centre.0 - left, light.centre.1 - top);
@@ -519,16 +539,48 @@ pub fn light(canvas: &mut Canvas, lights: &[Light], flash: f32, daylight: f32) {
                 };
                 lit[index] = lit[index].max(on);
                 warm[index] = warm[index].max(on * light.warmth);
+                green[index] = green[index].max(on * light.vision);
             }
         }
     }
-    for ((pixel, on), warm) in canvas.pixels.iter_mut().zip(lit).zip(warm) {
+    for (((pixel, on), warm), vision) in canvas.pixels.iter_mut().zip(lit).zip(warm).zip(green) {
         let Some(Color::Rgb(red, green, blue)) = *pixel else {
             continue;
         };
         let level = (ambient + (1.0 - ambient) * on).max(flash);
-        *pixel = Some(warmed(look.colour((red, green, blue), level), warm));
+        *pixel = Some(through_goggles(
+            warmed(look.colour((red, green, blue), level), warm),
+            vision,
+        ));
     }
+}
+
+/// A colour as through night vision goggles, as much as `vision` (from 0 to 1): its brightness
+/// alone, in green.
+fn through_goggles(color: Color, vision: f32) -> Color {
+    let Color::Rgb(red, green, blue) = color else {
+        return color;
+    };
+    if vision <= 0.0 {
+        return color;
+    }
+    let bright = (f32::from(red) * 0.3 + f32::from(green) * 0.59 + f32::from(blue) * 0.11) / 255.0;
+    let goggles = (bright * GOGGLES.0, bright * GOGGLES.1, bright * GOGGLES.2);
+    let mix = |channel: u8, goggle: f32| {
+        let value = f32::from(channel) * (1.0 - vision) + goggle * 255.0 * vision;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "0 to 255"
+        )]
+        let value = value.round().clamp(0.0, 255.0) as u8;
+        value
+    };
+    Color::Rgb(
+        mix(red, goggles.0),
+        mix(green, goggles.1),
+        mix(blue, goggles.2),
+    )
 }
 
 /// A colour under a fire's light, as warm as it is (from 0 to 1): more red, less blue.
@@ -737,6 +789,19 @@ fn noise(n: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn through_night_vision_goggles_a_colour_shows_in_green_as_bright_as_it_was() {
+        let (dim, bright) = (Color::Rgb(40, 30, 20), Color::Rgb(200, 180, 160));
+        let green = |color| match through_goggles(color, 1.0) {
+            Color::Rgb(red, green, blue) => (red, green, blue),
+            _ => unreachable!(),
+        };
+        let (red, g, blue) = green(bright);
+        assert!(g > red && g > blue, "green");
+        assert!(green(bright).1 > green(dim).1, "as bright as it was");
+        assert_eq!(through_goggles(bright, 0.0), bright, "none without goggles");
+    }
 
     #[test]
     fn lightning_strikes_once_a_cycle() {

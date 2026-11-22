@@ -1,6 +1,6 @@
 //! Drones: drones circling the player, each shooting at the nearest enemy within its reach, again
-//! and again; an enemy touching one breaks it, and it keeps circling, harmless, until it has
-//! repaired.
+//! and again, nothing breaking them; their shots come from one magazine, a few each, then they
+//! reload.
 
 use std::f32::consts::TAU;
 
@@ -8,8 +8,8 @@ use super::build::Weapon;
 use super::guns::Gun;
 use super::{TICKS_PER_SECOND, Vec2, tick_seconds};
 
-/// Half the width of a drone's body, in tiles: an enemy within it breaks the drone.
-pub const HALF_WIDTH: f32 = 0.9;
+/// The shots each drone brings to their magazine.
+const SHOTS_PER_DRONE: u32 = 6;
 /// How near a drone an enemy has to be to be shot at, in tiles; how fast its bullets fly, in
 /// tiles a second, and how far.
 const REACH: f32 = 6.0;
@@ -38,14 +38,15 @@ pub fn damage(level: u8) -> u32 {
 pub fn gun(level: u8) -> Gun {
     Gun {
         weapon: Weapon::Drones,
-        magazine: 1,
+        magazine: SHOTS_PER_DRONE * u32::from(count(level)),
         interval: INTERVAL_TENTHS * u32::from(TICKS_PER_SECOND) / 10,
-        reload: 0,
+        reload: reload(level),
         damage: damage(level),
         bullets: 1,
         pellets: 1,
         spread: 0.0,
         pierce: 0,
+        ricochets: 0,
         speed: BULLET_SPEED,
         range: BULLET_RANGE,
     }
@@ -67,8 +68,8 @@ pub fn turn_per_tick(level: u8) -> f32 {
     TAU / seconds_per_turn * tick_seconds()
 }
 
-/// The ticks a broken drone takes to repair, before Haste: 3 seconds, 2 from level 4.
-pub fn repair(level: u8) -> u32 {
+/// The ticks the drones take to reload their magazine once empty: 3 seconds, 2 from level 4.
+pub fn reload(level: u8) -> u32 {
     let seconds = if level >= 4 { 2 } else { 3 };
     seconds * u32::from(TICKS_PER_SECOND)
 }

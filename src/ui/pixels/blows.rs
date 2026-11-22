@@ -1,10 +1,11 @@
 //! The demolition hammer's blow: the hammer raised over the hero's head, then down on the ground a
-//! moment, the wave of its shock going out to its reach as it throws the enemies out.
+//! moment, the wave of its shock going out to its reach as it throws the enemies out; the waves
+//! of the shocks following on.
 
 use ratatui::style::Color;
 
 use super::{Canvas, pixel};
-use crate::game::{Facing, HAMMER_WAVE_TICKS as WAVE_TICKS, World};
+use crate::game::{Blow, Facing, HAMMER_WAVE_TICKS as WAVE_TICKS, World};
 
 /// How long the hammer shows down on the ground, in ticks.
 const HAMMER_TICKS: u32 = 6;
@@ -36,13 +37,14 @@ impl Canvas<'_> {
             }
             self.hammer_head((column, py - 6));
         }
+        for wave in &world.quake_waves {
+            self.paint_wave(*wave);
+        }
         let Some(blow) = world.blow else {
             return;
         };
         let (x, y) = pixel(blow.at);
-        let age = blow.age;
-        let tick = |value: u32| f32::from(u16::try_from(value).unwrap_or(u16::MAX));
-        if age < HAMMER_TICKS {
+        if blow.age < HAMMER_TICKS {
             // The handle from the player's hands to the head, down on the ground.
             for step in 1_u8..=4 {
                 let share = f32::from(step) / 5.0;
@@ -56,8 +58,15 @@ impl Canvas<'_> {
             }
             self.hammer_head((x, y));
         }
-        // The wave: a thick band going out from where it landed to the shock's reach, as fast
-        // as it throws the enemies out, white at its front; then fading where it stops.
+        self.paint_wave(blow);
+    }
+
+    /// A shock's wave: a thick band going out from where it landed to its reach, as fast as it
+    /// throws the enemies out, white at its front; then fading where it stops.
+    fn paint_wave(&mut self, blow: Blow) {
+        let (x, y) = pixel(blow.at);
+        let age = blow.age;
+        let tick = |value: u32| f32::from(u16::try_from(value).unwrap_or(u16::MAX));
         let reach = blow.radius * 2.0;
         if age < WAVE_TICKS + FADE_TICKS {
             let out = tick((age + 1).min(WAVE_TICKS)) / tick(WAVE_TICKS);

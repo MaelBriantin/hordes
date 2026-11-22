@@ -43,10 +43,12 @@ pub enum Weapon {
     Defibrillator,
     Chainsaw,
     C4,
+    Napalm,
+    Fists,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 16] = [
+    pub const ALL: [Weapon; 18] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -63,6 +65,8 @@ impl Weapon {
         Weapon::Defibrillator,
         Weapon::Chainsaw,
         Weapon::C4,
+        Weapon::Napalm,
+        Weapon::Fists,
     ];
 }
 
@@ -90,13 +94,15 @@ pub enum Passive {
     Glare,
     /// A chance for each enemy felled to give back 1 HP: 10%, 5% more per level.
     Drain,
+    /// The torch out, 10% faster per level.
+    Stealth,
     /// +10% damage to the hordes per level; their last ones targeted in red, more with the
     /// levels.
     HordeHunter,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 12] = [
+    pub const ALL: [Passive; 13] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -108,6 +114,7 @@ impl Passive {
         Passive::Regeneration,
         Passive::Glare,
         Passive::Drain,
+        Passive::Stealth,
         Passive::HordeHunter,
     ];
 }
@@ -146,7 +153,8 @@ impl Choice {
                 | Weapon::Hammer
                 | Weapon::Baton
                 | Weapon::Chainsaw
-                | Weapon::C4,
+                | Weapon::C4
+                | Weapon::Napalm,
             )
             | Choice::Passive(
                 Passive::Might
@@ -360,6 +368,12 @@ impl Build {
     }
 
     /// The player's speed, against the survivor's, in percent: the hero's, and Swiftness's.
+    /// How much faster the player goes with the torch out, in points of percent: 10 per level of
+    /// Stealth.
+    pub fn stealth_percent(&self) -> u16 {
+        10 * u16::from(self.passive_level(Passive::Stealth))
+    }
+
     pub fn speed_percent(&self) -> u16 {
         let swiftness = 8 * i16::from(self.passive_level(Passive::Swiftness));
         u16::try_from(100 + self.hero.speed_percent() + swiftness).unwrap_or(100)

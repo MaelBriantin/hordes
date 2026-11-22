@@ -663,6 +663,7 @@ pub fn render_death(
         );
     }
     let line = [
+        skins::outfit_name(view.outfit()),
         fl!("over-survived", time = clock(world.seconds())),
         fl!(
             "over-score",

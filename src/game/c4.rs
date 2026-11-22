@@ -11,7 +11,7 @@ pub const FUSE_TICKS: u32 = 45;
 pub const NEAR: f32 = 6.0;
 /// How far the blast throws the enemies it hits back, away from the charge, in tiles, over how
 /// many ticks.
-pub const KNOCKBACK: f32 = 2.0;
+pub const KNOCKBACK: f32 = 3.0;
 pub const WAVE_TICKS: u32 = 6;
 /// How long a blast shows, in ticks: its flash, its fireball, then its smoke.
 pub const BLAST_TICKS: u32 = 30;
@@ -33,8 +33,8 @@ pub struct C4 {
 pub fn at(level: u8) -> C4 {
     let second = u32::from(TICKS_PER_SECOND);
     C4 {
-        every: if level >= 4 { 3 } else { 4 } * second,
-        damage: if level >= 3 { 60 } else { 40 },
+        every: if level >= 4 { 5 } else { 6 } * second,
+        damage: if level >= 3 { 40 } else { 25 },
         radius: if level >= 2 { 3.0 } else { 2.5 },
         stun: if level >= 5 { second } else { 0 },
     }
@@ -78,11 +78,11 @@ mod tests {
         let (first, last) = (at(1), at(5));
         assert_eq!(
             (first.every, first.damage, first.radius, first.stun),
-            (120, 40, 2.5, 0)
+            (180, 25, 2.5, 0)
         );
         assert_eq!(
             (last.every, last.damage, last.radius, last.stun),
-            (90, 60, 3.0, 30)
+            (150, 40, 3.0, 30)
         );
     }
 
