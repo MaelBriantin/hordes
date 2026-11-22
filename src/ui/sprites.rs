@@ -112,6 +112,7 @@ pub enum SpriteId {
     IconShuriken,
     IconDefibrillator,
     IconChainsaw,
+    IconC4,
     IconBarricade,
     IconIllumination,
     IconHeal,
@@ -129,7 +130,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 95] = [
+    const ALL: [SpriteId; 96] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -212,6 +213,7 @@ impl SpriteId {
         SpriteId::IconShuriken,
         SpriteId::IconDefibrillator,
         SpriteId::IconChainsaw,
+        SpriteId::IconC4,
         SpriteId::IconBarricade,
         SpriteId::IconIllumination,
         SpriteId::IconHeal,
@@ -311,6 +313,7 @@ impl SpriteId {
             SpriteId::IconShuriken => "icon_shuriken",
             SpriteId::IconDefibrillator => "icon_defibrillator",
             SpriteId::IconChainsaw => "icon_chainsaw",
+            SpriteId::IconC4 => "icon_c4",
             SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",
             SpriteId::IconHeal => "icon_heal",

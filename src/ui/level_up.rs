@@ -248,6 +248,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Shuriken => SpriteId::IconShuriken,
             Weapon::Defibrillator => SpriteId::IconDefibrillator,
             Weapon::Chainsaw => SpriteId::IconChainsaw,
+            Weapon::C4 => SpriteId::IconC4,
         },
         Choice::Passive(passive) => match passive {
             Passive::Vitality => SpriteId::IconVitality,
@@ -311,6 +312,7 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Shuriken => fl!("weapon-shuriken"),
         Weapon::Defibrillator => fl!("weapon-defibrillator"),
         Weapon::Chainsaw => fl!("weapon-chainsaw"),
+        Weapon::C4 => fl!("weapon-c4"),
     }
 }
 
@@ -441,6 +443,13 @@ fn later_weapon_gain(weapon: Weapon, level: u8) -> String {
             3 => fl!("gain-chainsaw-3"),
             4 => fl!("gain-chainsaw-4"),
             _ => fl!("gain-chainsaw-5"),
+        },
+        Weapon::C4 => match level {
+            1 => fl!("gain-c4-1"),
+            2 => fl!("gain-c4-2"),
+            3 => fl!("gain-c4-3"),
+            4 => fl!("gain-c4-4"),
+            _ => fl!("gain-c4-5"),
         },
         _ => shuriken_gain(level),
     }

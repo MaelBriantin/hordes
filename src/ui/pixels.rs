@@ -2,6 +2,7 @@
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
 mod blows;
+mod c4;
 mod figures;
 mod fire;
 mod gear;
@@ -437,6 +438,35 @@ impl<'a> Canvas<'a> {
     }
 }
 
+impl Canvas<'_> {
+    /// What lights the night: the torch, the campfires (painted), the fires and the blasts,
+    /// with their halos; the gems and the charges' lights, with their glows.
+    fn lights(
+        &mut self,
+        world: &World,
+        frame: u32,
+    ) -> (Vec<night::Light>, Vec<night::Halo>, Vec<night::Glow>) {
+        let mut lights = Vec::new();
+        if world.torch_shines() {
+            lights.push(night::Light::torch(
+                pixel(world.player.position),
+                world.light_radius(),
+            ));
+        }
+        let campfires = self.paint_healing(world, frame);
+        let (shining, mut halos) = Canvas::shines(world, &campfires, frame);
+        lights.extend(campfires);
+        lights.extend(shining);
+        let (blasting, blast_halos) = Canvas::blast_lights(world);
+        lights.extend(blasting);
+        halos.extend(blast_halos);
+        let mut glows = self.glows(world);
+        glows.extend(Canvas::charge_glows(world));
+        lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
+        (lights, halos, glows)
+    }
+}
+
 /// The map around the player, the player in the middle of `area`, at night: lit around the
 /// player and by lightning, under the rain, blood stains and the arrow over the player as `view`
 /// says, `view.frame` frames in.
@@ -460,6 +490,7 @@ pub fn render_map(
     // The hammer's wave on the ground, under the enemies it throws out; a dodge's ghost, under
     // the hero.
     canvas.paint_blow(world);
+    canvas.paint_charges(world);
     canvas.paint_dodge(world, view.outfit());
     let covered = canvas.paint_figures(world, view.outfit());
     if let Some(hurt_at) = world.hurt_at {
@@ -477,16 +508,7 @@ pub fn render_map(
 
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());
-    let mut lights = Vec::new();
-    if world.torch_shines() {
-        lights.push(night::Light::torch(centre, world.light_radius()));
-    }
-    let campfires = canvas.paint_healing(world, frame);
-    let (shining, halos) = Canvas::shines(world, &campfires, frame);
-    lights.extend(campfires);
-    lights.extend(shining);
-    let glows = canvas.glows(world);
-    lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
+    let (lights, halos, glows) = canvas.lights(world, frame);
     night::light(&mut canvas, &lights, night::flash(strike), world.daylight());
     night::paint_halos(&mut canvas, &halos);
     // Where lightning will strike, a moment before: its ring on the ground, blinking, under the
@@ -507,8 +529,11 @@ pub fn render_map(
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
     canvas.paint_flamethrower(world, frame);
-    // Each gem on screen glows its colour around it, then shows over its glow.
+    canvas.paint_c4_blasts(world);
+    // Each gem on screen glows its colour around it, then shows over its glow; each charge's
+    // light, lit, too.
     night::paint_glows(&mut canvas, &glows);
+    canvas.paint_charge_lights(world);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
     }

@@ -125,7 +125,8 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
         | Weapon::Knife
         | Weapon::Katana
         | Weapon::Defibrillator
-        | Weapon::Chainsaw => None,
+        | Weapon::Chainsaw
+        | Weapon::C4 => None,
     }
 }
 

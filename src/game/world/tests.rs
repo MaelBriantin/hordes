@@ -4,6 +4,7 @@ use super::super::barricade;
 use super::super::body::fits;
 use super::super::build::{Action, BASE_HP, Build, Choice, Legendary, Passive, Weapon};
 use super::super::burst;
+use super::super::c4;
 use super::super::enemy::EnemyKind;
 use super::super::gem::Gem;
 use super::super::guns::{self, Bullet};
@@ -2120,16 +2121,17 @@ fn the_hammer_lands_ahead_hurting_and_throwing_back_every_enemy_around_not_those
 }
 
 #[test]
-fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher() {
+fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher_and_the_c4() {
     let mut world = armed_with(Weapon::Crowbar, 1);
     world.next_horde = u32::MAX;
     world.progress = Progress::default();
     world.player.facing = Facing::Right;
     for felled in 0..10 {
         assert!(
-            !world.progress.has(Unlock::Skin(Skin::Demolisher)),
+            !world.progress.achieved.contains(&Achievement::Demolisher),
             "{felled}"
         );
+        assert!(!world.progress.deals(Choice::Weapon(Weapon::C4)));
         world.melee.clear();
         world
             .enemies
@@ -2141,7 +2143,67 @@ fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher() {
         world.enemies.clear();
         world.swellings.clear();
     }
-    assert!(world.progress.has(Unlock::Skin(Skin::Demolisher)));
+    assert!(world.progress.achieved.contains(&Achievement::Demolisher));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::C4)));
+}
+
+/// The C4 at `level`, an enemy stunned and tough at the player's feet, one within its blast,
+/// one well away.
+fn charged(level: u8) -> World {
+    let mut world = armed_with(Weapon::C4, level);
+    world.next_horde = u32::MAX;
+    for x in [100.0, 102.0, 110.0] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    world
+}
+
+#[test]
+fn the_c4_sets_a_charge_down_at_the_player_s_feet_only_with_an_enemy_near() {
+    let mut world = armed_with(Weapon::C4, 1);
+    world.next_horde = u32::MAX;
+    wait(&mut world, 30);
+    assert!(world.charges.is_empty(), "none near");
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
+    world.enemies[0].stunned = u32::MAX;
+    wait(&mut world, 1);
+    assert_eq!(world.charges.len(), 1);
+    assert_eq!(world.charges[0].at, world.player.position);
+}
+
+#[test]
+fn a_charge_blows_after_its_fuse_hurting_and_throwing_back_what_is_around_not_beyond() {
+    let mut world = charged(1);
+    wait(&mut world, 1);
+    assert_eq!(world.charges.len(), 1);
+    wait(&mut world, c4::FUSE_TICKS - 1);
+    assert_eq!(world.enemies[0].hp, 1_000, "not yet");
+    wait(&mut world, 1);
+    assert!(world.charges.is_empty() && world.c4_blasts.len() == 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 40);
+    assert_eq!(world.enemies[1].hp, 1_000 - 40);
+    assert_eq!(world.enemies[2].hp, 1_000, "beyond its blast");
+    wait(&mut world, c4::WAVE_TICKS);
+    assert!(world.enemies[1].position.x > 103.5, "thrown back");
+}
+
+#[test]
+fn at_level_5_the_c4_s_blast_stuns() {
+    let mut world = charged(5);
+    for enemy in &mut world.enemies {
+        enemy.stunned = 0;
+        enemy.position.y = 52.0;
+    }
+    wait(&mut world, 1 + c4::FUSE_TICKS);
+    assert!(world.enemies[1].stunned > 0);
 }
 
 #[test]

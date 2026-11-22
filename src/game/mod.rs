@@ -7,6 +7,7 @@ mod baton;
 mod body;
 mod build;
 mod burst;
+mod c4;
 mod chainsaw;
 mod dash;
 mod defibrillator;

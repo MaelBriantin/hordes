@@ -11,6 +11,7 @@ use super::build::{
     BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
 };
 use super::burst::{Blast, Swelling};
+use super::c4::{self, Charge};
 use super::dash::{Dash, Dashes};
 use super::defibrillator::Shock;
 use super::enemy::Enemy;
@@ -38,6 +39,7 @@ use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 
 mod barricades;
 mod blows;
+mod charges;
 mod cuts;
 mod debug;
 mod enemies;
@@ -198,6 +200,11 @@ pub struct World {
     pub bottles: Vec<Bottle>,
     pub puddles: Vec<Puddle>,
     molotov_wait: u32,
+    /// The C4's charges set down, its blasts while they show, and the ticks before its next
+    /// charge.
+    pub charges: Vec<Charge>,
+    pub c4_blasts: Vec<c4::Blast>,
+    c4_wait: u32,
     /// The hammer's last blow, while it shows, and the ticks before the next.
     pub blow: Option<Blow>,
     hammer_wait: u32,
@@ -398,6 +405,9 @@ impl World {
             swellings: Vec::new(),
             blasts: Vec::new(),
             molotov_wait: 0,
+            charges: Vec::new(),
+            c4_blasts: Vec::new(),
+            c4_wait: 0,
             blow: None,
             hammer_wait: 0,
             hammer_raised: 0,
@@ -718,6 +728,7 @@ impl World {
         self.cut_katana();
         self.shock_defibrillator();
         self.grind_chainsaw();
+        self.set_charges();
         self.throw_molotovs();
         self.throw_flames();
         self.fire_guns();

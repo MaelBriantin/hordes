@@ -53,7 +53,7 @@ pub struct App {
     picked: usize,
     browsing: bool,
     /// The hero's tile the arrows are on, while the heroes show on the title screen: H shows
-    /// them, at the one worn; Enter or Space wear the one picked, Esc hides them.
+    /// them, at the one worn; Enter or Space wear the one picked, Esc or H again hide them.
     skin_picked: Option<usize>,
     /// The frame the skin's tile the arrows are on was picked at: its hero turns round a second
     /// after.
@@ -92,7 +92,23 @@ pub struct App {
 impl App {
     /// A new run on a map drawn at random.
     pub fn new(sprites: Sprites) -> Self {
-        let settings = Settings::load();
+        let kept = progress::kept();
+        Self::with(
+            sprites,
+            Settings::load(),
+            scores::load(),
+            (progress::load(), kept),
+        )
+    }
+
+    /// A new run on a map drawn at random, with these settings, leaderboard and progress, and
+    /// whether that progress is kept on disk.
+    fn with(
+        sprites: Sprites,
+        settings: Settings,
+        leaderboard: Leaderboard,
+        (progress, progress_kept): (Progress, bool),
+    ) -> Self {
         // The language first, so every text from here on is in it.
         crate::i18n::use_language(settings.language.id());
         Self {
@@ -100,8 +116,8 @@ impl App {
             sprites,
             screen: Screen::Title,
             settings,
-            leaderboard: scores::load(),
-            progress: progress::load(),
+            leaderboard,
+            progress,
             toasts: VecDeque::new(),
             toast_since: None,
             picked: 0,
@@ -112,7 +128,7 @@ impl App {
             under_title_was: (Mode::Standard, false),
             under_title_at: None,
             confirm_reset: false,
-            progress_kept: progress::kept(),
+            progress_kept,
             collection_row: 1,
             collection_shows: false,
             scored: false,
@@ -348,7 +364,8 @@ impl App {
     }
 
     /// The heroes showing: left and right go from tile to tile, up and down through the hero's
-    /// colours; Enter or Space wear the one picked, once unlocked, and hide them; Esc hides them.
+    /// colours; Enter or Space wear the one picked, once unlocked, and hide them; Esc or H hide
+    /// them.
     fn on_skins(&mut self, code: KeyCode, at: usize) {
         let last = SKINS.len() - 1;
         self.skin_picked = match code {
@@ -379,7 +396,8 @@ impl App {
                 self.keep_settings();
                 Some(at)
             }
-            KeyCode::Esc => None,
+            // Esc or H again hide them, as C does the collection.
+            KeyCode::Esc | KeyCode::Char('h' | 'H') => None,
             _ => Some(at),
         };
         // Another tile picked: its hero waits a second before turning round.
@@ -802,3 +820,65 @@ const KEY_REPORTING: KeyboardEnhancementFlags = KeyboardEnhancementFlags::DISAMB
     .union(KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
     // The shifted key too: `?`, not `/` with Shift, whatever the keyboard's layout.
     .union(KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::Skin;
+
+    /// The title screen, nothing reached, the collection with room to show.
+    fn on_the_title() -> App {
+        let sprites = Sprites::load().unwrap();
+        let mut app = App::with(
+            sprites,
+            Settings::default(),
+            Leaderboard::default(),
+            (Progress::default(), false),
+        );
+        app.collection_shows = true;
+        app
+    }
+
+    #[test]
+    fn h_shows_the_heroes_at_the_one_worn_and_h_again_hides_them() {
+        let mut app = on_the_title();
+        app.on_title(KeyCode::Char('h'));
+        assert_eq!(app.skin_picked, Some(0), "the survivor, worn");
+        app.on_title(KeyCode::Right);
+        assert_eq!(app.skin_picked, Some(1));
+        app.on_title(KeyCode::Char('H'));
+        assert_eq!(app.skin_picked, None);
+        assert_eq!(
+            app.settings.skin,
+            Skin::Survivor,
+            "nothing worn by hiding them"
+        );
+    }
+
+    #[test]
+    fn esc_hides_the_heroes_too() {
+        let mut app = on_the_title();
+        app.on_title(KeyCode::Char('h'));
+        app.on_title(KeyCode::Esc);
+        assert_eq!(app.skin_picked, None);
+        assert!(matches!(app.screen, Screen::Title), "not on to the options");
+    }
+
+    #[test]
+    fn c_opens_the_collection_and_c_again_closes_it() {
+        let mut app = on_the_title();
+        app.on_title(KeyCode::Char('c'));
+        assert!(app.browsing);
+        app.on_title(KeyCode::Char('C'));
+        assert!(!app.browsing);
+    }
+
+    #[test]
+    fn h_with_the_collection_open_shows_the_heroes_in_its_place() {
+        let mut app = on_the_title();
+        app.on_title(KeyCode::Char('c'));
+        app.on_title(KeyCode::Char('h'));
+        assert!(!app.browsing);
+        assert_eq!(app.skin_picked, Some(0));
+    }
+}

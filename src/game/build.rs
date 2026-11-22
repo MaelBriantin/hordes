@@ -42,10 +42,11 @@ pub enum Weapon {
     Shuriken,
     Defibrillator,
     Chainsaw,
+    C4,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 15] = [
+    pub const ALL: [Weapon; 16] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -61,6 +62,7 @@ impl Weapon {
         Weapon::Shuriken,
         Weapon::Defibrillator,
         Weapon::Chainsaw,
+        Weapon::C4,
     ];
 }
 
@@ -140,7 +142,11 @@ impl Choice {
     pub fn rarity(self) -> Rarity {
         match self {
             Choice::Weapon(
-                Weapon::Flamethrower | Weapon::Hammer | Weapon::Baton | Weapon::Chainsaw,
+                Weapon::Flamethrower
+                | Weapon::Hammer
+                | Weapon::Baton
+                | Weapon::Chainsaw
+                | Weapon::C4,
             )
             | Choice::Passive(
                 Passive::Might

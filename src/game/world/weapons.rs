@@ -9,7 +9,7 @@ use super::super::enemy::{Enemy, EnemyKind};
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
-use super::super::{Vec2, baton, defibrillator, drones, flamethrower, hammer, katana, knife};
+use super::super::{Vec2, baton, c4, defibrillator, drones, flamethrower, hammer, katana, knife};
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
@@ -291,8 +291,8 @@ impl World {
     }
 
     /// The weapons the player has that wait between two blows, the guns apart: the melee
-    /// weapons between two swings, the Molotov between two throws, the drones while one is
-    /// broken. Each with the ticks still to wait, out of a whole wait.
+    /// weapons between two swings, the Molotov between two throws, the C4 between two charges,
+    /// the drones while one is broken. Each with the ticks still to wait, out of a whole wait.
     pub fn waits(&self) -> Vec<(Weapon, u32, u32)> {
         let build = &self.player.build;
         let mut waits = Vec::new();
@@ -336,6 +336,11 @@ impl World {
         if level > 0 {
             let every = build.cooldown(hammer::at(level).every).max(1);
             waits.push((Weapon::Hammer, self.hammer_wait.min(every), every));
+        }
+        let level = build.weapon_level(Weapon::C4);
+        if level > 0 {
+            let every = build.cooldown(c4::at(level).every).max(1);
+            waits.push((Weapon::C4, self.c4_wait.min(every), every));
         }
         let level = build.weapon_level(Weapon::Drones);
         if level > 0 {

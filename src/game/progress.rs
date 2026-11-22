@@ -37,7 +37,7 @@ pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 25] = [
+pub const COLLECTION: [Unlock; 26] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -61,6 +61,7 @@ pub const COLLECTION: [Unlock; 25] = [
     Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
     Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
     Unlock::Card(Choice::Passive(Passive::Drain)),
+    Unlock::Card(Choice::Weapon(Weapon::C4)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -159,7 +160,7 @@ impl Achievement {
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
             Achievement::Dawn => Unlock::Arcade,
             Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
-            Achievement::Demolisher => Unlock::Skin(Skin::Demolisher),
+            Achievement::Demolisher => Unlock::Card(Choice::Weapon(Weapon::C4)),
             Achievement::ColdBlood => Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
             Achievement::ShadowHunter => Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
             Achievement::Legend => Unlock::Skin(Skin::Classic),
