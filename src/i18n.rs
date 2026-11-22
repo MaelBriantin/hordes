@@ -97,6 +97,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn in_french_what_is_locked_reads_locked_and_what_is_not_unlocked() {
+        let file = Files::get("fr/hordes.ftl").expect("the French file");
+        let text = String::from_utf8_lossy(&file.data).into_owned();
+        assert!(text.contains("\ncollection-locked = Verrouillé\n"));
+        assert!(text.contains("\ncollection-unlocked = Déverrouillé\n"));
+    }
+
+    #[test]
     fn no_message_is_defined_twice_across_the_files() {
         let mut seen = HashSet::new();
         for name in Files::iter().filter(|name| name.ends_with(".ftl")) {

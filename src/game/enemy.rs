@@ -1,7 +1,7 @@
 use super::{Facing, Vec2};
 
 /// How long an enemy burns once on fire, in seconds; the ticks between two of its losses, and
-/// what each takes from it, in HP: 2 HP every half second, 12 in all.
+/// what each takes from it, in HP: 1 HP every half second, 6 in all.
 const BURN_SECONDS: u32 = 3;
 const BURN_EVERY: u32 = 15;
 const BURN_DAMAGE: u32 = 1;

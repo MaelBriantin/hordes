@@ -3,6 +3,7 @@
 use super::super::body::touch;
 use super::super::build::Action;
 use super::super::dash::Dash;
+use super::super::enemy::EnemyKind;
 use super::super::ram::{self, REACH, THROW, THROW_TICKS, WINDUP_TICKS};
 use super::weapons::against;
 use super::{PLAYER_HALF_WIDTH, World};
@@ -68,7 +69,11 @@ impl World {
                 continue;
             }
             self.rammed.push(enemy.id);
+            let standing = enemy.hp > 0;
             enemy.hit(against(damage, enemy, hunter));
+            if standing && enemy.hp == 0 && enemy.kind == EnemyKind::Abomination {
+                self.abominations_smashed += 1;
+            }
             enemy.stunned = enemy.stunned.max(stats.stun);
             enemy.knock = ram::throw(dash.way, enemy.position - player) * (THROW / ticks);
             enemy.knocked = THROW_TICKS;

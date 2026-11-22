@@ -54,7 +54,11 @@ impl World {
             let oldest = self.barricades[0].corner;
             self.raze(|barricade| barricade.corner != oldest);
         }
-        self.barricade_wait = barricade::recharge(level);
+        self.barricade_wait = self
+            .player
+            .build
+            .cooldown(barricade::recharge(level))
+            .max(1);
     }
 
     /// Every second, each walking enemy touching a wooden barricade hits it as it would the

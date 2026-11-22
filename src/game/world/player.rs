@@ -157,7 +157,7 @@ impl World {
             } else {
                 100
             };
-            self.wound_player(damage * percent / 100);
+            self.wound_player(super::super::percent_of(damage, percent));
         }
     }
 
@@ -185,7 +185,7 @@ impl World {
             return;
         }
         let player = &mut self.player;
-        let damage = damage * player.build.hero().perk().hurt_percent() / 100;
+        let damage = super::super::percent_of(damage, player.build.hero().perk().hurt_percent());
         player.hp = player.hp.saturating_sub(damage);
         player.invincible = u32::from(TICKS_PER_SECOND) / 2;
         self.hurt_at = Some(self.ticks);

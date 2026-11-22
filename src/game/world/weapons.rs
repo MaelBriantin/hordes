@@ -247,7 +247,7 @@ impl World {
                 bullets.extend(Bullet::burst(player.position, target, &gun, damage, rng));
             }
             magazine.rounds = magazine.rounds.saturating_sub(1);
-            magazine.wait = gun.interval;
+            magazine.wait = build.cooldown(gun.interval).max(1);
             if magazine.rounds == 0 {
                 // Reloaded, the gun shoots at once: the reload is its wait.
                 magazine.wait = 0;
@@ -498,7 +498,7 @@ impl World {
 /// has it.
 pub(super) fn against(damage: u32, enemy: &Enemy, hunter: u32) -> u32 {
     if enemy.horde.is_some() {
-        damage * (100 + hunter) / 100
+        super::super::percent_of(damage, 100 + hunter)
     } else {
         damage
     }

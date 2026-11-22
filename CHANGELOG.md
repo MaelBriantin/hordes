@@ -9,6 +9,21 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The gear on the pause screen, beside its menu: the hero with their perk and action, then each card taken with its icon, its level and what it brings at it.
+
+### Fixed
+- The Vitality card counting from 100 HP whatever the hero: it counts from the hero's own (the demolisher's 140, the agent's 80).
+- The Regeneration card leaving out the medic's own regeneration in its total.
+- In French, the locked and the unlocked shown the wrong way round, and misspelt.
+- The Shadows fleeing the infiltrator as their torch went out, rather than just waiting a while.
+- Lightning no longer showing the infiltrator in the dark.
+- The abominations felled by the fists, the stun baton or the shield ram not counted for Demolisher.
+- The knife, the katana, the defibrillator and the stun baton spending a blow on an enemy already felled.
+- A +10% bonus (Might, Commando, Horde Hunter) giving nothing to a hit under 10: damage now rounds to the nearest, a bonus giving at least 1, a cut taking at least 1.
+- Haste now shortening the guns' fire and the barricade's recharge too.
+- The cards of the heal, Might, Swiftness, Flashlight, the chainsaw and the shurikens, and the medic's perk, telling what they really do.
+
 ## v0.9.0 · November 22, 2026
 
 ### New

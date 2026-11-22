@@ -450,7 +450,10 @@ fn horde_hunter_hurts_a_hordes_enemies_more() {
     world.enemies[1].horde = Some(0);
     wait(&mut world, 1);
     assert_eq!(world.enemies[0].hp, 1_000 - 18);
-    assert_eq!(world.enemies[1].hp, 1_000 - 18 * 120 / 100);
+    assert_eq!(
+        world.enemies[1].hp,
+        1_000 - super::super::super::percent_of(18, 120)
+    );
 }
 
 #[test]

@@ -334,3 +334,56 @@ fn the_truncheon_strikes_ahead_throwing_back_what_it_hits() {
     wait(&mut world, 10);
     assert!(world.enemies[0].position.x > 102.0, "thrown back");
 }
+
+#[test]
+fn an_abomination_felled_by_the_fists_the_baton_or_the_ram_counts_for_demolisher() {
+    for weapon in [Weapon::Fists, Weapon::Baton] {
+        let mut world = armed_with(weapon, 1);
+        world.next_horde = u32::MAX;
+        world.player.facing = Facing::Right;
+        world
+            .enemies
+            .push(enemy(EnemyKind::Abomination, Vec2::new(101.0, 50.0)));
+        world.enemies[0].hp = 1;
+        world.enemies[0].stunned = u32::MAX;
+        wait(&mut world, 1);
+        assert_eq!(world.abominations_smashed, 1, "{weapon:?}");
+    }
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    world.player.facing = Facing::Right;
+    world.player.build.take(Choice::Action(Action::Ram));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Abomination, Vec2::new(102.0, 50.0)));
+    world.enemies[0].hp = 1;
+    world.enemies[0].stunned = u32::MAX;
+    world.act();
+    wait(&mut world, ram::WINDUP_TICKS + 8);
+    assert_eq!(world.abominations_smashed, 1, "the ram");
+}
+
+#[test]
+fn the_knife_strikes_the_living_not_an_enemy_already_felled_this_tick() {
+    let mut world = armed_with(Weapon::Knife, 1);
+    world.next_horde = u32::MAX;
+    // Felled, nearer; standing, a little further.
+    for x in [100.8, 101.4] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    world.enemies[0].hp = 0;
+    world.enemies[1].hp = 1_000;
+    world.enemies[1].stunned = u32::MAX;
+    wait(&mut world, 1);
+    assert!(
+        world
+            .enemies
+            .iter()
+            .any(|enemy| enemy.hp < 1_000 && enemy.hp > 0),
+        "the living one struck"
+    );
+}

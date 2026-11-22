@@ -329,7 +329,11 @@ fn the_riot_officer_s_shield_takes_a_share_of_the_blows_from_ahead_not_from_behi
     // Touching the player, not overlapping them.
     let (ahead, behind) = (hurt(100.88), hurt(99.12));
     assert!(behind > 0);
-    assert_eq!(ahead, behind * 70 / 100, "30% less from ahead");
+    assert_eq!(
+        ahead,
+        super::super::super::percent_of(behind, 70),
+        "30% less from ahead"
+    );
 }
 
 #[test]
@@ -381,4 +385,32 @@ fn the_shield_ram_charges_ahead_unhurt_parting_the_enemies_in_a_v() {
     world.act();
     wait(&mut world, 1);
     assert!((world.player.position.x - at.x).abs() < 0.5, "not ready");
+}
+
+#[test]
+fn the_torch_just_out_a_shadow_hunting_the_infiltrator_waits_unaware_rather_than_fleeing() {
+    let mut world = infiltrator_in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Shadow, Vec2::new(110.0, 50.0)));
+    world.enemies[0].noticed = true;
+    world.enemies[0].hunting = 30;
+    wait(&mut world, 1);
+    let shadow = &world.enemies[0];
+    assert_eq!(shadow.bolting, 0, "not bolting away");
+    assert!(!shadow.noticed && shadow.hunting == 0, "unaware");
+}
+
+#[test]
+fn lightning_shows_the_infiltrator_to_the_enemies_around_even_in_the_dark() {
+    let mut world = infiltrator_in_the_dark();
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
+    world.enemies[0].stunned = u32::MAX;
+    wait(&mut world, 1);
+    assert!(!world.enemies[0].noticed, "lost in the dark");
+    world.give_away(10.0);
+    wait(&mut world, 1);
+    assert!(world.enemies[0].noticed, "seen by lightning, followed");
 }

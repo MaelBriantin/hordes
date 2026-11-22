@@ -6,6 +6,7 @@ mod achievement;
 mod announce;
 mod collection;
 mod debug;
+mod equipment;
 mod font;
 mod horde;
 mod icons;
@@ -319,7 +320,7 @@ pub fn render(
         // A menu open: what lies under it dimmed, the menu standing out.
         Screen::Paused { selected } => {
             announce::dim(frame.buffer_mut(), map);
-            menu::render_pause(frame, map, selected);
+            menu::render_pause(frame, map, selected, (world, sprites, view));
             return;
         }
         Screen::Options {

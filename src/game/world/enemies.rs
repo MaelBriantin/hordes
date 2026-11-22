@@ -367,9 +367,22 @@ impl World {
         // At night, whether Shadows hunt: with the torch out; lit, they shun it. The infiltrator,
         // their torch out, slips away from the others, and the Shadows are slow to come.
         let ghost = self.player.build.hero().perk().ghost() && self.torch_on() == Some(false);
+        // The torch just out, the infiltrator vanishes from all but those right on them.
+        let vanishing = ghost && self.dark_streak == 0;
+        // Meanwhile the Shadows are as the others: unaware of the infiltrator, neither hunting
+        // nor fleeing.
+        let shadows_wait = ghost && self.dark_streak < GHOST_SHADOW_TICKS;
         let dark_hunt = self
             .torch_on()
-            .map(|_| !self.torch_lit() && (!ghost || self.dark_streak >= GHOST_SHADOW_TICKS));
+            .filter(|_| !shadows_wait)
+            .map(|_| !self.torch_lit());
+        let sight = Sight {
+            seen,
+            ghost,
+            vanishing,
+            shadows_wait,
+            dark_hunt,
+        };
         // With Glare, those in the torch's light go slower.
         let glare = self.glare();
         let ticks = self.ticks;
@@ -378,24 +391,7 @@ impl World {
             enemy.shocked = enemy.shocked.saturating_sub(1);
             let stats = enemy.kind.stats();
             let apart = (target - enemy.position).length();
-            if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
-                enemy.noticed = true;
-            } else if enemy.kind == EnemyKind::Shadow && dark_hunt.is_some() {
-                // Shadows hunt in the dark, faster and faster; caught in the torch's light, they
-                // bolt out of it.
-                let hunts = dark_hunt == Some(true);
-                if enemy.noticed && !hunts {
-                    enemy.bolting = BOLT_TICKS;
-                }
-                enemy.hunting = if hunts { enemy.hunting + 1 } else { 0 };
-                enemy.noticed = hunts;
-            } else if ghost {
-                enemy.noticed = apart <= GHOST_REACH;
-            } else if seen || apart <= NOTICE_REACH {
-                enemy.noticed = true;
-            } else if apart > LOSE_REACH {
-                enemy.noticed = false;
-            }
+            notice(enemy, apart, sight);
             let fire = fires
                 .iter()
                 .copied()
@@ -568,4 +564,53 @@ impl World {
 pub(super) fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: bool) -> Vec2 {
     let step = by * (1.0 / f32::from(PUSH_STEPS));
     (0..PUSH_STEPS).fold(from, |at, _| slide(map, at, step, half_width, flies))
+}
+
+/// What the enemies can tell of the player this tick: whether they see them from afar; whether
+/// the infiltrator is a ghost in the dark, just vanished, the Shadows still waiting; whether the
+/// Shadows hunt (with the torch out), shun the light (lit), or neither (by day, or waiting).
+#[derive(Debug, Clone, Copy)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "what the enemies can tell of the player, each a yes or a no"
+)]
+struct Sight {
+    seen: bool,
+    ghost: bool,
+    vanishing: bool,
+    shadows_wait: bool,
+    dark_hunt: Option<bool>,
+}
+
+/// Whether `enemy`, `apart` tiles from the player, has noticed them, as `sight` has it.
+fn notice(enemy: &mut Enemy, apart: f32, sight: Sight) {
+    // Waiting on the infiltrator, a Shadow loses its pace of the hunt too.
+    if sight.shadows_wait && enemy.kind == EnemyKind::Shadow {
+        enemy.hunting = 0;
+    }
+    if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
+        enemy.noticed = true;
+    } else if enemy.kind == EnemyKind::Shadow && sight.dark_hunt.is_some() {
+        // Shadows hunt in the dark, faster and faster; caught in the torch's light, they
+        // bolt out of it.
+        let hunts = sight.dark_hunt == Some(true);
+        if enemy.noticed && !hunts {
+            enemy.bolting = BOLT_TICKS;
+        }
+        enemy.hunting = if hunts { enemy.hunting + 1 } else { 0 };
+        enemy.noticed = hunts;
+    } else if sight.vanishing {
+        enemy.noticed = apart <= GHOST_REACH;
+    } else if sight.ghost {
+        // Lightning may have shown them: those that saw them follow as ever.
+        if apart <= GHOST_REACH {
+            enemy.noticed = true;
+        } else if apart > LOSE_REACH {
+            enemy.noticed = false;
+        }
+    } else if sight.seen || apart <= NOTICE_REACH {
+        enemy.noticed = true;
+    } else if apart > LOSE_REACH {
+        enemy.noticed = false;
+    }
 }

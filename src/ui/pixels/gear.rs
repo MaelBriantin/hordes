@@ -107,7 +107,9 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
         (1, 1, GEAR_ROUNDS)
     };
     // The Barricade card fills back between two barricades, full once one is ready.
-    let whole = barricade_recharge(build.action_level(Action::Barricade));
+    let whole = build
+        .cooldown(barricade_recharge(build.action_level(Action::Barricade)))
+        .max(1);
     let barricade = if world.barricade_wait > 0 {
         (
             whole.saturating_sub(world.barricade_wait),

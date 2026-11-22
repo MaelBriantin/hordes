@@ -9,8 +9,8 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once the night has fallen, at 0:26 (see The night).
-- **Dash**: Shift, the way the player faces, once the Dash card is taken and a dash is ready (see The player). Without kitty's keyboard protocol, a terminal doesn't tell Shift alone: Shift with a way (a capital W, A, S, D, Z or Q) dashes.
-- **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms.
+- **Action**: Space or Enter plays the action card taken, if any: a dash, a barricade or the shield ram (see The player).
+- **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms. Beside the menu, where the screen is wide enough, the **gear**: the hero from the front, their outfit's name, their perk and their action (its level, ready or charging), then each card taken, its icon, its name and level (MAX in gold at the last), and what it brings: what it does, then what each level after the first added; a line each, without the icons, when the screen is too low for them.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
   - **Rain**: how it shows (full, reduced to half its drops, or off). The weather itself is the same whatever the choice.
@@ -115,11 +115,11 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 |---|---|---|---|---|
 | Survivor | 100 | normal | crowbar | **Versatile**: no weakness, the measure of the others |
 | Veteran | 120 | +5% | machete | **Commando**: every weapon hurts 10% more |
-| Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, lightning) |
+| Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, the napalm, lightning) |
 | Demolisher | 140 | −15% | sledgehammer | **Unshakable**: 10% less damage taken, and never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
-| Medic | 90 | normal | defibrillator | **Healer**: herbs, campfires and the heal give back half again as much, and 1 HP comes back of itself every 5 s |
-| Infiltrator | 90 | +5% | fists | **Ghost**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the enemies further than 2 tiles lose them at once and notice them no further, the hordes apart; the Shadows hunt them only after 4 s of dark |
+| Medic | 90 | normal | defibrillator | **Healer**: herbs and the heal give back half again as much, campfires heal faster (as much in all), and 1 HP comes back of itself every 5 s; the defibrillator, Life drain and Regeneration heal as for anyone |
+| Infiltrator | 90 | +5% | fists | **Ghost**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the torch put out, the enemies further than 2 tiles lose them at once, then notice them within 2 tiles alone, the hordes apart; lightning shows them still, those that saw them following as ever; the Shadows hunt them only after 4 s of dark |
 | Riot officer | 110 | −10% | truncheon | **Shield**: 30% less damage from an enemy ahead, the way they face |
 | Ninja | 80 | +15% | katana | **Dodge**: a 15% chance to avoid a blow altogether (enemies, a burst), unhurt half a second after as after a hit; a dark ghost of the ninja left aside a moment shows it |
 
@@ -168,7 +168,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 
 ## Weapons
 
-They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **hero's own weapon**, at level 1, as the skin worn has it (see Progress), a melee one: the survivor's **crowbar**, the veteran's **machete**, the exterminator's **stun baton**, the demolisher's **sledgehammer**, the special agent's **combat knife**, the ninja's **katana**, the medic's **defibrillator**. A hero's own weapon is **theirs alone**: its next levels are dealt to them, never to another hero. The others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
+They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **hero's own weapon**, at level 1, as the skin worn has it (see Progress), a melee one: the survivor's **crowbar**, the veteran's **machete**, the exterminator's **stun baton**, the demolisher's **sledgehammer**, the special agent's **combat knife**, the ninja's **katana**, the medic's **defibrillator**, the infiltrator's **fists**, the riot officer's **truncheon**. A hero's own weapon is **theirs alone**: its next levels are dealt to them, never to another hero. The others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
 
 **Obstacles and shots**: the guns and the drones aim only at enemies in sight, no tree nor rock between (a Shadow over a rock is out of sight); a bullet that meets a tree or a rock stops there, a spark where it hits. The melee weapons and the Molotov's bottles, thrown over, don't care.
 
@@ -242,7 +242,7 @@ The ninja's own weapon. Every **0.8 s** (less with Haste), a **chain of cuts**: 
 
 ### Chainsaw
 
-A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it). Its **tank** holds **5 s** of grinding, emptying only as it grinds; empty, it stops and fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as the flamethrower's.
+A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it). Its **tank** holds **5 s** of grinding, emptying only as it grinds; empty, it stops and fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as the flamethrower's. While it grinds, **nothing hurts the player**: they charge into the crowd, their corners gleaming.
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
 
@@ -317,8 +317,8 @@ Up to **4 passives**, each up to **level 5**.
 | Vitality | +20 max HP, and heals as much |
 | Swiftness | +8% speed |
 | Magnet | Gems fly in from 1 tile further (2 tiles at first) |
-| Might | +10% damage of every weapon |
-| Haste | −8% to every weapon's cooldown, the drones' repair included |
+| Might | +10% damage of every weapon, rounded to the nearest, a bonus giving at least 1 (so a weak hit gains too); the hero's own bonus (Commando) on top |
+| Haste | −8% to every weapon's cooldown: the melee blows, the guns' and the drones' fire and reload, the throws, the barricade's and the shield ram's recharge |
 | Flashlight | +2 tiles of light around the player (9 at first) |
 | Loot | +10 points of percent for an enemy to leave a gem (an abomination always does) |
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
@@ -364,7 +364,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Raw light | 50 Shadows down, in all (every run counted) | Glare |
 | Dawn | Hold out until dawn | The arcade mode (legendary) |
 | Cleaner | Wipe out every horde of a standard run: none left standing and none to come before the dawn | The flamethrower, and the exterminator's skin |
-| Demolisher | Fell 10 abominations by a melee blow (the crowbar's, the machete's, the sledgehammer's, the baton's, the knife's) in one run | The C4, and the demolisher with their sledgehammer |
+| Demolisher | Fell 10 abominations by a melee blow (the crowbar's, the machete's, the truncheon's, the sledgehammer's and its shocks', the baton's, the knife's, the katana's, the fists', the defibrillator's, the chainsaw's, the shield ram's) in one run | The C4, and the demolisher with their sledgehammer |
 | Cold blood | Hold a minute under 30% of HP in one run (every tick counted, not in a row) | The chainsaw, and the special agent with their combat knife |
 | Shadow hunter | Fell 25 Shadows in one run | The shurikens, and the ninja with their katana |
 | Legend | Fell 700 enemies in one run | The napalm, and the veteran with their machete |

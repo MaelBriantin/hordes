@@ -43,7 +43,8 @@ mod world;
 pub use announce::{News, WeatherNews};
 pub use barricade::{Barricade, recharge as barricade_recharge};
 pub use build::{
-    Action, Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon,
+    Action, Choice, HEAL, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon,
+    percent_of,
 };
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};

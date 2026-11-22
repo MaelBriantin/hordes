@@ -245,7 +245,7 @@ fn stats_line(skin: Skin) -> String {
 }
 
 /// The line telling what sets a hero apart.
-fn perk_line(skin: Skin) -> String {
+pub(super) fn perk_line(skin: Skin) -> String {
     match skin.perk() {
         Perk::Versatile => fl!("perk-versatile"),
         Perk::Commando => fl!("perk-commando"),

@@ -4,6 +4,7 @@
 use super::super::Facing;
 use super::super::baton::{self, Thrust};
 use super::super::build::Weapon;
+use super::super::enemy::EnemyKind;
 use super::World;
 use super::weapons::against;
 
@@ -35,6 +36,9 @@ impl World {
             .whirl_every
             .is_some_and(|every| strike.is_multiple_of(every));
         let on_line = |enemy: &super::super::enemy::Enemy| {
+            if enemy.hp == 0 {
+                return false;
+            }
             let (offset, half) = (enemy.position - player, enemy.kind.stats().half_width);
             if whirl {
                 baton::in_whirl(offset, half)
@@ -49,7 +53,11 @@ impl World {
         let build = &self.player.build;
         let (damage, hunter) = (build.damage(stats.damage), build.horde_bonus());
         for enemy in self.enemies.iter_mut().filter(|enemy| on_line(enemy)) {
+            let standing = enemy.hp > 0;
             enemy.hit(against(damage, enemy, hunter));
+            if standing && enemy.hp == 0 && enemy.kind == EnemyKind::Abomination {
+                self.abominations_smashed += 1;
+            }
             enemy.stunned = enemy.stunned.max(stats.paralysis);
             enemy.shocked = enemy.shocked.max(stats.paralysis);
         }

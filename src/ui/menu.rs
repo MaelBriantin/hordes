@@ -16,9 +16,12 @@ use super::{
     Arrow, Blank, BloodLook, DARK_GREY, GREY, KEY_CAP, RainDisplay, ViewState, faded,
     weather_colour,
 };
-use super::{collection, skins};
+use super::{collection, equipment, skins};
 use crate::game::{COLLECTION, Entry, Leaderboard, Mode, Progress, Weather, WeatherNews, World};
 
+/// The pause menu's box, in cells, and the room between it and what the player has.
+const PAUSE_WIDTH: u16 = 28;
+const PAUSE_GAP: u16 = 2;
 /// What is selected: an item of the pause menu, the letter being typed in.
 const SELECTED: Color = Color::Rgb(230, 55, 55);
 /// What is worth points: a score, a run on the leaderboard.
@@ -535,10 +538,52 @@ pub fn render_keys(frame: &mut Frame, map: Rect) {
     frame.render_widget(Paragraph::new(lines), inside);
 }
 
-/// The pause menu, `selected` its highlighted item.
-pub fn render_pause(frame: &mut Frame, map: Rect, selected: usize) {
+/// The pause menu, `selected` its highlighted item; beside it, room allowing, what the player
+/// has, in detail.
+pub fn render_pause(
+    frame: &mut Frame,
+    map: Rect,
+    selected: usize,
+    (world, sprites, view): (&World, &Sprites, ViewState),
+) {
     let labels: Vec<String> = PauseItem::ALL.iter().map(|item| item.label()).collect();
-    render_list(frame, map, &fl!("pause-title"), &labels, selected, 28);
+    // What the player has as wide as there is room for, up to its own width.
+    let gear_width = map
+        .width
+        .saturating_sub(PAUSE_WIDTH + PAUSE_GAP + 2)
+        .min(equipment::WIDTH);
+    if gear_width < equipment::MIN_WIDTH {
+        render_list(
+            frame,
+            map,
+            &fl!("pause-title"),
+            &labels,
+            selected,
+            PAUSE_WIDTH,
+        );
+        return;
+    }
+    let both = PAUSE_WIDTH + PAUSE_GAP + gear_width;
+    let left = map.x + (map.width - both) / 2;
+    let menu = Rect {
+        x: left,
+        width: PAUSE_WIDTH,
+        ..map
+    };
+    render_list(
+        frame,
+        menu,
+        &fl!("pause-title"),
+        &labels,
+        selected,
+        PAUSE_WIDTH,
+    );
+    let gear = Rect {
+        x: left + PAUSE_WIDTH + PAUSE_GAP,
+        width: gear_width,
+        ..map
+    };
+    equipment::render(frame, gear, world, sprites, view);
 }
 
 /// The options menu, `selected` its highlighted item, the settings as `view` holds them.

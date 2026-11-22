@@ -272,3 +272,34 @@ fn from_level_4_the_shurikens_ricochet_on_an_enemy_off_their_line() {
         );
     }
 }
+
+#[test]
+fn haste_makes_the_guns_fire_sooner_and_the_barricade_come_back_sooner() {
+    let fire_wait = |haste: u8| {
+        let mut world = armed_with(Weapon::Pistol, 1);
+        world.next_horde = u32::MAX;
+        for _ in 0..haste {
+            world.player.build.take(Choice::Passive(Passive::Haste));
+        }
+        world
+            .enemies
+            .push(enemy(EnemyKind::Abomination, Vec2::new(104.0, 50.0)));
+        world.enemies[0].hp = 100_000;
+        world.enemies[0].stunned = u32::MAX;
+        wait(&mut world, 1);
+        world.magazines[&Weapon::Pistol].wait
+    };
+    assert!(fire_wait(5) < fire_wait(0), "faster fire");
+    let barricade_wait = |haste: u8| {
+        let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+        disarm(&mut world);
+        world.announcement = None;
+        world.player.build.take(Choice::Action(Action::Barricade));
+        for _ in 0..haste {
+            world.player.build.take(Choice::Passive(Passive::Haste));
+        }
+        world.act();
+        world.barricade_wait
+    };
+    assert!(barricade_wait(5) < barricade_wait(0), "sooner back");
+}

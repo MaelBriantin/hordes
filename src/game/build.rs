@@ -422,7 +422,7 @@ impl Build {
     /// A weapon's damage, with Might and the hero's perk.
     pub fn damage(&self, base: u32) -> u32 {
         let might = 100 + 10 * u32::from(self.passive_level(Passive::Might));
-        base * might * self.hero.perk().damage_percent() / 10_000
+        percent_of(base, might * self.hero.perk().damage_percent() / 100)
     }
 
     /// A gun's reload in ticks, with Haste and the hero's perk.
@@ -477,6 +477,21 @@ impl Build {
     /// A weapon's cooldown in ticks, with Haste.
     pub fn cooldown(&self, base: u32) -> u32 {
         base * (100 - 8 * u32::from(self.passive_level(Passive::Haste))) / 100
+    }
+}
+
+/// `percent` percent of `value`, to the nearest: at least a point more for any bonus, a point less
+/// for any cut, lest a small number gain or lose nothing.
+pub fn percent_of(value: u32, percent: u32) -> u32 {
+    let rounded = (value * percent + 50) / 100;
+    if value == 0 || rounded != value {
+        rounded
+    } else if percent > 100 {
+        value + 1
+    } else if percent < 100 {
+        value - 1
+    } else {
+        value
     }
 }
 

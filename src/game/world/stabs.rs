@@ -28,6 +28,7 @@ impl World {
             .enemies
             .iter()
             .enumerate()
+            .filter(|(_, enemy)| enemy.hp > 0)
             .map(|(index, enemy)| {
                 let apart = (enemy.position - player).length() - enemy.kind.stats().half_width;
                 (apart, index)

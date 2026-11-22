@@ -15,7 +15,8 @@ use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
 use super::{Blank, DARK_GREY};
 use crate::game::{
-    Action, Choice, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Weapon, World,
+    Action, Choice, HEAL, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Skin,
+    Weapon, World,
 };
 
 const CARD_WIDTH: u16 = 24;
@@ -95,6 +96,7 @@ pub fn render(
             index,
             choice: *choice,
             level: world.player.build.next_level(*choice),
+            hero: world.player.build.hero(),
             selected: index == selected,
         };
         let started = shown.saturating_sub(DEAL * u32::try_from(index).unwrap_or(0));
@@ -107,6 +109,9 @@ struct Card {
     choice: Choice,
     level: u8,
     selected: bool,
+    /// The hero: their own HP and regeneration are what Vitality's and Regeneration's cards count
+    /// from.
+    hero: Skin,
 }
 
 /// How far a card has turned over, from 0 (face down) to 1 (face up), `started` after it began.
@@ -214,7 +219,12 @@ fn render_card(frame: &mut Frame, slot: Rect, sprites: &Sprites, card: &Card, tu
         .flex(Flex::Center)
         .areas(picture);
     pixels::render_sprite(frame.buffer_mut(), picture, sprites, icon(card.choice));
-    centred(frame, &gain_of(card.choice, card.level), Style::new(), gain);
+    centred(
+        frame,
+        &gain_of(card.choice, card.level, card.hero),
+        Style::new(),
+        gain,
+    );
 }
 
 /// A colour, dimmed: the frame of a card not selected.
@@ -327,7 +337,7 @@ pub fn weapon_name(weapon: Weapon) -> String {
 }
 
 /// What a choice brings, taken at `level`.
-fn gain_of(choice: Choice, level: u8) -> String {
+pub(super) fn gain_of(choice: Choice, level: u8, hero: Skin) -> String {
     match choice {
         Choice::Weapon(Weapon::Crowbar) => match level {
             1 => fl!("gain-crowbar-1"),
@@ -379,51 +389,68 @@ fn gain_of(choice: Choice, level: u8) -> String {
         },
         // The weapons come later: the flamethrower, the heroes' own, the shurikens.
         Choice::Weapon(weapon) => later_weapon_gain(weapon, level),
-        Choice::Passive(passive) => {
-            let level = u32::from(level);
-            let total: u32 = match passive {
-                Passive::Vitality => 100 + 20 * level,
-                Passive::Swiftness | Passive::Haste => 8 * level,
-                Passive::Magnet => 2 + level,
-                Passive::Might
-                | Passive::Wisdom
-                | Passive::Loot
-                | Passive::Glare
-                | Passive::Stealth
-                | Passive::HordeHunter => 10 * level,
-                // In tenths of HP a second.
-                Passive::Regeneration => 4 * level,
-                Passive::Drain => 5 + 5 * level,
-                Passive::Flashlight => 9 + 2 * level,
-            };
-            match passive {
-                Passive::Vitality => fl!("gain-vitality", total = total),
-                Passive::Swiftness => fl!("gain-swiftness", total = total),
-                Passive::Magnet => fl!("gain-magnet", total = total),
-                Passive::Might => fl!("gain-might", total = total),
-                Passive::Haste => fl!("gain-haste", total = total),
-                Passive::Flashlight => fl!("gain-flashlight", total = total),
-                Passive::Wisdom => fl!("gain-wisdom", total = total),
-                Passive::Loot => fl!("gain-loot", total = total),
-                Passive::Regeneration => {
-                    let (whole, tenth) = (total / 10, total % 10);
-                    fl!("gain-regeneration", whole = whole, tenth = tenth)
-                }
-                Passive::Glare => fl!("gain-glare", total = total),
-                Passive::Drain => fl!("gain-drain", total = total),
-                Passive::Stealth => fl!("gain-stealth", total = total),
-                Passive::HordeHunter => match level {
-                    1 => fl!("gain-horde-hunter-1"),
-                    2 => fl!("gain-horde-hunter-2", total = total),
-                    3 => fl!("gain-horde-hunter-3", total = total),
-                    4 => fl!("gain-horde-hunter-4", total = total),
-                    _ => fl!("gain-horde-hunter-5", total = total),
-                },
-            }
-        }
+        Choice::Passive(passive) => passive_gain(passive, level, hero),
         Choice::Action(action) => action_gain(action, level),
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
-        Choice::Heal => fl!("gain-heal"),
+        Choice::Heal => {
+            let hp: u32 = HEAL * hero.perk().heal_percent() / 100;
+            fl!("gain-heal", hp = hp)
+        }
+    }
+}
+
+/// What a passive brings to `hero`, taken at `level`: its share, and its total from the hero's own.
+fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
+    let level = u32::from(level);
+    let total: u32 = match passive {
+        // From the hero's own HP: the demolisher's 140, the agent's 80.
+        Passive::Vitality => hero.hp() + 20 * level,
+        Passive::Swiftness | Passive::Haste => 8 * level,
+        Passive::Magnet => 2 + level,
+        // The hero's own counted: the veteran's Commando.
+        Passive::Might => (100 + 10 * level) * hero.perk().damage_percent() / 100 - 100,
+        Passive::Wisdom
+        | Passive::Loot
+        | Passive::Glare
+        | Passive::Stealth
+        | Passive::HordeHunter => 10 * level,
+        // In tenths of HP a second, the hero's own counted: the medic's.
+        Passive::Regeneration => 4 * level + hero.perk().regeneration_tenths(),
+        Passive::Drain => 5 + 5 * level,
+        Passive::Flashlight => 9 + 2 * level,
+    };
+    match passive {
+        Passive::Vitality => fl!("gain-vitality", total = total),
+        // Against the survivor's pace, the hero's own counted: the demolisher slower.
+        Passive::Swiftness => {
+            let total = i32::from(hero.speed_percent()) + i32::try_from(total).unwrap_or(0);
+            let total = if total < 0 {
+                format!("−{}", total.unsigned_abs())
+            } else {
+                format!("+{total}")
+            };
+            fl!("gain-swiftness", total = total)
+        }
+        Passive::Magnet => fl!("gain-magnet", total = total),
+        Passive::Might => fl!("gain-might", total = total),
+        Passive::Haste => fl!("gain-haste", total = total),
+        Passive::Flashlight => fl!("gain-flashlight", total = total),
+        Passive::Wisdom => fl!("gain-wisdom", total = total),
+        Passive::Loot => fl!("gain-loot", total = total),
+        Passive::Regeneration => {
+            let (whole, tenth) = (total / 10, total % 10);
+            fl!("gain-regeneration", whole = whole, tenth = tenth)
+        }
+        Passive::Glare => fl!("gain-glare", total = total),
+        Passive::Drain => fl!("gain-drain", total = total),
+        Passive::Stealth => fl!("gain-stealth", total = total),
+        Passive::HordeHunter => match level {
+            1 => fl!("gain-horde-hunter-1"),
+            2 => fl!("gain-horde-hunter-2", total = total),
+            3 => fl!("gain-horde-hunter-3", total = total),
+            4 => fl!("gain-horde-hunter-4", total = total),
+            _ => fl!("gain-horde-hunter-5", total = total),
+        },
     }
 }
 
@@ -583,6 +610,40 @@ mod tests {
     use crate::game::Action;
 
     #[test]
+    fn the_vitality_card_counts_from_the_hero_s_own_hp() {
+        let vitality = Choice::Passive(Passive::Vitality);
+        assert!(
+            gain_of(vitality, 1, Skin::Demolisher).contains("160"),
+            "140 HP and 20 more: 160"
+        );
+        assert!(gain_of(vitality, 1, Skin::Survivor).contains("120"));
+    }
+
+    #[test]
+    fn the_heal_might_and_swiftness_cards_count_the_hero_s_own_perks_and_pace() {
+        assert!(
+            gain_of(Choice::Heal, 1, Skin::Medic).contains("30"),
+            "half again"
+        );
+        assert!(gain_of(Choice::Heal, 1, Skin::Survivor).contains("20"));
+        let might = gain_of(Choice::Passive(Passive::Might), 1, Skin::Classic);
+        assert!(might.contains("21"), "Commando on top: {might}");
+        let swiftness = gain_of(Choice::Passive(Passive::Swiftness), 1, Skin::Demolisher);
+        assert!(swiftness.contains("−7"), "still slower: {swiftness}");
+    }
+
+    #[test]
+    fn the_regeneration_card_counts_the_medic_s_own_too() {
+        let regeneration = Choice::Passive(Passive::Regeneration);
+        assert!(
+            gain_of(regeneration, 1, Skin::Survivor).contains("0,4")
+                || gain_of(regeneration, 1, Skin::Survivor).contains("0.4")
+        );
+        let medic = gain_of(regeneration, 1, Skin::Medic);
+        assert!(medic.contains("0,6") || medic.contains("0.6"), "{medic}");
+    }
+
+    #[test]
     fn every_gain_fits_its_card() {
         let choices = Weapon::ALL
             .into_iter()
@@ -595,7 +656,7 @@ mod tests {
         let width = usize::from(CARD_WIDTH - 2 - 4);
         for choice in choices {
             for level in 1..=MAX_LEVEL {
-                let gain = gain_of(choice, level);
+                let gain = gain_of(choice, level, Skin::Survivor);
                 let rows = super::super::text::wrap(&gain, width).len();
                 assert!(rows <= 3, "{choice:?} at {level}: {gain}");
             }

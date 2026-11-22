@@ -37,7 +37,7 @@ impl World {
                 .enemies
                 .iter()
                 .enumerate()
-                .filter(|(index, _)| !cut.contains(index))
+                .filter(|(index, enemy)| !cut.contains(index) && enemy.hp > 0)
                 .map(|(index, enemy)| {
                     let apart = (enemy.position - from).length() - enemy.kind.stats().half_width;
                     (apart, index)

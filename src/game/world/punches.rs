@@ -1,6 +1,7 @@
 //! The fists at work: punches at the nearest enemy within arm's reach.
 
 use super::super::build::Weapon;
+use super::super::enemy::EnemyKind;
 use super::super::fists::{self, KNOCK_TICKS, KNOCKBACK, PUNCH_TICKS, Punch};
 use super::World;
 use super::weapons::against;
@@ -45,7 +46,11 @@ impl World {
         self.punches += 1;
         let build = &self.player.build;
         let (damage, heavy) = fists::hit(self.punches, build.damage(stats.damage));
+        let standing = enemy.hp > 0;
         enemy.hit(against(damage, enemy, build.horde_bonus()));
+        if standing && enemy.hp == 0 && enemy.kind == EnemyKind::Abomination {
+            self.abominations_smashed += 1;
+        }
         if heavy {
             let ticks = f32::from(u16::try_from(KNOCK_TICKS).unwrap_or(1));
             enemy.knock = (enemy.position - player).normalized() * (KNOCKBACK / ticks);
