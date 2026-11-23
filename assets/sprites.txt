@@ -736,6 +736,16 @@ aqaaaaqa
 aaaaaaaa
 ........
 
+icon_grenade
+....nn..
+...n.n..
+..dddd..
+.dLdLdd.
+.dddddd.
+.dLdLdd.
+..dddd..
+........
+
 icon_napalm
 ..n..n..
 ..nnnn..
@@ -896,14 +906,14 @@ gggggg..
 .....rrr
 ......r.
 
-icon_stealth
+icon_sniper
 ........
-.n.n.n..
-........
-..nnn...
-.nnnnn..
-.nnnnn..
-..nnn...
+......t.
+.......n
+qqqqqqnn
+..qq.u..
+.qq..u..
+qq......
 ........
 
 icon_ram

@@ -9,13 +9,15 @@ use super::super::c4;
 use super::super::enemy::EnemyKind;
 use super::super::fists;
 use super::super::gem::Gem;
+use super::super::grenade;
 use super::super::guns::{self, Bullet};
 use super::super::hammer;
 use super::super::machete;
 use super::super::mode::Mode;
 use super::super::napalm;
-use super::super::progress::{Achievement, Progress};
+use super::super::progress::{Achievement, COLLECTION, Progress, Unlock};
 use super::super::ram;
+use super::super::sniper;
 use super::super::spawn::{MARGIN, MAX_ENEMIES};
 use super::Veil;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -185,11 +187,16 @@ fn flaming(level: u8) -> World {
     world
 }
 
-/// The C4 at `level`, an enemy stunned and tough at the player's feet, one within its blast,
-/// one well away.
+/// The C4 at `level`, the player's own action, an enemy stunned and tough at the player's feet,
+/// one within its blast, one well away.
 fn charged(level: u8) -> World {
-    let mut world = armed_with(Weapon::C4, level);
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    disarm(&mut world);
     world.next_horde = u32::MAX;
+    world.announcement = None;
+    for _ in 0..level {
+        world.player.build.take(Choice::Action(Action::C4));
+    }
     for x in [100.0, 102.0, 110.0] {
         world
             .enemies

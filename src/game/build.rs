@@ -42,14 +42,15 @@ pub enum Weapon {
     Shuriken,
     Defibrillator,
     Chainsaw,
-    C4,
+    Grenade,
+    Sniper,
     Napalm,
     Fists,
     Truncheon,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 19] = [
+    pub const ALL: [Weapon; 20] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -65,7 +66,8 @@ impl Weapon {
         Weapon::Shuriken,
         Weapon::Defibrillator,
         Weapon::Chainsaw,
-        Weapon::C4,
+        Weapon::Grenade,
+        Weapon::Sniper,
         Weapon::Napalm,
         Weapon::Fists,
         Weapon::Truncheon,
@@ -96,15 +98,13 @@ pub enum Passive {
     Glare,
     /// A chance for each enemy felled to give back 1 HP: 10%, 5% more per level.
     Drain,
-    /// The torch out, 10% faster per level.
-    Stealth,
     /// +10% damage to the hordes per level; their last ones targeted in red, more with the
     /// levels.
     HordeHunter,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 13] = [
+    pub const ALL: [Passive; 12] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -116,7 +116,6 @@ impl Passive {
         Passive::Regeneration,
         Passive::Glare,
         Passive::Drain,
-        Passive::Stealth,
         Passive::HordeHunter,
     ];
 }
@@ -130,10 +129,12 @@ pub enum Action {
     Barricade,
     /// A charge, shield ahead, nothing hurting the player, the enemies in the way thrown aside.
     Ram,
+    /// The demolisher's own: a charge set down at their feet, blown from afar.
+    C4,
 }
 
 impl Action {
-    pub const ALL: [Action; 3] = [Action::Dash, Action::Barricade, Action::Ram];
+    pub const ALL: [Action; 4] = [Action::Dash, Action::Barricade, Action::Ram, Action::C4];
 }
 
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the
@@ -157,7 +158,8 @@ impl Choice {
                 | Weapon::Hammer
                 | Weapon::Baton
                 | Weapon::Chainsaw
-                | Weapon::C4
+                | Weapon::Grenade
+                | Weapon::Sniper
                 | Weapon::Napalm,
             )
             | Choice::Passive(
@@ -213,7 +215,8 @@ impl Build {
         Self::playing(Skin::Survivor)
     }
 
-    /// What a run starts with, a hero playing: their own weapon at its first level.
+    /// What a run starts with, a hero playing: their own weapon at its first level; their own
+    /// action comes at the run's level 5.
     pub fn playing(hero: Skin) -> Self {
         let weapon = hero.weapon();
         Self {
@@ -372,12 +375,6 @@ impl Build {
     }
 
     /// The player's speed, against the survivor's, in percent: the hero's, and Swiftness's.
-    /// How much faster the player goes with the torch out, in points of percent: 10 per level of
-    /// Stealth.
-    pub fn stealth_percent(&self) -> u16 {
-        10 * u16::from(self.passive_level(Passive::Stealth))
-    }
-
     pub fn speed_percent(&self) -> u16 {
         let swiftness = 8 * i16::from(self.passive_level(Passive::Swiftness));
         u16::try_from(100 + self.hero.speed_percent() + swiftness).unwrap_or(100)

@@ -3,8 +3,7 @@
 use super::{
     Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
     FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH, HOLD_THE_LINE_SECONDS, LEGEND_KILLS,
-    SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, TICKS_PER_SECOND, UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
-    Weather, World, weather,
+    SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, TICKS_PER_SECOND, VETERAN_LEVEL, Weather, World,
 };
 
 impl World {
@@ -72,15 +71,6 @@ impl World {
         }
         if matches!(weather, Weather::Storm | Weather::Tempest) {
             self.progress.reach(Achievement::Storm);
-        }
-        // Untouched since the night fell, or since the last hit after it.
-        let second = u32::from(TICKS_PER_SECOND);
-        let since = self
-            .hurt_at
-            .unwrap_or(0)
-            .max(weather::DUSK_SECONDS * second);
-        if self.ticks >= since + UNTOUCHABLE_SECONDS * second {
-            self.progress.reach(Achievement::Untouchable);
         }
         self.progress.count();
     }

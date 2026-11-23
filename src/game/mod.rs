@@ -17,6 +17,7 @@ mod facing;
 mod fists;
 mod flamethrower;
 mod gem;
+mod grenade;
 mod guns;
 mod hammer;
 mod heal;
@@ -34,6 +35,7 @@ mod progress;
 pub mod ram;
 mod score;
 mod skin;
+mod sniper;
 mod spawn;
 mod stain;
 mod vec2;
@@ -49,6 +51,7 @@ pub use build::{
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
+pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;
 pub use hammer::{Blow, WAVE_TICKS as HAMMER_WAVE_TICKS};
 pub use heal::light as campfire_light;
@@ -58,6 +61,12 @@ pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
 pub use progress::{Achievement, COLLECTION, Progress, Unlock};
+pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
+
+/// The ticks the C4 takes to come back after a blast, by its level, before Haste.
+pub fn c4_recharge(level: u8) -> u32 {
+    c4::at(level).recharge
+}
 
 /// The ticks the ram takes to come back, by its level, before Haste.
 pub fn ram_recharge(level: u8) -> u32 {

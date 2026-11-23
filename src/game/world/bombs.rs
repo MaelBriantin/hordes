@@ -74,8 +74,11 @@ impl World {
         self.bombs.iter().filter(|bomb| bomb.left <= FALL_TICKS)
     }
 
-    /// The fireballs showing: the C4's blasts and the napalm's.
+    /// The fireballs showing: the C4's blasts, the napalm's and the grenade's.
     pub fn fireballs(&self) -> impl Iterator<Item = &Blast> {
-        self.c4_blasts.iter().chain(&self.napalm_blasts)
+        self.c4_blasts
+            .iter()
+            .chain(&self.napalm_blasts)
+            .chain(&self.grenade_blasts)
     }
 }

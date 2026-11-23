@@ -1,4 +1,4 @@
-//! What burns and blows up: the Molotov, the flamethrower, the hammer, the C4, the napalm, the abominations' bursts.
+//! What burns and blows up: the Molotov, the flamethrower, the hammer, the C4, the grenade, the napalm, the abominations' bursts.
 
 use super::*;
 
@@ -476,29 +476,25 @@ fn at_level_5_the_napalm_drops_two_lines_crossed() {
 }
 
 #[test]
-fn the_c4_sets_a_charge_down_at_the_player_s_feet_only_with_an_enemy_near() {
-    let mut world = armed_with(Weapon::C4, 1);
-    world.next_horde = u32::MAX;
-    wait(&mut world, 30);
-    assert!(world.charges.is_empty(), "none near");
-    world
-        .enemies
-        .push(enemy(EnemyKind::Zombie, Vec2::new(105.0, 50.0)));
-    world.enemies[0].stunned = u32::MAX;
-    wait(&mut world, 1);
-    assert_eq!(world.charges.len(), 1);
-    assert_eq!(world.charges[0].at, world.player.position);
-}
-
-#[test]
-fn a_charge_blows_after_its_fuse_hurting_and_throwing_back_what_is_around_not_beyond() {
+fn space_sets_a_c4_charge_down_and_space_again_blows_it_from_afar() {
     let mut world = charged(1);
-    wait(&mut world, 1);
+    world.act();
     assert_eq!(world.charges.len(), 1);
-    wait(&mut world, c4::FUSE_TICKS - 1);
-    assert_eq!(world.enemies[0].hp, 1_000, "not yet");
+    assert_eq!(
+        world.charges[0].at,
+        Vec2::new(100.0, 50.0),
+        "at the player's feet"
+    );
+    // The player walks off; it waits.
+    world.player.position = Vec2::new(98.0, 50.0);
+    wait(&mut world, 20);
+    assert_eq!(world.enemies[0].hp, 1_000, "waiting");
+    world.act();
     wait(&mut world, 1);
-    assert!(world.charges.is_empty() && world.c4_blasts.len() == 1);
+    assert!(
+        world.charges.is_empty() && world.c4_blasts.len() == 1,
+        "blown"
+    );
     assert_eq!(world.enemies[0].hp, 1_000 - 25);
     assert_eq!(world.enemies[1].hp, 1_000 - 25);
     assert_eq!(world.enemies[2].hp, 1_000, "beyond its blast");
@@ -507,12 +503,105 @@ fn a_charge_blows_after_its_fuse_hurting_and_throwing_back_what_is_around_not_be
 }
 
 #[test]
-fn at_level_5_the_c4_s_blast_stuns() {
+fn a_c4_charge_left_alone_blows_by_itself_then_the_next_waits_its_recharge() {
+    let mut world = charged(1);
+    world.act();
+    wait(&mut world, c4::FUSE_TICKS - 1);
+    assert_eq!(world.enemies[0].hp, 1_000, "not yet");
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[0].hp, 1_000 - 25, "by itself");
+    // Not again before its recharge.
+    world.act();
+    assert!(world.charges.is_empty(), "recharging");
+    wait(&mut world, c4::at(1).recharge);
+    world.act();
+    assert_eq!(world.charges.len(), 1, "ready again");
+}
+
+#[test]
+fn at_level_5_two_c4_charges_set_down_one_after_the_other_blow_together() {
     let mut world = charged(5);
-    for enemy in &mut world.enemies {
-        enemy.stunned = 0;
-        enemy.position.y = 52.0;
+    world.act();
+    world.player.position = Vec2::new(108.0, 50.0);
+    world.act();
+    assert_eq!(world.charges.len(), 2);
+    world.act();
+    wait(&mut world, 1);
+    assert_eq!(world.c4_blasts.len(), 2, "together");
+    assert!(
+        world.enemies.iter().all(|enemy| enemy.hp < 1_000),
+        "around either"
+    );
+}
+
+#[test]
+fn the_demolisher_s_c4_comes_at_the_run_s_level_3_its_card_shown_the_run_standing_still() {
+    assert_eq!(Skin::Demolisher.action(), Some(Action::C4));
+    assert_eq!(Skin::owning_action(Action::C4), Some(Skin::Demolisher));
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.play_as(Skin::Demolisher);
+    world.announcement = None;
+    world.player.level = 2;
+    world.update(Input::default());
+    assert_eq!(
+        world.player.build.action_level(Action::C4),
+        0,
+        "not before level 3"
+    );
+    let dealt: Vec<Choice> = (0..80).flat_map(|_| world.deal_as(25)).collect();
+    assert!(
+        !dealt.contains(&Choice::Action(Action::C4)),
+        "not dealt before it comes"
+    );
+    world.player.level = 3;
+    world.update(Input::default());
+    assert_eq!(world.player.build.action_level(Action::C4), 1, "at level 3");
+    assert_eq!(world.unlocked, Some(Action::C4), "its card shown");
+    // The run stands still until the player has seen it.
+    let ticks = world.ticks;
+    world.update(Input::default());
+    assert_eq!(world.ticks, ticks, "standing still");
+    world.seen_action();
+    world.update(Input::default());
+    assert!(world.ticks > ticks, "going on");
+    let dealt: Vec<Choice> = (0..80).flat_map(|_| world.deal_as(25)).collect();
+    assert!(
+        dealt.contains(&Choice::Action(Action::C4)),
+        "its next levels to them"
+    );
+    world.play_as(Skin::Agent);
+    world.player.level = 3;
+    world.update(Input::default());
+    assert_eq!(
+        world.player.build.action_level(Action::C4),
+        0,
+        "not another hero's"
+    );
+    assert_eq!(world.unlocked, None);
+}
+
+#[test]
+fn the_grenade_is_thrown_at_the_crowd_and_blows_where_it_lands() {
+    let mut world = armed_with(Weapon::Grenade, 1);
+    world.next_horde = u32::MAX;
+    // A crowd 5 tiles off; one alone, well away from it.
+    for (x, y) in [(105.0, 50.0), (105.5, 50.0), (105.0, 50.5), (100.0, 55.0)] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
     }
-    wait(&mut world, 1 + c4::FUSE_TICKS);
-    assert!(world.enemies[1].stunned > 0);
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+        enemy.stunned = u32::MAX;
+    }
+    wait(&mut world, 1);
+    assert_eq!(world.grenades.len(), 1, "thrown");
+    wait(&mut world, grenade::FLIGHT_TICKS);
+    assert!(world.grenades.is_empty(), "blown");
+    assert!(
+        world.enemies[..3]
+            .iter()
+            .all(|enemy| enemy.hp == 1_000 - 20)
+    );
+    assert_eq!(world.enemies[3].hp, 1_000, "away from it");
 }

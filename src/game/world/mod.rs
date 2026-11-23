@@ -8,7 +8,7 @@ use super::barricade::Barricade;
 use super::baton::Thrust;
 use super::body::{slide, touch};
 use super::build::{
-    BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
+    Action, BASE_HP, Build, Choice, HEAL, Legendary, Passive, RARE_PERCENT, VITALITY_HP, Weapon,
 };
 use super::burst::{Blast, Swelling};
 use super::c4::{self, Charge};
@@ -17,6 +17,7 @@ use super::defibrillator::Shock;
 use super::enemy::Enemy;
 use super::fists::Punch;
 use super::gem::Gem;
+use super::grenade::Thrown;
 use super::guns::{Bullet, Magazine};
 use super::hammer::{Blow, Quake};
 use super::heal::{self, CAMPFIRE_HP, CAMPFIRE_LIGHT, HERB_HP, HERB_REACH};
@@ -32,9 +33,10 @@ use super::napalm::Bomb;
 use super::progress::{
     Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
     FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH, HOLD_THE_LINE_SECONDS, LEGEND_KILLS,
-    Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, UNTOUCHABLE_SECONDS, VETERAN_LEVEL,
+    Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, VETERAN_LEVEL,
 };
 use super::score;
+use super::sniper::{Impact, Shot};
 use super::stain::Stain;
 use super::weather::{self, Weather};
 use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
@@ -49,12 +51,14 @@ mod debug;
 mod enemies;
 mod flames;
 mod goals;
+mod grenades;
 mod jabs;
 mod player;
 mod punches;
 mod rams;
 mod saws;
 mod shocks;
+mod sniping;
 mod stabs;
 mod storm;
 mod torch;
@@ -97,6 +101,8 @@ fn torch_lights_up() -> u32 {
 }
 
 /// The most ticks the torch flickers as it lights up, before it holds: a second and a half.
+/// The run's level at which the hero's own action comes, told on a card of its own.
+const ACTION_LEVEL: u32 = 3;
 /// The ticks the infiltrator's goggles stay blank once struck by lightning: 4 s.
 const GOGGLES_OUT_TICKS: u32 = 120;
 const TORCH_FLICKER_MOST: u32 = 45;
@@ -213,7 +219,19 @@ pub struct World {
     /// charge.
     pub charges: Vec<Charge>,
     pub c4_blasts: Vec<c4::Blast>,
-    c4_wait: u32,
+    pub c4_wait: u32,
+    /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
+    /// before it can aim again.
+    aim: Option<(u32, u32)>,
+    sniper_wait: u32,
+    /// The sniper's bullet in the air, and its impacts while they show.
+    pub shot: Option<Shot>,
+    pub impacts: Vec<Impact>,
+    /// The grenades in the air, their blasts while they show, and the ticks before the next
+    /// throw.
+    pub grenades: Vec<Thrown>,
+    pub grenade_blasts: Vec<c4::Blast>,
+    grenade_wait: u32,
     /// The napalm's bombs falling, its blasts while they show, and the ticks before its next
     /// strike.
     pub bombs: Vec<Bomb>,
@@ -266,6 +284,9 @@ pub struct World {
     /// The ram: the ticks before it can be played again; whether the player is charging, and the
     /// enemies the charge has hit, each once.
     pub ram_wait: u32,
+    /// The hero's own action, just come, its card shown: the run stands still until the player
+    /// has seen it.
+    pub unlocked: Option<Action>,
     /// Braced before a charge: the way it will go, and the ticks left.
     ram_windup: Option<(Vec2, u32)>,
     ramming: bool,
@@ -448,6 +469,13 @@ impl World {
             charges: Vec::new(),
             c4_blasts: Vec::new(),
             c4_wait: 0,
+            aim: None,
+            sniper_wait: 0,
+            shot: None,
+            impacts: Vec::new(),
+            grenades: Vec::new(),
+            grenade_blasts: Vec::new(),
+            grenade_wait: 0,
             bombs: Vec::new(),
             napalm_blasts: Vec::new(),
             napalm_wait: 0,
@@ -478,6 +506,7 @@ impl World {
             fists_wait: 0,
             punches: 0,
             ram_wait: 0,
+            unlocked: None,
             ram_windup: None,
             ramming: false,
             rammed: Vec::new(),
@@ -664,7 +693,7 @@ impl World {
     /// Moves the world on by one tick; not while the run is over or a choice is on offer, and not
     /// while news is told: the announcement only wears off.
     pub fn update(&mut self, input: Input) {
-        if self.is_over() || self.offer.is_some() {
+        if self.is_over() || self.offer.is_some() || self.unlocked.is_some() {
             return;
         }
         if let Some(announcement) = &mut self.announcement {
@@ -708,16 +737,19 @@ impl World {
         self.shock_defibrillator();
         self.grind_chainsaw();
         self.set_charges();
+        self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();
         self.throw_flames();
         self.fire_guns();
+        self.snipe();
         self.move_bullets();
         self.turn_drones();
         self.burst_abominations();
         self.fell_enemies();
         self.gather_gems();
         self.give_horde_levels();
+        self.unlock_action();
         self.illuminate();
         self.regenerate();
         self.heal_player();

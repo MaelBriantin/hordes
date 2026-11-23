@@ -7,10 +7,12 @@ mod figures;
 mod fire;
 mod fists;
 mod gear;
+mod grenade;
 mod napalm;
 mod ninja;
 mod ram;
 mod saw;
+mod sniper;
 mod stabs;
 mod thrust;
 
@@ -482,6 +484,7 @@ impl Canvas<'_> {
         halos.extend(blast_halos);
         let mut glows = self.glows(world);
         glows.extend(Canvas::charge_glows(world));
+        glows.extend(Canvas::sniper_glows(world));
         lights.extend(glows.iter().map(|&(at, _)| night::Light::gem(at)));
         (lights, halos, glows)
     }
@@ -544,6 +547,7 @@ pub fn render_map(
     }
     canvas.paint_flames(world, frame);
     canvas.paint_molotovs(world, frame);
+    canvas.paint_grenades(world, frame);
     canvas.paint_flamethrower(world, frame);
     canvas.paint_fireballs(world);
     canvas.paint_bombs(world);
@@ -551,6 +555,9 @@ pub fn render_map(
     // light, lit, too.
     night::paint_glows(&mut canvas, &glows);
     canvas.paint_charge_lights(world);
+    canvas.paint_sniper_dot(world);
+    canvas.paint_sniper_shot(world);
+    canvas.paint_sniper_impacts(world, blood);
     for gem in &world.gems {
         canvas.paint_at(Look::plain(sprites::gem(gem.value)), gem.position);
     }

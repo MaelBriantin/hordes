@@ -457,29 +457,3 @@ fn a_strike_with_the_player_in_its_ring_puts_their_torch_out_up_to_them_to_light
     world.switch_torch();
     assert_eq!(world.torch_on(), Some(true));
 }
-
-#[test]
-fn with_stealth_the_player_goes_faster_with_their_torch_out() {
-    let speed = |stealth: bool, torch: bool| {
-        let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
-        disarm(&mut world);
-        world.next_horde = u32::MAX;
-        world.ticks = 30 * 40;
-        world.torch_switch = torch;
-        if stealth {
-            world.player.build.take(Choice::Passive(Passive::Stealth));
-        }
-        let from = world.player.position.x;
-        world.update(moving(1.0, 0.0));
-        world.player.position.x - from
-    };
-    let plain = speed(false, false);
-    assert!(
-        (speed(true, false) - plain * 1.1).abs() < 1e-4,
-        "10% faster in the dark"
-    );
-    assert!(
-        (speed(true, true) - speed(false, true)).abs() < 1e-6,
-        "not with the torch lit"
-    );
-}

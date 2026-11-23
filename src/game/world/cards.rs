@@ -61,12 +61,21 @@ impl World {
         let dusk = self.weather() == Weather::Dusk;
         let percent = LEGENDARY_PERCENT + self.without_legendary;
         let (progress, start) = (&self.dealt, self.start);
+        // A hero's own action, once it has come, at level 5: its next levels to them alone; a
+        // hero with an action of their own is dealt no other.
+        let build = &self.player.build;
+        let hero_action = build.hero().action();
+        let own_level = hero_action.map_or(0, |action| build.action_level(action));
         let offer = self
             .player
             .build
             .offers(&mut self.rng, dusk, rare, percent, |choice| match choice {
                 // A hero's own weapon, to them alone.
                 Choice::Weapon(weapon) if Skin::owning(weapon).is_some() => weapon == start,
+                Choice::Action(action) if hero_action.is_some() => {
+                    hero_action == Some(action) && own_level > 0
+                }
+                Choice::Action(action) if Skin::owning_action(action).is_some() => false,
                 _ => progress.deals(choice),
             });
         if offer

@@ -4,7 +4,6 @@ use rand::RngExt;
 
 use super::super::Vec2;
 use super::super::mode::Mode;
-use super::super::progress::Achievement;
 use super::super::weather;
 use super::{Lightning, World};
 
@@ -78,13 +77,6 @@ impl World {
                 enemy.hit(weather::STRIKE_DAMAGE);
                 enemy.ignite_for(burns);
             }
-        }
-        // It never hurts the player: struck, they have the achievement.
-        if (self.player.position - at).length() <= weather::STRIKE_RADIUS
-            && !self.daybreak()
-            && self.player.dash.is_none()
-        {
-            self.progress.reach(Achievement::Struck);
         }
     }
 

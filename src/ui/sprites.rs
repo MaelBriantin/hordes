@@ -130,7 +130,7 @@ pub enum SpriteId {
     IconRegeneration,
     IconGlare,
     IconDrain,
-    IconStealth,
+    IconSniper,
     IconRam,
     IconDash,
     IconFlamethrower,
@@ -144,6 +144,7 @@ pub enum SpriteId {
     IconFists,
     IconTruncheon,
     IconC4,
+    IconGrenade,
     IconNapalm,
     IconBarricade,
     IconIllumination,
@@ -162,7 +163,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 128] = [
+    const ALL: [SpriteId; 129] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -263,7 +264,7 @@ impl SpriteId {
         SpriteId::IconRegeneration,
         SpriteId::IconGlare,
         SpriteId::IconDrain,
-        SpriteId::IconStealth,
+        SpriteId::IconSniper,
         SpriteId::IconRam,
         SpriteId::IconDash,
         SpriteId::IconFlamethrower,
@@ -277,6 +278,7 @@ impl SpriteId {
         SpriteId::IconFists,
         SpriteId::IconTruncheon,
         SpriteId::IconC4,
+        SpriteId::IconGrenade,
         SpriteId::IconNapalm,
         SpriteId::IconBarricade,
         SpriteId::IconIllumination,
@@ -396,7 +398,7 @@ impl SpriteId {
             SpriteId::IconRegeneration => "icon_regeneration",
             SpriteId::IconGlare => "icon_glare",
             SpriteId::IconDrain => "icon_drain",
-            SpriteId::IconStealth => "icon_stealth",
+            SpriteId::IconSniper => "icon_sniper",
             SpriteId::IconRam => "icon_ram",
             SpriteId::IconDash => "icon_dash",
             SpriteId::IconFlamethrower => "icon_flamethrower",
@@ -410,6 +412,7 @@ impl SpriteId {
             SpriteId::IconFists => "icon_fists",
             SpriteId::IconTruncheon => "icon_truncheon",
             SpriteId::IconC4 => "icon_c4",
+            SpriteId::IconGrenade => "icon_grenade",
             SpriteId::IconNapalm => "icon_napalm",
             SpriteId::IconBarricade => "icon_barricade",
             SpriteId::IconIllumination => "icon_illumination",

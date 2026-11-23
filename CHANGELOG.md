@@ -9,6 +9,20 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The grenade, a rare weapon unlocked by Demolisher in place of the C4: thrown at the biggest crowd near, blowing where it lands; two at once at the last level.
+- The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
+
+### Changed
+- The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
+- The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
+- Hold the line unlocks the riot officer alone, told as a hero unlocked.
+- The Untouchable and Lightning rod achievements gone, their rewards now heroes' own actions.
+- Stealth gone; the infiltrator's second outfit named the scout.
+
+### Fixed
+- A hero with an action of their own dealt the other action cards before it came, leaving it unplayable.
+
 ## v0.9.2 · November 22, 2026
 
 ### Fixed

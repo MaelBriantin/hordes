@@ -7,8 +7,8 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
-use super::pixels;
 use super::sprites::{SpriteId, Sprites};
+use super::{collection, pixels, skins};
 use crate::game::{Achievement, Rarity, Unlock};
 
 /// The frames the box takes to rise, stays up, takes to go down: all of them, its time on screen.
@@ -56,13 +56,18 @@ pub fn render(
         Unlock::Card(choice) => (
             fl!("achievement-unlocked"),
             level_up::name(choice),
-            Some(level_up::icon(choice)),
+            Some((level_up::icon(choice), 1)),
         ),
         Unlock::Reroll => (fl!("achievement-unlocked"), fl!("achievement-reroll"), None),
         Unlock::Arcade => (
             fl!("achievement-unlocked"),
             fl!("achievement-arcade"),
-            Some(SpriteId::IconArcade),
+            Some((SpriteId::IconArcade, 1)),
+        ),
+        unlock @ Unlock::Hero(skin) => (
+            fl!("achievement-hero"),
+            skins::name(skin),
+            Some(collection::icon(unlock)),
         ),
     };
     let width_of = |text: &str| u16::try_from(text.chars().count()).unwrap_or(u16::MAX);
@@ -87,8 +92,18 @@ pub fn render(
         }
         boxed[(0, y)].set_symbol("▌").set_fg(colour);
     }
-    if let Some(picture) = picture {
-        pixels::render_sprite(&mut boxed, Rect::new(EDGE, 1, PICTURE, 4), sprites, picture);
+    match picture {
+        Some((picture, 1)) => {
+            pixels::render_sprite(&mut boxed, Rect::new(EDGE, 1, PICTURE, 4), sprites, picture);
+        }
+        Some((picture, scale)) => pixels::render_sprite_scaled(
+            &mut boxed,
+            Rect::new(EDGE, 1, PICTURE, 4),
+            sprites,
+            picture,
+            scale,
+        ),
+        None => {}
     }
     let plain = Style::new().fg(WORDS).bg(GROUND);
     boxed.set_string(left, 1, &header, Style::new().fg(colour).bg(GROUND));
@@ -141,8 +156,6 @@ pub fn goal(achievement: Achievement) -> String {
         Achievement::Swarm => fl!("achievement-swarm-goal"),
         Achievement::Rain => fl!("achievement-rain-goal"),
         Achievement::Storm => fl!("achievement-storm-goal"),
-        Achievement::Untouchable => fl!("achievement-untouchable-goal"),
-        Achievement::Struck => fl!("achievement-struck-goal"),
         Achievement::ThousandDown => fl!("achievement-thousand-goal"),
         Achievement::Shadows => fl!("achievement-shadows-goal"),
         Achievement::Dawn => fl!("achievement-dawn-goal"),
@@ -168,8 +181,6 @@ pub fn name(achievement: Achievement) -> String {
         Achievement::Swarm => fl!("achievement-swarm"),
         Achievement::Rain => fl!("achievement-rain"),
         Achievement::Storm => fl!("achievement-storm"),
-        Achievement::Untouchable => fl!("achievement-untouchable"),
-        Achievement::Struck => fl!("achievement-struck"),
         Achievement::ThousandDown => fl!("achievement-thousand"),
         Achievement::Shadows => fl!("achievement-shadows"),
         Achievement::Dawn => fl!("achievement-dawn"),

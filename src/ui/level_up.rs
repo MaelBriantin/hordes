@@ -104,6 +104,83 @@ pub fn render(
     }
 }
 
+/// The hero's own action, just come: a box over the run, its word on top, a line telling it is
+/// the hero's own; its icon big on the left, its name, what it is and what it does on the right;
+/// how to go on at its foot.
+pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sprites) {
+    let Some(action) = world.unlocked else {
+        return;
+    };
+    let hero = world.player.build.hero();
+    let choice = Choice::Action(action);
+    let width = UNLOCKED_WIDTH.min(map.width);
+    let text_width = width.saturating_sub(2 * (1 + GAP) + UNLOCKED_ICON.0 + GAP);
+    let description = super::text::wrap(&action_description(action), usize::from(text_width));
+    let effect = super::text::wrap(&gain_of(choice, 1, hero), usize::from(text_width));
+    let words = 2 + description.len() + 1 + effect.len() + 1 + 1;
+    let height = (u16::try_from(words).unwrap_or(0).max(UNLOCKED_ICON.1) + 4).min(map.height);
+    let [row] = Layout::vertical([Constraint::Length(height)])
+        .flex(Flex::Center)
+        .areas(map);
+    let [area] = Layout::horizontal([Constraint::Length(width)])
+        .flex(Flex::Center)
+        .areas(row);
+    frame.render_widget(Blank, area);
+    let block = Block::bordered()
+        .padding(Padding::new(GAP, GAP, 1, 1))
+        .title(
+            Line::from(format!(" {} ", fl!("unlocked-title").to_uppercase()))
+                .bold()
+                .centered(),
+        )
+        .title_bottom(Line::from(format!(" {} ", fl!("unlocked-prompt"))).centered());
+    let inside = block.inner(area);
+    frame.render_widget(block, area);
+    let [icon_area, _, text_area] = Layout::horizontal([
+        Constraint::Length(UNLOCKED_ICON.0),
+        Constraint::Length(GAP),
+        Constraint::Fill(1),
+    ])
+    .areas(inside);
+    pixels::render_sprite_scaled(
+        frame.buffer_mut(),
+        Rect {
+            height: UNLOCKED_ICON.1,
+            ..icon_area
+        },
+        sprites,
+        icon(choice),
+        2,
+    );
+    let mut lines = vec![
+        Line::styled(name(choice).to_uppercase(), Style::new().bold()),
+        Line::default(),
+    ];
+    lines.extend(
+        description
+            .into_iter()
+            .map(|line| Line::styled(line, Style::new().fg(Color::Gray))),
+    );
+    lines.push(Line::default());
+    lines.extend(effect.into_iter().map(Line::from));
+    lines.push(Line::default());
+    lines.push(Line::styled(
+        fl!("unlocked-key"),
+        Style::new().fg(NEW).bold(),
+    ));
+    frame.render_widget(Paragraph::new(lines), text_area);
+}
+
+/// What an action is, in a few words: the hero's own, told as it comes.
+fn action_description(action: Action) -> String {
+    match action {
+        Action::Dash => fl!("action-dash-description"),
+        Action::Barricade => fl!("action-barricade-description"),
+        Action::Ram => fl!("action-ram-description"),
+        Action::C4 => fl!("action-c4-description"),
+    }
+}
+
 struct Card {
     index: usize,
     choice: Choice,
@@ -113,6 +190,10 @@ struct Card {
     /// from.
     hero: Skin,
 }
+
+/// How wide the box telling an action just come is; the room its icon takes, twice as big.
+const UNLOCKED_WIDTH: u16 = 64;
+const UNLOCKED_ICON: (u16, u16) = (16, 8);
 
 /// How far a card has turned over, from 0 (face down) to 1 (face up), `started` after it began.
 fn turned(started: Duration) -> f32 {
@@ -258,7 +339,8 @@ pub fn icon(choice: Choice) -> SpriteId {
             Weapon::Shuriken => SpriteId::IconShuriken,
             Weapon::Defibrillator => SpriteId::IconDefibrillator,
             Weapon::Chainsaw => SpriteId::IconChainsaw,
-            Weapon::C4 => SpriteId::IconC4,
+            Weapon::Grenade => SpriteId::IconGrenade,
+            Weapon::Sniper => SpriteId::IconSniper,
             Weapon::Napalm => SpriteId::IconNapalm,
             Weapon::Fists => SpriteId::IconFists,
             Weapon::Truncheon => SpriteId::IconTruncheon,
@@ -275,12 +357,12 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
             Passive::Drain => SpriteId::IconDrain,
-            Passive::Stealth => SpriteId::IconStealth,
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
         Choice::Action(Action::Barricade) => SpriteId::IconBarricade,
         Choice::Action(Action::Ram) => SpriteId::IconRam,
+        Choice::Action(Action::C4) => SpriteId::IconC4,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -301,12 +383,12 @@ pub fn name(choice: Choice) -> String {
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
             Passive::Drain => fl!("passive-drain"),
-            Passive::Stealth => fl!("passive-stealth"),
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
         Choice::Action(Action::Barricade) => fl!("action-barricade"),
         Choice::Action(Action::Ram) => fl!("action-ram"),
+        Choice::Action(Action::C4) => fl!("action-c4"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -329,7 +411,8 @@ pub fn weapon_name(weapon: Weapon) -> String {
         Weapon::Shuriken => fl!("weapon-shuriken"),
         Weapon::Defibrillator => fl!("weapon-defibrillator"),
         Weapon::Chainsaw => fl!("weapon-chainsaw"),
-        Weapon::C4 => fl!("weapon-c4"),
+        Weapon::Grenade => fl!("weapon-grenade"),
+        Weapon::Sniper => fl!("weapon-sniper"),
         Weapon::Napalm => fl!("weapon-napalm"),
         Weapon::Fists => fl!("weapon-fists"),
         Weapon::Truncheon => fl!("weapon-truncheon"),
@@ -409,11 +492,7 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         Passive::Magnet => 2 + level,
         // The hero's own counted: the veteran's Commando.
         Passive::Might => (100 + 10 * level) * hero.perk().damage_percent() / 100 - 100,
-        Passive::Wisdom
-        | Passive::Loot
-        | Passive::Glare
-        | Passive::Stealth
-        | Passive::HordeHunter => 10 * level,
+        Passive::Wisdom | Passive::Loot | Passive::Glare | Passive::HordeHunter => 10 * level,
         // In tenths of HP a second, the hero's own counted: the medic's.
         Passive::Regeneration => 4 * level + hero.perk().regeneration_tenths(),
         Passive::Drain => 5 + 5 * level,
@@ -443,7 +522,6 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         }
         Passive::Glare => fl!("gain-glare", total = total),
         Passive::Drain => fl!("gain-drain", total = total),
-        Passive::Stealth => fl!("gain-stealth", total = total),
         Passive::HordeHunter => match level {
             1 => fl!("gain-horde-hunter-1"),
             2 => fl!("gain-horde-hunter-2", total = total),
@@ -483,12 +561,19 @@ fn later_weapon_gain(weapon: Weapon, level: u8) -> String {
             4 => fl!("gain-chainsaw-4"),
             _ => fl!("gain-chainsaw-5"),
         },
-        Weapon::C4 => match level {
-            1 => fl!("gain-c4-1"),
-            2 => fl!("gain-c4-2"),
-            3 => fl!("gain-c4-3"),
-            4 => fl!("gain-c4-4"),
-            _ => fl!("gain-c4-5"),
+        Weapon::Sniper => match level {
+            1 => fl!("gain-sniper-1"),
+            2 => fl!("gain-sniper-2"),
+            3 => fl!("gain-sniper-3"),
+            4 => fl!("gain-sniper-4"),
+            _ => fl!("gain-sniper-5"),
+        },
+        Weapon::Grenade => match level {
+            1 => fl!("gain-grenade-1"),
+            2 => fl!("gain-grenade-2"),
+            3 => fl!("gain-grenade-3"),
+            4 => fl!("gain-grenade-4"),
+            _ => fl!("gain-grenade-5"),
         },
         Weapon::Napalm => match level {
             1 => fl!("gain-napalm-1"),
@@ -592,6 +677,14 @@ fn action_gain(action: Action, level: u8) -> String {
             3 => fl!("gain-barricade-third"),
             4 => fl!("gain-barricade-hp", from = 120, to = 180),
             _ => fl!("gain-barricade-metal"),
+        },
+        // The C4: wider at 2, harder at 3, sooner back at 4, two charges at 5.
+        Action::C4 => match level {
+            0 | 1 => fl!("gain-c4-1"),
+            2 => fl!("gain-c4-2"),
+            3 => fl!("gain-c4-3"),
+            4 => fl!("gain-c4-4"),
+            _ => fl!("gain-c4-5"),
         },
         // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
         Action::Ram => match level {

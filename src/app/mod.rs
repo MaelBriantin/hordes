@@ -621,6 +621,13 @@ impl App {
             }
             return;
         }
+        // The hero's action just come, its card shown: Enter or Space go on.
+        if self.world.unlocked.is_some() {
+            if matches!(code, KeyCode::Enter | KeyCode::Char(' ')) {
+                self.world.seen_action();
+            }
+            return;
+        }
         if matches!(code, KeyCode::Esc | KeyCode::Char('p' | 'P')) {
             self.screen = Screen::Paused { selected: 0 };
             return;

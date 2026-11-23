@@ -14,6 +14,8 @@ impl World {
             self.put_barricade();
         } else if build.action_level(Action::Ram) > 0 {
             self.ram();
+        } else if build.action_level(Action::C4) > 0 {
+            self.c4();
         } else {
             self.dash();
         }

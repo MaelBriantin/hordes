@@ -72,53 +72,45 @@ pub(super) struct GearSlot {
     pub(super) gauge: Option<(u32, u32, Color)>,
 }
 
+/// An action's gauge: the Dash shows its dashes as a gun its rounds, full when all are ready,
+/// filling back as they come back; the others fill back between two uses, full once ready.
+fn action_gauge(world: &World, action: Action) -> (u32, u32, Color) {
+    let (player, build) = (&world.player, &world.player.build);
+    let level = build.action_level(action).max(1);
+    let waiting = |left: u32, base: u32| {
+        let whole = build.cooldown(base).max(1);
+        if left > 0 {
+            (whole.saturating_sub(left), whole, GEAR_RELOADING)
+        } else {
+            (1, 1, GEAR_ROUNDS)
+        }
+    };
+    match action {
+        Action::Dash => {
+            let recharge = build.dash_recharge();
+            let most = u32::from(build.dashes());
+            if u32::from(player.dashes.ready) >= most {
+                (1, 1, GEAR_ROUNDS)
+            } else {
+                (
+                    u32::from(player.dashes.ready) * recharge + player.dashes.charging,
+                    most * recharge,
+                    GEAR_RELOADING,
+                )
+            }
+        }
+        Action::Barricade => waiting(world.barricade_wait, barricade_recharge(level)),
+        Action::Ram => waiting(world.ram_wait, crate::game::ram_recharge(level)),
+        Action::C4 => waiting(world.c4_wait, crate::game::c4_recharge(level)),
+    }
+}
+
 /// The cards the player has, in the order first picked.
 pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
     let player = &world.player;
     let build = &player.build;
     let ammo = world.ammo();
     let waits = world.waits();
-    // The Dash card shows its dashes as a gun its rounds: full when all are ready, filling back
-    // as they come back.
-    let recharge = build.dash_recharge();
-    let most = u32::from(build.dashes());
-    let dashes = if u32::from(player.dashes.ready) >= most {
-        (1, 1, GEAR_ROUNDS)
-    } else {
-        (
-            u32::from(player.dashes.ready) * recharge + player.dashes.charging,
-            most * recharge,
-            GEAR_RELOADING,
-        )
-    };
-    // The ram fills back between two charges, full once ready.
-    let ram_whole = build
-        .cooldown(crate::game::ram_recharge(
-            build.action_level(Action::Ram).max(1),
-        ))
-        .max(1);
-    let ram = if world.ram_wait > 0 {
-        (
-            ram_whole.saturating_sub(world.ram_wait),
-            ram_whole,
-            GEAR_RELOADING,
-        )
-    } else {
-        (1, 1, GEAR_ROUNDS)
-    };
-    // The Barricade card fills back between two barricades, full once one is ready.
-    let whole = build
-        .cooldown(barricade_recharge(build.action_level(Action::Barricade)))
-        .max(1);
-    let barricade = if world.barricade_wait > 0 {
-        (
-            whole.saturating_sub(world.barricade_wait),
-            whole,
-            GEAR_RELOADING,
-        )
-    } else {
-        (1, 1, GEAR_ROUNDS)
-    };
     build
         .picked()
         .iter()
@@ -163,11 +155,7 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
             Choice::Action(action) => GearSlot {
                 choice,
                 level: Some(build.action_level(action)),
-                gauge: Some(match action {
-                    Action::Dash => dashes,
-                    Action::Barricade => barricade,
-                    Action::Ram => ram,
-                }),
+                gauge: Some(action_gauge(world, action)),
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {
                 choice,

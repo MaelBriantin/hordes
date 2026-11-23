@@ -37,17 +37,6 @@ fn reaching_the_rain_unlocks_the_machine_gun_for_the_next_runs() {
 }
 
 #[test]
-fn struck_by_lightning_and_standing_is_an_achievement() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    disarm(&mut world);
-    world.progress = Progress::default();
-    world.ticks = 30 * 480;
-    world.strike(Vec2::new(100.5, 50.0), true);
-    assert!(world.player.hp > 0);
-    assert!(world.progress.achieved.contains(&Achievement::Struck));
-}
-
-#[test]
 fn a_run_counts_itself_and_its_kills_in_the_progress() {
     let world = World::with(1, Mode::Standard, false, Progress::default());
     assert_eq!(world.progress.runs, 1);
@@ -80,24 +69,6 @@ fn two_hordes_wiped_out_in_a_run_unlock_the_drones() {
 }
 
 #[test]
-fn two_minutes_untouched_after_nightfall_unlock_the_barricade() {
-    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
-    disarm(&mut world);
-    world.next_horde = u32::MAX;
-    world.progress = Progress::default();
-    world.weather_news = WeatherNews::Banner;
-    // Untouched all through the dusk: nothing yet.
-    wait(&mut world, 30 * 120);
-    assert!(!world.progress.achieved.contains(&Achievement::Untouchable));
-    world.hurt_at = Some(world.ticks);
-    wait(&mut world, 30 * 120 - 1);
-    assert!(!world.progress.achieved.contains(&Achievement::Untouchable));
-    wait(&mut world, 1);
-    assert!(world.progress.achieved.contains(&Achievement::Untouchable));
-    assert!(world.progress.deals(Choice::Action(Action::Barricade)));
-}
-
-#[test]
 fn every_horde_of_a_run_wiped_out_unlocks_the_flamethrower() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
@@ -121,6 +92,8 @@ fn level_25_in_a_run_unlocks_illumination() {
     world.progress = Progress::default();
     world.player.level = 24;
     wait(&mut world, 1);
+    // The survivor's barricade come on the way: its box seen.
+    world.seen_action();
     assert!(!world.progress.achieved.contains(&Achievement::Veteran));
     world.player.level = 25;
     wait(&mut world, 1);
@@ -142,7 +115,7 @@ fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher_and_the_c4() 
             !world.progress.achieved.contains(&Achievement::Demolisher),
             "{felled}"
         );
-        assert!(!world.progress.deals(Choice::Weapon(Weapon::C4)));
+        assert!(!world.progress.deals(Choice::Weapon(Weapon::Grenade)));
         world.melee.clear();
         world
             .enemies
@@ -155,7 +128,7 @@ fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher_and_the_c4() 
         world.swellings.clear();
     }
     assert!(world.progress.achieved.contains(&Achievement::Demolisher));
-    assert!(world.progress.deals(Choice::Weapon(Weapon::C4)));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Grenade)));
 }
 
 #[test]
@@ -246,7 +219,7 @@ fn a_hero_once_with_one_outfit_has_their_second_unlocked_by_the_dawn_too() {
 }
 
 #[test]
-fn three_minutes_with_the_torch_out_in_a_run_unlock_the_infiltrator_and_stealth() {
+fn three_minutes_with_the_torch_out_in_a_run_unlock_the_infiltrator_and_the_sniper() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
     world.next_horde = u32::MAX;
@@ -267,7 +240,7 @@ fn three_minutes_with_the_torch_out_in_a_run_unlock_the_infiltrator_and_stealth(
     assert!(!world.progress.achieved.contains(&Achievement::Shadow));
     until(&mut world, start + 30 * 180);
     assert!(world.progress.achieved.contains(&Achievement::Shadow));
-    assert!(world.progress.deals(Choice::Passive(Passive::Stealth)));
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Sniper)));
     assert_eq!(Skin::Infiltrator.achievement(), Some(Achievement::Shadow));
     assert_eq!(Skin::Infiltrator.weapon(), Weapon::Fists);
     assert!(Skin::Infiltrator.perk().ghost());
@@ -294,7 +267,10 @@ fn thirty_seconds_among_a_dozen_enemies_in_a_run_unlock_the_riot_officer_and_the
     assert!(!world.progress.achieved.contains(&Achievement::HoldTheLine));
     wait(&mut world, 1);
     assert!(world.progress.achieved.contains(&Achievement::HoldTheLine));
-    assert!(world.progress.deals(Choice::Action(Action::Ram)));
+    // The riot officer, their ram their own: neither in the collection.
+    assert_eq!(Achievement::HoldTheLine.unlocks(), Unlock::Hero(Skin::Riot));
+    assert!(!COLLECTION.contains(&Unlock::Card(Choice::Action(Action::Ram))));
+    assert!(!COLLECTION.contains(&Unlock::Hero(Skin::Riot)));
     assert_eq!(Skin::Riot.achievement(), Some(Achievement::HoldTheLine));
     assert_eq!(Skin::Riot.weapon(), Weapon::Truncheon);
 }

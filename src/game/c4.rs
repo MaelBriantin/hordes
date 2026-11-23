@@ -1,14 +1,12 @@
-//! The C4, from the Demolisher achievement: now and then, an enemy near, a charge set down at
-//! the player's feet, its light blinking faster and faster, then its blast: it hurts every enemy
-//! around, throwing them back, stunning them at the last level. A trap for those on the
-//! player's heels.
+//! The C4, the demolisher's own action: Space sets a charge down at their feet, its light
+//! blinking faster and faster; Space again blows it, from afar, or it blows by itself a while
+//! later. Its blast hurts every enemy around, throwing them back. At the last level, two charges
+//! set down one after the other, blowing together.
 
 use super::{TICKS_PER_SECOND, Vec2};
 
-/// The ticks a charge waits before it blows: 1.5 s.
-pub const FUSE_TICKS: u32 = 45;
-/// How near the player an enemy has to be for a charge to be set down, in tiles.
-pub const NEAR: f32 = 6.0;
+/// The ticks a charge waits before it blows by itself: 3 s.
+pub const FUSE_TICKS: u32 = 90;
 /// How far the blast throws the enemies it hits back, away from the charge, in tiles, over how
 /// many ticks.
 pub const KNOCKBACK: f32 = 3.0;
@@ -19,24 +17,24 @@ pub const BLAST_TICKS: u32 = 30;
 /// The C4 at a level.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct C4 {
-    /// The ticks between two charges, before Haste.
-    pub every: u32,
+    /// The ticks after a blast before a charge can be set down again, before Haste.
+    pub recharge: u32,
     /// What the blast takes from each enemy it hits, before Might.
     pub damage: u32,
     /// How far around the charge the blast reaches, in tiles.
     pub radius: f32,
-    /// How long the enemies it hits stand stunned, in ticks.
-    pub stun: u32,
+    /// How many charges can stand at once, blowing together.
+    pub charges: usize,
 }
 
 /// The C4 at a level.
 pub fn at(level: u8) -> C4 {
     let second = u32::from(TICKS_PER_SECOND);
     C4 {
-        every: if level >= 4 { 5 } else { 6 } * second,
+        recharge: if level >= 4 { 4 } else { 5 } * second,
         damage: if level >= 3 { 40 } else { 25 },
         radius: if level >= 2 { 3.0 } else { 2.5 },
-        stun: if level >= 5 { second } else { 0 },
+        charges: if level >= 5 { 2 } else { 1 },
     }
 }
 
@@ -77,12 +75,12 @@ mod tests {
     fn the_c4_grows_with_its_levels() {
         let (first, last) = (at(1), at(5));
         assert_eq!(
-            (first.every, first.damage, first.radius, first.stun),
-            (180, 25, 2.5, 0)
+            (first.recharge, first.damage, first.radius, first.charges),
+            (150, 25, 2.5, 1)
         );
         assert_eq!(
-            (last.every, last.damage, last.radius, last.stun),
-            (150, 40, 3.0, 30)
+            (last.recharge, last.damage, last.radius, last.charges),
+            (120, 40, 3.0, 2)
         );
     }
 

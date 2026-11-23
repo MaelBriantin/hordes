@@ -414,3 +414,54 @@ fn lightning_shows_the_infiltrator_to_the_enemies_around_even_in_the_dark() {
     wait(&mut world, 1);
     assert!(world.enemies[0].noticed, "seen by lightning, followed");
 }
+
+#[test]
+fn a_hero_with_an_action_of_their_own_is_dealt_no_other() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.play_as(Skin::Demolisher);
+    let others = [Action::Dash, Action::Barricade, Action::Ram];
+    for level in [1, 3] {
+        world.player.level = level;
+        world.announcement = None;
+        world.update(Input::default());
+        world.seen_action();
+        let dealt: Vec<Choice> = (0..120).flat_map(|_| world.deal_as(25)).collect();
+        for other in others {
+            assert!(
+                !dealt.contains(&Choice::Action(other)),
+                "level {level}: {other:?}"
+            );
+        }
+    }
+    // A hero without one is dealt none: every action is a hero's own.
+    world.play_as(Skin::Agent);
+    let dealt: Vec<Choice> = (0..120).flat_map(|_| world.deal_as(25)).collect();
+    assert!(
+        !dealt
+            .iter()
+            .any(|choice| matches!(choice, Choice::Action(_)))
+    );
+}
+
+#[test]
+fn the_survivor_the_ninja_and_the_riot_officer_each_get_their_own_action_at_level_3() {
+    for (hero, action) in [
+        (Skin::Survivor, Action::Barricade),
+        (Skin::Ninja, Action::Dash),
+        (Skin::Riot, Action::Ram),
+    ] {
+        assert_eq!(hero.action(), Some(action));
+        let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+        world.play_as(hero);
+        world.announcement = None;
+        world.player.level = 2;
+        world.update(Input::default());
+        assert_eq!(world.player.build.action_level(action), 0, "{hero:?}");
+        world.player.level = 3;
+        world.update(Input::default());
+        assert_eq!(world.player.build.action_level(action), 1, "{hero:?}");
+        assert_eq!(world.unlocked, Some(action), "{hero:?}: its box shown");
+        // Not in the collection: no achievement deals it.
+        assert!(!COLLECTION.contains(&Unlock::Card(Choice::Action(action))));
+    }
+}

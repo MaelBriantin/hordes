@@ -10,8 +10,8 @@ use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
 use super::super::{
-    Vec2, baton, c4, chainsaw, defibrillator, drones, fists, flamethrower, hammer, katana, knife,
-    napalm,
+    Vec2, baton, chainsaw, defibrillator, drones, fists, flamethrower, grenade, hammer, katana,
+    knife, napalm, sniper,
 };
 use super::{Swinging, World};
 
@@ -364,10 +364,15 @@ impl World {
             let every = build.cooldown(hammer::at(level).every).max(1);
             waits.push((Weapon::Hammer, self.hammer_wait.min(every), every));
         }
-        let level = build.weapon_level(Weapon::C4);
+        let level = build.weapon_level(Weapon::Sniper);
         if level > 0 {
-            let every = build.cooldown(c4::at(level).every).max(1);
-            waits.push((Weapon::C4, self.c4_wait.min(every), every));
+            let every = build.cooldown(sniper::at(level).every).max(1);
+            waits.push((Weapon::Sniper, self.sniper_wait.min(every), every));
+        }
+        let level = build.weapon_level(Weapon::Grenade);
+        if level > 0 {
+            let every = build.cooldown(grenade::at(level).every).max(1);
+            waits.push((Weapon::Grenade, self.grenade_wait.min(every), every));
         }
         let level = build.weapon_level(Weapon::Napalm);
         if level > 0 {

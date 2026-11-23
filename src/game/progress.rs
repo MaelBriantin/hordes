@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use serde::de::IgnoredAny;
 use serde::{Deserialize, Deserializer, Serialize};
 
-use super::build::{Action, Choice, Legendary, Passive, Rarity, Weapon};
+use super::build::{Choice, Legendary, Passive, Rarity, Weapon};
 use super::skin::Skin;
 
 /// The rerolls of a run before any achievement.
@@ -39,12 +39,10 @@ pub const FIRST_AID_HP: u32 = 300;
 pub const LEGEND_KILLS: u32 = 700;
 /// The level to reach in a single run for Veteran.
 pub const VETERAN_LEVEL: u32 = 25;
-/// The seconds without a hit, the night fallen, for Untouchable.
-pub const UNTOUCHABLE_SECONDS: u32 = 120;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 29] = [
+pub const COLLECTION: [Unlock; 26] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -59,8 +57,6 @@ pub const COLLECTION: [Unlock; 29] = [
     Unlock::Card(Choice::Weapon(Weapon::Drones)),
     Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
     Unlock::Card(Choice::Weapon(Weapon::Molotov)),
-    Unlock::Card(Choice::Action(Action::Barricade)),
-    Unlock::Card(Choice::Action(Action::Dash)),
     Unlock::Reroll,
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
@@ -68,10 +64,9 @@ pub const COLLECTION: [Unlock; 29] = [
     Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
     Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
     Unlock::Card(Choice::Passive(Passive::Drain)),
-    Unlock::Card(Choice::Weapon(Weapon::C4)),
+    Unlock::Card(Choice::Weapon(Weapon::Grenade)),
     Unlock::Card(Choice::Weapon(Weapon::Napalm)),
-    Unlock::Card(Choice::Passive(Passive::Stealth)),
-    Unlock::Card(Choice::Action(Action::Ram)),
+    Unlock::Card(Choice::Weapon(Weapon::Sniper)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -91,10 +86,6 @@ pub enum Achievement {
     Rain,
     /// In the eye: hold out until the storm.
     Storm,
-    /// Untouchable: 2 minutes without a hit, the night fallen.
-    Untouchable,
-    /// Struck by lightning, and standing.
-    Struck,
     /// A thousand down: 1,000 enemies down, every run counted.
     ThousandDown,
     /// Raw light: 50 Shadows down, every run counted.
@@ -132,18 +123,18 @@ pub enum Unlock {
     Reroll,
     /// The arcade mode, to be played from then on.
     Arcade,
+    /// A hero, to be played from then on.
+    Hero(Skin),
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 21] = [
+    pub const ALL: [Achievement; 19] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
         Achievement::Swarm,
         Achievement::Rain,
         Achievement::Storm,
-        Achievement::Untouchable,
-        Achievement::Struck,
         Achievement::ThousandDown,
         Achievement::Shadows,
         Achievement::Cleaner,
@@ -168,25 +159,23 @@ impl Achievement {
             Achievement::Swarm => Unlock::Card(Choice::Weapon(Weapon::Drones)),
             Achievement::Rain => Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
             Achievement::Storm => Unlock::Card(Choice::Weapon(Weapon::Molotov)),
-            Achievement::Untouchable => Unlock::Card(Choice::Action(Action::Barricade)),
-            Achievement::Struck => Unlock::Card(Choice::Action(Action::Dash)),
             Achievement::ThousandDown => Unlock::Card(Choice::Passive(Passive::Regeneration)),
             Achievement::Shadows => Unlock::Card(Choice::Passive(Passive::Glare)),
             Achievement::Dawn => Unlock::Arcade,
             Achievement::Cleaner => Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
-            Achievement::Demolisher => Unlock::Card(Choice::Weapon(Weapon::C4)),
+            Achievement::Demolisher => Unlock::Card(Choice::Weapon(Weapon::Grenade)),
             Achievement::ColdBlood => Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
             Achievement::ShadowHunter => Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
             Achievement::Legend => Unlock::Card(Choice::Weapon(Weapon::Napalm)),
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
-            Achievement::Shadow => Unlock::Card(Choice::Passive(Passive::Stealth)),
-            Achievement::HoldTheLine => Unlock::Card(Choice::Action(Action::Ram)),
+            Achievement::Shadow => Unlock::Card(Choice::Weapon(Weapon::Sniper)),
+            Achievement::HoldTheLine => Unlock::Hero(Skin::Riot),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
     }
 
-    /// How rare it is: as the card it unlocks; a reroll, rare.
+    /// How rare it is: as what it unlocks.
     pub fn rarity(self) -> Rarity {
         self.unlocks().rarity()
     }
@@ -203,7 +192,7 @@ impl Unlock {
     pub fn rarity(self) -> Rarity {
         match self {
             Unlock::Card(choice) => choice.rarity(),
-            Unlock::Reroll => Rarity::Rare,
+            Unlock::Reroll | Unlock::Hero(_) => Rarity::Rare,
             Unlock::Arcade => Rarity::Legendary,
         }
     }
@@ -348,7 +337,6 @@ mod tests {
         assert!(!progress.deals(Choice::Passive(Passive::Haste)));
         assert!(!progress.deals(Choice::Weapon(Weapon::MachineGun)));
         assert!(!progress.deals(Choice::Passive(Passive::Regeneration)));
-        assert!(!progress.deals(Choice::Action(Action::Dash)));
         assert!(!progress.deals(Choice::Legendary(Legendary::Illumination)));
         assert_eq!(progress.rerolls(), 1);
     }
@@ -394,10 +382,17 @@ mod tests {
             .iter()
             .filter(|unlock| progress.has(**unlock))
             .count();
-        // Every achievement's card in it.
-        assert_eq!(from_start, COLLECTION.len() - Achievement::ALL.len());
-        for achievement in Achievement::ALL {
-            assert!(COLLECTION.contains(&achievement.unlocks()));
+        // Every achievement's card in it; a hero unlocked shows among the heroes instead.
+        let in_it = Achievement::ALL
+            .into_iter()
+            .map(Achievement::unlocks)
+            .filter(|unlock| !matches!(unlock, Unlock::Hero(_)));
+        assert_eq!(from_start, COLLECTION.len() - in_it.clone().count());
+        for unlock in in_it {
+            assert!(COLLECTION.contains(&unlock));
+        }
+        for skin in Skin::ALL {
+            assert!(!COLLECTION.contains(&Unlock::Hero(skin)));
         }
         for skin in Skin::ALL {
             assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(skin.weapon()))));

@@ -1,8 +1,9 @@
 //! The player as a run goes: moving and dashing, hurt and healed, their XP.
 
+use super::super::build::Choice;
 use super::{
-    CAMPFIRE_LIGHT, Dash, Feature, HERB_HP, HERB_REACH, Input, PLAYER_HALF_WIDTH, PLAYER_SPEED,
-    RngExt, Stain, TICKS_PER_SECOND, Vec2, World, heal, slide, tick_seconds, touch,
+    ACTION_LEVEL, CAMPFIRE_LIGHT, Dash, Feature, HERB_HP, HERB_REACH, Input, PLAYER_HALF_WIDTH,
+    PLAYER_SPEED, RngExt, Stain, TICKS_PER_SECOND, Vec2, World, heal, slide, tick_seconds, touch,
 };
 
 impl World {
@@ -48,14 +49,8 @@ impl World {
         }
         player.facing = player.facing.after(input.direction);
         // Normalized, so a diagonal is no faster than a straight line.
-        // With Stealth, faster with the torch out.
-        let stealth = if self.torch_on() == Some(false) {
-            self.player.build.stealth_percent()
-        } else {
-            0
-        };
         let player = &mut self.player;
-        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent() + stealth) / 100.0;
+        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent()) / 100.0;
         let step = input.direction.normalized() * (speed * tick_seconds());
         player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
     }
@@ -195,5 +190,27 @@ impl World {
             size: 1,
             ash: false,
         });
+    }
+
+    /// At the run's level 3, the hero's own action, if they have one, at its first level, its
+    /// card shown to the player.
+    pub(super) fn unlock_action(&mut self) {
+        let build = &mut self.player.build;
+        if self.player.level < ACTION_LEVEL {
+            return;
+        }
+        if let Some(action) = build
+            .hero()
+            .action()
+            .filter(|action| build.action_level(*action) == 0)
+        {
+            build.take(Choice::Action(action));
+            self.unlocked = Some(action);
+        }
+    }
+
+    /// The player has seen their action's card: the run goes on.
+    pub fn seen_action(&mut self) {
+        self.unlocked = None;
     }
 }

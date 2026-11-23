@@ -299,18 +299,7 @@ pub fn render(
         render_heartbeat(frame.buffer_mut(), map, world);
     }
     // The keys below, but for the run going on: its XP bar, all along the screen.
-    let help = match screen {
-        Screen::Title if view.picked.is_some() => Some(fl!("help-title-browsing")),
-        Screen::Title if !view.arcade => Some(fl!("help-title-standard")),
-        Screen::Title if view.mode == Mode::Standard => Some(fl!("help-title")),
-        Screen::Title => Some(fl!("help-title-arcade")),
-        Screen::Paused { .. } => Some(fl!("help-paused")),
-        Screen::Options { .. } => Some(fl!("help-options")),
-        Screen::NameEntry { .. } => Some(fl!("help-name")),
-        Screen::Playing if world.is_over() => Some(fl!("help-over")),
-        Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
-        Screen::Playing | Screen::Debug { .. } | Screen::Keys => None,
-    };
+    let help = help_line(screen, world, view);
     match help {
         Some(help) => frame.render_widget(Line::from(help).fg(DARK_GREY), areas.help),
         None => frame.render_widget(experience(world, areas.help.width), areas.help),
@@ -346,10 +335,33 @@ pub fn render(
     if !dead {
         horde::render(frame, map, world, view.frame);
         announce::render(frame, map, world, sprites);
-        level_up::render(frame, map, world, sprites, view.selected, view.shown);
+        // The hero's action just come shows alone; the cards of the level-up after it.
+        if world.unlocked.is_some() {
+            level_up::render_unlocked(frame, map, world, sprites);
+        } else {
+            level_up::render(frame, map, world, sprites, view.selected, view.shown);
+        }
     }
     if let Some((achievement, since)) = view.toast {
         achievement::render(frame.buffer_mut(), map, sprites, achievement, since);
+    }
+}
+
+/// The keys to tell under the map, for `screen`; none while a run goes on, its XP bar there.
+fn help_line(screen: Screen, world: &World, view: ViewState) -> Option<String> {
+    match screen {
+        Screen::Title if view.picked.is_some() => Some(fl!("help-title-browsing")),
+        Screen::Title if !view.arcade => Some(fl!("help-title-standard")),
+        Screen::Title if view.mode == Mode::Standard => Some(fl!("help-title")),
+        Screen::Title => Some(fl!("help-title-arcade")),
+        Screen::Paused { .. } => Some(fl!("help-paused")),
+        Screen::Options { .. } => Some(fl!("help-options")),
+        Screen::NameEntry { .. } => Some(fl!("help-name")),
+        Screen::Playing if world.is_over() => Some(fl!("help-over")),
+        // The hero's action just come: its own box tells how to go on.
+        Screen::Playing if world.unlocked.is_some() => None,
+        Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
+        Screen::Playing | Screen::Debug { .. } | Screen::Keys => None,
     }
 }
 

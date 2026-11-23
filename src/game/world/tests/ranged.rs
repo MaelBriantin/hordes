@@ -303,3 +303,75 @@ fn haste_makes_the_guns_fire_sooner_and_the_barricade_come_back_sooner() {
     };
     assert!(barricade_wait(5) < barricade_wait(0), "sooner back");
 }
+
+#[test]
+fn the_sniper_aims_at_the_toughest_far_enemy_a_red_dot_on_it_then_fires() {
+    let mut world = armed_with(Weapon::Sniper, 1);
+    world.next_horde = u32::MAX;
+    // A zombie near; an abomination far, tougher; one beyond its range.
+    for (kind, x) in [
+        (EnemyKind::Zombie, 103.0),
+        (EnemyKind::Abomination, 110.0),
+        (EnemyKind::Abomination, 120.0),
+    ] {
+        world.enemies.push(enemy(kind, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.stunned = u32::MAX;
+    }
+    world.enemies[1].hp = 1_000;
+    world.enemies[2].hp = 1_000;
+    wait(&mut world, 1);
+    assert_eq!(
+        world.sniper_dot(),
+        Some(world.enemies[1].position),
+        "the red dot on it"
+    );
+    wait(&mut world, sniper::AIM_TICKS);
+    assert!(world.shot.is_some(), "the bullet flying");
+    wait(&mut world, sniper::FLIGHT_TICKS - 1);
+    assert_eq!(world.enemies[1].hp, 1_000, "not yet");
+    wait(&mut world, 1);
+    assert_eq!(world.enemies[1].hp, 1_000 - 45, "struck");
+    assert_eq!(world.impacts.len(), 1, "its impact shows");
+    assert_eq!(world.enemies[0].hp, 15, "not the zombie");
+    assert_eq!(world.enemies[2].hp, 1_000, "beyond its range");
+    assert_eq!(world.sniper_dot(), None);
+}
+
+#[test]
+fn the_sniper_aims_in_the_dark_where_the_other_guns_hold_their_fire() {
+    let mut world = in_the_dark();
+    for _ in 0..1 {
+        world.player.build.take(Choice::Weapon(Weapon::Sniper));
+    }
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(110.0, 50.0)));
+    world.enemies[0].stunned = u32::MAX;
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 1 + sniper::AIM_TICKS + sniper::FLIGHT_TICKS);
+    assert!(world.enemies[0].hp < 1_000, "shot in the dark");
+}
+
+#[test]
+fn at_level_5_the_sniper_s_bullet_goes_through_every_enemy_on_its_line() {
+    let mut world = armed_with(Weapon::Sniper, 5);
+    world.next_horde = u32::MAX;
+    for (kind, x) in [(EnemyKind::Zombie, 104.0), (EnemyKind::Abomination, 110.0)] {
+        world.enemies.push(enemy(kind, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.stunned = u32::MAX;
+        enemy.hp = 1_000;
+    }
+    world.enemies[1].hp = 2_000;
+    wait(&mut world, 1 + sniper::AIM_TICKS + sniper::FLIGHT_TICKS);
+    assert!(
+        world
+            .enemies
+            .iter()
+            .all(|enemy| enemy.hp < 1_000 || enemy.hp < 2_000)
+    );
+    assert!(world.enemies[0].hp < 1_000, "the one in between too");
+}

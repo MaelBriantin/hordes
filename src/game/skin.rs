@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::build::Weapon;
+use super::build::{Action, Weapon};
 use super::progress::Achievement;
 
 /// What sets a hero apart, besides their HP, their speed and their weapon.
@@ -145,6 +145,24 @@ impl Skin {
             Skin::Infiltrator => Weapon::Fists,
             Skin::Riot => Weapon::Truncheon,
         }
+    }
+
+    /// The action they start a run with, if any: theirs alone, never dealt to another hero.
+    pub fn action(self) -> Option<Action> {
+        match self {
+            Skin::Survivor => Some(Action::Barricade),
+            Skin::Ninja => Some(Action::Dash),
+            Skin::Riot => Some(Action::Ram),
+            Skin::Demolisher => Some(Action::C4),
+            _ => None,
+        }
+    }
+
+    /// The hero an action belongs to, if it is one's own.
+    pub fn owning_action(action: Action) -> Option<Skin> {
+        Skin::ALL
+            .into_iter()
+            .find(|skin| skin.action() == Some(action))
     }
 
     /// Their HP before Vitality.
