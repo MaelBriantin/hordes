@@ -105,12 +105,12 @@ fn level_25_in_a_run_unlocks_illumination() {
 }
 
 #[test]
-fn ten_abominations_felled_in_melee_in_a_run_unlock_the_demolisher_and_the_c4() {
+fn fifteen_abominations_felled_in_a_run_unlock_the_demolisher_and_the_grenade() {
     let mut world = armed_with(Weapon::Crowbar, 1);
     world.next_horde = u32::MAX;
     world.progress = Progress::default();
     world.player.facing = Facing::Right;
-    for felled in 0..10 {
+    for felled in 0..DEMOLISHER_ABOMINATIONS {
         assert!(
             !world.progress.achieved.contains(&Achievement::Demolisher),
             "{felled}"

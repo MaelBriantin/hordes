@@ -19,7 +19,7 @@ const RUNS_GOAL: u32 = 25;
 pub const CARNAGE_KILLS: u32 = 300;
 pub const SWARM_HORDES: u32 = 2;
 /// The abominations to fell by a melee blow in a single run for Demolisher.
-pub const DEMOLISHER_ABOMINATIONS: u32 = 10;
+pub const DEMOLISHER_ABOMINATIONS: u32 = 15;
 /// The share of their HP the player stays under, in percent, and the seconds they do in a single
 /// run, all counted, for Cold blood.
 pub const COLD_BLOOD_PERCENT: u32 = 30;

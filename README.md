@@ -27,13 +27,13 @@ The game wants a terminal with true colour; no special font. A terminal with kit
 | `←` `↑` `↓` `→` / `WASD` / `ZQSD` | Move (the last key pressed wins) |
 | `Enter` | Start, take a card, confirm |
 | `F` | Torch on or off, once the night falls |
-| `Shift` | Dash, once its card is taken: nothing hurts the hero meanwhile |
+| `Space` | The hero's own action, from the run's level 3: the dash, the barricade, the C4… |
 | `I` | Show or hide the gear |
 | `E` | An arrow over the hero for 2 s: found again in the crowd |
 | `?` | Every key of a run |
 | `P` / `Esc` | Pause: resume, options, new run, main menu, quit |
-| `←` `→` / `A` `D` | On the title screen: the mode, standard (until dawn) or arcade (endless, for the score) |
-| `O` / `Esc` | On the title screen: the options (blood, rain, the arrow over the player, the hero's look, announcements, dusk, gear, HP over the hero, the coloured ground, language), and quit |
+| `Tab` | On the title screen: the mode, standard (until dawn) or arcade (endless, for the score), once the arcade is unlocked |
+| `O` / `Esc` | On the title screen: the options (blood, rain, the arrow over the player, announcements, gear, HP over the hero, the coloured ground, update check, language, erase the progress), and quit |
 | `R` | After a death: a new run |
 | `Ctrl` `C` | Quit at once |
 
