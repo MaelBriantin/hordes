@@ -9,7 +9,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once the night has fallen, at 0:26 (see The night).
-- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit, the exterminator's wall of fire, the scout's smoke bomb (see The player).
+- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit, the exterminator's wall of fire, the ghost's smoke bomb, the veteran's gatling burst (see The player).
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms. Beside the menu, where the screen is wide enough, the **gear**: the hero from the front, their outfit's name, their perk and their action (its level, ready or charging), then each card taken, its icon, its name and level (MAX in gold at the last), and what it brings: what it does, then what each level after the first added; a line each, without the icons, when the screen is too low for them.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
@@ -245,6 +245,10 @@ The ninja's own weapon. Every **0.8 s** (less with Haste), a **chain of cuts**: 
 A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it). Its **tank** holds **5 s** of grinding, emptying only as it grinds; empty, it stops and fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as the flamethrower's. While it grinds, **nothing hurts the player**: they charge into the crowd, their corners gleaming.
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
+
+### Gatling burst
+
+The veteran's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes, played with Space or Enter: **2 s** of fire straight ahead, the way they face, **10 bullets a second**, each a tracer as the machine gun's, **8 damage** (with Might), through **1** enemy, stopped by trees and rocks; they may turn as it fires, but go at **half their pace**. The gun shows in their hands the way they face, its muzzle flashing; each spent case falls at their feet, lying there a moment, dulling. It waits **12 s** from when it starts (less with Haste), its wait under its icon. Level 2: 10 damage; 3: a 3 s burst; 4: back in 9 s; 5: through 3 enemies. Its next levels are dealt to the veteran alone.
 
 ### Smoke bomb
 

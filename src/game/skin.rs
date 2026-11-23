@@ -152,7 +152,8 @@ impl Skin {
             Skin::Medic => Some(Action::Kit),
             Skin::Exterminator => Some(Action::FireWall),
             Skin::Infiltrator => Some(Action::Smoke),
-            _ => None,
+            Skin::Classic => Some(Action::Gatling),
+            Skin::Agent => None,
         }
     }
 

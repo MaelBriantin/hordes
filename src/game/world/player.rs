@@ -1,6 +1,7 @@
 //! The player as a run goes: moving and dashing, hurt and healed, their XP.
 
 use super::super::build::Choice;
+use super::super::gatling;
 use super::{
     ACTION_LEVEL, CAMPFIRE_LIGHT, Dash, Feature, HERB_HP, HERB_REACH, Input, PLAYER_HALF_WIDTH,
     PLAYER_SPEED, RngExt, Stain, TICKS_PER_SECOND, Vec2, World, heal, slide, tick_seconds, touch,
@@ -50,7 +51,11 @@ impl World {
         player.facing = player.facing.after(input.direction);
         // Normalized, so a diagonal is no faster than a straight line.
         let player = &mut self.player;
-        let speed = PLAYER_SPEED * f32::from(player.build.speed_percent()) / 100.0;
+        let mut speed = PLAYER_SPEED * f32::from(player.build.speed_percent()) / 100.0;
+        // Firing the gatling, at half their pace.
+        if self.gatling_left > 0 {
+            speed *= f32::from(u16::try_from(gatling::PACE_PERCENT).unwrap_or(100)) / 100.0;
+        }
         let step = input.direction.normalized() * (speed * tick_seconds());
         player.position = slide(&self.map, player.position, step, PLAYER_HALF_WIDTH, false);
     }

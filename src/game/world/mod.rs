@@ -16,6 +16,7 @@ use super::dash::{Dash, Dashes};
 use super::defibrillator::Shock;
 use super::enemy::Enemy;
 use super::fists::Punch;
+use super::gatling::Case;
 use super::gem::Gem;
 use super::grenade::Thrown;
 use super::guns::{Bullet, Magazine};
@@ -52,6 +53,7 @@ mod debug;
 mod enemies;
 mod fire_walls;
 mod flames;
+mod gatlings;
 mod goals;
 mod grenades;
 mod jabs;
@@ -232,6 +234,10 @@ pub struct World {
     /// The smoke bomb's cloud, if one is up, and the ticks before another can be thrown.
     pub smoke: Option<Cloud>,
     pub smoke_wait: u32,
+    /// The ticks the gatling still fires, and before it can again; its spent cases.
+    pub gatling_left: u32,
+    pub gatling_wait: u32,
+    pub cases: Vec<Case>,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -486,6 +492,9 @@ impl World {
             fire_wall_wait: 0,
             smoke: None,
             smoke_wait: 0,
+            gatling_left: 0,
+            gatling_wait: 0,
+            cases: Vec::new(),
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -757,6 +766,7 @@ impl World {
         self.wait_kit();
         self.follow_fire_wall();
         self.thin_smoke();
+        self.fire_gatling();
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

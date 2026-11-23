@@ -82,9 +82,12 @@ $ 240 190 40    the infiltrator's jungle amber goggles
 [ 115 115 120   the riot officer's grey arms
 ] 40 40 46      the riot officer's black straps
 { 161 161 161   the riot officer's shield
-& 84 84 84      the sniper rifle's steel
-* 161 161 161   the sniper rifle's scope mount
+& 84 84 84      the sniper rifle's steel, the gatling's frame
+* 161 161 161   the sniper rifle's scope mount, the gatling's barrels
 ~ 97 55 46      the sniper rifle's stock
+! 48 48 48      the gatling's body
+; 255 255 0     the gatling's belt, its rounds
+= 255 133 2     the gatling's belt, its links
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -768,6 +771,16 @@ icon_smoke
 .<>><...
 .<>><...
 .<<<<...
+
+icon_gatling
+.&&&....
+.&.&....
+!!!&****
+!!!&&&&&
+!;=&****
+..;.....
+.;=.....
+..;.....
 
 icon_grenade
 ....nn..

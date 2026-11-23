@@ -137,10 +137,12 @@ pub enum Action {
     FireWall,
     /// The scout's own: a cloud of smoke at their feet, the enemies losing track of them in it.
     Smoke,
+    /// The veteran's own: a burst of fire straight ahead a while.
+    Gatling,
 }
 
 impl Action {
-    pub const ALL: [Action; 7] = [
+    pub const ALL: [Action; 8] = [
         Action::Dash,
         Action::Barricade,
         Action::Ram,
@@ -148,6 +150,7 @@ impl Action {
         Action::Kit,
         Action::FireWall,
         Action::Smoke,
+        Action::Gatling,
     ];
 }
 

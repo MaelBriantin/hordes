@@ -17,6 +17,7 @@ mod facing;
 mod fire_wall;
 mod fists;
 mod flamethrower;
+mod gatling;
 mod gem;
 mod grenade;
 mod guns;
@@ -54,6 +55,7 @@ pub use build::{
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
+pub use gatling::CASE_TICKS;
 pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;
 pub use hammer::{Blow, WAVE_TICKS as HAMMER_WAVE_TICKS};
@@ -74,6 +76,11 @@ pub fn c4_recharge(level: u8) -> u32 {
 }
 
 pub use kit::at as kit_at;
+
+/// The ticks the gatling burst takes to come back, by its level, before Haste.
+pub fn gatling_recharge(level: u8) -> u32 {
+    gatling::at(level).recharge
+}
 
 /// The ticks the smoke bomb takes to come back, by its level, before Haste.
 pub fn smoke_recharge(level: u8) -> u32 {

@@ -483,6 +483,7 @@ fn every_hero_with_an_action_of_their_own_gets_it_at_level_3() {
         (Skin::Medic, Action::Kit),
         (Skin::Exterminator, Action::FireWall),
         (Skin::Infiltrator, Action::Smoke),
+        (Skin::Classic, Action::Gatling),
     ] {
         assert_eq!(hero.action(), Some(action));
         let mut world = World::with(1, Mode::Standard, false, Progress::everything());
@@ -610,4 +611,44 @@ fn at_level_5_the_enemies_in_the_smoke_go_30_percent_slower() {
     let (plain, slowing) = (step(4), step(5));
     assert!(plain > 0.0);
     assert!((slowing / plain - 0.7).abs() < 0.02, "{slowing} {plain}");
+}
+
+#[test]
+fn the_veteran_s_gatling_fires_ten_bullets_a_second_ahead_2_s_at_half_pace_then_waits() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Classic);
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    world.player.facing = Facing::Right;
+    world.player.build.take(Choice::Action(Action::Gatling));
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(105.5, 50.5)));
+    world.enemies[0].stunned = u32::MAX;
+    world.enemies[0].hp = 1_000;
+    world.act();
+    assert!(world.firing_gatling());
+    // Half pace while it fires: a step towards the zombie, still facing it.
+    let from = world.player.position;
+    world.update(moving(1.0, 0.0));
+    let slow = world.player.position.x - from.x;
+    wait(&mut world, 30 * 2);
+    assert!(!world.firing_gatling(), "2 s");
+    let at = world.player.position;
+    world.update(moving(1.0, 0.0));
+    let full = world.player.position.x - at.x;
+    assert!((slow / full - 0.5).abs() < 0.01, "{slow} {full}");
+    // Twenty bullets, each the veteran's damage, all into the zombie ahead, the last there too.
+    wait(&mut world, 10);
+    let each = world.player.build.damage(8);
+    assert_eq!(world.enemies[0].hp, 1_000 - 20 * each);
+    assert!(!world.cases.is_empty(), "the spent cases at their feet");
+    // Not again before its recharge: 12 s from when it started.
+    world.act();
+    assert!(!world.firing_gatling(), "not ready");
+    let left = world.gatling_wait;
+    wait(&mut world, left);
+    world.act();
+    assert!(world.firing_gatling(), "ready again");
 }

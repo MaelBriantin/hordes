@@ -6,6 +6,7 @@ mod c4;
 mod figures;
 mod fire;
 mod fists;
+mod gatling;
 mod gear;
 mod grenade;
 mod napalm;
@@ -525,6 +526,7 @@ pub fn render_map(
     for drone in world.drones() {
         canvas.paint_at(Look::plain(SpriteId::Drone), drone);
     }
+    canvas.paint_gatling(world, frame);
     // The scout's smoke over what stands in it.
     canvas.paint_smoke(world, view.outfit(), frame);
 
