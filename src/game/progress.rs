@@ -42,36 +42,38 @@ pub const CLOSE_CALL_HP: u32 = 5;
 /// The level to reach in a single run for Veteran.
 pub const VETERAN_LEVEL: u32 = 25;
 
-/// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
-/// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
+/// Every card but the heroes' own weapons and actions, the reroll and the arcade, as the
+/// collection shows them: by kind (weapons, passives, legendaries, then the reroll and the
+/// arcade), each kind by rarity, the common first; among them, those there from the start, then
+/// from the easiest to the hardest to unlock. Not the heal, no card of a build.
 pub const COLLECTION: [Unlock; 28] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
+    Unlock::Card(Choice::Weapon(Weapon::Drones)),
+    Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
+    Unlock::Card(Choice::Weapon(Weapon::Molotov)),
+    Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
+    Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
+    Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
+    Unlock::Card(Choice::Weapon(Weapon::Grenade)),
+    Unlock::Card(Choice::Weapon(Weapon::Napalm)),
+    Unlock::Card(Choice::Weapon(Weapon::Sniper)),
+    Unlock::Card(Choice::Weapon(Weapon::Flashball)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
     Unlock::Card(Choice::Passive(Passive::Swiftness)),
     Unlock::Card(Choice::Passive(Passive::Magnet)),
     Unlock::Card(Choice::Passive(Passive::Flashlight)),
     Unlock::Card(Choice::Passive(Passive::Loot)),
-    Unlock::Card(Choice::Passive(Passive::Wisdom)),
     Unlock::Card(Choice::Passive(Passive::HordeHunter)),
+    Unlock::Card(Choice::Passive(Passive::Wisdom)),
     Unlock::Card(Choice::Passive(Passive::Haste)),
     Unlock::Card(Choice::Passive(Passive::Might)),
-    Unlock::Card(Choice::Weapon(Weapon::Drones)),
-    Unlock::Card(Choice::Weapon(Weapon::MachineGun)),
-    Unlock::Card(Choice::Weapon(Weapon::Molotov)),
-    Unlock::Reroll,
     Unlock::Card(Choice::Passive(Passive::Glare)),
     Unlock::Card(Choice::Passive(Passive::Regeneration)),
-    Unlock::Card(Choice::Weapon(Weapon::Flamethrower)),
-    Unlock::Card(Choice::Weapon(Weapon::Shuriken)),
-    Unlock::Card(Choice::Weapon(Weapon::Chainsaw)),
     Unlock::Card(Choice::Passive(Passive::Drain)),
-    Unlock::Card(Choice::Weapon(Weapon::Grenade)),
-    Unlock::Card(Choice::Weapon(Weapon::Napalm)),
-    Unlock::Card(Choice::Weapon(Weapon::Sniper)),
-    Unlock::Card(Choice::Weapon(Weapon::Flashball)),
     Unlock::Card(Choice::Legendary(Legendary::Revival)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
+    Unlock::Reroll,
     Unlock::Arcade,
 ];
 
@@ -412,10 +414,8 @@ mod tests {
     }
 
     #[test]
-    fn the_hidden_achievements_come_last_in_the_collection_and_the_achievements() {
-        let hidden = |unlock: &Unlock| unlock.achievement().is_some_and(Achievement::hidden);
-        let first_hidden = COLLECTION.iter().position(hidden).unwrap();
-        assert!(COLLECTION[first_hidden..].iter().all(hidden));
+    fn the_hidden_achievements_come_last_among_the_achievements() {
+        // In the collection, their cards stand with their kind, a question mark until reached.
         let first_hidden = Achievement::ALL.iter().position(|a| a.hidden()).unwrap();
         assert!(Achievement::ALL[first_hidden..].iter().all(|a| a.hidden()));
     }
@@ -467,5 +467,27 @@ mod tests {
         let text = ron::to_string(&progress).unwrap();
         assert_eq!(ron::from_str::<Progress>(&text).unwrap(), progress);
         assert_eq!(ron::from_str::<Progress>("(kills: 12)").unwrap().kills, 12);
+    }
+
+    #[test]
+    fn the_collection_goes_by_kind_then_by_rarity_the_common_first() {
+        let kind = |unlock: &Unlock| match unlock {
+            Unlock::Card(Choice::Weapon(_)) => 0,
+            Unlock::Card(Choice::Passive(_)) => 1,
+            Unlock::Card(Choice::Legendary(_)) => 2,
+            _ => 3,
+        };
+        let rank = |unlock: &Unlock| match unlock.rarity() {
+            Rarity::Common => 0,
+            Rarity::Rare => 1,
+            Rarity::Legendary => 2,
+        };
+        for pair in COLLECTION.windows(2) {
+            let (a, b) = (&pair[0], &pair[1]);
+            assert!(
+                kind(a) < kind(b) || (kind(a) == kind(b) && (kind(a) == 3 || rank(a) <= rank(b))),
+                "{a:?} before {b:?}"
+            );
+        }
     }
 }

@@ -18,6 +18,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The Eye-gouger, a rare flashball unlocked by Hold the line: a slow "non-lethal" shot, the enemy thrown back and stunned, one felled bursting.
 - The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
 - Every hero now has their own action. The heroes' box shows their starting gear: their weapon and their action, a card each, icon and words.
+- The collection by kind (weapons, passives, legendaries, then the reroll and the arcade), each kind by rarity, the common first.
 - The riot officer's second outfit, the CRS: blue, dark blue arms, an orange visor, a blueish shield.
 - The gear, in play and on the pause screen, in groups: the hero's own weapon and action, the other weapons, the passives, the legendaries; each icon in a frame of its rarity's colour, a group's frames side by side in play, its gauge under its frame, as wide as it.
 - Level 3 brings the hero's own action in place of its cards: one reward a level.
@@ -28,6 +29,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The medic no longer gets HP back of themselves: their first-aid kit instead.
 - The flamethrower's tank no longer leaks at the last level: its cone reaches a tile further instead.
 - The sniper rifle's icon redrawn: a wooden stock, a steel barrel, its scope.
+- The machine gun's icon redrawn.
 - The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
 - The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
 - The Untouchable and Lightning rod achievements gone, their rewards now heroes' own actions.
