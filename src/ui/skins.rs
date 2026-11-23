@@ -14,7 +14,7 @@ use super::collection::{
 use super::level_up::{COMMON, LEGENDARY};
 use super::sprites::{self, Outfit, Skin, SpriteId, Sprites};
 use super::{ViewState, achievement, level_up, pixels};
-use crate::game::{Facing, Perk, Progress};
+use crate::game::{Choice, Facing, Perk, Progress};
 
 /// Every skin, in the order the tiles show them.
 pub const SKINS: [Skin; 9] = Skin::ALL;
@@ -25,7 +25,12 @@ const TURN_FRAMES: u32 = 16;
 /// The box under the tiles: as the collection's, six rows taller, room for what the hero plays
 /// with (their weapon, their HP and speed, their perk) and, apart, how to unlock the colours
 /// shown.
-const SKIN_BOX_HEIGHT: u16 = BOX_HEIGHT + 6;
+const SKIN_BOX_HEIGHT: u16 = BOX_HEIGHT + 10;
+/// The starting gear's cards in the box: an icon's room, in cells; the room between an icon and
+/// its words, and between the two cards; how wide a card is at least.
+const GEAR_ICON: (u16, u16) = (8, 4);
+const GEAR_GAP: u16 = 2;
+const GEAR_CARD: u16 = 34;
 /// The rows the skins take: their title and a row of room, the tiles, a row of room and the box.
 pub const HEIGHT: u16 = 2 + TILE_HEIGHT + 1 + SKIN_BOX_HEIGHT;
 
@@ -124,7 +129,13 @@ pub fn render(
         skin: picked_skin,
         colours: colours[picked],
     };
-    tell(buffer, area, progress, (shown, worn, colours_locked), below);
+    tell(
+        buffer,
+        area,
+        (progress, sprites),
+        (shown, worn, colours_locked),
+        below,
+    );
 }
 
 /// The box under the tiles, at row `y`, telling the hero in `outfit`: the outfit's name, where
@@ -132,7 +143,7 @@ pub fn render(
 fn tell(
     buffer: &mut Buffer,
     area: Rect,
-    progress: &Progress,
+    (progress, sprites): (&Progress, &Sprites),
     (outfit, worn, colours_locked): (Outfit, Skin, bool),
     y: u16,
 ) {
@@ -145,7 +156,7 @@ fn tell(
         .chain(
             SKINS
                 .iter()
-                .flat_map(|skin| [weapon_line(*skin), stats_line(*skin), perk_line(*skin)]),
+                .flat_map(|skin| [stats_line(*skin), perk_line(*skin)]),
         )
         .chain([fl!("skin-colours-locked")])
         .chain(SKINS.iter().map(|skin| {
@@ -158,7 +169,11 @@ fn tell(
         .map(|line| u16::try_from(line.chars().count()).unwrap_or(u16::MAX))
         .max()
         .unwrap_or(0);
-    let width = BOX_WIDTH.max(longest + 2 * BOX_PADDING).min(area.width);
+    // Room for the two cards of the starting gear, side by side.
+    let width = BOX_WIDTH
+        .max(longest + 2 * BOX_PADDING)
+        .max(2 * GEAR_CARD + GEAR_GAP + 2 * BOX_PADDING)
+        .min(area.width);
     let x = area.x + (area.width - width) / 2;
     let ground = Style::new().bg(BOX);
     let edge = if has {
@@ -190,16 +205,22 @@ fn tell(
         let fg = if row == 1 && has { WHITE } else { GREY };
         buffer.set_string(left, top + row, line, ground.fg(fg));
     }
-    // Under where it comes from: the weapon the hero starts with.
-    // What the hero plays with: their weapon, their HP and speed, their perk.
-    buffer.set_string(left, top + 4, weapon_line(skin), ground.fg(WHITE));
-    buffer.set_string(left, top + 5, stats_line(skin), ground.fg(WHITE));
-    buffer.set_string(left, top + 6, perk_line(skin), ground.fg(GREY));
+    // Under where it comes from: what the hero plays with, their HP and speed, their perk.
+    buffer.set_string(left, top + 4, stats_line(skin), ground.fg(WHITE));
+    buffer.set_string(left, top + 5, perk_line(skin), ground.fg(GREY));
     // The colours shown, still locked: how to have them.
     if colours_locked {
         let line = fl!("skin-colours-locked");
-        buffer.set_string(left, top + 8, line, ground.fg(GREY));
+        buffer.set_string(left, top + 6, line, ground.fg(GREY));
     }
+    // Their starting gear: their weapon and their action, a card each, side by side.
+    let gear = Rect::new(
+        left,
+        top + 7,
+        width.saturating_sub(2 * BOX_PADDING),
+        2 + GEAR_ICON.1,
+    );
+    starting_gear(buffer, (gear, ground), (sprites, has), skin);
     let (status, fg) = if skin == worn {
         (fl!("skin-worn"), LEGENDARY)
     } else if has {
@@ -207,7 +228,7 @@ fn tell(
     } else {
         (fl!("collection-locked"), GREY)
     };
-    let last = Rect::new(left, top + 10, width.saturating_sub(2 * BOX_PADDING), 1);
+    let last = Rect::new(left, top + 14, width.saturating_sub(2 * BOX_PADDING), 1);
     let style = ground.fg(fg).add_modifier(Modifier::BOLD);
     collection::centred(buffer, last, last.y, &status.to_uppercase(), style);
 }
@@ -229,9 +250,71 @@ fn words(skin: Skin) -> Vec<String> {
     lines
 }
 
-/// The line telling the weapon a hero starts with.
-fn weapon_line(skin: Skin) -> String {
-    fl!("skin-weapon", weapon = level_up::weapon_name(skin.weapon()))
+/// A hero's starting gear in `area`: its title, then their weapon and their action, a card
+/// each, side by side.
+fn starting_gear(
+    buffer: &mut Buffer,
+    (area, ground): (Rect, Style),
+    (sprites, has): (&Sprites, bool),
+    skin: Skin,
+) {
+    buffer.set_string(
+        area.x,
+        area.y,
+        fl!("skin-starting-gear").to_uppercase(),
+        ground.fg(GREY).add_modifier(Modifier::BOLD),
+    );
+    let card = area.width.saturating_sub(GEAR_GAP) / 2;
+    let action = skin.action();
+    let cards = [
+        (
+            Choice::Weapon(skin.weapon()),
+            level_up::gain_of(Choice::Weapon(skin.weapon()), 1, skin),
+        ),
+        (
+            Choice::Action(action),
+            fl!(
+                "skin-action-description",
+                description = level_up::action_description(action)
+            ),
+        ),
+    ];
+    for (column, (choice, text)) in (0..).zip(cards) {
+        let at = Rect::new(
+            area.x + column * (card + GEAR_GAP),
+            // A row of room under the title.
+            area.y + 2,
+            card,
+            GEAR_ICON.1,
+        );
+        gear_card(buffer, (at, ground), (sprites, has), choice, &text);
+    }
+}
+
+/// A card of a hero's starting gear in `at`: its icon on the left, grey if the hero is locked;
+/// on the right, its name and what it does.
+fn gear_card(
+    buffer: &mut Buffer,
+    (at, ground): (Rect, Style),
+    (sprites, has): (&Sprites, bool),
+    choice: Choice,
+    text: &str,
+) {
+    let icon = Rect::new(at.x, at.y, GEAR_ICON.0, GEAR_ICON.1);
+    collection::overlay(buffer, icon, has, |drawn, apart| {
+        pixels::render_sprite(drawn, apart, sprites, level_up::icon(choice));
+    });
+    let words = at.width.saturating_sub(GEAR_ICON.0 + GEAR_GAP);
+    let x = at.x + GEAR_ICON.0 + GEAR_GAP;
+    buffer.set_string(
+        x,
+        at.y,
+        level_up::name(choice),
+        ground.fg(WHITE).add_modifier(Modifier::BOLD),
+    );
+    for (row, line) in (1..at.height).zip(super::text::wrap(text, usize::from(words))) {
+        buffer.set_string(x, at.y + row, line, ground.fg(GREY));
+    }
 }
 
 /// The line telling a hero's HP and speed.
@@ -274,7 +357,7 @@ pub fn outfit_name(outfit: Outfit) -> String {
         Skin::Ninja => fl!("outfit-ninja"),
         Skin::Medic => fl!("outfit-medic"),
         Skin::Infiltrator => fl!("outfit-infiltrator"),
-        Skin::Riot => fl!("skin-riot"),
+        Skin::Riot => fl!("outfit-riot"),
     };
     capitalised(&word)
 }

@@ -14,10 +14,12 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
 - The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
-- Revival, a rare passive unlocked by a new achievement, Close call (under 5 HP, then the dawn): down to 0 HP, the hero comes back once, part of their HP back, untouchable a while; a wave at level 4, twice at the last.
+- Revival, a legendary unlocked by a new achievement, Close call (under 5 HP, then the dawn): down to 0 HP, the hero comes back once with half their HP, untouchable a while, a wave throwing the enemies back; used up, its card greyed and crossed out in red.
 - The Eye-gouger, a rare flashball unlocked by Hold the line: a slow "non-lethal" shot, the enemy thrown back and stunned, one felled bursting.
 - The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
-- Every hero now has their own action.
+- Every hero now has their own action. The heroes' box shows their starting gear: their weapon and their action, a card each, icon and words.
+- The riot officer's second outfit, the CRS: blue, dark blue arms, an orange visor, a blueish shield.
+- The gear, in play and on the pause screen, in groups: the hero's own weapon and action, the other weapons, the passives, the legendaries; each icon in a frame of its rarity's colour, a group's frames side by side in play, its gauge under its frame, as wide as it.
 - Level 3 brings the hero's own action in place of its cards: one reward a level.
 - The veteran's gatling burst, their own action from the run's level 3: 2 s of fire straight ahead, 10 bullets a second, at half pace, the spent cases falling at their feet.
 - The ghost's smoke bomb, their own action from the run's level 3: a cloud at their feet 4 s, the enemies losing track of them in it, even with the torch on.

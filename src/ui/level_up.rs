@@ -167,7 +167,7 @@ pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sp
 }
 
 /// What an action is, in a few words: the hero's own, told as it comes.
-fn action_description(action: Action) -> String {
+pub(super) fn action_description(action: Action) -> String {
     match action {
         Action::Dash => fl!("action-dash-description"),
         Action::Barricade => fl!("action-barricade-description"),
@@ -358,7 +358,6 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
             Passive::Drain => SpriteId::IconDrain,
-            Passive::Revival => SpriteId::IconRevival,
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
@@ -371,6 +370,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         Choice::Action(Action::Gatling) => SpriteId::IconGatling,
         Choice::Action(Action::Vault) => SpriteId::IconVault,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
+        Choice::Legendary(Legendary::Revival) => SpriteId::IconRevival,
         Choice::Heal => SpriteId::IconHeal,
     }
 }
@@ -390,7 +390,6 @@ pub fn name(choice: Choice) -> String {
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
             Passive::Drain => fl!("passive-drain"),
-            Passive::Revival => fl!("passive-revival"),
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
@@ -403,6 +402,7 @@ pub fn name(choice: Choice) -> String {
         Choice::Action(Action::Gatling) => fl!("action-gatling"),
         Choice::Action(Action::Vault) => fl!("action-vault"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
+        Choice::Legendary(Legendary::Revival) => fl!("legendary-revival"),
         Choice::Heal => fl!("heal"),
     }
 }
@@ -489,6 +489,7 @@ pub(super) fn gain_of(choice: Choice, level: u8, hero: Skin) -> String {
         Choice::Passive(passive) => passive_gain(passive, level, hero),
         Choice::Action(action) => action_gain(action, level),
         Choice::Legendary(Legendary::Illumination) => fl!("gain-illumination"),
+        Choice::Legendary(Legendary::Revival) => fl!("gain-revival"),
         Choice::Heal => {
             let hp: u32 = HEAL * hero.perk().heal_percent() / 100;
             fl!("gain-heal", hp = hp)
@@ -510,7 +511,6 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         // In tenths of HP a second.
         Passive::Regeneration => 4 * level,
         Passive::Drain => 5 + 5 * level,
-        Passive::Revival => crate::game::revival_percent(u8::try_from(level).unwrap_or(1)),
         Passive::Flashlight => 9 + 2 * level,
     };
     match passive {
@@ -537,12 +537,6 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         }
         Passive::Glare => fl!("gain-glare", total = total),
         Passive::Drain => fl!("gain-drain", total = total),
-        // The share of HP back; once, then twice at the last level, a wave from level 4.
-        Passive::Revival => match level {
-            0..=3 => fl!("gain-revival", total = total),
-            4 => fl!("gain-revival-wave", total = total),
-            _ => fl!("gain-revival-twice", total = total),
-        },
         Passive::HordeHunter => match level {
             1 => fl!("gain-horde-hunter-1"),
             2 => fl!("gain-horde-hunter-2", total = total),

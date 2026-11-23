@@ -78,6 +78,9 @@ pub enum SpriteId {
     RiotFront,
     RiotBack,
     RiotSide,
+    RiotBlueFront,
+    RiotBlueBack,
+    RiotBlueSide,
     MedicGreenFront,
     MedicGreenBack,
     /// Facing right.
@@ -170,7 +173,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 136] = [
+    const ALL: [SpriteId; 139] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -225,6 +228,9 @@ impl SpriteId {
         SpriteId::RiotFront,
         SpriteId::RiotBack,
         SpriteId::RiotSide,
+        SpriteId::RiotBlueFront,
+        SpriteId::RiotBlueBack,
+        SpriteId::RiotBlueSide,
         SpriteId::MedicGreenFront,
         SpriteId::MedicGreenBack,
         SpriteId::MedicGreenSide,
@@ -366,6 +372,9 @@ impl SpriteId {
             SpriteId::RiotFront => "riot_front",
             SpriteId::RiotBack => "riot_back",
             SpriteId::RiotSide => "riot_side",
+            SpriteId::RiotBlueFront => "riot_blue_front",
+            SpriteId::RiotBlueBack => "riot_blue_back",
+            SpriteId::RiotBlueSide => "riot_blue_side",
             SpriteId::MedicGreenFront => "medic_green_front",
             SpriteId::MedicGreenBack => "medic_green_back",
             SpriteId::MedicGreenSide => "medic_green_side",
@@ -515,10 +524,9 @@ pub struct Outfit {
     pub colours: u8,
 }
 
-/// How many colours a hero comes in: two each, their own and a second; the riot officer one so
-/// far.
-pub fn colours_of(skin: Skin) -> u8 {
-    if skin == Skin::Riot { 1 } else { 2 }
+/// How many colours a hero comes in: two each, their own and a second.
+pub fn colours_of(_: Skin) -> u8 {
+    2
 }
 
 /// The hero, as `outfit` says, turned the way they face, in the dark or not: the infiltrator's
@@ -617,6 +625,11 @@ pub fn hero(facing: Facing, outfit: Outfit) -> Look {
             SpriteId::InfiltratorFront,
             SpriteId::InfiltratorBack,
             SpriteId::InfiltratorSide,
+        ),
+        Skin::Riot if outfit.colours == 1 => (
+            SpriteId::RiotBlueFront,
+            SpriteId::RiotBlueBack,
+            SpriteId::RiotBlueSide,
         ),
         Skin::Riot => (SpriteId::RiotFront, SpriteId::RiotBack, SpriteId::RiotSide),
     };
@@ -852,9 +865,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_hero_but_the_riot_officer_comes_in_two_outfits_each_its_own_sprites_every_way() {
-        assert_eq!(colours_of(Skin::Riot), 1, "one so far");
-        for skin in Skin::ALL.into_iter().filter(|skin| *skin != Skin::Riot) {
+    fn every_hero_comes_in_two_outfits_each_its_own_sprites_every_way() {
+        for skin in Skin::ALL {
             assert_eq!(colours_of(skin), 2);
             let looks = |colours| {
                 [Facing::Down, Facing::Up, Facing::Right]

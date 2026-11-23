@@ -103,12 +103,10 @@ pub enum Passive {
     /// +10% damage to the hordes per level; their last ones targeted in red, more with the
     /// levels.
     HordeHunter,
-    /// Down to 0 HP, back once, part of the HP back.
-    Revival,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 13] = [
+    pub const ALL: [Passive; 12] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -121,7 +119,6 @@ impl Passive {
         Passive::Glare,
         Passive::Drain,
         Passive::HordeHunter,
-        Passive::Revival,
     ];
 }
 
@@ -162,16 +159,37 @@ impl Action {
     ];
 }
 
+/// The groups the player's cards are shown in, in this order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Group {
+    /// The hero's own weapon and action.
+    Hero,
+    Weapons,
+    Passives,
+    Legendaries,
+}
+
+impl Group {
+    pub const ALL: [Group; 4] = [
+        Group::Hero,
+        Group::Weapons,
+        Group::Passives,
+        Group::Legendaries,
+    ];
+}
+
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the
 /// passives.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Legendary {
     /// +1 XP a second.
     Illumination,
+    /// Down to 0 HP, back once, half the HP back.
+    Revival,
 }
 
 impl Legendary {
-    pub const ALL: [Legendary; 1] = [Legendary::Illumination];
+    pub const ALL: [Legendary; 2] = [Legendary::Illumination, Legendary::Revival];
 }
 
 impl Choice {
@@ -194,8 +212,7 @@ impl Choice {
                 | Passive::Wisdom
                 | Passive::Regeneration
                 | Passive::Glare
-                | Passive::Drain
-                | Passive::Revival,
+                | Passive::Drain,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Action(_) | Choice::Heal => {
@@ -282,6 +299,33 @@ impl Build {
     /// Every weapon, passive and legendary the player has, in the order first picked.
     pub fn picked(&self) -> &[Choice] {
         &self.picked
+    }
+
+    /// The cards the player has, in groups, each in the order first picked: the hero's own
+    /// weapon and action, the other weapons, the passives, the legendaries; the empty groups
+    /// left out.
+    pub fn groups(&self) -> Vec<(Group, Vec<Choice>)> {
+        let own_weapon = self.hero().weapon();
+        let group_of = |choice: Choice| match choice {
+            Choice::Weapon(weapon) if weapon == own_weapon => Group::Hero,
+            Choice::Action(_) => Group::Hero,
+            Choice::Weapon(_) => Group::Weapons,
+            Choice::Passive(_) | Choice::Heal => Group::Passives,
+            Choice::Legendary(_) => Group::Legendaries,
+        };
+        Group::ALL
+            .into_iter()
+            .map(|group| {
+                let cards = self
+                    .picked
+                    .iter()
+                    .copied()
+                    .filter(|choice| group_of(*choice) == group)
+                    .collect::<Vec<_>>();
+                (group, cards)
+            })
+            .filter(|(_, cards)| !cards.is_empty())
+            .collect()
     }
 
     /// Whether the player has found a legendary.
@@ -750,5 +794,43 @@ mod tests {
             "{rare} rare of {}",
             cards.len()
         );
+    }
+
+    #[test]
+    fn the_cards_come_in_groups_the_hero_s_own_first_then_weapons_passives_legendaries() {
+        let mut build = Build::playing(Skin::Medic);
+        build.take(Choice::Passive(Passive::Might));
+        build.take(Choice::Weapon(Weapon::Pistol));
+        build.take(Choice::Action(Action::Kit));
+        build.take(Choice::Legendary(Legendary::Revival));
+        build.take(Choice::Weapon(Weapon::Shotgun));
+        let groups = build.groups();
+        assert_eq!(
+            groups,
+            vec![
+                (
+                    Group::Hero,
+                    vec![
+                        Choice::Weapon(Weapon::Defibrillator),
+                        Choice::Action(Action::Kit)
+                    ]
+                ),
+                (
+                    Group::Weapons,
+                    vec![
+                        Choice::Weapon(Weapon::Pistol),
+                        Choice::Weapon(Weapon::Shotgun)
+                    ]
+                ),
+                (Group::Passives, vec![Choice::Passive(Passive::Might)]),
+                (
+                    Group::Legendaries,
+                    vec![Choice::Legendary(Legendary::Revival)]
+                ),
+            ]
+        );
+        // At first, the hero's own weapon alone: one group.
+        let groups = Build::playing(Skin::Survivor).groups();
+        assert_eq!(groups.len(), 1, "the hero's own weapon alone: {groups:?}");
     }
 }

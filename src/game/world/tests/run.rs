@@ -575,11 +575,14 @@ fn regeneration_gives_hp_back_of_itself() {
 #[test]
 fn the_debug_console_gives_a_card_s_next_level_within_the_room_the_action_and_1_hp() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    let revival = Choice::Passive(Passive::Revival);
+    let revival = Choice::Legendary(Legendary::Revival);
     assert!(world.debug_cards().contains(&revival), "locked cards too");
     assert!(world.debug_give(revival));
-    assert!(world.debug_give(revival));
-    assert_eq!(world.player.build.passive_level(Passive::Revival), 2);
+    assert!(!world.debug_give(revival), "a legendary once");
+    let might = Choice::Passive(Passive::Might);
+    assert!(world.debug_give(might));
+    assert!(world.debug_give(might));
+    assert_eq!(world.player.build.passive_level(Passive::Might), 2);
     // Four weapons at most: the hero's own and three more.
     let more: Vec<Choice> = world
         .debug_cards()

@@ -24,12 +24,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use super::ViewState;
 use super::night::{self, BloodLook};
 use super::sprites::{self, Look, Outfit, SpriteId, Sprites};
+use super::{ViewState, level_up};
 use crate::game::{
-    Barricade, Bullet, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing, Vec2,
-    Weapon, World,
+    Barricade, Bullet, Choice, OBSTACLE_SIZE, Obstacle, STRIKE_RADIUS, SWING_TICKS, Stain, Swing,
+    Vec2, Weapon, World,
 };
 use gear::{draw_gear_levels, draw_gear_list, gear_slots, list_size};
 
@@ -733,14 +733,33 @@ pub fn render_sprite(buffer: &mut Buffer, area: Rect, sprites: &Sprites, sprite:
     canvas.draw(buffer, area);
 }
 
-/// A card's icon alone, in the middle of `area`, greyed and crossed out in red: a spent card.
-pub fn render_spent_sprite(buffer: &mut Buffer, area: Rect, sprites: &Sprites, sprite: SpriteId) {
+/// A card's icon alone, in the middle of `area`, framed in its rarity's colour, a pixel of room
+/// between; greyed and crossed out in red if it is spent.
+pub fn render_card_icon(
+    buffer: &mut Buffer,
+    area: Rect,
+    sprites: &Sprites,
+    choice: Choice,
+    spent: bool,
+) {
     let mut canvas = Canvas::new(sprites, area, (0, 0));
+    let sprite = level_up::icon(choice);
     let picture = sprites.get(sprite);
     let corner = (-picture.width() / 2, -picture.height() / 2);
-    canvas.paint_greyed(sprite, corner);
-    canvas.cross_out(corner, picture.width());
+    canvas.frame_card(corner, picture.width(), choice);
+    if spent {
+        canvas.paint_greyed(sprite, corner);
+        canvas.cross_out(corner, picture.width());
+    } else {
+        canvas.paint(Look::plain(sprite), corner);
+    }
     canvas.draw(buffer, area);
+}
+
+/// A card's level as the gear writes it, ending just before `right` on row `y`, on a dark
+/// badge: its number, or MAX in gold at the last.
+pub fn render_level_badge(buffer: &mut Buffer, (right, y): (u16, u16), level: u8) {
+    gear::draw_level_badge(buffer, (right, y), level);
 }
 
 /// A sprite alone, `scale` times as big, in the middle of `area`.

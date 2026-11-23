@@ -8,10 +8,12 @@ use ratatui::style::{Color, Modifier, Style};
 use super::super::level_up;
 use super::super::sprites::{Look, SpriteId};
 use super::{Canvas, GEAR_GAP, share_of};
-use crate::game::{Action, Choice, MAX_LEVEL, World, barricade_recharge};
+use crate::game::{Action, Choice, MAX_LEVEL, Rarity, World, barricade_recharge};
 
 /// The rows of veil above the icons and under their gauges, in pixels.
 const GEAR_PAD: i32 = 1;
+/// The room between two groups of cards, besides the gap between two icons, in pixels.
+const GROUP_GAP: i32 = 4;
 const GEAR_LEVEL: Color = Color::Rgb(235, 235, 240);
 const GEAR_ROUNDS: Color = Color::Rgb(235, 210, 120);
 const GEAR_RELOADING: Color = Color::Rgb(165, 165, 172);
@@ -22,9 +24,55 @@ const GEAR_BADGE: Color = Color::Rgb(35, 35, 45);
 const GEAR_NAME: Color = Color::Rgb(200, 200, 210);
 /// A spent card's red, crossing it out.
 pub(super) const SPENT: Color = Color::Rgb(220, 50, 50);
+/// The frame round a card's icon: its rarity's colour, this share of it over this dark; how far
+/// out from the icon it is, in pixels, a pixel of room between them.
+const FRAME_SHARE: f32 = 0.6;
+const FRAME_UNDER: (u8, u8, u8) = (24, 26, 32);
+pub(super) const FRAME_ROOM: i32 = 2;
 const LIST_GAUGE: i32 = 6;
 
 impl Canvas<'_> {
+    /// A frame round a card's icon `size` pixels wide at `corner`, a pixel of room between: its
+    /// rarity's colour, dimmed.
+    pub(super) fn frame_card(&mut self, (x, y): (i32, i32), size: i32, choice: Choice) {
+        let colour = match choice.rarity() {
+            Rarity::Common => level_up::COMMON,
+            Rarity::Rare => level_up::RARE,
+            Rarity::Legendary => level_up::LEGENDARY,
+        };
+        let frame = match colour {
+            Color::Rgb(red, green, blue) => {
+                let mix = |channel: u8, under: u8| {
+                    #[allow(
+                        clippy::cast_possible_truncation,
+                        clippy::cast_sign_loss,
+                        reason = "a channel, 0 to 255"
+                    )]
+                    let mixed = (f32::from(channel) * FRAME_SHARE
+                        + f32::from(under) * (1.0 - FRAME_SHARE))
+                        .round() as u8;
+                    mixed
+                };
+                Color::Rgb(
+                    mix(red, FRAME_UNDER.0),
+                    mix(green, FRAME_UNDER.1),
+                    mix(blue, FRAME_UNDER.2),
+                )
+            }
+            other => other,
+        };
+        let (left, top) = (x - FRAME_ROOM, y - FRAME_ROOM);
+        let (right, bottom) = (x + size - 1 + FRAME_ROOM, y + size - 1 + FRAME_ROOM);
+        for along in left..=right {
+            self.set((along, top), frame);
+            self.set((along, bottom), frame);
+        }
+        for along in top..=bottom {
+            self.set((left, along), frame);
+            self.set((right, along), frame);
+        }
+    }
+
     /// A red line across an icon `size` pixels wide at `corner`, from its bottom left to its top
     /// right, two pixels thick: a spent card.
     pub(super) fn cross_out(&mut self, (x, y): (i32, i32), size: i32) {
@@ -44,36 +92,47 @@ impl Canvas<'_> {
             return Vec::new();
         }
         let size = self.sprites.get(SpriteId::IconMachete).width();
-        let step = size + GEAR_GAP;
-        let width = GEAR_GAP + step * i32::try_from(gear.len()).unwrap_or(0);
-        // A row, the icon, its gauge, a row.
-        self.veil(width, GEAR_PAD + size + 1 + GEAR_PAD);
+        // Each icon in its frame, a pixel of room between them; the frames of a group side by
+        // side.
+        let cell = size + 2 * FRAME_ROOM;
+        let step = cell;
+        let groups =
+            i32::try_from(gear.iter().filter(|card| card.group_start).count()).unwrap_or(0);
+        let width =
+            2 * GEAR_GAP + step * i32::try_from(gear.len()).unwrap_or(0) + GROUP_GAP * groups;
+        // A row, the framed icon, its gauge under the frame, a row.
+        self.veil(width, GEAR_PAD + cell + 1 + GEAR_PAD);
         let (left, top) = self.origin;
         let mut levels = Vec::new();
-        for (slot, card) in (0..).zip(gear) {
-            let x = left + GEAR_GAP + step * slot;
-            let y = top + GEAR_PAD;
+        let mut x = left + GEAR_GAP - step;
+        for card in gear {
+            // A group of cards apart from the one before.
+            x += step + if card.group_start { GROUP_GAP } else { 0 };
+            let (x, y) = (x + FRAME_ROOM, top + GEAR_PAD + FRAME_ROOM);
             let icon = level_up::icon(card.choice);
+            self.frame_card((x, y), size, card.choice);
             if card.spent {
                 self.paint_greyed(icon, (x, y));
                 self.cross_out((x, y), size);
             } else {
                 self.paint(Look::plain(icon), (x, y));
             }
+            // Its gauge under its frame, as wide as it.
             if let Some((part, whole, colour)) = card.gauge {
-                let lit = share_of(part, whole, size, colour != GEAR_RELOADING);
-                for pixel in 0..size {
+                let lit = share_of(part, whole, cell, colour != GEAR_RELOADING);
+                for pixel in 0..cell {
                     self.set(
-                        (x + pixel, y + size),
+                        (x - FRAME_ROOM + pixel, y + size + FRAME_ROOM),
                         if pixel < lit { colour } else { GEAR_EMPTY },
                     );
                 }
             }
             if let Some(level) = card.level {
                 levels.push(GearLevel {
+                    // In the frame's bottom right corner, inside it, a pixel off its side:
+                    // over the room under the icon and its last row.
                     right: x - left + size,
-                    // The cell over the icon's last two rows but one: the gauge left clear.
-                    row: y - top + size - 2,
+                    row: y - top + size,
                     level,
                 });
             }
@@ -90,6 +149,8 @@ pub(super) struct GearSlot {
     pub(super) gauge: Option<(u32, u32, Color)>,
     /// Whether it is spent, crossed out in red: Revival, used up.
     pub(super) spent: bool,
+    /// Whether it starts a group of cards after another: some room before it.
+    pub(super) group_start: bool,
 }
 
 /// An action's gauge: the Dash shows its dashes as a gun its rounds, full when all are ready,
@@ -136,10 +197,17 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
     let build = &player.build;
     let ammo = world.ammo();
     let waits = world.waits();
-    build
-        .picked()
+    let groups = build.groups();
+    groups
         .iter()
-        .map(|&choice| match choice {
+        .enumerate()
+        .flat_map(|(group, (_, cards))| {
+            cards
+                .iter()
+                .enumerate()
+                .map(move |(index, &choice)| (group > 0 && index == 0, choice))
+        })
+        .map(|(group_start, choice)| match choice {
             Choice::Weapon(weapon) => GearSlot {
                 choice,
                 level: Some(build.weapon_level(weapon)),
@@ -172,24 +240,28 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
                             })
                     }),
                 spent: false,
+                group_start,
             },
             Choice::Passive(passive) => GearSlot {
                 choice,
                 level: Some(build.passive_level(passive)),
                 gauge: None,
-                spent: world.spent(choice),
+                spent: false,
+                group_start,
             },
             Choice::Action(action) => GearSlot {
                 choice,
                 level: Some(build.action_level(action)),
                 gauge: Some(action_gauge(world, action)),
                 spent: false,
+                group_start,
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {
                 choice,
                 level: None,
                 gauge: None,
-                spent: false,
+                spent: world.spent(choice),
+                group_start,
             },
         })
         .collect()
@@ -218,7 +290,8 @@ pub(super) fn list_size(gear: &[GearSlot]) -> (u16, u16) {
     let width = longest_name(gear) + 1 + 1 + 3 + 2 + 6 + 1;
     (
         u16::try_from(width).unwrap_or(u16::MAX),
-        u16::try_from(gear.len() + 2).unwrap_or(u16::MAX),
+        u16::try_from(gear.len() + 2 + gear.iter().filter(|card| card.group_start).count())
+            .unwrap_or(u16::MAX),
     )
 }
 
@@ -228,7 +301,10 @@ pub(super) fn draw_gear_list(buffer: &mut Buffer, area: Rect, gear: &[GearSlot])
     let name_width = longest_name(gear);
     let lines = list_size(gear).1.min(area.height);
     let ground = Style::new();
-    for (row, card) in (1_u16..).zip(gear) {
+    let mut row = 0;
+    for card in gear {
+        // A blank line between two groups of cards.
+        row += if card.group_start { 2 } else { 1 };
         if row + 1 >= lines {
             break;
         }
@@ -276,7 +352,7 @@ pub(super) struct GearLevel {
     pub(super) level: u8,
 }
 
-/// Each card's level in the gear, over its icon's bottom right corner, on a dark badge: its
+/// Each card's level in the gear, in its frame's bottom right corner, on a dark badge: its
 /// number, or MAX in gold once at the last.
 pub(super) fn draw_gear_levels(buffer: &mut Buffer, area: Rect, levels: &[GearLevel]) {
     for gear in levels {
@@ -297,6 +373,17 @@ pub(super) fn draw_gear_levels(buffer: &mut Buffer, area: Rect, levels: &[GearLe
             .add_modifier(Modifier::BOLD);
         buffer.set_string(area.x + x, area.y + y, text, style);
     }
+}
+
+/// A card's level on a dark badge, ending just before `right` on row `y`.
+pub(super) fn draw_level_badge(buffer: &mut Buffer, (right, y): (u16, u16), level: u8) {
+    let (text, colour) = level_text(level);
+    let width = u16::try_from(text.len()).unwrap_or(0);
+    let style = Style::new()
+        .fg(colour)
+        .bg(GEAR_BADGE)
+        .add_modifier(Modifier::BOLD);
+    buffer.set_string(right.saturating_sub(width), y, text, style);
 }
 
 #[cfg(test)]

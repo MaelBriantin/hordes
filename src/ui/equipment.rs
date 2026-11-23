@@ -15,9 +15,13 @@ use crate::game::{Action, Choice, Facing, MAX_LEVEL, Skin, World};
 /// it doesn't show.
 pub const WIDTH: u16 = 74;
 pub const MIN_WIDTH: u16 = 48;
-/// A picture's room, in cells: an icon's, or the hero's, twice as big: 8 cells wide, 4 high;
-/// and the room between it and its words.
-const PICTURE: (u16, u16) = (8, 4);
+/// A card's icon in its frame, two pixels more each way: a cell across, a row up and down; the
+/// hero's picture, twice as big, in as much room. And the room between a picture and its words.
+const CARD_PICTURE: (u16, u16) = (12, 6);
+/// Where a card's level ends in its picture, in cells: at the icon's last column, on the row of
+/// its last two pixel rows, inside the frame.
+const LEVEL_RIGHT: u16 = 10;
+const LEVEL_ROW: u16 = 4;
 const GAP: u16 = 2;
 /// The most lines of what a card brings shown.
 const TEXT_LINES: usize = 5;
@@ -28,24 +32,33 @@ const GREY: Color = Color::Rgb(140, 140, 150);
 const LEVEL: Color = Color::Rgb(110, 160, 240);
 const MAX: Color = Color::Rgb(240, 190, 60);
 const READY: Color = Color::Rgb(110, 200, 110);
+/// The rule between two groups of cards.
+const RULE: Color = Color::Rgb(70, 72, 82);
 
 /// The box, in `area`: as tall as its cards need, or as `area` allows, the cards then a line
-/// each, without their icons.
+/// each, without their icons. The cards in groups, a row apart: the hero's own weapon and
+/// action, the other weapons, the passives, the legendaries.
 pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, view: ViewState) {
-    let picked = world.player.build.picked();
+    let groups = world.player.build.groups();
+    // Between two groups, a rule and a row of room: two rows, the rule alone without icons.
+    let gaps = u16::try_from(groups.len().saturating_sub(1)).unwrap_or(0);
     let inner = area.width.saturating_sub(ROOM.0);
     // The cards with their icons, in a column, else in two; a line each, without, for want of
     // room.
     let laid = [1, 2].into_iter().find_map(|columns| {
         let width = column_width(inner, columns);
-        let heights = row_heights(world, picked, columns, width);
-        let wanted = ROOM.1 + PICTURE.1 + heights.iter().map(|height| height + 1).sum::<u16>();
+        let heights: Vec<Vec<u16>> = groups
+            .iter()
+            .map(|(_, cards)| row_heights(world, cards, columns, width))
+            .collect();
+        let rows: u16 = heights.iter().flatten().map(|height| height + 1).sum();
+        let wanted = ROOM.1 + CARD_PICTURE.1 + 2 * gaps + rows;
         (wanted <= area.height).then_some((columns, width, heights, wanted))
     });
-    let wanted = laid.as_ref().map_or(
-        ROOM.1 + PICTURE.1 + 1 + u16::try_from(picked.len()).unwrap_or(0),
-        |laid| laid.3,
-    );
+    let count = u16::try_from(world.player.build.picked().len()).unwrap_or(0);
+    let wanted = laid
+        .as_ref()
+        .map_or(ROOM.1 + CARD_PICTURE.1 + 1 + gaps + count, |laid| laid.3);
     let box_area = Rect {
         y: area.y + area.height.saturating_sub(wanted.min(area.height)) / 2,
         height: wanted.min(area.height),
@@ -58,29 +71,48 @@ pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, v
     let inside = block.inner(box_area);
     frame.render_widget(block, box_area);
     hero(frame, inside, inside.y, world, sprites, view);
-    let top = inside.y + PICTURE.1 + 1;
     let bottom = inside.y + inside.height;
+    let mut y = inside.y + CARD_PICTURE.1 + 1;
+    let rule = |frame: &mut Frame, y: u16| {
+        frame.render_widget(
+            Line::styled("─".repeat(usize::from(inside.width)), Style::new().fg(RULE)),
+            Rect::new(inside.x, y, inside.width, 1),
+        );
+    };
     let Some((columns, width, heights, _)) = laid else {
-        for (row, &choice) in (0..).zip(picked) {
-            if top + row >= bottom {
-                break;
+        for (index, (_, cards)) in groups.iter().enumerate() {
+            if index > 0 && y < bottom {
+                rule(frame, y);
+                y += 1;
             }
-            card_line(frame, inside, top + row, world, choice);
+            for &choice in cards {
+                if y >= bottom {
+                    return;
+                }
+                card_line(frame, inside, y, world, choice);
+                y += 1;
+            }
         }
         return;
     };
-    let mut y = top;
-    for (row, height) in heights.iter().enumerate() {
-        for (column, &choice) in (0_u16..).zip(
-            picked
-                .iter()
-                .skip(row * usize::from(columns))
-                .take(usize::from(columns)),
-        ) {
-            let room = Rect::new(inside.x + column * (width + GAP), y, width, *height);
-            card(frame, room, world, sprites, choice);
+    for (index, ((_, cards), heights)) in groups.iter().zip(&heights).enumerate() {
+        // The groups apart: a rule, a row of room under it.
+        if index > 0 {
+            rule(frame, y);
+            y += 2;
         }
-        y += height + 1;
+        for (row, height) in heights.iter().enumerate() {
+            for (column, &choice) in (0_u16..).zip(
+                cards
+                    .iter()
+                    .skip(row * usize::from(columns))
+                    .take(usize::from(columns)),
+            ) {
+                let room = Rect::new(inside.x + column * (width + GAP), y, width, *height);
+                card(frame, room, world, sprites, choice);
+            }
+            y += height + 1;
+        }
     }
 }
 
@@ -95,11 +127,13 @@ fn row_heights(world: &World, picked: &[Choice], columns: u16, width: u16) -> Ve
     picked
         .chunks(usize::from(columns))
         .map(|row| {
+            // Its words beside its framed icon.
+            let words = width.saturating_sub(CARD_PICTURE.0 + GAP);
             row.iter()
-                .map(|choice| u16::try_from(card_lines(world, *choice, width).len()).unwrap_or(0))
+                .map(|choice| u16::try_from(card_lines(world, *choice, words).len()).unwrap_or(0))
                 .max()
                 .unwrap_or(0)
-                .max(PICTURE.1)
+                .max(CARD_PICTURE.1)
         })
         .collect()
 }
@@ -113,14 +147,15 @@ fn hero(
     sprites: &Sprites,
     view: ViewState,
 ) {
-    let picture = Rect::new(inside.x, y, PICTURE.0, PICTURE.1);
+    // In the middle of as much room as a framed icon: their words in line with the cards'.
+    let picture = Rect::new(inside.x, y, CARD_PICTURE.0, CARD_PICTURE.1);
     let look = sprites::hero(Facing::Down, view.outfit());
     pixels::render_look_scaled(frame.buffer_mut(), picture, sprites, look, 2);
     let words = Rect::new(
-        inside.x + PICTURE.0 + GAP,
-        y,
-        inside.width.saturating_sub(PICTURE.0 + GAP),
-        PICTURE.1,
+        inside.x + CARD_PICTURE.0 + GAP,
+        y + 1,
+        inside.width.saturating_sub(CARD_PICTURE.0 + GAP),
+        CARD_PICTURE.1 - 1,
     );
     let hero = world.player.build.hero();
     let mut lines = vec![
@@ -174,32 +209,37 @@ fn action_line(world: &World) -> Option<Line<'static>> {
 
 /// A card in `room`: its icon, then its name and level and what it brings, wrapped.
 fn card(frame: &mut Frame, room: Rect, world: &World, sprites: &Sprites, choice: Choice) {
-    let picture = Rect::new(room.x, room.y, PICTURE.0, PICTURE.1);
-    let icon = level_up::icon(choice);
-    if world.spent(choice) {
-        pixels::render_spent_sprite(frame.buffer_mut(), picture, sprites, icon);
-    } else {
-        pixels::render_sprite(frame.buffer_mut(), picture, sprites, icon);
+    let picture = Rect::new(room.x, room.y, CARD_PICTURE.0, CARD_PICTURE.1);
+    pixels::render_card_icon(
+        frame.buffer_mut(),
+        picture,
+        sprites,
+        choice,
+        world.spent(choice),
+    );
+    // Its level in its frame's bottom right corner, inside it, as in the gear in play; none for
+    // a legendary.
+    if !matches!(choice, Choice::Legendary(_) | Choice::Heal) {
+        pixels::render_level_badge(
+            frame.buffer_mut(),
+            (picture.x + LEVEL_RIGHT, picture.y + LEVEL_ROW),
+            level_of(world, choice),
+        );
     }
-    let width = room.width.saturating_sub(PICTURE.0 + GAP);
-    let words = Rect::new(room.x + PICTURE.0 + GAP, room.y, width, room.height);
+    let width = room.width.saturating_sub(CARD_PICTURE.0 + GAP);
+    let words = Rect::new(room.x + CARD_PICTURE.0 + GAP, room.y, width, room.height);
     frame.render_widget(Paragraph::new(card_lines(world, choice, width)), words);
 }
 
 /// A card's words, `width` wide: its name and level (the level on a line of its own if they
 /// don't fit together), then what it brings, wrapped, a few lines at most.
 fn card_lines(world: &World, choice: Choice, width: u16) -> Vec<Line<'static>> {
+    // Its name alone: its level is on its icon, as in the gear in play.
     let level = level_of(world, choice);
-    let title = title(choice, level);
-    let mut lines = if title.width() <= usize::from(width) {
-        vec![title]
-    } else {
-        title
-            .spans
-            .into_iter()
-            .map(|span| Line::from(Span::styled(span.content.trim().to_string(), span.style)))
-            .collect()
-    };
+    let mut lines = vec![Line::styled(
+        level_up::name(choice),
+        Style::new().fg(WHITE).add_modifier(Modifier::BOLD),
+    )];
     lines.extend(
         text::wrap(
             &brings(choice, level, world.player.build.hero()),
@@ -284,25 +324,30 @@ mod tests {
     }
 
     #[test]
-    fn a_card_is_an_icon_tall_at_least_taller_for_its_words_in_a_narrow_column() {
+    fn a_card_is_as_tall_as_its_framed_icon_its_name_and_words_beside_it() {
+        // Its name, and its words at most, beside its icon.
+        assert!(u16::try_from(TEXT_LINES).unwrap() < CARD_PICTURE.1);
         let mut world = World::new(1);
-        world.player.build.take(Choice::Weapon(Weapon::Hammer));
-        world.player.build.take(Choice::Weapon(Weapon::Hammer));
-        world.player.build.take(Choice::Weapon(Weapon::Hammer));
+        for _ in 0..3 {
+            world.player.build.take(Choice::Weapon(Weapon::Pistol));
+        }
         let picked = world.player.build.picked().to_vec();
-        let wide = row_heights(&world, &picked, 1, 66);
-        let narrow = row_heights(&world, &picked, 2, 32);
-        assert!(wide.iter().all(|height| *height >= PICTURE.1));
-        assert!(
-            narrow.iter().max() > wide.iter().max(),
-            "{narrow:?} {wide:?}"
-        );
+        for (columns, width) in [(1, 66), (2, 24)] {
+            let heights = row_heights(&world, &picked, columns, width);
+            assert!(
+                heights.iter().all(|height| *height == CARD_PICTURE.1),
+                "{heights:?}"
+            );
+        }
     }
 
     #[test]
-    fn a_long_name_puts_its_level_on_a_line_of_its_own() {
+    fn a_card_s_words_start_with_its_name_alone_its_level_on_its_icon() {
         let world = World::new(1);
-        let lines = card_lines(&world, Choice::Passive(Passive::HordeHunter), 16);
-        assert!(lines[0].width() <= 16, "{:?}", lines[0]);
+        let lines = card_lines(&world, Choice::Passive(Passive::HordeHunter), 30);
+        assert_eq!(
+            lines[0].to_string(),
+            level_up::name(Choice::Passive(Passive::HordeHunter))
+        );
     }
 }

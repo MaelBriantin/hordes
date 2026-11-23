@@ -70,7 +70,7 @@ pub const COLLECTION: [Unlock; 28] = [
     Unlock::Card(Choice::Weapon(Weapon::Napalm)),
     Unlock::Card(Choice::Weapon(Weapon::Sniper)),
     Unlock::Card(Choice::Weapon(Weapon::Flashball)),
-    Unlock::Card(Choice::Passive(Passive::Revival)),
+    Unlock::Card(Choice::Legendary(Legendary::Revival)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -175,7 +175,7 @@ impl Achievement {
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
             Achievement::Shadow => Unlock::Card(Choice::Weapon(Weapon::Sniper)),
             Achievement::HoldTheLine => Unlock::Card(Choice::Weapon(Weapon::Flashball)),
-            Achievement::CloseCall => Unlock::Card(Choice::Passive(Passive::Revival)),
+            Achievement::CloseCall => Unlock::Card(Choice::Legendary(Legendary::Revival)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }

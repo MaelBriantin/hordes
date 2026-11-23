@@ -293,7 +293,7 @@ fn under_5_hp_then_the_dawn_reached_is_close_call_and_unlocks_revival() {
     world.update(Input::default());
     assert!(world.survived());
     assert!(world.progress.achieved.contains(&Achievement::CloseCall));
-    assert!(world.progress.deals(Choice::Passive(Passive::Revival)));
+    assert!(world.progress.deals(Choice::Legendary(Legendary::Revival)));
     // The dawn reached without falling that low: nothing.
     let mut world = World::with(1, Mode::Standard, false, Progress::default());
     world.announcement = None;
