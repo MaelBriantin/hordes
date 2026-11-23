@@ -6,7 +6,7 @@ use ratatui::style::Color;
 use super::super::night;
 use super::super::sprites::{Look, SpriteId};
 use super::{BURNING_LIGHT, Canvas, FLAME_COLOURS, gem_glow, pixel, sway};
-use crate::game::{Feature, Vec2, World, campfire_light};
+use crate::game::{Feature, Puddle, Vec2, World, campfire_light};
 
 /// How far the flamethrower's nozzle sweeps each side, in degrees, and in how many steps (two
 /// frames each) it goes from side to side and back.
@@ -24,6 +24,9 @@ const FLICKER: u32 = 6;
 const PUDDLE_LIGHT: f32 = 2.25;
 const BOTTLE_ARC: f32 = 1.5;
 const BOTTLE: Color = Color::Rgb(70, 160, 80);
+/// The wall of fire going out: its last second, embers alone, and their red.
+const WALL_EMBER_TICKS: u32 = 30;
+const EMBER: Color = Color::Rgb(150, 40, 25);
 /// What burns, its halo: its colour, how strong at its middle, how far it reaches in pixels.
 /// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames.
 const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
@@ -144,6 +147,10 @@ impl Canvas<'_> {
     /// arcing to where they burst.
     pub(super) fn paint_molotovs(&mut self, world: &World, frame: u32) {
         for puddle in &world.puddles {
+            if puddle.wall {
+                self.paint_wall_stretch(puddle, frame);
+                continue;
+            }
             let (cx, cy) = pixel(puddle.centre);
             #[allow(clippy::cast_possible_truncation, reason = "a puddle of a few tiles")]
             let reach = (puddle.radius * 2.0).ceil() as i32;
@@ -177,6 +184,46 @@ impl Canvas<'_> {
                 (x, y - 1),
                 FLAME_COLOURS[usize::try_from(frame % 2).unwrap_or(0)],
             );
+        }
+    }
+
+    /// A stretch of the exterminator's wall of fire: a band of red and orange on the ground,
+    /// tongues of fire licking up from it, their tips yellow; its last second, scattered embers.
+    fn paint_wall_stretch(&mut self, puddle: &Puddle, frame: u32) {
+        let (cx, cy) = pixel(puddle.centre);
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "a stretch of a tile or two"
+        )]
+        let reach = (puddle.radius * 2.0).ceil() as i32;
+        let going_out = puddle.left <= WALL_EMBER_TICKS;
+        for dy in -reach..=reach {
+            for dx in -reach..=reach {
+                let distance = f32::from(i16::try_from(dx).unwrap_or(0))
+                    .hypot(f32::from(i16::try_from(dy).unwrap_or(0)));
+                if distance > puddle.radius * 2.0 {
+                    continue;
+                }
+                let (x, y) = (cx + dx, cy + dy);
+                let luck = x.cast_unsigned().wrapping_mul(73_856_093)
+                    ^ y.cast_unsigned().wrapping_mul(19_349_663)
+                    ^ (frame / 2).wrapping_mul(83_492_791);
+                if going_out {
+                    if !luck.is_multiple_of(3) {
+                        self.set((x, y), EMBER);
+                    }
+                    continue;
+                }
+                let [yellow, orange, red] = FLAME_COLOURS;
+                self.set((x, y), if luck.is_multiple_of(4) { orange } else { red });
+                // A tongue up from it now and then, its tip yellow.
+                if luck.is_multiple_of(5) {
+                    let height = 1 + i32::try_from(luck % 3).unwrap_or(0);
+                    for up in 1..=height {
+                        self.set((x, y - up), if up == height { yellow } else { orange });
+                    }
+                }
+            }
         }
     }
 

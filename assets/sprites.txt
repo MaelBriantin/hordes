@@ -746,6 +746,16 @@ rWWWWWWr
 rrrWWrrr
 QQQQQQQQ
 
+icon_fire_wall
+...Y....
+.Y.f..Y.
+.f.ff.f.
+ff.fYfff
+fYffYfYf
+ffffffff
+RRRRRRRR
+QQQQQQQQ
+
 icon_grenade
 ....nn..
 ...n.n..

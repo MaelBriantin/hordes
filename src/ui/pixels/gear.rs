@@ -103,6 +103,7 @@ fn action_gauge(world: &World, action: Action) -> (u32, u32, Color) {
         Action::Ram => waiting(world.ram_wait, crate::game::ram_recharge(level)),
         Action::C4 => waiting(world.c4_wait, crate::game::c4_recharge(level)),
         Action::Kit => waiting(world.kit_wait, crate::game::kit_recharge(level)),
+        Action::FireWall => waiting(world.fire_wall_wait, crate::game::fire_wall_recharge(level)),
     }
 }
 

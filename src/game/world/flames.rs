@@ -1,15 +1,11 @@
-//! The flamethrower at work: its cone of fire after the nearest enemy, its tank, and the trail
-//! of fires its tank leaves at the last level.
+//! The flamethrower at work: its cone of fire after the nearest enemy, and its tank.
 
 use super::super::Vec2;
 use super::super::body::in_sight;
 use super::super::build::Weapon;
-use super::super::flamethrower::{
-    self, BURN_EVERY, NOZZLE, TRAIL_RADIUS, TRAIL_STEP, TURN_DEGREES,
-};
+use super::super::flamethrower::{self, BURN_EVERY, NOZZLE, TURN_DEGREES};
 use super::super::guns;
 use super::super::guns::Magazine;
-use super::super::molotov::Puddle;
 use super::World;
 use super::weapons::against;
 
@@ -37,7 +33,6 @@ impl World {
             return;
         }
         let stats = flamethrower::at(level);
-        self.leak(stats.leaks);
         let Self {
             player,
             enemies,
@@ -102,26 +97,5 @@ impl World {
             enemy.hit(against(damage, enemy, hunter));
             enemy.ignite_for(build.burn_ticks());
         }
-    }
-
-    /// At the last level, the tank leaks: a small fire where the player was, every few steps.
-    fn leak(&mut self, leaks: bool) {
-        let at = self.player.position;
-        if !leaks {
-            self.trail_from = at;
-            return;
-        }
-        if (at - self.trail_from).length() < TRAIL_STEP {
-            return;
-        }
-        self.trail_from = at;
-        let lasts = flamethrower::trail_lasts();
-        self.puddles.push(Puddle {
-            centre: at,
-            radius: TRAIL_RADIUS,
-            left: lasts,
-            lasts,
-            burst: false,
-        });
     }
 }

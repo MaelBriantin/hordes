@@ -318,19 +318,17 @@ fn the_flamethrower_burns_in_the_dark_too() {
 }
 
 #[test]
-fn at_level_5_the_flamethrower_s_tank_leaks_drops_of_fire_apart() {
+fn at_level_5_the_flamethrower_s_tank_no_longer_leaks() {
     let mut world = flaming(5);
     world.enemies.clear();
     for _ in 0..45 {
         world.spawn_debt = 0.0;
         world.update(moving(1.0, 0.0));
     }
-    assert!(world.puddles.len() >= 2, "{} drops", world.puddles.len());
-    assert!(world.puddles.iter().all(|puddle| !puddle.burst));
-    assert!(world.puddles.iter().all(|puddle| puddle.centre.x > 100.0));
-    // Drops, a couple of tiles apart, not a trail.
-    let apart = world.puddles[1].centre.x - world.puddles[0].centre.x;
-    assert!(apart >= flamethrower::TRAIL_STEP, "{apart}");
+    assert!(
+        world.puddles.is_empty(),
+        "the wall of fire is the exterminator's action now"
+    );
 }
 
 #[test]

@@ -475,12 +475,13 @@ fn a_hero_with_an_action_of_their_own_is_dealt_no_other() {
 }
 
 #[test]
-fn the_survivor_the_ninja_the_riot_officer_and_the_medic_each_get_their_own_action_at_level_3() {
+fn every_hero_with_an_action_of_their_own_gets_it_at_level_3() {
     for (hero, action) in [
         (Skin::Survivor, Action::Barricade),
         (Skin::Ninja, Action::Dash),
         (Skin::Riot, Action::Ram),
         (Skin::Medic, Action::Kit),
+        (Skin::Exterminator, Action::FireWall),
     ] {
         assert_eq!(hero.action(), Some(action));
         let mut world = World::with(1, Mode::Standard, false, Progress::everything());
@@ -496,4 +497,54 @@ fn the_survivor_the_ninja_the_riot_officer_and_the_medic_each_get_their_own_acti
         // Not in the collection: no achievement deals it.
         assert!(!COLLECTION.contains(&Unlock::Card(Choice::Action(action))));
     }
+}
+
+#[test]
+fn the_wall_of_fire_follows_the_exterminator_1_5_s_each_stretch_burning_5_s_then_waits() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Exterminator);
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    world.player.build.take(Choice::Action(Action::FireWall));
+    world.act();
+    for _ in 0..45 {
+        world.spawn_debt = 0.0;
+        world.update(moving(1.0, 0.0));
+    }
+    let laid = world.puddles.len();
+    assert!(laid >= 6, "a stretch every half tile: {laid}");
+    assert!(
+        world
+            .puddles
+            .iter()
+            .all(|stretch| stretch.wall && !stretch.burst)
+    );
+    // One line: no gap wider than the wall between two stretches.
+    for pair in world.puddles.windows(2) {
+        assert!((pair[1].centre - pair[0].centre).length() <= 1.0);
+    }
+    // The 1.5 s gone, nothing more laid.
+    for _ in 0..30 {
+        world.spawn_debt = 0.0;
+        world.update(moving(1.0, 0.0));
+    }
+    assert_eq!(world.puddles.len(), laid, "the trail over");
+    // An enemy crossing the wall catches fire.
+    let at = world.puddles[laid / 2].centre;
+    world.enemies.push(enemy(EnemyKind::Zombie, at));
+    world.enemies[0].stunned = u32::MAX;
+    world.enemies[0].hp = 1_000;
+    wait(&mut world, 1);
+    assert!(world.enemies[0].burning > 0, "burning");
+    // Each stretch burns 5 s, then goes: the last, laid at 1.5 s, out at 6.5 s.
+    wait(&mut world, 30 * 5);
+    assert!(world.puddles.is_empty(), "burnt out");
+    // Not again before its recharge: 10 s from when it was lit.
+    world.act();
+    assert_eq!(world.fire_wall_left, 0, "not ready");
+    let left = world.fire_wall_wait;
+    wait(&mut world, left);
+    world.act();
+    assert!(world.fire_wall_left > 0, "ready again");
 }

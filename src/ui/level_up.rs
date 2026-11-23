@@ -174,6 +174,7 @@ fn action_description(action: Action) -> String {
         Action::Ram => fl!("action-ram-description"),
         Action::C4 => fl!("action-c4-description"),
         Action::Kit => fl!("action-kit-description"),
+        Action::FireWall => fl!("action-fire-wall-description"),
     }
 }
 
@@ -360,6 +361,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         Choice::Action(Action::Ram) => SpriteId::IconRam,
         Choice::Action(Action::C4) => SpriteId::IconC4,
         Choice::Action(Action::Kit) => SpriteId::IconKit,
+        Choice::Action(Action::FireWall) => SpriteId::IconFireWall,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -387,6 +389,7 @@ pub fn name(choice: Choice) -> String {
         Choice::Action(Action::Ram) => fl!("action-ram"),
         Choice::Action(Action::C4) => fl!("action-c4"),
         Choice::Action(Action::Kit) => fl!("action-kit"),
+        Choice::Action(Action::FireWall) => fl!("action-fire-wall"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -695,6 +698,14 @@ fn action_gain(action: Action, level: u8) -> String {
                 _ => fl!("gain-kit-recharge", from = wait_before, to = wait),
             }
         }
+        // The wall of fire: longer walls at 2, a longer trail at 3, sooner back at 4, wider at 5.
+        Action::FireWall => match level {
+            0 | 1 => fl!("gain-fire-wall-1"),
+            2 => fl!("gain-fire-wall-2"),
+            3 => fl!("gain-fire-wall-3"),
+            4 => fl!("gain-fire-wall-4"),
+            _ => fl!("gain-fire-wall-5"),
+        },
         // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
         Action::Ram => match level {
             0 | 1 => fl!("gain-ram-1"),

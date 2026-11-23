@@ -41,6 +41,7 @@ impl World {
                     left: bottle.lasts,
                     lasts: bottle.lasts,
                     burst: true,
+                    wall: false,
                 });
             }
             bottle.left > 0

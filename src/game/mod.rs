@@ -14,6 +14,7 @@ mod defibrillator;
 mod drones;
 mod enemy;
 mod facing;
+mod fire_wall;
 mod fists;
 mod flamethrower;
 mod gem;
@@ -61,6 +62,7 @@ pub use level::xp_to_next;
 pub use machete::{SWING_TICKS, Swing};
 pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
+pub use molotov::Puddle;
 pub use progress::{Achievement, COLLECTION, Progress, Unlock};
 pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
 
@@ -70,6 +72,11 @@ pub fn c4_recharge(level: u8) -> u32 {
 }
 
 pub use kit::at as kit_at;
+
+/// The ticks the wall of fire takes to come back, by its level, before Haste.
+pub fn fire_wall_recharge(level: u8) -> u32 {
+    fire_wall::at(level).recharge
+}
 
 /// The ticks the first-aid kit takes to come back, by its level, before Haste.
 pub fn kit_recharge(level: u8) -> u32 {

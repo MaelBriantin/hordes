@@ -1,7 +1,6 @@
 //! The flamethrower: a cone of fire from the player, lit at the nearest enemy and burning its
 //! whole tank once lit, turning after the nearest enemy as it burns; every enemy in the cone
-//! burns. Empty, the tank fills again. At the last level, the tank leaks: a trail of small fires
-//! behind the player.
+//! burns. Empty, the tank fills again. Each level reaches further, burns harder or holds more.
 
 use std::f32::consts::{PI, TAU};
 
@@ -17,11 +16,6 @@ pub const BURN_EVERY: u32 = 8;
 pub const NOZZLE: f32 = 0.9;
 /// The seconds an empty tank takes to fill again, before Haste.
 const REFILL_SECONDS: u32 = 3;
-/// At the last level, how far the player goes between two drops of fire, in tiles; how far each
-/// spreads, in tiles; and how many seconds it burns.
-pub const TRAIL_STEP: f32 = 2.0;
-pub const TRAIL_RADIUS: f32 = 0.4;
-const TRAIL_SECONDS: u32 = 2;
 /// How fast its fire turns after the nearest enemy as it burns, in degrees a tick: 180° a second.
 pub const TURN_DEGREES: f32 = 6.0;
 
@@ -34,29 +28,25 @@ pub struct Flamethrower {
     pub damage: u32,
     /// The ticks of fire a full tank holds.
     pub tank: u32,
-    /// Whether the tank leaks, a trail of fires behind the player.
-    pub leaks: bool,
 }
 
 /// The flamethrower at a level.
 pub fn at(level: u8) -> Flamethrower {
     let second = u32::from(TICKS_PER_SECOND);
     Flamethrower {
-        range: if level >= 2 { 5.5 } else { 4.5 },
+        range: match level {
+            0 | 1 => 4.5,
+            2..=4 => 5.5,
+            _ => 6.5,
+        },
         damage: if level >= 3 { 3 } else { 2 },
         tank: if level >= 4 { 3 } else { 2 } * second,
-        leaks: level >= 5,
     }
 }
 
 /// The ticks an empty tank takes to fill again, before Haste.
 pub fn refill() -> u32 {
     REFILL_SECONDS * u32::from(TICKS_PER_SECOND)
-}
-
-/// The ticks a fire of the trail burns.
-pub fn trail_lasts() -> u32 {
-    TRAIL_SECONDS * u32::from(TICKS_PER_SECOND)
 }
 
 /// Whether a body (half as wide as `half`) centred on `at` is in the cone from `from` the way
@@ -130,7 +120,7 @@ mod tests {
     fn the_flamethrower_grows_with_its_levels() {
         let (first, last) = (at(1), at(5));
         assert_eq!((first.range, first.damage, first.tank), (4.5, 2, 60));
-        assert_eq!((last.range, last.damage, last.tank), (5.5, 3, 90));
-        assert!(last.leaks && !first.leaks);
+        assert_eq!((last.range, last.damage, last.tank), (6.5, 3, 90));
+        assert_eq!(at(4).range, 5.5, "a tile further at the last level alone");
     }
 }

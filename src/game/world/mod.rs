@@ -49,6 +49,7 @@ mod charges;
 mod cuts;
 mod debug;
 mod enemies;
+mod fire_walls;
 mod flames;
 mod goals;
 mod grenades;
@@ -223,6 +224,9 @@ pub struct World {
     pub c4_wait: u32,
     /// The ticks before the first-aid kit can be opened again.
     pub kit_wait: u32,
+    /// The ticks the wall of fire still follows the player, and before it can be lit again.
+    pub fire_wall_left: u32,
+    pub fire_wall_wait: u32,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -300,7 +304,7 @@ pub struct World {
     /// hammer's.
     abominations_smashed: u32,
     /// Whether the flamethrower burns this tick; the way its fire goes (length 1); the ticks it
-    /// has burnt, for its bursts of damage; and where its trail left its last fire.
+    /// has burnt, for its bursts of damage; and where the wall of fire left its last stretch.
     pub flaming: bool,
     flame_way: Vec2,
     flame_ticks: u32,
@@ -473,6 +477,8 @@ impl World {
             c4_blasts: Vec::new(),
             c4_wait: 0,
             kit_wait: 0,
+            fire_wall_left: 0,
+            fire_wall_wait: 0,
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -742,6 +748,7 @@ impl World {
         self.grind_chainsaw();
         self.set_charges();
         self.wait_kit();
+        self.follow_fire_wall();
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

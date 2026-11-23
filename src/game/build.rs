@@ -133,15 +133,18 @@ pub enum Action {
     C4,
     /// The medic's own: HP back at once.
     Kit,
+    /// The exterminator's own: a line of fire following them a while, burning on.
+    FireWall,
 }
 
 impl Action {
-    pub const ALL: [Action; 5] = [
+    pub const ALL: [Action; 6] = [
         Action::Dash,
         Action::Barricade,
         Action::Ram,
         Action::C4,
         Action::Kit,
+        Action::FireWall,
     ];
 }
 

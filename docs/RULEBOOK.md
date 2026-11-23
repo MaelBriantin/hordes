@@ -9,7 +9,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once the night has fallen, at 0:26 (see The night).
-- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit (see The player).
+- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit, the exterminator's wall of fire (see The player).
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms. Beside the menu, where the screen is wide enough, the **gear**: the hero from the front, their outfit's name, their perk and their action (its level, ready or charging), then each card taken, its icon, its name and level (MAX in gold at the last), and what it brings: what it does, then what each level after the first added; a line each, without the icons, when the screen is too low for them.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
@@ -224,7 +224,7 @@ Every **3 s** (less with Haste), a bottle thrown at an enemy at random within **
 
 A **rare** weapon. A **cone of fire** from the player, **4.5 tiles** long, 60° wide, lit at the **nearest enemy** within its reach, in sight (trees and rocks hide what stands behind them; a barricade doesn't), whichever way the player faces, then burning its **whole tank**, enemies left or not, turning after the nearest enemy as it burns, **180° a second** at most, its last way kept with none left; its fire leaves the nozzle, almost a tile ahead of the player, a stream as from a hose, widening as it goes, a yellow core, orange around, its end red and ragged, the nozzle sweeping from side to side (20° each way, about 1.6 s there and back), its far end lagging, so the stream bends: every enemy in the cone takes **2 damage** about 4 times a second (every 8 ticks, the first at once) and catches fire (see Fire). Its **tank** holds **2 s** of fire; empty, it fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as a gun's rounds and reload. It burns **in the dark** too, the torch out (to be tried).
 
-**Levels**: 2: the cone 5.5 tiles long · 3: 3 damage · 4: a 3 s tank · 5: **the tank leaks**: a drop of fire on the ground every 2 tiles the player goes, 0.4 tile around, burning 2 s, setting on fire every enemy in it, as a Molotov's puddle without its burst.
+**Levels**: 2: the cone 5.5 tiles long · 3: 3 damage · 4: a 3 s tank · 5: the cone 6.5 tiles long.
 
 ### Stun baton
 
@@ -245,6 +245,10 @@ The ninja's own weapon. Every **0.8 s** (less with Haste), a **chain of cuts**: 
 A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy touching it ahead of the player, the way they face, within **1.5 tiles** (90°): a bite of **4 damage** every **0.2 s** (less with Haste), and each one ground goes **50% slower** while it is. In the dark too. Grinding, it shows held out ahead of the hero, an orange motor then the blade, its teeth running along its edges, blood on its end and its edge (as the blood setting has it). Its **tank** holds **5 s** of grinding, emptying only as it grinds; empty, it stops and fills again in **3 s** (less with Haste), its fuel then its filling under its icon, as the flamethrower's. While it grinds, **nothing hurts the player**: they charge into the crowd, their corners gleaming.
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
+
+### Wall of fire
+
+The exterminator's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes, played with Space or Enter: for **1.5 s** (some 8 tiles as they go), their tank leaks, an unbroken line of fire following their path, a stretch every half tile, **a tile wide**; each stretch burns **5 s**, setting on fire every enemy in it, as a Molotov's puddle (the enemies don't avoid it). Drawn as a band of red and orange on the ground, tongues of fire licking up from it, their tips yellow; its last second, scattered embers. It waits **10 s** from when it is lit (less with Haste), its wait under its icon. Level 2: walls of 7 s; 3: a 2 s trail; 4: back in 7 s; 5: walls 2 tiles wide. Its next levels are dealt to the exterminator alone.
 
 ### First-aid kit
 

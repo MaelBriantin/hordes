@@ -7,7 +7,8 @@ use super::super::{TICKS_PER_SECOND, Vec2};
 use super::{PLAYER_HALF_WIDTH, World};
 
 impl World {
-    /// The player plays their action: a dash, a barricade set down, a ram, the C4 or the kit.
+    /// The player plays their action: a dash, a barricade set down, a ram, the C4, the kit or the
+    /// wall of fire.
     pub fn act(&mut self) {
         let build = &self.player.build;
         if build.action_level(Action::Barricade) > 0 {
@@ -18,6 +19,8 @@ impl World {
             self.c4();
         } else if build.action_level(Action::Kit) > 0 {
             self.open_kit();
+        } else if build.action_level(Action::FireWall) > 0 {
+            self.light_fire_wall();
         } else {
             self.dash();
         }

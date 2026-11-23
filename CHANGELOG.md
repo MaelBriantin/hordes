@@ -13,9 +13,11 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The grenade, a rare weapon unlocked by Demolisher in place of the C4: thrown at the biggest crowd near, blowing where it lands; two at once at the last level.
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
+- The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
 
 ### Changed
 - The medic no longer gets HP back of themselves: their first-aid kit instead.
+- The flamethrower's tank no longer leaks at the last level: its cone reaches a tile further instead.
 - The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
 - The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
 - Hold the line unlocks the riot officer alone, told as a hero unlocked.
