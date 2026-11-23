@@ -14,15 +14,18 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
 - The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
+- The ghost's smoke bomb, their own action from the run's level 3: a cloud at their feet 4 s, the enemies losing track of them in it, even with the torch on.
 
 ### Changed
 - The medic no longer gets HP back of themselves: their first-aid kit instead.
 - The flamethrower's tank no longer leaks at the last level: its cone reaches a tile further instead.
+- The sniper rifle's icon redrawn: a wooden stock, a steel barrel, its scope.
 - The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
 - The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
 - Hold the line unlocks the riot officer alone, told as a hero unlocked.
 - The Untouchable and Lightning rod achievements gone, their rewards now heroes' own actions.
 - Stealth gone; the infiltrator's second outfit named the scout.
+- The infiltrator renamed the ghost, their perk Stealthy.
 
 ### Fixed
 - A hero with an action of their own dealt the other action cards before it came, leaving it unplayable.

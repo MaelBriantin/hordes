@@ -82,6 +82,9 @@ $ 240 190 40    the infiltrator's jungle amber goggles
 [ 115 115 120   the riot officer's grey arms
 ] 40 40 46      the riot officer's black straps
 { 161 161 161   the riot officer's shield
+& 84 84 84      the sniper rifle's steel
+* 161 161 161   the sniper rifle's scope mount
+~ 97 55 46      the sniper rifle's stock
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -756,6 +759,16 @@ ffffffff
 RRRRRRRR
 QQQQQQQQ
 
+icon_smoke
+....gg..
+...gWWg.
+..nngg..
+..nn....
+.<<<<...
+.<>><...
+.<>><...
+.<<<<...
+
 icon_grenade
 ....nn..
 ...n.n..
@@ -928,12 +941,12 @@ gggggg..
 
 icon_sniper
 ........
-......t.
-.......n
-qqqqqqnn
-..qq.u..
-.qq..u..
-qq......
+..&&&&..
+...**...
+~~&&&&&&
+~~~&.~~.
+~~......
+........
 ........
 
 icon_ram

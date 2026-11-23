@@ -36,6 +36,7 @@ use super::progress::{
     Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, VETERAN_LEVEL,
 };
 use super::score;
+use super::smoke::Cloud;
 use super::sniper::{Impact, Shot};
 use super::stain::Stain;
 use super::weather::{self, Weather};
@@ -60,6 +61,7 @@ mod punches;
 mod rams;
 mod saws;
 mod shocks;
+mod smoke_bombs;
 mod sniping;
 mod stabs;
 mod storm;
@@ -227,6 +229,9 @@ pub struct World {
     /// The ticks the wall of fire still follows the player, and before it can be lit again.
     pub fire_wall_left: u32,
     pub fire_wall_wait: u32,
+    /// The smoke bomb's cloud, if one is up, and the ticks before another can be thrown.
+    pub smoke: Option<Cloud>,
+    pub smoke_wait: u32,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -479,6 +484,8 @@ impl World {
             kit_wait: 0,
             fire_wall_left: 0,
             fire_wall_wait: 0,
+            smoke: None,
+            smoke_wait: 0,
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -749,6 +756,7 @@ impl World {
         self.set_charges();
         self.wait_kit();
         self.follow_fire_wall();
+        self.thin_smoke();
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

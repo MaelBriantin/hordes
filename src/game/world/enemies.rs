@@ -14,6 +14,7 @@ use super::super::horde::{self, Tally, Warning};
 use super::super::map::Feature;
 use super::super::mode::Mode;
 use super::super::progress::{Achievement, SWARM_HORDES};
+use super::super::smoke::SLOW_PERCENT as SMOKE_SLOW_PERCENT;
 use super::super::spawn::{self, MARGIN, MAX_ENEMIES};
 use super::super::stain::{self, MAX_STAINS, Stain};
 use super::super::weather;
@@ -353,6 +354,29 @@ impl World {
             .find(|point| fits(&self.map, *point, stats.half_width, stats.flies))
     }
 
+    /// What the enemies can tell of the player this tick.
+    fn sight(&self) -> Sight {
+        // At night, whether Shadows hunt: with the torch out; lit, they shun it. The infiltrator,
+        // their torch out, slips away from the others, and the Shadows are slow to come.
+        let ghost = self.player.build.hero().perk().ghost() && self.torch_on() == Some(false);
+        // Meanwhile the Shadows are as the others: unaware of the infiltrator, neither hunting
+        // nor fleeing.
+        let shadows_wait = ghost && self.dark_streak < GHOST_SHADOW_TICKS;
+        Sight {
+            // In their smoke, the scout is lost to all but those right on them.
+            smoked: self.smoked(),
+            seen: self.seen_from_afar(),
+            ghost,
+            // The torch just out, the infiltrator vanishes from all but those right on them.
+            vanishing: ghost && self.dark_streak == 0,
+            shadows_wait,
+            dark_hunt: self
+                .torch_on()
+                .filter(|_| !shadows_wait)
+                .map(|_| !self.torch_lit()),
+        }
+    }
+
     /// Each enemy goes for the player, pushed apart from the others it overlaps, and stops on
     /// touching the player.
     pub(super) fn move_enemies(&mut self) {
@@ -362,27 +386,15 @@ impl World {
         // At daybreak, they flee the player, the risen sun at their back.
         let flee = self.daybreak();
         // In the dark, those that haven't seen the player go for the campfires, or wander.
-        let seen = self.seen_from_afar();
-        let fires = if seen { Vec::new() } else { self.fires_near() };
-        // At night, whether Shadows hunt: with the torch out; lit, they shun it. The infiltrator,
-        // their torch out, slips away from the others, and the Shadows are slow to come.
-        let ghost = self.player.build.hero().perk().ghost() && self.torch_on() == Some(false);
-        // The torch just out, the infiltrator vanishes from all but those right on them.
-        let vanishing = ghost && self.dark_streak == 0;
-        // Meanwhile the Shadows are as the others: unaware of the infiltrator, neither hunting
-        // nor fleeing.
-        let shadows_wait = ghost && self.dark_streak < GHOST_SHADOW_TICKS;
-        let dark_hunt = self
-            .torch_on()
-            .filter(|_| !shadows_wait)
-            .map(|_| !self.torch_lit());
-        let sight = Sight {
-            seen,
-            ghost,
-            vanishing,
-            shadows_wait,
-            dark_hunt,
+        let sight = self.sight();
+        let fires = if sight.seen {
+            Vec::new()
+        } else {
+            self.fires_near()
         };
+        let dark_hunt = sight.dark_hunt;
+        // At its last level, the smoke slows those in it.
+        let smoke = self.smoke.filter(|cloud| cloud.slows);
         // With Glare, those in the torch's light go slower.
         let glare = self.glare();
         let ticks = self.ticks;
@@ -443,7 +455,11 @@ impl World {
                 Some((reach, percent)) if apart <= reach => percent,
                 _ => 0,
             };
-            let slowed = (slowed + enemy.sawn()).min(100);
+            let smoked = match smoke {
+                Some(cloud) if cloud.holds(enemy.position) => SMOKE_SLOW_PERCENT,
+                _ => 0,
+            };
+            let slowed = (slowed + enemy.sawn() + smoked).min(100);
             let glared = f32::from(u16::try_from(100 - slowed).unwrap_or(100)) / 100.0;
             let speed = stats.speed * f32::from(weather.speed_percent()) / 100.0 * pace * glared;
             // Thrown by a shock, it goes on its way out, whatever else it does.
@@ -566,7 +582,8 @@ pub(super) fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: boo
     (0..PUSH_STEPS).fold(from, |at, _| slide(map, at, step, half_width, flies))
 }
 
-/// What the enemies can tell of the player this tick: whether they see them from afar; whether
+/// What the enemies can tell of the player this tick: whether the scout is in their smoke;
+/// whether they see them from afar; whether
 /// the infiltrator is a ghost in the dark, just vanished, the Shadows still waiting; whether the
 /// Shadows hunt (with the torch out), shun the light (lit), or neither (by day, or waiting).
 #[derive(Debug, Clone, Copy)]
@@ -575,6 +592,7 @@ pub(super) fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: boo
     reason = "what the enemies can tell of the player, each a yes or a no"
 )]
 struct Sight {
+    smoked: bool,
     seen: bool,
     ghost: bool,
     vanishing: bool,
@@ -588,7 +606,12 @@ fn notice(enemy: &mut Enemy, apart: f32, sight: Sight) {
     if sight.shadows_wait && enemy.kind == EnemyKind::Shadow {
         enemy.hunting = 0;
     }
-    if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
+    if sight.smoked {
+        if enemy.kind == EnemyKind::Shadow {
+            enemy.hunting = 0;
+        }
+        enemy.noticed = apart <= GHOST_REACH;
+    } else if enemy.horde.is_some() || enemy.kind == EnemyKind::Parasite {
         enemy.noticed = true;
     } else if enemy.kind == EnemyKind::Shadow && sight.dark_hunt.is_some() {
         // Shadows hunt in the dark, faster and faster; caught in the torch's light, they

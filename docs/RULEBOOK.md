@@ -9,7 +9,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once the night has fallen, at 0:26 (see The night).
-- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit, the exterminator's wall of fire (see The player).
+- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit, the exterminator's wall of fire, the scout's smoke bomb (see The player).
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms. Beside the menu, where the screen is wide enough, the **gear**: the hero from the front, their outfit's name, their perk and their action (its level, ready or charging), then each card taken, its icon, its name and level (MAX in gold at the last), and what it brings: what it does, then what each level after the first added; a line each, without the icons, when the screen is too low for them.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
@@ -119,7 +119,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Demolisher | 140 | −15% | sledgehammer, and the C4 as their action | **Unshakable**: 10% less damage taken, and never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
 | Medic | 90 | normal | defibrillator | **Healer**: herbs and the heal give back half again as much, campfires heal faster (as much in all); the defibrillator, Life drain and Regeneration heal as for anyone. No HP comes back of itself |
-| Infiltrator | 90 | +5% | fists | **Ghost**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the torch put out, the enemies further than 2 tiles lose them at once, then notice them within 2 tiles alone, the hordes apart; lightning shows them still, those that saw them following as ever; the Shadows hunt them only after 4 s of dark |
+| Ghost (infiltrator) | 90 | +5% | fists | **Stealthy**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the torch put out, the enemies further than 2 tiles lose them at once, then notice them within 2 tiles alone, the hordes apart; lightning shows them still, those that saw them following as ever; the Shadows hunt them only after 4 s of dark |
 | Riot officer | 110 | −10% | truncheon | **Shield**: 30% less damage from an enemy ahead, the way they face |
 | Ninja | 80 | +15% | katana | **Dodge**: a 15% chance to avoid a blow altogether (enemies, a burst), unhurt half a second after as after a hit; a dark ghost of the ninja left aside a moment shows it |
 
@@ -168,7 +168,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 
 ## Weapons
 
-They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **hero's own weapon**, at level 1, as the skin worn has it (see Progress), a melee one: the survivor's **crowbar**, the veteran's **machete**, the exterminator's **stun baton**, the demolisher's **sledgehammer**, the special agent's **combat knife**, the ninja's **katana**, the medic's **defibrillator**, the infiltrator's **fists**, the riot officer's **truncheon**. A hero's own weapon is **theirs alone**: its next levels are dealt to them, never to another hero. The others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
+They strike by themselves. Up to **4 weapons**, each up to **level 5**. The run starts with the **hero's own weapon**, at level 1, as the skin worn has it (see Progress), a melee one: the survivor's **crowbar**, the veteran's **machete**, the exterminator's **stun baton**, the demolisher's **sledgehammer**, the special agent's **combat knife**, the ninja's **katana**, the medic's **defibrillator**, the ghost's **fists**, the riot officer's **truncheon**. A hero's own weapon is **theirs alone**: its next levels are dealt to them, never to another hero. The others come from level-ups. Might raises their damage and Haste shortens their cooldowns: the machete's swings, the guns' reloads, the drones' rest (see Passives). Damage is rounded down.
 
 **Obstacles and shots**: the guns and the drones aim only at enemies in sight, no tree nor rock between (a Shadow over a rock is out of sight); a bullet that meets a tree or a rock stops there, a spark where it hits. The melee weapons and the Molotov's bottles, thrown over, don't care.
 
@@ -246,6 +246,10 @@ A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
 
+### Smoke bomb
+
+The ghost's own **action** (the infiltrator's, the scout in their second outfit), theirs once the run reaches **level 3**, its card shown alone as it comes, played with Space or Enter: a cloud of smoke at their feet, **3 tiles** round, for **4 s**. While the scout stands in it, the enemies lose track of them, even with the torch on, a horde's too, the Shadows waiting: all but those within 2 tiles, right on them. Drawn as a dense grey cloud, churning, its edge ragged, spreading out in 0.4 s and thinning out over its last 0.7 s; the scout in it a grey silhouette. It waits **15 s** (less with Haste), its wait under its icon. Level 2: 5 s; 3: 4 tiles round; 4: back in 11 s; 5: the enemies in the smoke 30% slower. Its next levels are dealt to the scout alone.
+
 ### Wall of fire
 
 The exterminator's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes, played with Space or Enter: for **1.5 s** (some 8 tiles as they go), their tank leaks, an unbroken line of fire following their path, a stretch every half tile, **a tile wide**; each stretch burns **5 s**, setting on fire every enemy in it, as a Molotov's puddle (the enemies don't avoid it). Drawn as a band of red and orange on the ground, tongues of fire licking up from it, their tips yellow; its last second, scattered embers. It waits **10 s** from when it is lit (less with Haste), its wait under its icon. Level 2: walls of 7 s; 3: a 2 s trail; 4: back in 7 s; 5: walls 2 tiles wide. Its next levels are dealt to the exterminator alone.
@@ -298,7 +302,7 @@ The riot officer's own weapon. Every **1 s** (less with Haste), once an enemy is
 
 ### Fists
 
-The infiltrator's own weapon. Every **0.4 s** (less with Haste), a **punch** at the nearest enemy within **1.2 tiles**, whichever way: **8 damage**; every third a **heavier** one, twice as hard, throwing the enemy **a tile** back. In the dark too. It shows as the fist out halfway to the enemy struck and a small white burst on it, bigger and yellow for a heavier one.
+The ghost's (infiltrator's) own weapon. Every **0.4 s** (less with Haste), a **punch** at the nearest enemy within **1.2 tiles**, whichever way: **8 damage**; every third a **heavier** one, twice as hard, throwing the enemy **a tile** back. In the dark too. It shows as the fist out halfway to the enemy struck and a small white burst on it, bigger and yellow for a heavier one.
 
 **Levels**: 2: 1.6 tiles · 3: 12 damage · 4: a punch every 0.3 s · 5: the heavier punch **stuns** 1 s.
 
@@ -386,7 +390,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 | Shadow hunter | Fell 25 Shadows in one run | The shurikens, and the ninja with their katana |
 | Legend | Fell 700 enemies in one run | The napalm, and the veteran with their machete |
 | First aid | Get 300 HP back in one run (herbs, campfires, regeneration, the heal, the defibrillator) | Life drain, and the medic with their defibrillator |
-| Shadow | Keep the torch out 3 minutes in one run (every tick counted, not in a row) | The sniper rifle, and the infiltrator with their fists |
+| Shadow | Keep the torch out 3 minutes in one run (every tick counted, not in a row) | The sniper rifle, and the ghost with their fists |
 | A regular | 25 runs played | A second reroll a run |
 | Seasoned | Reach level 25 in a single run | Illumination |
 

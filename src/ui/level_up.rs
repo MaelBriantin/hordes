@@ -175,6 +175,7 @@ fn action_description(action: Action) -> String {
         Action::C4 => fl!("action-c4-description"),
         Action::Kit => fl!("action-kit-description"),
         Action::FireWall => fl!("action-fire-wall-description"),
+        Action::Smoke => fl!("action-smoke-description"),
     }
 }
 
@@ -362,6 +363,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         Choice::Action(Action::C4) => SpriteId::IconC4,
         Choice::Action(Action::Kit) => SpriteId::IconKit,
         Choice::Action(Action::FireWall) => SpriteId::IconFireWall,
+        Choice::Action(Action::Smoke) => SpriteId::IconSmoke,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -390,6 +392,7 @@ pub fn name(choice: Choice) -> String {
         Choice::Action(Action::C4) => fl!("action-c4"),
         Choice::Action(Action::Kit) => fl!("action-kit"),
         Choice::Action(Action::FireWall) => fl!("action-fire-wall"),
+        Choice::Action(Action::Smoke) => fl!("action-smoke"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -705,6 +708,14 @@ fn action_gain(action: Action, level: u8) -> String {
             3 => fl!("gain-fire-wall-3"),
             4 => fl!("gain-fire-wall-4"),
             _ => fl!("gain-fire-wall-5"),
+        },
+        // The smoke bomb: longer at 2, wider at 3, sooner back at 4, slowing at 5.
+        Action::Smoke => match level {
+            0 | 1 => fl!("gain-smoke-1"),
+            2 => fl!("gain-smoke-2"),
+            3 => fl!("gain-smoke-3"),
+            4 => fl!("gain-smoke-4"),
+            _ => fl!("gain-smoke-5"),
         },
         // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
         Action::Ram => match level {

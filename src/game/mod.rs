@@ -37,6 +37,7 @@ mod progress;
 pub mod ram;
 mod score;
 mod skin;
+mod smoke;
 mod sniper;
 mod spawn;
 mod stain;
@@ -64,6 +65,7 @@ pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
 pub use molotov::Puddle;
 pub use progress::{Achievement, COLLECTION, Progress, Unlock};
+pub use smoke::{CLEAR_TICKS as SMOKE_CLEAR_TICKS, SPREAD_TICKS as SMOKE_SPREAD_TICKS};
 pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
 
 /// The ticks the C4 takes to come back after a blast, by its level, before Haste.
@@ -72,6 +74,11 @@ pub fn c4_recharge(level: u8) -> u32 {
 }
 
 pub use kit::at as kit_at;
+
+/// The ticks the smoke bomb takes to come back, by its level, before Haste.
+pub fn smoke_recharge(level: u8) -> u32 {
+    smoke::at(level).recharge
+}
 
 /// The ticks the wall of fire takes to come back, by its level, before Haste.
 pub fn fire_wall_recharge(level: u8) -> u32 {

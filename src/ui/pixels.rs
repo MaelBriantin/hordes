@@ -12,6 +12,7 @@ mod napalm;
 mod ninja;
 mod ram;
 mod saw;
+mod smoke;
 mod sniper;
 mod stabs;
 mod thrust;
@@ -524,6 +525,8 @@ pub fn render_map(
     for drone in world.drones() {
         canvas.paint_at(Look::plain(SpriteId::Drone), drone);
     }
+    // The scout's smoke over what stands in it.
+    canvas.paint_smoke(world, view.outfit(), frame);
 
     // The night falls on all of that; what glows is painted after it, untouched.
     let strike = night::run_strike(world.lightning, world.ticks());

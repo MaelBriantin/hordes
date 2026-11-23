@@ -482,6 +482,7 @@ fn every_hero_with_an_action_of_their_own_gets_it_at_level_3() {
         (Skin::Riot, Action::Ram),
         (Skin::Medic, Action::Kit),
         (Skin::Exterminator, Action::FireWall),
+        (Skin::Infiltrator, Action::Smoke),
     ] {
         assert_eq!(hero.action(), Some(action));
         let mut world = World::with(1, Mode::Standard, false, Progress::everything());
@@ -547,4 +548,66 @@ fn the_wall_of_fire_follows_the_exterminator_1_5_s_each_stretch_burning_5_s_then
     wait(&mut world, left);
     world.act();
     assert!(world.fire_wall_left > 0, "ready again");
+}
+
+/// The scout in the dark, their torch lit, their smoke bomb in hand at `level`, zombies about.
+fn scout_with_smoke(level: u8) -> World {
+    let mut world = infiltrator_in_the_dark();
+    world.switch_torch();
+    assert_eq!(world.torch_on(), Some(true));
+    for _ in 0..level {
+        world.player.build.take(Choice::Action(Action::Smoke));
+    }
+    world
+}
+
+#[test]
+fn in_their_smoke_the_scout_is_lost_to_the_enemies_torch_lit_but_for_those_right_on_them() {
+    let mut world = scout_with_smoke(1);
+    for (x, horde) in [(105.0, None), (100.0, Some(1)), (101.5, None)] {
+        let y = if horde.is_some() { 55.0 } else { 50.0 };
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, y)));
+        world.enemies.last_mut().unwrap().horde = horde;
+    }
+    wait(&mut world, 1);
+    assert!(
+        world.enemies.iter().all(|enemy| enemy.noticed),
+        "seen in the light"
+    );
+    world.act();
+    assert!(world.smoke.is_some());
+    wait(&mut world, 1);
+    assert!(world.smoked());
+    assert!(!world.enemies[0].noticed, "lost, though the torch is lit");
+    assert!(!world.enemies[1].noticed, "a horde's too");
+    assert!(world.enemies[2].noticed, "right on them");
+    // 4 s, then the cloud clears and they are seen again.
+    wait(&mut world, 30 * 4);
+    assert!(world.smoke.is_none());
+    wait(&mut world, 1);
+    assert!(world.enemies[0].noticed, "seen again");
+    // Not again before its recharge: 15 s.
+    world.act();
+    assert!(world.smoke.is_none(), "not ready");
+}
+
+#[test]
+fn at_level_5_the_enemies_in_the_smoke_go_30_percent_slower() {
+    let step = |level: u8| {
+        let mut world = scout_with_smoke(level);
+        world.unhurt = true;
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(101.8, 50.0)));
+        world.act();
+        wait(&mut world, 1);
+        let from = world.enemies[0].position;
+        wait(&mut world, 1);
+        (from - world.enemies[0].position).length()
+    };
+    let (plain, slowing) = (step(4), step(5));
+    assert!(plain > 0.0);
+    assert!((slowing / plain - 0.7).abs() < 0.02, "{slowing} {plain}");
 }

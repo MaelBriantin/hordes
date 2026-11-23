@@ -135,16 +135,19 @@ pub enum Action {
     Kit,
     /// The exterminator's own: a line of fire following them a while, burning on.
     FireWall,
+    /// The scout's own: a cloud of smoke at their feet, the enemies losing track of them in it.
+    Smoke,
 }
 
 impl Action {
-    pub const ALL: [Action; 6] = [
+    pub const ALL: [Action; 7] = [
         Action::Dash,
         Action::Barricade,
         Action::Ram,
         Action::C4,
         Action::Kit,
         Action::FireWall,
+        Action::Smoke,
     ];
 }
 
