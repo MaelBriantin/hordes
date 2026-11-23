@@ -148,6 +148,7 @@ fn action_line(world: &World) -> Option<Line<'static>> {
         Action::Barricade => world.barricade_wait == 0,
         Action::Ram => world.ram_wait == 0,
         Action::C4 => world.c4_wait == 0,
+        Action::Kit => world.kit_wait == 0,
     };
     let (state, colour) = if ready {
         (fl!("equipment-ready"), READY)

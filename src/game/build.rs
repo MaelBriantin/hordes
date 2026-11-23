@@ -131,10 +131,18 @@ pub enum Action {
     Ram,
     /// The demolisher's own: a charge set down at their feet, blown from afar.
     C4,
+    /// The medic's own: HP back at once.
+    Kit,
 }
 
 impl Action {
-    pub const ALL: [Action; 4] = [Action::Dash, Action::Barricade, Action::Ram, Action::C4];
+    pub const ALL: [Action; 5] = [
+        Action::Dash,
+        Action::Barricade,
+        Action::Ram,
+        Action::C4,
+        Action::Kit,
+    ];
 }
 
 /// A rare bonus, found on a golden card now and then: one level only, and no room taken among the

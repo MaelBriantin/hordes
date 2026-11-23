@@ -16,7 +16,7 @@ use super::text::centred;
 use super::{Blank, DARK_GREY};
 use crate::game::{
     Action, Choice, HEAL, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Skin,
-    Weapon, World,
+    TICKS_PER_SECOND, Weapon, World, kit_at,
 };
 
 const CARD_WIDTH: u16 = 24;
@@ -117,7 +117,7 @@ pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sp
     let text_width = width.saturating_sub(2 * (1 + GAP) + UNLOCKED_ICON.0 + GAP);
     let description = super::text::wrap(&action_description(action), usize::from(text_width));
     let effect = super::text::wrap(&gain_of(choice, 1, hero), usize::from(text_width));
-    let words = 2 + description.len() + 1 + effect.len() + 1 + 1;
+    let words = 2 + description.len() + 1 + effect.len();
     let height = (u16::try_from(words).unwrap_or(0).max(UNLOCKED_ICON.1) + 4).min(map.height);
     let [row] = Layout::vertical([Constraint::Length(height)])
         .flex(Flex::Center)
@@ -163,11 +163,6 @@ pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sp
     );
     lines.push(Line::default());
     lines.extend(effect.into_iter().map(Line::from));
-    lines.push(Line::default());
-    lines.push(Line::styled(
-        fl!("unlocked-key"),
-        Style::new().fg(NEW).bold(),
-    ));
     frame.render_widget(Paragraph::new(lines), text_area);
 }
 
@@ -178,6 +173,7 @@ fn action_description(action: Action) -> String {
         Action::Barricade => fl!("action-barricade-description"),
         Action::Ram => fl!("action-ram-description"),
         Action::C4 => fl!("action-c4-description"),
+        Action::Kit => fl!("action-kit-description"),
     }
 }
 
@@ -363,6 +359,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         Choice::Action(Action::Barricade) => SpriteId::IconBarricade,
         Choice::Action(Action::Ram) => SpriteId::IconRam,
         Choice::Action(Action::C4) => SpriteId::IconC4,
+        Choice::Action(Action::Kit) => SpriteId::IconKit,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -389,6 +386,7 @@ pub fn name(choice: Choice) -> String {
         Choice::Action(Action::Barricade) => fl!("action-barricade"),
         Choice::Action(Action::Ram) => fl!("action-ram"),
         Choice::Action(Action::C4) => fl!("action-c4"),
+        Choice::Action(Action::Kit) => fl!("action-kit"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -493,8 +491,8 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         // The hero's own counted: the veteran's Commando.
         Passive::Might => (100 + 10 * level) * hero.perk().damage_percent() / 100 - 100,
         Passive::Wisdom | Passive::Loot | Passive::Glare | Passive::HordeHunter => 10 * level,
-        // In tenths of HP a second, the hero's own counted: the medic's.
-        Passive::Regeneration => 4 * level + hero.perk().regeneration_tenths(),
+        // In tenths of HP a second.
+        Passive::Regeneration => 4 * level,
         Passive::Drain => 5 + 5 * level,
         Passive::Flashlight => 9 + 2 * level,
     };
@@ -686,6 +684,17 @@ fn action_gain(action: Action, level: u8) -> String {
             4 => fl!("gain-c4-4"),
             _ => fl!("gain-c4-5"),
         },
+        // The first-aid kit: more HP at 2 and 4, sooner back at 3 and 5.
+        Action::Kit => {
+            let (now, before) = (kit_at(level), kit_at(level.saturating_sub(1)));
+            let second = u32::from(TICKS_PER_SECOND);
+            let (wait, wait_before) = (now.recharge / second, before.recharge / second);
+            match level {
+                0 | 1 => fl!("gain-kit-1", hp = now.heal, seconds = wait),
+                2 | 4 => fl!("gain-kit-hp", from = before.heal, to = now.heal),
+                _ => fl!("gain-kit-recharge", from = wait_before, to = wait),
+            }
+        }
         // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
         Action::Ram => match level {
             0 | 1 => fl!("gain-ram-1"),
@@ -726,14 +735,14 @@ mod tests {
     }
 
     #[test]
-    fn the_regeneration_card_counts_the_medic_s_own_too() {
+    fn the_regeneration_card_counts_no_own_regeneration_and_the_kit_tells_the_medic_s_hp() {
         let regeneration = Choice::Passive(Passive::Regeneration);
-        assert!(
-            gain_of(regeneration, 1, Skin::Survivor).contains("0,4")
-                || gain_of(regeneration, 1, Skin::Survivor).contains("0.4")
-        );
         let medic = gain_of(regeneration, 1, Skin::Medic);
-        assert!(medic.contains("0,6") || medic.contains("0.6"), "{medic}");
+        assert!(medic.contains("0,4") || medic.contains("0.4"), "{medic}");
+        let kit = Choice::Action(Action::Kit);
+        assert!(gain_of(kit, 1, Skin::Medic).contains("15"));
+        assert!(gain_of(kit, 2, Skin::Medic).contains("20"));
+        assert!(!gain_of(kit, 1, Skin::Medic).contains("Espace"));
     }
 
     #[test]

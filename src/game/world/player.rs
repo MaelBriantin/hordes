@@ -14,7 +14,7 @@ impl World {
             return;
         }
         let build = &self.player.build;
-        self.hp_tenths += build.regeneration_tenths() + build.hero().perk().regeneration_tenths();
+        self.hp_tenths += build.regeneration_tenths();
         let whole = self.hp_tenths / 10;
         self.hp_tenths %= 10;
         self.heal(whole);

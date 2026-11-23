@@ -9,7 +9,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - **Keys**: ? lists every key of a run, the run standing still; ?, Esc or Enter leave the list.
 - **Gear**: I shows or hides the gear over the top left of the map, the choice kept: each card's icon, in the order picked, its level written on its bottom right corner on a dark badge (MAX in gold at the last); right under a gun's, its rounds or its reload; under the Dash card's, its dashes; under the Barricade card's, the next barricade coming.
 - **Torch**: F, once the night has fallen, at 0:26 (see The night).
-- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4 (see The player).
+- **Action**: Space or Enter plays the hero's own action, once it has come at the run's level 3: the survivor's barricade, the ninja's dash, the riot officer's shield ram, the demolisher's C4, the medic's first-aid kit (see The player).
 - **Pause**: P or Esc, during the run or a level-up: the run stands still, and a menu offers to resume (P or Esc again), open the options, start a new run, go back to the title screen or quit. ↑↓ choose, Enter confirms. Beside the menu, where the screen is wide enough, the **gear**: the hero from the front, their outfit's name, their perk and their action (its level, ready or charging), then each card taken, its icon, its name and level (MAX in gold at the last), and what it brings: what it does, then what each level after the first added; a line each, without the icons, when the screen is too low for them.
 - **Options**: O or Esc on the title screen (where they hold the way to quit), or from the pause menu. ↑↓ choose, ←→ or Enter change a setting, Esc goes back.
   - **Blood**: red, ketchup, mayo, pesto or off.
@@ -118,7 +118,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, the napalm, lightning) |
 | Demolisher | 140 | −15% | sledgehammer, and the C4 as their action | **Unshakable**: 10% less damage taken, and never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
-| Medic | 90 | normal | defibrillator | **Healer**: herbs and the heal give back half again as much, campfires heal faster (as much in all), and 1 HP comes back of itself every 5 s; the defibrillator, Life drain and Regeneration heal as for anyone |
+| Medic | 90 | normal | defibrillator | **Healer**: herbs and the heal give back half again as much, campfires heal faster (as much in all); the defibrillator, Life drain and Regeneration heal as for anyone. No HP comes back of itself |
 | Infiltrator | 90 | +5% | fists | **Ghost**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the torch put out, the enemies further than 2 tiles lose them at once, then notice them within 2 tiles alone, the hordes apart; lightning shows them still, those that saw them following as ever; the Shadows hunt them only after 4 s of dark |
 | Riot officer | 110 | −10% | truncheon | **Shield**: 30% less damage from an enemy ahead, the way they face |
 | Ninja | 80 | +15% | katana | **Dodge**: a 15% chance to avoid a blow altogether (enemies, a burst), unhurt half a second after as after a hit; a dark ghost of the ninja left aside a moment shows it |
@@ -246,9 +246,13 @@ A **rare** melee weapon, unlocked by Cold blood. It grinds on and on every enemy
 
 **Levels**: 2: 2 tiles · 3: 6 damage · 4: a wider arc (150°) · 5: 8 damage.
 
+### First-aid kit
+
+The medic's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes, played with Space or Enter: **15 HP** back at once (the medic's alone: Healer not counted again), small green crosses rising; then it waits **20 s** (less with Haste), its wait under its icon. Not opened at full HP: it stays ready. Level 2: 20 HP; 3: back in 15 s; 4: 25 HP; 5: back in 12 s. Its next levels are dealt to the medic alone.
+
 ### C4
 
-The demolisher's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes ("Skill unlocked", the run standing still until Enter), played with Space or Enter. A first press sets a **charge** down at their feet: a small dark block, its red light blinking faster and faster, glowing in the dark. A second press **blows it, from afar**, wherever the player stands; left alone, it blows by itself **3 s** later. Its blast: every enemy within **2.5 tiles** takes **25 damage** and is thrown back **3 tiles**; a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. One charge at a time; the next can be set down **5 s** after the blast (less with Haste), its wait under its icon. Its next levels are dealt to the demolisher alone.
+The demolisher's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes ("Hero skill available", the run standing still until Enter), played with Space or Enter. A first press sets a **charge** down at their feet: a small dark block, its red light blinking faster and faster, glowing in the dark. A second press **blows it, from afar**, wherever the player stands; left alone, it blows by itself **3 s** later. Its blast: every enemy within **2.5 tiles** takes **25 damage** and is thrown back **3 tiles**; a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. One charge at a time; the next can be set down **5 s** after the blast (less with Haste), its wait under its icon. Its next levels are dealt to the demolisher alone.
 
 **Levels**: 2: a 3-tile blast · 3: 40 damage · 4: ready 4 s after the blast · 5: **two charges**, set down one after the other, the next press blowing both together.
 

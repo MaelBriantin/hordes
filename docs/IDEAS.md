@@ -4,6 +4,15 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 ## Characters
 
+- **v0.10 plan, decided 2026-11-23: each hero's own action**, on Space, theirs once the run reaches **level 3**, its card shown alone ("Hero skill available"), its next levels to them alone. Done: the survivor's **barricade**, the ninja's **dash**, the riot officer's **shield ram**, the demolisher's **C4**. To do, in this order, each with a gallery (icon and effect), then code and tests, a play in Rex, a commit (numbers to tune in play):
+  1. **Medic: first-aid kit** (done, dosed 2026-11-23). 15 HP back at once, the medic's own numbers (Healer not counted again); recharge 20 s. The medic lost his 1 HP every 5 s; Healer stays (herbs and the heal). Levels: 2, 20 HP; 3, recharge 15 s; 4, 25 HP; 5, recharge 12 s.
+  2. **Exterminator: wall of fire.** For 3 s, an unbroken line of fire follows the exterminator's path, each stretch burning 5 s: walls of fire drawn around a crowd or across a way. The zombies don't avoid it: they burn crossing it. Recharge 10 s. Levels: 2, walls of 7 s; 3, a 4 s trail; 4, recharge 7 s; 5, walls 2 tiles wide. The flamethrower's level-5 leak goes: +1 tile of reach instead.
+  3. **Scout (infiltrator): smoke bomb.** A cloud 3 tiles round at their feet, 4 s: inside, invisible even with the torch on, the enemies losing track of them. Recharge 15 s. Levels: 2, 5 s; 3, 4 tiles round; 4, recharge 11 s; 5, enemies in the smoke 30% slower.
+  4. **Veteran: gatling burst.** 2 s of fire straight ahead, the way they face; they may turn during the burst but move at half speed. 10 bullets a second, 8 damage each, through 1 enemy. Recharge 12 s. Levels: 2, 10 damage; 3, a 3 s burst; 4, recharge 9 s; 5, through 3 enemies.
+  5. **Special agent: vault** (a nod to RE4). Over the obstacle just ahead (tree, rock, crate), landing behind it, nothing hurting them during the 0.4 s jump; nothing ahead, a short hop of 2 tiles. Recharge 6 s. Levels: 1, an obstacle of one tile; 2, a kick on landing throws the nearby enemies back; 3, over an enemy too; 4, recharge 4 s; 5, up to 3 tiles in a row, obstacles or enemies (a small group, never a whole horde).
+- **Rewards decided 2026-11-23**: **Hold the line** unlocks, with the riot officer, the **Eye-gouger** (FR "Arracheur d'œil"), a flashball: a weapon for the crowd rather than another gun shooting ahead: a slow shot every 1.5 s, 30 damage, the enemy thrown back 3 tiles and stunned 1 s, a zombie felled bursting in a spray ("non-lethal"). **Revival** gets a new achievement, say **Close call** (FR "Sur le fil"): fall under 5 HP and hold until dawn. Untouchable and Lightning rod were removed (their rewards are heroes' own actions now).
+- **The future traveller** (FR "Voyageur du futur" or "de l'inconnu"), the last hero planned: unlocks the **energy shield** (a passive) and has a **teleporter** (portal maker) as their action. Weapon, perk and achievement to decide.
+
 - **Unlockable characters**, each with a speciality of its own: a starting weapon, different stats. A werewolf could be one of them.
 - **Characters by achievement**: a character, its own look and its own starting weapon, unlocked by an achievement fitting it. The Cleaner (every horde of a run wiped out) could bring a cleaner in overalls, starting with the flamethrower.
 - **A nod to Dungeon Crawler Carl**: a character called Carl, a look of his own that recalls the book's hero (boxers, a jacket, bare feet) in the few colours at hand; and a card to go with him, a cat thrown that whirls through the enemies, a nod to Princess Donut. A nod, not a copy: our own pixels, our own words.
@@ -52,7 +61,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 - **Herbs** to pick up on the map, as in survival horror: a green one heals a little; maybe mixed with others for more.
 - **Campfires**: standing next to one heals little by little, but staying put is dangerous with the horde around, and the fire dies out on its own after a while.
-- **Revival**: a rare bonus that brings the player back once, at 0 HP.
+- **Revival** (decided 2026-11-23, unlocked by Close call): a rare passive. At 0 HP, the hero comes back once with 25% of their HP and 2 s untouchable. Levels: 2, 35%; 3, 50%; 4, a wave throws the enemies back on coming back; 5, a second revival.
 
 ## Gold
 

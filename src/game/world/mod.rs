@@ -53,6 +53,7 @@ mod flames;
 mod goals;
 mod grenades;
 mod jabs;
+mod kits;
 mod player;
 mod punches;
 mod rams;
@@ -220,6 +221,8 @@ pub struct World {
     pub charges: Vec<Charge>,
     pub c4_blasts: Vec<c4::Blast>,
     pub c4_wait: u32,
+    /// The ticks before the first-aid kit can be opened again.
+    pub kit_wait: u32,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -469,6 +472,7 @@ impl World {
             charges: Vec::new(),
             c4_blasts: Vec::new(),
             c4_wait: 0,
+            kit_wait: 0,
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -737,6 +741,7 @@ impl World {
         self.shock_defibrillator();
         self.grind_chainsaw();
         self.set_charges();
+        self.wait_kit();
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

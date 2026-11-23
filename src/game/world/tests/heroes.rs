@@ -193,7 +193,7 @@ fn the_ninja_dodges_a_blow_now_and_then_taking_nothing() {
 }
 
 #[test]
-fn the_medic_heals_half_again_as_much_and_gets_hp_back_of_themselves() {
+fn the_medic_heals_half_again_as_much_but_gets_no_hp_back_of_themselves() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     world.play_as(Skin::Medic);
     world.next_horde = u32::MAX;
@@ -201,9 +201,40 @@ fn the_medic_heals_half_again_as_much_and_gets_hp_back_of_themselves() {
     world.map.put_feature((100, 51), Feature::Herb);
     wait(&mut world, 1);
     assert_eq!(world.player.hp, 40 + HERB_HP * 3 / 2, "a herb, half again");
+    // Their first-aid kit in its place, no HP come back of themselves.
     let hp = world.player.hp;
-    wait(&mut world, 30 * 5);
-    assert_eq!(world.player.hp, hp + 1, "a point in 5 s");
+    wait(&mut world, 30 * 10);
+    assert_eq!(world.player.hp, hp, "nothing in 10 s");
+}
+
+#[test]
+fn the_medic_s_kit_gives_hp_back_at_once_then_waits_its_recharge_and_not_at_full_hp() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    world.play_as(Skin::Medic);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    world.player.build.take(Choice::Action(Action::Kit));
+    // At full HP, nothing: the kit stays ready.
+    world.act();
+    assert_eq!(world.kit_wait, 0, "kept for when it serves");
+    world.player.hp = 20;
+    world.act();
+    assert_eq!(
+        world.player.hp,
+        20 + 15,
+        "15 HP, the Healer not counted again"
+    );
+    assert!(world.healed_at.is_some(), "its green crosses");
+    // Not again before its recharge: 20 s.
+    world.player.hp = 20;
+    world.act();
+    assert_eq!(world.player.hp, 20, "not ready");
+    wait(&mut world, 30 * 20 - 1);
+    world.act();
+    assert_eq!(world.player.hp, 20, "not quite");
+    wait(&mut world, 1);
+    world.act();
+    assert_eq!(world.player.hp, 20 + 15, "ready again");
 }
 
 #[test]
@@ -444,11 +475,12 @@ fn a_hero_with_an_action_of_their_own_is_dealt_no_other() {
 }
 
 #[test]
-fn the_survivor_the_ninja_and_the_riot_officer_each_get_their_own_action_at_level_3() {
+fn the_survivor_the_ninja_the_riot_officer_and_the_medic_each_get_their_own_action_at_level_3() {
     for (hero, action) in [
         (Skin::Survivor, Action::Barricade),
         (Skin::Ninja, Action::Dash),
         (Skin::Riot, Action::Ram),
+        (Skin::Medic, Action::Kit),
     ] {
         assert_eq!(hero.action(), Some(action));
         let mut world = World::with(1, Mode::Standard, false, Progress::everything());

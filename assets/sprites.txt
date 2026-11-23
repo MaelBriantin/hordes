@@ -736,6 +736,16 @@ aqaaaaqa
 aaaaaaaa
 ........
 
+icon_kit
+..qqqq..
+.q....q.
+rrrrrrrr
+rrrWWrrr
+rWWWWWWr
+rWWWWWWr
+rrrWWrrr
+QQQQQQQQ
+
 icon_grenade
 ....nn..
 ...n.n..

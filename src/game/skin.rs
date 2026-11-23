@@ -56,11 +56,6 @@ impl Perk {
         if self == Perk::Healer { 150 } else { 100 }
     }
 
-    /// The HP that come back of themselves, in tenths a second.
-    pub fn regeneration_tenths(self) -> u32 {
-        if self == Perk::Healer { 2 } else { 0 }
-    }
-
     /// The chance of dodging a blow, in percent.
     pub fn dodge_percent(self) -> u32 {
         if self == Perk::Dodge { 15 } else { 0 }
@@ -154,6 +149,7 @@ impl Skin {
             Skin::Ninja => Some(Action::Dash),
             Skin::Riot => Some(Action::Ram),
             Skin::Demolisher => Some(Action::C4),
+            Skin::Medic => Some(Action::Kit),
             _ => None,
         }
     }

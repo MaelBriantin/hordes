@@ -23,6 +23,7 @@ mod hammer;
 mod heal;
 mod horde;
 mod katana;
+mod kit;
 mod knife;
 mod leaderboard;
 mod level;
@@ -66,6 +67,13 @@ pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
 /// The ticks the C4 takes to come back after a blast, by its level, before Haste.
 pub fn c4_recharge(level: u8) -> u32 {
     c4::at(level).recharge
+}
+
+pub use kit::at as kit_at;
+
+/// The ticks the first-aid kit takes to come back, by its level, before Haste.
+pub fn kit_recharge(level: u8) -> u32 {
+    kit::at(level).recharge
 }
 
 /// The ticks the ram takes to come back, by its level, before Haste.
