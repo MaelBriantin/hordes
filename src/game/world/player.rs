@@ -198,7 +198,7 @@ impl World {
     }
 
     /// At the run's level 3, the hero's own action, at its first level, its card shown to the
-    /// player.
+    /// player: that level's reward, in place of its cards.
     pub(super) fn unlock_action(&mut self) {
         let build = &mut self.player.build;
         if self.player.level < ACTION_LEVEL {
@@ -208,6 +208,7 @@ impl World {
         if build.action_level(action) == 0 {
             build.take(Choice::Action(action));
             self.unlocked = Some(action);
+            self.pending_levels = self.pending_levels.saturating_sub(1);
         }
     }
 

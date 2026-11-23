@@ -745,3 +745,30 @@ fn the_agent_vaults_over_an_enemy_from_level_3_and_kicks_on_landing_from_level_2
         "kicked back"
     );
 }
+
+#[test]
+fn the_hero_s_own_action_is_level_3_s_reward_in_place_of_its_cards() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.play_as(Skin::Agent);
+    world.announcement = None;
+    world.player.level = 2;
+    world.pending_levels = 0;
+    // Level 3 reached: the action, no cards.
+    world.player.level = 3;
+    world.pending_levels = 1;
+    world.update(Input::default());
+    assert_eq!(world.unlocked, Some(Action::Vault));
+    assert!(world.offer.is_none(), "no cards for level 3");
+    // Two levels at once, 2 to 4: the action for 3, cards for 4 alone.
+    let mut world = World::with(1, Mode::Standard, false, Progress::everything());
+    world.play_as(Skin::Agent);
+    world.announcement = None;
+    world.player.level = 4;
+    world.pending_levels = 2;
+    world.update(Input::default());
+    assert_eq!(world.unlocked, Some(Action::Vault));
+    assert!(world.offer.is_some(), "cards for level 4");
+    world.seen_action();
+    world.choose(0);
+    assert!(world.offer.is_none(), "and no more");
+}

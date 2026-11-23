@@ -89,6 +89,10 @@ The game's strength: a black night, lit here and there. The rule: **a light make
 - Tried, and dropped: **glowing bullets**, a light and a halo each: the torch lights enough, and they aren't lights.
 - Tried, and dropped: **glowing ghouls**, the horde's skin lit green with a halo. Together, their halos melt into a green fog, harder to read than before.
 
+## Interface
+
+- **The HUD redone, our own pixels** (noted 2026-11-23, after v0.10's actions): stop leaning on Nerd Font glyphs; draw as many icons and pictures as we can in pixels ourselves. Make the **HP** stand out more. Each hero having their own action now, give it **a bar of its own**, out of the classic cards' row, its recharge on it. Maybe the **hero's portrait in a diamond** beside the HP bar, the special action set apart from the rest.
+
 ## Engine
 
 - **Godot, one day**: the game in Godot rather than the terminal. The rules in `src/game` stay as they are, pure Rust, as a Godot extension (godot-rust's gdext); only the screen is made again, in scenes, shaders and Godot's 2D lights, which would draw the night, the torch and the halos better. The sprites of `assets/sprites.txt` turn into PNGs with a script. Until then, no rule of the game goes into `src/ui`, so the move stays a matter of drawing.

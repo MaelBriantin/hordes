@@ -271,13 +271,14 @@ fn choosing_takes_the_choice_and_the_world_goes_on() {
 }
 
 #[test]
-fn two_levels_at_once_make_two_offers_in_a_row() {
+fn two_levels_at_once_make_level_2_s_offer_and_bring_level_3_s_action() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     world.gems.push(Gem::new(Vec2::new(100.2, 50.0), 13));
     wait(&mut world, 1);
     assert_eq!(world.player.level, 3);
-    world.choose(0);
-    assert!(world.offer.is_some());
+    assert!(world.unlocked.is_some(), "level 3: the hero's action");
+    world.seen_action();
+    assert!(world.offer.is_some(), "level 2: its cards");
     world.choose(0);
     assert_eq!(world.offer, None);
 }
