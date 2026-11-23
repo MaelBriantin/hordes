@@ -23,6 +23,7 @@ mode-arcade = ENDLESS NIGHT
 key-tab = Tab
 key-c = C
 key-h = H
+key-u = U
 key-f = F
 key-enter = Enter
 key-r = R
@@ -89,6 +90,10 @@ option-mini-bars = HP over the hero: { $value }
 mini-bars-shown = shown
 mini-bars-hidden = hidden
 option-ground = Coloured ground (experimental): { $value }
+option-updates = Check for updates: { $value }
+updates-checked = yes
+updates-unchecked = no
+update-out = Version { $version } is out: update
 ground-coloured = on
 ground-plain = off
 option-back = Back
@@ -126,7 +131,7 @@ over-score = Level { $level } · { $kills } kills
 
 level-up-title = Level { $level }
 unlocked-title = Hero skill available
-unlocked-prompt = Enter to go on
+unlocked-prompt = to go on
 action-c4-description = Demolition charge set on the ground, blown from afar.
 action-kit-description = First-aid kit, HP back at once.
 action-fire-wall-description = The tank leaks: a line of fire follows the hero and burns a while.
@@ -363,6 +368,8 @@ gain-heal = Heal { $hp } HP
 ## Score
 
 multiplier = ×{ $whole }.{ $tenth }
+hud-time = TIME: { $time }
+hud-score = SCORE:
 over-points = { $score } points
 leaderboard-title = Best scores
 name-title = New high score!

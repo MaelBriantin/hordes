@@ -6,14 +6,14 @@ use std::time::Duration;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Padding, Paragraph};
 
 use super::night;
 use super::pixels;
 use super::sprites::{SpriteId, Sprites};
 use super::text::centred;
-use super::{Blank, DARK_GREY};
+use super::{Blank, DARK_GREY, KEY_CAP};
 use crate::game::{
     Action, Choice, HEAL, Legendary, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, Passive, Rarity, Skin,
     TICKS_PER_SECOND, Weapon, World, kit_at,
@@ -107,7 +107,12 @@ pub fn render(
 /// The hero's own action, just come: a box over the run, its word on top, a line telling it is
 /// the hero's own; its icon big on the left, its name, what it is and what it does on the right;
 /// how to go on at its foot.
-pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sprites) {
+pub fn render_unlocked(
+    frame: &mut Frame,
+    map: Rect,
+    (world, sprites): (&World, &Sprites),
+    frames: u32,
+) {
     let Some(action) = world.unlocked else {
         return;
     };
@@ -126,14 +131,29 @@ pub fn render_unlocked(frame: &mut Frame, map: Rect, world: &World, sprites: &Sp
         .flex(Flex::Center)
         .areas(row);
     frame.render_widget(Blank, area);
-    let block = Block::bordered()
+    let mut block = Block::bordered()
         .padding(Padding::new(GAP, GAP, 1, 1))
         .title(
             Line::from(format!(" {} ", fl!("unlocked-title").to_uppercase()))
                 .bold()
                 .centered(),
-        )
-        .title_bottom(Line::from(format!(" {} ", fl!("unlocked-prompt"))).centered());
+        );
+    // The key to go on, as on the title screen: in capitals, the key on its cap, blinking,
+    // shown two thirds of each second.
+    if frames % PROMPT_BLINK.0 < PROMPT_BLINK.1 {
+        let bold = Style::new().add_modifier(Modifier::BOLD);
+        block = block.title_bottom(
+            Line::from(vec![
+                Span::styled(
+                    format!(" {} ", fl!("title-start-before").to_uppercase()),
+                    bold,
+                ),
+                Span::styled(format!(" {} ", fl!("key-space").to_uppercase()), KEY_CAP),
+                Span::styled(format!(" {} ", fl!("unlocked-prompt").to_uppercase()), bold),
+            ])
+            .centered(),
+        );
+    }
     let inside = block.inner(area);
     frame.render_widget(block, area);
     let [icon_area, _, text_area] = Layout::horizontal([
@@ -193,6 +213,8 @@ struct Card {
 
 /// How wide the box telling an action just come is; the room its icon takes, twice as big.
 const UNLOCKED_WIDTH: u16 = 64;
+/// The prompt to go on blinks: every so many frames, shown for so many.
+const PROMPT_BLINK: (u32, u32) = (30, 20);
 const UNLOCKED_ICON: (u16, u16) = (16, 8);
 
 /// How far a card has turned over, from 0 (face down) to 1 (face up), `started` after it began.

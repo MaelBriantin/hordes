@@ -9,7 +9,6 @@ mod debug;
 mod equipment;
 mod font;
 mod horde;
-mod icons;
 mod level_up;
 mod menu;
 mod night;
@@ -28,7 +27,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Widget};
 
 use crate::game::{Achievement, Leaderboard, Progress, Vec2, World, xp_to_next};
-use crate::game::{Mode, Weather, WeatherNews};
+use crate::game::{DAWN_SECONDS, Mode, Weather, WeatherNews};
 pub use achievement::TOAST_FRAMES;
 pub use debug::DebugAction;
 pub use menu::{OptionItem, PauseItem};
@@ -72,38 +71,23 @@ pub enum Screen {
 }
 /// How bright a bar's empty part is, against its full part.
 const BAR_EMPTY: f32 = 0.22;
-/// Every weather, in their order, for the row of their icons.
-const WEATHERS: [Weather; 6] = [
-    Weather::Dusk,
-    Weather::Clear,
-    Weather::Drizzle,
-    Weather::Rain,
-    Weather::Storm,
-    Weather::Tempest,
-];
-/// The icons of the row: those gone, put out, in grey; those to come, and the next one by the
-/// end of the weather now, at a share of their colour.
-const WEATHER_GONE: Color = Color::Rgb(50, 50, 58);
-const WEATHER_AHEAD: f32 = 0.18;
-const WEATHER_NEXT: f32 = 0.8;
-/// The dawn's icon, at the end of the row: the rising sun's gold.
+/// The dawn's colour, the weather gauge's last: the rising sun's gold.
 const DAWN_COLOR: Color = Color::Rgb(255, 210, 90);
 /// Below this share of their HP, the player's HP bar blinks, and their heart beats.
 const LOW_HP_PERCENT: u32 = 30;
 /// The frames the low HP bar stays lit, then dimmed, as it blinks.
 const LOW_HP_BLINK: u32 = 8;
-/// The width of the HP bar's inside, in cells.
-const BAR_CELLS: usize = 12;
+/// The HP bar's and the weather gauge's insides at least, in cells.
+const BAR_CELLS: usize = 16;
 /// The HP bar's red, the herbs': and dimmed, as it blinks.
 const HP_COLOR: Color = Color::Rgb(220, 45, 65);
 const HP_DIMMED: Color = Color::Rgb(90, 20, 28);
 const XP_COLOR: Color = Color::Rgb(115, 138, 178);
 const SCORE_COLOR: Color = Color::Rgb(240, 200, 60);
+/// The time's badge, white.
+const TIME_COLOR: Color = Color::Rgb(235, 235, 238);
 /// The text on the score's gold badge.
 const BADGE_TEXT: Color = Color::Rgb(30, 22, 8);
-/// The torch's bulb, on and out.
-const TORCH_COLOR: Color = Color::Rgb(80, 215, 110);
-const TORCH_OUT_COLOR: Color = Color::Rgb(120, 140, 170);
 /// How long the edges of the map flush red after a blow, in ticks; how deep, in cells; how red
 /// at most, and in which red.
 const HURT_TICKS: u32 = 15;
@@ -200,6 +184,9 @@ pub struct ViewState {
     pub mini_bars: bool,
     /// Whether the ground is coloured: grass speckled with earth, rather than the screen's dark.
     pub ground: bool,
+    /// Whether the game asks for a newer version as it starts; the newer version out, if told.
+    pub updates: bool,
+    pub update: Option<(u64, u64, u64)>,
     /// How the hero looks; in which colours each hero shows among the heroes, by their place,
     /// unlocked or not; and the colours the hero worn wears in a run, theirs unlocked.
     pub skin: Skin,
@@ -350,7 +337,7 @@ pub fn render(
         announce::render(frame, map, world, sprites);
         // The hero's action just come shows alone; the cards of the level-up after it.
         if world.unlocked.is_some() {
-            level_up::render_unlocked(frame, map, world, sprites);
+            level_up::render_unlocked(frame, map, (world, sprites), view.frame);
         } else {
             level_up::render(frame, map, world, sprites, view.selected, view.shown);
         }
@@ -502,8 +489,9 @@ fn redden(color: Color, red: (u8, u8, u8), by: f32) -> Color {
     }
 }
 
-/// The status line, in two parts: on the left, what keeps the player alive (their HP and the
-/// weather); on the right, how the run goes (the time and the score).
+/// The status line, in three parts: on the left, the player's HP; in the middle, how the run
+/// goes (the time and, in arcade, the score); on the right, the weather. The two bars as wide
+/// as each other, as the screen leaves them.
 fn render_status(
     frame: &mut Frame,
     area: Rect,
@@ -511,13 +499,24 @@ fn render_status(
     leaderboard: &Leaderboard,
     frames: u32,
 ) {
-    frame.render_widget(survival(world, frames), area);
-    frame.render_widget(run(world, leaderboard, frames).right_aligned(), area);
+    let cells = status_cells(area.width);
+    let mut hp = vec![Span::raw(" ")];
+    hp.extend(hp_gauge(world, frames, cells).spans);
+    frame.render_widget(Line::from(hp), area);
+    frame.render_widget(run(world, leaderboard, frames).centered(), area);
+    let mut weather = weather_gauge(world, cells);
+    weather.push(Span::raw(" "));
+    frame.render_widget(Line::from(weather).right_aligned(), area);
 }
 
-/// The player's HP and the weather, as gauges.
-fn survival(world: &World, frames: u32) -> Line<'static> {
-    let bold = Style::new().add_modifier(Modifier::BOLD);
+/// How wide the HP bar and the weather's gauge are inside their ends, both alike, in cells, on
+/// a screen `width` wide: a quarter of it, never under what the weather's name needs.
+fn status_cells(width: u16) -> usize {
+    (usize::from(width) / 4).max(BAR_CELLS)
+}
+
+/// The player's HP in their red bar, `cells` wide, their number in it, blinking dim when low.
+fn hp_gauge(world: &World, frames: u32, cells: usize) -> Line<'static> {
     let player = &world.player;
     let (hp, max_hp) = (player.hp, player.max_hp());
     let low = hp * 100 < max_hp * LOW_HP_PERCENT;
@@ -526,28 +525,60 @@ fn survival(world: &World, frames: u32) -> Line<'static> {
     } else {
         HP_COLOR
     };
-    let weather = world.weather();
-    let mut spans = vec![Span::styled(format!(" {} ", icons::HP), bold.fg(HP_COLOR))];
-    // The HP in the middle of their bar.
-    let mut hp_bar = embossed(&bar(hp, max_hp), hp_color);
+    let mut hp_bar = embossed(&bar_of(hp, max_hp, cells), hp_color);
     labelled(&mut hp_bar, &hp.to_string(), hp_color);
-    spans.extend(hp_bar);
-    spans.push(Span::raw("   "));
-    // The torch, on or out, from the start (out at dusk, the torch lighting up of itself as the
-    // night falls): green while it is on, grey-blue while it is out.
-    let (icon, colour) = if world.torch_on().unwrap_or(false) {
-        (icons::TORCH_ON, TORCH_COLOR)
-    } else {
-        (icons::TORCH_OFF, TORCH_OUT_COLOR)
-    };
-    spans.push(Span::styled(icon.to_string(), bold.fg(colour)));
-    spans.push(Span::raw("   "));
-    spans.extend(weather_track(world));
-    spans.push(Span::styled(
-        format!(" {}", weather_name(weather)),
-        weather_style(weather),
-    ));
-    Line::from(spans)
+    Line::from(hp_bar)
+}
+
+/// The weather now as a gauge, `cells` wide: its name in capitals in the middle, the bar
+/// filling as its stage goes, each cell's colour on the way from the weather's to the next
+/// one's (the dawn's last), to start again empty in the next one's colour.
+fn weather_gauge(world: &World, cells: usize) -> Vec<Span<'static>> {
+    let now = world.weather();
+    let colour = weather_colour(now);
+    let next = world.next_weather().map_or(DAWN_COLOR, weather_colour);
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss,
+        reason = "a few cells"
+    )]
+    let filled = ((world.weather_progress() * cells as f32) as usize).min(cells);
+    let mut spans = vec![Span::styled("▕", colour)];
+    for cell in 0..cells {
+        let share = f32::from(u16::try_from(cell).unwrap_or(0))
+            / f32::from(u16::try_from(cells.saturating_sub(1).max(1)).unwrap_or(1));
+        let cell_colour = blend(colour, next, share);
+        spans.push(if cell < filled {
+            Span::styled("▄", Style::new().fg(cell_colour).bg(lighter(cell_colour)))
+        } else {
+            Span::styled(" ", Style::new().bg(faded(cell_colour, BAR_EMPTY)))
+        });
+    }
+    spans.push(Span::styled("▏", next));
+    let mut inner = spans[1..=cells].to_vec();
+    labelled(&mut inner, &weather_name(now).to_uppercase(), colour);
+    spans.splice(1..=cells, inner);
+    spans
+}
+
+/// The colour `share` of the way from `from` to `to`.
+fn blend(from: Color, to: Color, share: f32) -> Color {
+    match (from, to) {
+        (Color::Rgb(r1, g1, b1), Color::Rgb(r2, g2, b2)) => {
+            let mix = |a: u8, b: u8| {
+                #[allow(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "a channel, 0 to 255"
+                )]
+                let mixed = (f32::from(a) + (f32::from(b) - f32::from(a)) * share).round() as u8;
+                mixed
+            };
+            Color::Rgb(mix(r1, r2), mix(g1, g2), mix(b1, b2))
+        }
+        (other, _) => other,
+    }
 }
 
 /// The player's level and their XP, in a bar as wide as `width` leaves.
@@ -571,20 +602,27 @@ fn experience(world: &World, width: u16) -> Line<'static> {
 /// ahead of the best run kept, as a new high score does.
 fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
-    let mut spans = vec![
-        Span::styled(format!("{} ", icons::TIME), bold),
-        Span::styled(clock(world.seconds()), bold),
-    ];
+    // The time as a badge, dark on white, as the score's on gold: in a standard run, the time
+    // left to the dawn, counting down; in arcade, endless, the time survived.
+    let seconds = if world.mode == Mode::Standard {
+        DAWN_SECONDS.saturating_sub(world.seconds())
+    } else {
+        world.played_seconds()
+    };
+    let time = fl!("hud-time", time = clock(seconds));
+    let mut spans = vec![Span::styled(
+        format!(" {time} "),
+        bold.fg(BADGE_TEXT).bg(TIME_COLOR),
+    )];
     // A standard run keeps no score: the time alone.
     if world.mode == Mode::Standard {
-        spans.push(Span::raw(" "));
         return Line::from(spans);
     }
     // The score as a badge, dark on gold, its thousands apart: seen at a glance. Ahead of the best
     // run kept, it gleams instead, as a new high score does.
     let badge = bold.fg(BADGE_TEXT).bg(SCORE_COLOR);
     spans.push(Span::raw("   "));
-    spans.push(Span::styled(format!(" {} ", icons::SCORE), badge));
+    spans.push(Span::styled(format!(" {} ", fl!("hud-score")), badge));
     let score = thousands(world.score);
     let best = leaderboard.entries().first().map(|entry| entry.score);
     if best.is_some_and(|best| world.score > best) {
@@ -602,13 +640,8 @@ fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
     Line::from(spans)
 }
 
-/// A share of a whole as a bar: `▕████░░░░░░░░▏`. Rounded down, so it only shows full when it
-/// is.
-fn bar(part: u32, whole: u32) -> String {
-    bar_of(part, whole, BAR_CELLS)
-}
-
-/// The same bar, `cells` wide inside its ends.
+/// A share of a whole as a bar, `cells` wide inside its ends: `▕████░░░░░░░░▏`. Rounded down,
+/// so it only shows full when it is.
 fn bar_of(part: u32, whole: u32, cells: usize) -> String {
     let cells_u64 = u64::try_from(cells).unwrap_or(0);
     let filled = (u64::from(part) * cells_u64 / u64::from(whole.max(1))).min(cells_u64);
@@ -627,13 +660,6 @@ pub fn weather_name(weather: Weather) -> String {
     }
 }
 
-/// The weather's colour, bold.
-fn weather_style(weather: Weather) -> Style {
-    Style::new()
-        .fg(weather_colour(weather))
-        .add_modifier(Modifier::BOLD)
-}
-
 /// The weather's colour: orange at dusk, grey for a clear night, darkening through blues to red.
 pub fn weather_colour(weather: Weather) -> Color {
     match weather {
@@ -644,59 +670,6 @@ pub fn weather_colour(weather: Weather) -> Color {
         Weather::Storm => Color::Rgb(170, 90, 230),
         Weather::Tempest => Color::Rgb(230, 50, 50),
     }
-}
-
-/// Every weather's icon in a row, from the dusk to the tempest: the weather now in its colour,
-/// those gone dimmed, those to come barely there, but the next one, coming out of the dark as
-/// the run goes `progress` through the weather now.
-fn weather_track(world: &World) -> Vec<Span<'static>> {
-    let (now, next, progress) = (
-        world.weather(),
-        world.next_weather(),
-        world.weather_progress(),
-    );
-    let mut spans = Vec::new();
-    for weather in WEATHERS {
-        let colour = weather_colour(weather);
-        let shown = if weather == now {
-            colour
-        } else if Some(weather) == next {
-            faded(
-                colour,
-                WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress,
-            )
-        } else if weather < now && world.mode == Mode::Standard {
-            // Gone for good in a standard run; in arcade, every weather comes back.
-            WEATHER_GONE
-        } else {
-            faded(colour, WEATHER_AHEAD)
-        };
-        let style = Style::new().fg(shown);
-        let style = if weather == now {
-            style.add_modifier(Modifier::BOLD)
-        } else {
-            style
-        };
-        if !spans.is_empty() {
-            spans.push(Span::raw(" "));
-        }
-        spans.push(Span::styled(icons::weather(weather), style));
-    }
-    // The dawn last, coming out of the dark through the tempest: none in arcade.
-    if world.mode == Mode::Arcade {
-        return spans;
-    }
-    let dawn = if now == Weather::Tempest {
-        WEATHER_AHEAD + (WEATHER_NEXT - WEATHER_AHEAD) * progress
-    } else {
-        WEATHER_AHEAD
-    };
-    spans.push(Span::raw(" "));
-    spans.push(Span::styled(
-        icons::DAWN,
-        Style::new().fg(faded(DAWN_COLOR, dawn)),
-    ));
-    spans
 }
 
 /// A colour at a share of its brightness, towards the screen's dark ground.
@@ -727,11 +700,11 @@ fn embossed(bar: &str, color: Color) -> Vec<Span<'static>> {
         .collect()
 }
 
-/// A number in the middle of a bar, in white on whatever part of the bar is there, a space each
+/// Words in the middle of a bar, in white on whatever part of the bar is there, a space each
 /// side.
 fn labelled(bar: &mut [Span<'static>], text: &str, color: Color) {
     let label = format!(" {text} ");
-    let start = bar.len().saturating_sub(label.len()) / 2;
+    let start = bar.len().saturating_sub(label.chars().count()) / 2;
     for (offset, digit) in label.chars().enumerate() {
         if let Some(cell) = bar.get_mut(start + offset) {
             let ground = cell.style.bg.unwrap_or(color);
@@ -816,9 +789,28 @@ mod tests {
 
     #[test]
     fn a_bar_fills_with_its_share() {
-        assert_eq!(bar(0, 10), "▕░░░░░░░░░░░░▏");
-        assert_eq!(bar(5, 10), "▕██████░░░░░░▏");
-        assert_eq!(bar(10, 10), "▕████████████▏");
-        assert_eq!(bar(99, 100), "▕███████████░▏");
+        assert_eq!(bar_of(0, 10, 12), "▕░░░░░░░░░░░░▏");
+        assert_eq!(bar_of(5, 10, 12), "▕██████░░░░░░▏");
+        assert_eq!(bar_of(10, 10, 12), "▕████████████▏");
+        assert_eq!(bar_of(99, 100, 12), "▕███████████░▏");
+    }
+
+    #[test]
+    fn the_status_bars_widen_with_the_screen_never_under_their_least() {
+        assert_eq!(status_cells(40), BAR_CELLS);
+        assert_eq!(status_cells(200), 50);
+    }
+
+    #[test]
+    fn a_standard_run_counts_down_to_the_dawn_an_arcade_one_up() {
+        let mut world = World::new(1);
+        let leaderboard = Leaderboard::default();
+        let words = |world: &World| run(world, &leaderboard, 0).to_string();
+        assert!(words(&world).contains("10:30"), "{}", words(&world));
+        world.debug_dawn();
+        assert!(words(&world).contains("00:10"), "{}", words(&world));
+        // The dusk skipped, as an arcade run does: not counted.
+        let arcade = World::with(1, Mode::Arcade, true, Progress::default());
+        assert!(words(&arcade).contains("00:00"), "{}", words(&arcade));
     }
 }

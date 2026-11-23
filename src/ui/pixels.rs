@@ -548,7 +548,7 @@ pub fn render_map(
         canvas.paint_at(Look::plain(SpriteId::Drone), drone);
     }
     canvas.paint_gatling(world, frame);
-    canvas.paint_flashball(world);
+    canvas.paint_flashball(world, blood);
     canvas.paint_revival(world, view.outfit());
     // The scout's smoke over what stands in it.
     canvas.paint_smoke(world, view.outfit(), frame);

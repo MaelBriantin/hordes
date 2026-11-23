@@ -52,6 +52,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 - **Evolutions**: a weapon at level 5 may later be offered a legendary card that transforms it. Drones → Swarm: the drones fire bullets in a spiral around the player. Shotgun → Dragon's breath: the pellets set the enemies they hit on fire (needs fire). Pistol → Akimbo: two pistols, two targets a shot, twice the rounds. Machine gun → Gatling: twice the rate, a 60-round magazine. Machete → Whirlwind: the swing turns all the way round the player.
 - **Rare upgrades of common passives**: a rare Vitality that regenerates HP over time, and so on.
+- **Upgrades of a rarity, as Megabonk's** (noted 2026-11-23, after v0.10's balance): each level of a weapon or a passive dealt with a rarity of its own, common, rare or epic, its card framed in its colour (the gear's rarity frames already show it): a stronger step the rarer (say +8%, +15%, +25% damage), or a modifier on top (a pierce, one more projectile). Goes with the rare passives above and the evolutions: one legendary a run stays apart from it.
 
 - **Rarity**: some cards rarer than others (common, rare…), shown on the card, so that the best bonuses are a lucky find.
 - **Drones that shoot**: the drones as they are do next to nothing, and nobody takes them: a blow now and then, then broken for 2 s. They should shoot around the player, each at the enemies near its side of the circle (the Swarm's spiral of bullets, from the first level?), or go until they do.

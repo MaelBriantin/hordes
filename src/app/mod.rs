@@ -6,11 +6,13 @@ mod keys;
 mod progress;
 mod scores;
 mod settings;
+mod updates;
 
 pub use settings::data_folder;
 
 use std::collections::VecDeque;
 use std::io;
+use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
 use ratatui::DefaultTerminal;
@@ -87,18 +89,46 @@ pub struct App {
     pinged_at: Option<u32>,
     keys: Keys,
     should_quit: bool,
+    /// The question of a newer version, while its answer hasn't come; that newer version, once
+    /// told; whether the player asked for it, the game quitting to install it.
+    update_asked: Option<Receiver<Option<updates::Version>>>,
+    update: Option<updates::Version>,
+    wants_update: bool,
 }
 
 impl App {
     /// A new run on a map drawn at random.
     pub fn new(sprites: Sprites) -> Self {
         let kept = progress::kept();
-        Self::with(
+        let mut app = Self::with(
             sprites,
             Settings::load(),
             scores::load(),
             (progress::load(), kept),
-        )
+        );
+        // A newer version asked for, out of the way, unless the player would rather not.
+        if app.settings.updates {
+            app.update_asked = Some(updates::ask());
+        }
+        app
+    }
+
+    /// The answer to the question of a newer version, once come: the newer version, if any.
+    fn hear_update(&mut self) {
+        if let Some(answer) = self
+            .update_asked
+            .as_ref()
+            .and_then(|asked| asked.try_recv().ok())
+        {
+            self.update = answer;
+            self.update_asked = None;
+        }
+    }
+
+    /// Whether the player asked, on the title screen, for the newer version: the game is to
+    /// install it once quit.
+    pub fn wants_update(&self) -> bool {
+        self.wants_update
     }
 
     /// A new run on a map drawn at random, with these settings, leaderboard and progress, and
@@ -140,6 +170,9 @@ impl App {
             pinged_at: None,
             keys: Keys::new(false),
             should_quit: false,
+            update_asked: None,
+            update: None,
+            wants_update: false,
         }
     }
 
@@ -166,6 +199,7 @@ impl App {
         let tick = Duration::from_secs(1) / u32::from(TICKS_PER_SECOND);
         let mut next_tick = Instant::now() + tick;
         while !self.should_quit {
+            self.hear_update();
             self.world.set_view(ui::view(terminal.size()?.into()));
             self.collection_row = ui::collection_row(terminal.size()?.into());
             self.collection_shows = ui::collection_shows(terminal.size()?.into());
@@ -204,6 +238,8 @@ impl App {
                 gear_list: self.settings.gear_list,
                 mini_bars: self.settings.mini_bars,
                 ground: self.settings.ground,
+                updates: self.settings.updates,
+                update: self.update,
                 weather_news: self.settings.weather_news,
                 language: self.settings.language.name(),
                 highlight: self.highlight,
@@ -339,6 +375,11 @@ impl App {
                 self.keep_settings();
             }
             // The options, where the game is quit too.
+            // A newer version out: quit, to install it.
+            KeyCode::Char('u' | 'U') if self.update.is_some() => {
+                self.wants_update = true;
+                self.should_quit = true;
+            }
             KeyCode::Char('o' | 'O') | KeyCode::Esc => {
                 self.screen = Screen::Options {
                     selected: 0,
@@ -578,6 +619,10 @@ impl App {
                 self.settings.ground = !self.settings.ground;
                 self.keep_settings();
             }
+            OptionItem::Updates => {
+                self.settings.updates = !self.settings.updates;
+                self.keep_settings();
+            }
             OptionItem::MiniBars => {
                 self.settings.mini_bars = !self.settings.mini_bars;
                 self.keep_settings();
@@ -731,7 +776,7 @@ impl App {
                 let entry = Entry {
                     name: String::from_utf8_lossy(&letters).into_owned(),
                     score: self.world.score,
-                    seconds: self.world.seconds(),
+                    seconds: self.world.played_seconds(),
                     level: self.world.player.level,
                 };
                 self.highlight = self.leaderboard.insert(entry);
@@ -890,5 +935,18 @@ mod tests {
         app.on_title(KeyCode::Char('h'));
         assert!(!app.browsing);
         assert_eq!(app.skin_picked, Some(0));
+    }
+
+    #[test]
+    fn u_on_the_title_screen_quits_to_update_only_once_a_newer_version_is_told() {
+        let mut app = on_the_title();
+        app.on_title(KeyCode::Char('u'));
+        assert!(
+            !app.wants_update() && !app.should_quit,
+            "no newer version: nothing"
+        );
+        app.update = Some((99, 0, 0));
+        app.on_title(KeyCode::Char('u'));
+        assert!(app.wants_update() && app.should_quit);
     }
 }

@@ -15,13 +15,14 @@ use crate::game::{Action, Choice, Facing, MAX_LEVEL, Skin, World};
 /// it doesn't show.
 pub const WIDTH: u16 = 74;
 pub const MIN_WIDTH: u16 = 48;
-/// A card's icon in its frame, two pixels more each way: a cell across, a row up and down; the
+/// A card's icon in its frame, two pixels more each way, and a pixel more each way again: the
+/// icon starting on an odd pixel row, as in the gear in play, its level on the same rows. The
 /// hero's picture, twice as big, in as much room. And the room between a picture and its words.
-const CARD_PICTURE: (u16, u16) = (12, 6);
+const CARD_PICTURE: (u16, u16) = (12, 7);
 /// Where a card's level ends in its picture, in cells: at the icon's last column, on the row of
-/// its last two pixel rows, inside the frame.
+/// its last pixel row and the room under it, inside the frame: as in the gear in play.
 const LEVEL_RIGHT: u16 = 10;
-const LEVEL_ROW: u16 = 4;
+const LEVEL_ROW: u16 = 5;
 const GAP: u16 = 2;
 /// The most lines of what a card brings shown.
 const TEXT_LINES: usize = 5;
@@ -40,7 +41,7 @@ const RULE: Color = Color::Rgb(70, 72, 82);
 /// action, the other weapons, the passives, the legendaries.
 pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, view: ViewState) {
     let groups = world.player.build.groups();
-    // Between two groups, a rule and a row of room: two rows, the rule alone without icons.
+    // Between two groups, a rule: a row.
     let gaps = u16::try_from(groups.len().saturating_sub(1)).unwrap_or(0);
     let inner = area.width.saturating_sub(ROOM.0);
     // The cards with their icons, in a column, else in two; a line each, without, for want of
@@ -51,14 +52,15 @@ pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, v
             .iter()
             .map(|(_, cards)| row_heights(world, cards, columns, width))
             .collect();
-        let rows: u16 = heights.iter().flatten().map(|height| height + 1).sum();
-        let wanted = ROOM.1 + CARD_PICTURE.1 + 2 * gaps + rows;
+        // The pictures' empty pixel rows, top and bottom, keep the rows apart: no row between.
+        let rows: u16 = heights.iter().flatten().sum();
+        let wanted = ROOM.1 + CARD_PICTURE.1 + gaps + rows;
         (wanted <= area.height).then_some((columns, width, heights, wanted))
     });
     let count = u16::try_from(world.player.build.picked().len()).unwrap_or(0);
     let wanted = laid
         .as_ref()
-        .map_or(ROOM.1 + CARD_PICTURE.1 + 1 + gaps + count, |laid| laid.3);
+        .map_or(ROOM.1 + CARD_PICTURE.1 + gaps + count, |laid| laid.3);
     let box_area = Rect {
         y: area.y + area.height.saturating_sub(wanted.min(area.height)) / 2,
         height: wanted.min(area.height),
@@ -72,7 +74,7 @@ pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, v
     frame.render_widget(block, box_area);
     hero(frame, inside, inside.y, world, sprites, view);
     let bottom = inside.y + inside.height;
-    let mut y = inside.y + CARD_PICTURE.1 + 1;
+    let mut y = inside.y + CARD_PICTURE.1;
     let rule = |frame: &mut Frame, y: u16| {
         frame.render_widget(
             Line::styled("─".repeat(usize::from(inside.width)), Style::new().fg(RULE)),
@@ -96,10 +98,10 @@ pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, v
         return;
     };
     for (index, ((_, cards), heights)) in groups.iter().zip(&heights).enumerate() {
-        // The groups apart: a rule, a row of room under it.
+        // The groups apart: a rule.
         if index > 0 {
             rule(frame, y);
-            y += 2;
+            y += 1;
         }
         for (row, height) in heights.iter().enumerate() {
             for (column, &choice) in (0_u16..).zip(
@@ -111,7 +113,7 @@ pub fn render(frame: &mut Frame, area: Rect, world: &World, sprites: &Sprites, v
                 let room = Rect::new(inside.x + column * (width + GAP), y, width, *height);
                 card(frame, room, world, sprites, choice);
             }
-            y += height + 1;
+            y += height;
         }
     }
 }

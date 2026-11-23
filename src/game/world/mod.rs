@@ -247,6 +247,8 @@ pub struct World {
     pub cases: Vec<Case>,
     /// The ticks before the vault can be made again.
     pub vault_wait: u32,
+    /// The tick the run started at: past the dusk, when skipped.
+    started_at: u32,
     /// The enemies felled by the flashball, bursting.
     pub flash_bursts: Vec<Burst>,
     /// How many times Revival has brought the player back this run; the ticks since the last,
@@ -451,6 +453,7 @@ impl World {
         // A run opens on the dusk, told; or on the night, the dusk skipped.
         let opening = if skip_dusk {
             world.ticks = weather::DUSK_SECONDS * u32::from(TICKS_PER_SECOND);
+            world.started_at = world.ticks;
             Weather::Clear
         } else {
             Weather::Dusk
@@ -514,6 +517,7 @@ impl World {
             gatling_wait: 0,
             cases: Vec::new(),
             vault_wait: 0,
+            started_at: 0,
             flash_bursts: Vec::new(),
             revivals: 0,
             revived: None,
@@ -633,6 +637,11 @@ impl World {
     /// The whole seconds the run has lasted.
     pub fn seconds(&self) -> u32 {
         self.ticks / u32::from(TICKS_PER_SECOND)
+    }
+
+    /// The seconds the player has played: from the run's start, the dusk skipped not counted.
+    pub fn played_seconds(&self) -> u32 {
+        self.ticks.saturating_sub(self.started_at) / u32::from(TICKS_PER_SECOND)
     }
 
     /// The weather now: it worsens as the run goes on.

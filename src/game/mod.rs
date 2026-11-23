@@ -115,7 +115,7 @@ pub fn ram_recharge(level: u8) -> u32 {
 pub use skin::{Perk, Skin};
 pub use stain::{Stain, lasts as stain_lasts};
 pub use vec2::Vec2;
-pub use weather::{STRIKE_RADIUS, STRIKE_WARNING_TICKS, Weather};
+pub use weather::{DAWN_SECONDS, STRIKE_RADIUS, STRIKE_WARNING_TICKS, Weather};
 pub use world::{Input, Lightning, TORCH_FADE, Veil, World};
 
 /// How many ticks the world moves on per second.

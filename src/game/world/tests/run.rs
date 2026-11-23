@@ -605,3 +605,12 @@ fn the_debug_console_gives_a_card_s_next_level_within_the_room_the_action_and_1_
     world.debug_one_hp();
     assert_eq!(world.player.hp, 1);
 }
+
+#[test]
+fn the_time_played_starts_at_0_the_dusk_skipped_not_counted() {
+    let world = World::with(1, Mode::Arcade, true, Progress::default());
+    assert_eq!(world.seconds(), 30, "the night already");
+    assert_eq!(world.played_seconds(), 0, "but nothing played yet");
+    let world = World::with(1, Mode::Standard, false, Progress::default());
+    assert_eq!(world.played_seconds(), 0);
+}

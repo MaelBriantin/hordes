@@ -23,6 +23,7 @@ mode-arcade = ENDLESS NIGHT
 key-tab = Tab
 key-c = C
 key-h = H
+key-u = U
 key-f = F
 key-enter = Entrée
 key-r = R
@@ -89,6 +90,10 @@ option-mini-bars = Vie sur le héros : { $value }
 mini-bars-shown = affichée
 mini-bars-hidden = masquée
 option-ground = Sol coloré (expérimental) : { $value }
+option-updates = Vérifier les mises à jour : { $value }
+updates-checked = oui
+updates-unchecked = non
+update-out = Version { $version } disponible : mettre à jour
 ground-coloured = oui
 ground-plain = non
 option-back = Retour
@@ -126,7 +131,7 @@ over-score = Niveau { $level } · { $kills } tués
 
 level-up-title = Niveau { $level }
 unlocked-title = Compétence de héros disponible
-unlocked-prompt = Entrée pour continuer
+unlocked-prompt = pour continuer
 action-c4-description = Charge de démolition posée au sol, mise à feu à distance.
 action-kit-description = Trousse de secours, rend des PV d'un coup.
 action-fire-wall-description = Le réservoir fuit : une ligne de feu suit le héros et brûle un moment.
@@ -363,6 +368,8 @@ gain-heal = Soigne { $hp } PV
 ## Score
 
 multiplier = ×{ $whole },{ $tenth }
+hud-time = TEMPS : { $time }
+hud-score = SCORE :
 over-points = { $score } points
 leaderboard-title = Meilleurs scores
 name-title = Nouveau record !

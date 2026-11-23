@@ -3,6 +3,7 @@
 
 use ratatui::style::Color;
 
+use super::super::night::BloodLook;
 use super::{Canvas, pixel};
 use crate::game::{FLASH_BURST_TICKS, FlashBurst, TICKS_PER_SECOND, Vec2, World};
 
@@ -12,9 +13,8 @@ pub(super) const BALL_TRAIL: Color = Color::Rgb(120, 120, 130);
 /// The stars over a dazed enemy; how fast they turn, in radians a tick.
 const STAR: Color = Color::Rgb(255, 225, 100);
 const STAR_TURN: f32 = 0.27;
-/// A burst: blood, darker blood, chunks; the white flash it starts with, in ticks.
-const BLOOD: Color = Color::Rgb(190, 30, 30);
-const DARK_BLOOD: Color = Color::Rgb(120, 15, 20);
+/// A burst: its chunks (its blood as the settings have it); the white flash it starts with, in
+/// ticks.
 const CHUNK: Color = Color::Rgb(110, 170, 90);
 const FLASH: Color = Color::Rgb(255, 250, 225);
 const FLASH_TICKS: u32 = 2;
@@ -24,7 +24,7 @@ const FLY_TICKS: u32 = 10;
 
 impl Canvas<'_> {
     /// The flashball's marks: stars over the dazed, the felled bursting.
-    pub(super) fn paint_flashball(&mut self, world: &World) {
+    pub(super) fn paint_flashball(&mut self, world: &World, blood: BloodLook) {
         let ticks = world.ticks();
         for enemy in world.enemies.iter().filter(|enemy| enemy.dazed > 0) {
             let (x, y) = pixel(enemy.position);
@@ -40,13 +40,14 @@ impl Canvas<'_> {
             }
         }
         for burst in &world.flash_bursts {
-            self.paint_burst(burst);
+            self.paint_burst(burst, blood);
         }
     }
 
     /// An enemy felled by the flashball: a white flash, then drops of blood and chunks thrown
-    /// out the way the shot went, fanned out, falling to the ground.
-    fn paint_burst(&mut self, burst: &FlashBurst) {
+    /// out the way the shot went, fanned out, falling to the ground; the blood as the settings
+    /// have it, none without it, the flash alone then.
+    fn paint_burst(&mut self, burst: &FlashBurst, blood: BloodLook) {
         if burst.age >= FLASH_BURST_TICKS {
             return;
         }
@@ -54,6 +55,9 @@ impl Canvas<'_> {
         if burst.age < FLASH_TICKS {
             self.set((x, y), FLASH);
         }
+        let Some([dark, light]) = blood.colours() else {
+            return;
+        };
         let second = f32::from(TICKS_PER_SECOND);
         let age = f32::from(u16::try_from(burst.age).unwrap_or(0)) / second;
         let flown = f32::from(u16::try_from(burst.age.min(FLY_TICKS)).unwrap_or(0)) / second;
@@ -70,9 +74,9 @@ impl Canvas<'_> {
             let colour = if drop % 4 == 0 {
                 CHUNK
             } else if drop % 3 == 0 {
-                DARK_BLOOD
+                dark
             } else {
-                BLOOD
+                light
             };
             self.set((x + dx, y + dy.min(3)), colour);
         }

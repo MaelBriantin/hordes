@@ -86,6 +86,8 @@ pub struct Settings {
     pub ground: bool,
     /// How a new weather is told.
     pub weather_news: WeatherNews,
+    /// Whether the game asks for a newer version of itself as it starts.
+    pub updates: bool,
 }
 
 impl Default for Settings {
@@ -103,6 +105,7 @@ impl Default for Settings {
             mini_bars: false,
             ground: false,
             weather_news: WeatherNews::Big,
+            updates: true,
         }
     }
 }
@@ -165,6 +168,8 @@ impl Settings {
                 ("gear_layout", "list") => settings.gear_list = true,
                 ("mini_bars", "shown") => settings.mini_bars = true,
                 ("mini_bars", "hidden") => settings.mini_bars = false,
+                ("updates", "checked") => settings.updates = true,
+                ("updates", "unchecked") => settings.updates = false,
                 ("ground", "coloured") => settings.ground = true,
                 ("ground", "plain") => settings.ground = false,
                 ("announcements", "paused") => settings.weather_news = WeatherNews::Paused,
@@ -182,7 +187,7 @@ impl Settings {
 
     fn text(self) -> String {
         format!(
-            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\ncolours = {}\nmode = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\n",
+            "language = {}\nblood = {}\nrain = {}\narrow = {}\nskin = {}\ncolours = {}\nmode = {}\ngear = {}\ngear_layout = {}\nmini_bars = {}\nground = {}\nannouncements = {}\nupdates = {}\n",
             self.language.id(),
             self.blood.id(),
             self.rain.id(),
@@ -194,7 +199,8 @@ impl Settings {
             if self.gear_list { "list" } else { "icons" },
             if self.mini_bars { "shown" } else { "hidden" },
             if self.ground { "coloured" } else { "plain" },
-            self.weather_news.id()
+            self.weather_news.id(),
+            if self.updates { "checked" } else { "unchecked" }
         )
     }
 }
@@ -268,6 +274,7 @@ mod tests {
             mini_bars: true,
             ground: true,
             weather_news: WeatherNews::Big,
+            updates: false,
         };
         assert_eq!(Settings::parse(&settings.text()), settings);
         assert_eq!(

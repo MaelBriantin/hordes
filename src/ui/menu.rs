@@ -84,6 +84,8 @@ pub enum OptionItem {
     MiniBars,
     /// Whether the ground is coloured: an experiment.
     Ground,
+    /// Whether the game asks for a newer version as it starts.
+    Updates,
     /// The language the game speaks.
     Language,
     /// The progress erased, after a confirmation: from the title screen's options alone.
@@ -97,7 +99,7 @@ pub enum OptionItem {
 impl OptionItem {
     /// The items opened from the title screen; from the pause menu, the same but for erasing
     /// the progress and quitting.
-    const TITLE: [OptionItem; 11] = [
+    const TITLE: [OptionItem; 12] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
@@ -105,12 +107,13 @@ impl OptionItem {
         OptionItem::Gear,
         OptionItem::MiniBars,
         OptionItem::Ground,
+        OptionItem::Updates,
         OptionItem::Language,
         OptionItem::ResetProgress,
         OptionItem::Back,
         OptionItem::Quit,
     ];
-    const PAUSE: [OptionItem; 9] = [
+    const PAUSE: [OptionItem; 10] = [
         OptionItem::Blood,
         OptionItem::Rain,
         OptionItem::Arrow,
@@ -118,6 +121,7 @@ impl OptionItem {
         OptionItem::Gear,
         OptionItem::MiniBars,
         OptionItem::Ground,
+        OptionItem::Updates,
         OptionItem::Language,
         OptionItem::Back,
     ];
@@ -159,6 +163,14 @@ impl OptionItem {
                     fl!("mini-bars-shown")
                 } else {
                     fl!("mini-bars-hidden")
+                }
+            ),
+            OptionItem::Updates => fl!(
+                "option-updates",
+                value = if view.updates {
+                    fl!("updates-checked")
+                } else {
+                    fl!("updates-unchecked")
                 }
             ),
             OptionItem::Ground => fl!(
@@ -325,10 +337,23 @@ pub fn render_title(
     // showing or hiding the collection, in standard, where it fits.
     let collection = view.mode == Mode::Standard && collection_rows > 0;
     render_title_keys(frame, last, view, progress, collection, collection_rows > 0);
-    frame.render_widget(
-        Line::styled(format!("{} ", version()), Style::new().fg(DARK_GREY)).right_aligned(),
-        last,
-    );
+    // On the right, the version; a newer one out, the key to install it before it, in gold.
+    let mut spans = Vec::new();
+    if let Some((major, minor, patch)) = view.update {
+        spans.push(Span::styled(format!(" {} ", fl!("key-u")), KEY_CAP));
+        spans.push(Span::styled(
+            format!(
+                "  {}    ",
+                fl!("update-out", version = format!("{major}.{minor}.{patch}"))
+            ),
+            Style::new().fg(UPDATE).add_modifier(Modifier::BOLD),
+        ));
+    }
+    spans.push(Span::styled(
+        format!("{} ", version()),
+        Style::new().fg(DARK_GREY),
+    ));
+    frame.render_widget(Line::from(spans).right_aligned(), last);
 }
 
 /// The prompt under the title, blinking as on an arcade cabinet: shown two thirds of each
@@ -502,6 +527,9 @@ pub fn collection_shows(area: Rect) -> bool {
     title_sizes(area).1 > 0
 }
 
+/// A newer version out, told on the title screen: gold.
+const UPDATE: Color = Color::Rgb(240, 190, 60);
+
 /// The game's version, as the title screen and the pause menu show it: `v0.3.0`.
 fn version() -> String {
     format!("v{}", env!("CARGO_PKG_VERSION"))
@@ -666,7 +694,7 @@ pub fn render_death(
         Some((letters, _)) => board.insert(Entry {
             name: String::from_utf8_lossy(&letters).into_owned(),
             score: world.score,
-            seconds: world.seconds(),
+            seconds: world.played_seconds(),
             level: world.player.level,
         }),
         None => view.highlight,
@@ -709,7 +737,7 @@ pub fn render_death(
     }
     let line = [
         skins::outfit_name(view.outfit()),
-        fl!("over-survived", time = clock(world.seconds())),
+        fl!("over-survived", time = clock(world.played_seconds())),
         fl!(
             "over-score",
             level = world.player.level,

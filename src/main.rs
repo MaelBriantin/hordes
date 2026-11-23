@@ -33,6 +33,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let sprites = ui::Sprites::load()?;
-    ratatui::run(|terminal| app::App::new(sprites).run(terminal))?;
+    let mut game = app::App::new(sprites);
+    ratatui::run(|terminal| game.run(terminal))?;
+    // `U` on the title screen, a newer version out: installed now, the game quit.
+    if game.wants_update() {
+        return commands::update::run();
+    }
     Ok(())
 }

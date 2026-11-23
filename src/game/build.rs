@@ -198,8 +198,6 @@ impl Choice {
         match self {
             Choice::Weapon(
                 Weapon::Flamethrower
-                | Weapon::Hammer
-                | Weapon::Baton
                 | Weapon::Chainsaw
                 | Weapon::Grenade
                 | Weapon::Sniper
@@ -334,13 +332,13 @@ impl Build {
     }
 
     /// Whether a card can be taken: a new one if there is room for it, or its next level if
-    /// not at its last; a legendary not yet found.
+    /// not at its last; a legendary, if none has been found yet: one a run.
     pub fn can_take(&self, choice: Choice) -> bool {
         match choice {
             Choice::Weapon(weapon) => can_pick(&self.weapons, weapon, MAX_WEAPONS),
             Choice::Passive(passive) => can_pick(&self.passives, passive, MAX_PASSIVES),
             Choice::Action(action) => can_pick(&self.actions, action, MAX_ACTIONS),
-            Choice::Legendary(legendary) => !self.has(legendary),
+            Choice::Legendary(_) => self.legendaries.is_empty(),
             Choice::Heal => true,
         }
     }
@@ -421,9 +419,10 @@ impl Build {
             let index = rng.random_range(0..from.len());
             offer.push(from.swap_remove(index));
         }
+        // One legendary a run: none once one is found.
         let missing: Vec<Legendary> = Legendary::ALL
             .into_iter()
-            .filter(|legendary| !self.has(*legendary) && deals(Choice::Legendary(*legendary)))
+            .filter(|legendary| self.legendaries.is_empty() && deals(Choice::Legendary(*legendary)))
             .collect();
         if !missing.is_empty() && rng.random_range(0..100) < legendary_percent {
             let legendary = missing[rng.random_range(0..missing.len())];
@@ -832,5 +831,21 @@ mod tests {
         // At first, the hero's own weapon alone: one group.
         let groups = Build::playing(Skin::Survivor).groups();
         assert_eq!(groups.len(), 1, "the hero's own weapon alone: {groups:?}");
+    }
+
+    #[test]
+    fn one_legendary_a_run_no_other_dealt_once_one_is_found() {
+        let mut rng = StdRng::seed_from_u64(1);
+        let mut build = Build::playing(Skin::Survivor);
+        let offers = |build: &Build, rng: &mut StdRng| {
+            (0..50)
+                .flat_map(|_| build.offers(rng, false, 25, 100, |_| true))
+                .filter(|choice| matches!(choice, Choice::Legendary(_)))
+                .count()
+        };
+        assert!(offers(&build, &mut rng) > 0, "a legendary dealt at first");
+        build.take(Choice::Legendary(Legendary::Illumination));
+        assert_eq!(offers(&build, &mut rng), 0, "Revival never dealt after");
+        assert!(!build.can_take(Choice::Legendary(Legendary::Revival)));
     }
 }
