@@ -375,3 +375,61 @@ fn at_level_5_the_sniper_s_bullet_goes_through_every_enemy_on_its_line() {
     );
     assert!(world.enemies[0].hp < 1_000, "the one in between too");
 }
+
+#[test]
+fn the_eye_gouger_throws_its_enemy_back_stunned_and_a_felled_one_bursts() {
+    let mut world = armed_with(Weapon::Flashball, 1);
+    world.next_horde = u32::MAX;
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(104.0, 50.0)));
+    world.enemies[0].hp = 1_000;
+    let mut hit_at = None;
+    for tick in 0..30 {
+        wait(&mut world, 1);
+        if world.enemies[0].hp < 1_000 {
+            hit_at = Some(tick);
+            break;
+        }
+    }
+    assert!(hit_at.is_some(), "shot");
+    assert_eq!(world.enemies[0].hp, 1_000 - world.player.build.damage(30));
+    assert!(world.enemies[0].dazed > 0, "stars over its head");
+    let from = world.enemies[0].position.x;
+    wait(&mut world, 10);
+    assert!(
+        world.enemies[0].position.x - from > 2.5,
+        "thrown back 3 tiles"
+    );
+    assert!(world.enemies[0].stunned > 0, "still stunned");
+    // A felled one bursts.
+    world.enemies[0].hp = 1;
+    world.enemies[0].position = Vec2::new(104.0, 50.0);
+    for _ in 0..60 {
+        if world.enemies.is_empty() {
+            break;
+        }
+        wait(&mut world, 1);
+    }
+    assert!(world.enemies.is_empty(), "felled");
+    assert!(!world.flash_bursts.is_empty(), "bursting");
+}
+
+#[test]
+fn at_level_5_the_eye_gouger_s_ball_bounces_to_a_second_enemy() {
+    let mut world = armed_with(Weapon::Flashball, 5);
+    world.next_horde = u32::MAX;
+    for x in [104.0, 105.5] {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(x, 50.0)));
+    }
+    for enemy in &mut world.enemies {
+        enemy.hp = 1_000;
+    }
+    wait(&mut world, 30);
+    assert!(
+        world.enemies.iter().all(|enemy| enemy.hp < 1_000),
+        "both hit"
+    );
+}

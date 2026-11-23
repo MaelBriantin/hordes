@@ -42,7 +42,7 @@ pub const VETERAN_LEVEL: u32 = 25;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 26] = [
+pub const COLLECTION: [Unlock; 27] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -67,6 +67,7 @@ pub const COLLECTION: [Unlock; 26] = [
     Unlock::Card(Choice::Weapon(Weapon::Grenade)),
     Unlock::Card(Choice::Weapon(Weapon::Napalm)),
     Unlock::Card(Choice::Weapon(Weapon::Sniper)),
+    Unlock::Card(Choice::Weapon(Weapon::Flashball)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -123,8 +124,6 @@ pub enum Unlock {
     Reroll,
     /// The arcade mode, to be played from then on.
     Arcade,
-    /// A hero, to be played from then on.
-    Hero(Skin),
 }
 
 impl Achievement {
@@ -169,7 +168,7 @@ impl Achievement {
             Achievement::Legend => Unlock::Card(Choice::Weapon(Weapon::Napalm)),
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
             Achievement::Shadow => Unlock::Card(Choice::Weapon(Weapon::Sniper)),
-            Achievement::HoldTheLine => Unlock::Hero(Skin::Riot),
+            Achievement::HoldTheLine => Unlock::Card(Choice::Weapon(Weapon::Flashball)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }
@@ -192,7 +191,7 @@ impl Unlock {
     pub fn rarity(self) -> Rarity {
         match self {
             Unlock::Card(choice) => choice.rarity(),
-            Unlock::Reroll | Unlock::Hero(_) => Rarity::Rare,
+            Unlock::Reroll => Rarity::Rare,
             Unlock::Arcade => Rarity::Legendary,
         }
     }
@@ -382,17 +381,10 @@ mod tests {
             .iter()
             .filter(|unlock| progress.has(**unlock))
             .count();
-        // Every achievement's card in it; a hero unlocked shows among the heroes instead.
-        let in_it = Achievement::ALL
-            .into_iter()
-            .map(Achievement::unlocks)
-            .filter(|unlock| !matches!(unlock, Unlock::Hero(_)));
-        assert_eq!(from_start, COLLECTION.len() - in_it.clone().count());
-        for unlock in in_it {
-            assert!(COLLECTION.contains(&unlock));
-        }
-        for skin in Skin::ALL {
-            assert!(!COLLECTION.contains(&Unlock::Hero(skin)));
+        // Every achievement's card in it.
+        assert_eq!(from_start, COLLECTION.len() - Achievement::ALL.len());
+        for achievement in Achievement::ALL {
+            assert!(COLLECTION.contains(&achievement.unlocks()));
         }
         for skin in Skin::ALL {
             assert!(!COLLECTION.contains(&Unlock::Card(Choice::Weapon(skin.weapon()))));

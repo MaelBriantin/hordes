@@ -401,6 +401,7 @@ impl World {
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
             enemy.shocked = enemy.shocked.saturating_sub(1);
+            enemy.dazed = enemy.dazed.saturating_sub(1);
             let stats = enemy.kind.stats();
             let apart = (target - enemy.position).length();
             notice(enemy, apart, sight);

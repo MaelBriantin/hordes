@@ -267,10 +267,13 @@ fn thirty_seconds_among_a_dozen_enemies_in_a_run_unlock_the_riot_officer_and_the
     assert!(!world.progress.achieved.contains(&Achievement::HoldTheLine));
     wait(&mut world, 1);
     assert!(world.progress.achieved.contains(&Achievement::HoldTheLine));
-    // The riot officer, their ram their own: neither in the collection.
-    assert_eq!(Achievement::HoldTheLine.unlocks(), Unlock::Hero(Skin::Riot));
+    // The flashball, and the riot officer, their ram their own: not in the collection.
+    assert!(world.progress.deals(Choice::Weapon(Weapon::Flashball)));
+    assert_eq!(
+        Achievement::HoldTheLine.unlocks(),
+        Unlock::Card(Choice::Weapon(Weapon::Flashball))
+    );
     assert!(!COLLECTION.contains(&Unlock::Card(Choice::Action(Action::Ram))));
-    assert!(!COLLECTION.contains(&Unlock::Hero(Skin::Riot)));
     assert_eq!(Skin::Riot.achievement(), Some(Achievement::HoldTheLine));
     assert_eq!(Skin::Riot.weapon(), Weapon::Truncheon);
 }

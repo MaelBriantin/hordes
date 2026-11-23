@@ -17,6 +17,7 @@ mod facing;
 mod fire_wall;
 mod fists;
 mod flamethrower;
+mod flashball;
 mod gatling;
 mod gem;
 mod grenade;
@@ -56,6 +57,7 @@ pub use build::{
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
+pub use flashball::{BURST_TICKS as FLASH_BURST_TICKS, Burst as FlashBurst};
 pub use gatling::CASE_TICKS;
 pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;

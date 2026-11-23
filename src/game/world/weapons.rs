@@ -6,6 +6,7 @@ use rand::RngExt;
 use super::super::body::{in_sight, slide, touch};
 use super::super::build::Weapon;
 use super::super::enemy::{Enemy, EnemyKind};
+use super::super::flashball::{self, Burst};
 use super::super::guns::{self, Bullet, Magazine};
 use super::super::machete::{self, Melee, Swing};
 use super::super::molotov::{self, Bottle, Puddle};
@@ -16,11 +17,12 @@ use super::super::{
 use super::{Swinging, World};
 
 /// The weapons that are guns, in the order they show.
-const GUNS: [Weapon; 4] = [
+const GUNS: [Weapon; 5] = [
     Weapon::Pistol,
     Weapon::MachineGun,
     Weapon::Shotgun,
     Weapon::Shuriken,
+    Weapon::Flashball,
 ];
 
 /// The ticks a spark shows where a bullet hit a tree or a rock.
@@ -263,6 +265,10 @@ impl World {
         let enemies = &mut self.enemies;
         let (map, sparks, now) = (&self.map, &mut self.sparks, self.ticks);
         let hunter = self.player.build.horde_bonus();
+        let (bursts, dazes) = (
+            &mut self.flash_bursts,
+            flashball::stun(self.player.build.weapon_level(Weapon::Flashball)),
+        );
         sparks.retain(|&(_, at)| now.saturating_sub(at) < SPARK_TICKS);
         self.bullets.retain_mut(|bullet| {
             if !bullet.advance() {
@@ -286,6 +292,22 @@ impl World {
                 }
                 enemy.hit(against(bullet.damage, enemy, hunter));
                 bullet.hit.push(enemy.id);
+                // The flashball throws its enemy back, stunned; felled, it bursts.
+                if bullet.weapon == Weapon::Flashball {
+                    let way = bullet.way();
+                    let ticks = f32::from(u16::try_from(flashball::THROW_TICKS).unwrap_or(1));
+                    enemy.knock = way * (flashball::THROW_TILES / ticks);
+                    enemy.knocked = flashball::THROW_TICKS;
+                    enemy.stunned = enemy.stunned.max(dazes);
+                    enemy.dazed = dazes;
+                    if enemy.hp == 0 {
+                        bursts.push(Burst {
+                            at: enemy.position,
+                            way,
+                            age: 0,
+                        });
+                    }
+                }
                 if bullet.pierce > 0 {
                     bullet.pierce -= 1;
                     continue;

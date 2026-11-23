@@ -43,7 +43,7 @@ const SURROUNDED: usize = 4;
 const LOW_HP_PERCENT: u32 = 40;
 const CLOSE: f32 = 2.5;
 /// The weapons that strike from afar: with any, the bot keeps away.
-const FROM_AFAR: [Weapon; 9] = [
+const FROM_AFAR: [Weapon; 10] = [
     Weapon::Pistol,
     Weapon::MachineGun,
     Weapon::Shotgun,
@@ -53,6 +53,7 @@ const FROM_AFAR: [Weapon; 9] = [
     Weapon::Napalm,
     Weapon::Grenade,
     Weapon::Sniper,
+    Weapon::Flashball,
 ];
 
 /// How a run is set up.

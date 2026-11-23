@@ -44,13 +44,14 @@ pub enum Weapon {
     Chainsaw,
     Grenade,
     Sniper,
+    Flashball,
     Napalm,
     Fists,
     Truncheon,
 }
 
 impl Weapon {
-    pub const ALL: [Weapon; 20] = [
+    pub const ALL: [Weapon; 21] = [
         Weapon::Crowbar,
         Weapon::Machete,
         Weapon::Pistol,
@@ -68,6 +69,7 @@ impl Weapon {
         Weapon::Chainsaw,
         Weapon::Grenade,
         Weapon::Sniper,
+        Weapon::Flashball,
         Weapon::Napalm,
         Weapon::Fists,
         Weapon::Truncheon,
@@ -180,6 +182,7 @@ impl Choice {
                 | Weapon::Chainsaw
                 | Weapon::Grenade
                 | Weapon::Sniper
+                | Weapon::Flashball
                 | Weapon::Napalm,
             )
             | Choice::Passive(

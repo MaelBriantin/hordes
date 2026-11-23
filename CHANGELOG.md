@@ -14,6 +14,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
 - The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
+- The Eye-gouger, a rare flashball unlocked by Hold the line: a slow "non-lethal" shot, the enemy thrown back and stunned, one felled bursting.
 - The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
 - Every hero now has their own action.
 - Level 3 brings the hero's own action in place of its cards: one reward a level.
@@ -26,7 +27,6 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle's icon redrawn: a wooden stock, a steel barrel, its scope.
 - The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
 - The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
-- Hold the line unlocks the riot officer alone, told as a hero unlocked.
 - The Untouchable and Lightning rod achievements gone, their rewards now heroes' own actions.
 - Stealth gone; the infiltrator's second outfit named the scout.
 - The infiltrator renamed the ghost, their perk Stealthy.

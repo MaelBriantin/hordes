@@ -16,6 +16,7 @@ use super::dash::{Dash, Dashes};
 use super::defibrillator::Shock;
 use super::enemy::Enemy;
 use super::fists::Punch;
+use super::flashball::{self, Burst};
 use super::gatling::Case;
 use super::gem::Gem;
 use super::grenade::Thrown;
@@ -244,6 +245,8 @@ pub struct World {
     pub cases: Vec<Case>,
     /// The ticks before the vault can be made again.
     pub vault_wait: u32,
+    /// The enemies felled by the flashball, bursting.
+    pub flash_bursts: Vec<Burst>,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -503,6 +506,7 @@ impl World {
             gatling_wait: 0,
             cases: Vec::new(),
             vault_wait: 0,
+            flash_bursts: Vec::new(),
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -776,6 +780,11 @@ impl World {
         self.thin_smoke();
         self.fire_gatling();
         self.vault_wait = self.vault_wait.saturating_sub(1);
+        for burst in &mut self.flash_bursts {
+            burst.age += 1;
+        }
+        self.flash_bursts
+            .retain(|burst| burst.age < flashball::BURST_TICKS);
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

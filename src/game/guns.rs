@@ -126,6 +126,21 @@ pub fn gun(weapon: Weapon, level: u8) -> Option<Gun> {
             speed: 14.0,
             range: 8.0,
         }),
+        Weapon::Flashball => Some(Gun {
+            weapon,
+            // A single slow shot: the reload is its wait.
+            magazine: 1,
+            interval: tenths(15),
+            reload: if level >= 3 { tenths(12) } else { tenths(15) },
+            damage: if level >= 2 { 40 } else { 30 },
+            bullets: 1,
+            pellets: 1,
+            spread: 0.0,
+            pierce: 0,
+            ricochets: u32::from(level >= 5),
+            speed: 18.0,
+            range: 7.0,
+        }),
         Weapon::Crowbar
         | Weapon::Machete
         | Weapon::Drones

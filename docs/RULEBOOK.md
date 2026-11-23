@@ -138,7 +138,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 |---|---|---|---|---|---|---|
 | Zombie | 15 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
 | Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
-| Hold the line | Stand 30 s among 12 enemies within 3 tiles in one run (every tick counted, not in a row) | The riot officer with their truncheon, and their own action from the run's level 3, the shield ram (Space: the player braces 0.3 s, standing still, then charges 5 tiles straight ahead the way they faced (7 from level 4), nothing hurting them, every enemy within a tile of the way hurt, stunned 0.6 s and thrown 4 tiles aside in a V) |
+| Hold the line | Stand 30 s among 12 enemies within 3 tiles in one run (every tick counted, not in a row) | The Eye-gouger, and the riot officer with their truncheon and their own action from the run's level 3, the shield ram (Space: the player braces 0.3 s, standing still, then charges 5 tiles straight ahead the way they faced (7 from level 4), nothing hurting them, every enemy within a tile of the way hurt, stunned 0.6 s and thrown 4 tiles aside in a V) |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 | Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
 
@@ -271,6 +271,10 @@ The medic's own **action**, theirs once the run reaches **level 3**, its card sh
 The demolisher's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes ("Hero skill available", the run standing still until Enter), played with Space or Enter. A first press sets a **charge** down at their feet: a small dark block, its red light blinking faster and faster, glowing in the dark. A second press **blows it, from afar**, wherever the player stands; left alone, it blows by itself **3 s** later. Its blast: every enemy within **2.5 tiles** takes **25 damage** and is thrown back **3 tiles**; a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. One charge at a time; the next can be set down **5 s** after the blast (less with Haste), its wait under its icon. Its next levels are dealt to the demolisher alone.
 
 **Levels**: 2: a 3-tile blast · 3: 40 damage · 4: ready 4 s after the blast · 5: **two charges**, set down one after the other, the next press blowing both together.
+
+### Eye-gouger
+
+A **rare** gun, the flashball unlocked by Hold the line: every **1.5 s** (less with Haste), a single slow shot, a black ball, at the nearest enemy in sight within **7 tiles**: **30 damage**; the enemy hit is **thrown back 3 tiles** and **stunned 1 s**, stars turning over its head, showing white a moment; one it fells **bursts**, a spray of blood and chunks thrown out the way the shot went ("non-lethal"). Not in the dark, as the other guns. Level 2: 40 damage; 3: every 1.2 s; 4: stunned 1.5 s; 5: the ball bounces to a second enemy near, a quarter less damage.
 
 ### Sniper rifle
 
@@ -414,7 +418,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
 - **Level 3** brings the hero's own action (its card shown alone, "Hero skill available") in place of a choice of cards: one reward a level. Two levels at once, 2 to 4, bring the action and a choice for level 4.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heroes' own actions, the heal. Rare: the flamethrower, the chainsaw, the grenade, the sniper rifle, the napalm, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heroes' own actions, the heal. Rare: the flamethrower, the chainsaw, the grenade, the sniper rifle, the Eye-gouger, the napalm, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

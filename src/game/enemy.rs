@@ -131,6 +131,8 @@ pub struct Enemy {
     pub stunned: u32,
     /// Ticks left it stands paralysed by a shock, the stun baton's: it shows, blinking blue.
     pub shocked: u32,
+    /// Ticks left it stands dazed by the flashball: stars turn over its head.
+    pub dazed: u32,
     /// Ticks it has hunted the player in the dark, without a break: a Shadow's.
     pub hunting: u32,
     /// Ticks left it bolts out of the torch's light: a Shadow's.
@@ -152,6 +154,7 @@ impl Enemy {
             wander: phase,
             burning: 0,
             stunned: 0,
+            dazed: 0,
             shocked: 0,
             knock: Vec2::ZERO,
             knocked: 0,

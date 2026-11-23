@@ -6,6 +6,7 @@ mod c4;
 mod figures;
 mod fire;
 mod fists;
+mod flashball;
 mod gatling;
 mod gear;
 mod grenade;
@@ -214,6 +215,13 @@ impl<'a> Canvas<'a> {
                     colour,
                 );
             }
+            return;
+        }
+        // The flashball's ball: black, a grey trail behind it.
+        if bullet.weapon == Weapon::Flashball {
+            let way = bullet.way();
+            self.set(pixel(bullet.position - way * 0.5), flashball::BALL_TRAIL);
+            self.set(pixel(bullet.position), flashball::BALL);
             return;
         }
         if bullet.weapon == Weapon::Shotgun {
@@ -528,6 +536,7 @@ pub fn render_map(
         canvas.paint_at(Look::plain(SpriteId::Drone), drone);
     }
     canvas.paint_gatling(world, frame);
+    canvas.paint_flashball(world);
     // The scout's smoke over what stands in it.
     canvas.paint_smoke(world, view.outfit(), frame);
 

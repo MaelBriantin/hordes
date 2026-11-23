@@ -8,9 +8,9 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 
 use super::level_up::{self, COMMON, LEGENDARY, RARE};
-use super::sprites::{self, Outfit, SpriteId, Sprites};
-use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, skins, thousands};
-use crate::game::{COLLECTION, Choice, Facing, Progress, Rarity, Unlock};
+use super::sprites::{SpriteId, Sprites};
+use super::{XP_COLOR, achievement, bar_of, embossed, labelled, pixels, thousands};
+use crate::game::{COLLECTION, Choice, Progress, Rarity, Unlock};
 
 /// A tile: a corner's column, its picture, a corner's column; a corner's row, its picture's
 /// rows, a corner's row.
@@ -191,7 +191,7 @@ fn tile(
         frame(buffer, at, if has { colour(unlock) } else { GREY });
     }
     let picture_of = if hidden(progress, unlock) {
-        (SpriteId::IconHidden, 1)
+        SpriteId::IconHidden
     } else {
         icon(unlock)
     };
@@ -199,19 +199,9 @@ fn tile(
 }
 
 /// A picture over what is under it, in grey if `coloured` isn't.
-fn picture(
-    buffer: &mut Buffer,
-    sprites: &Sprites,
-    (sprite, scale): (SpriteId, i32),
-    area: Rect,
-    coloured: bool,
-) {
+fn picture(buffer: &mut Buffer, sprites: &Sprites, sprite: SpriteId, area: Rect, coloured: bool) {
     overlay(buffer, area, coloured, |drawn, apart| {
-        if scale == 1 {
-            pixels::render_sprite(drawn, apart, sprites, sprite);
-        } else {
-            pixels::render_sprite_scaled(drawn, apart, sprites, sprite, scale);
-        }
+        pixels::render_sprite(drawn, apart, sprites, sprite);
     });
 }
 
@@ -400,17 +390,12 @@ pub(super) fn centred(buffer: &mut Buffer, area: Rect, y: u16, text: &str, style
     );
 }
 
-/// What a tile shows, and how many times as big: a card's icon, or the reroll's; a hero, from
-/// the front, twice as big.
-pub(super) fn icon(unlock: Unlock) -> (SpriteId, i32) {
+/// What a tile shows: a card's icon, or the reroll's.
+fn icon(unlock: Unlock) -> SpriteId {
     match unlock {
-        Unlock::Card(choice) => (level_up::icon(choice), 1),
-        Unlock::Reroll => (SpriteId::IconReroll, 1),
-        Unlock::Arcade => (SpriteId::IconArcade, 1),
-        Unlock::Hero(skin) => (
-            sprites::hero(Facing::Down, Outfit { skin, colours: 0 }).sprite,
-            2,
-        ),
+        Unlock::Card(choice) => level_up::icon(choice),
+        Unlock::Reroll => SpriteId::IconReroll,
+        Unlock::Arcade => SpriteId::IconArcade,
     }
 }
 
@@ -424,7 +409,6 @@ fn kind(unlock: Unlock) -> String {
         Unlock::Card(Choice::Heal) => fl!("heal"),
         Unlock::Reroll => fl!("collection-kind-bonus"),
         Unlock::Arcade => fl!("collection-kind-mode"),
-        Unlock::Hero(_) => fl!("collection-kind-hero"),
     }
 }
 
@@ -434,7 +418,6 @@ fn name(unlock: Unlock) -> String {
         Unlock::Card(choice) => level_up::name(choice),
         Unlock::Reroll => fl!("collection-reroll"),
         Unlock::Arcade => fl!("collection-arcade"),
-        Unlock::Hero(skin) => skins::name(skin),
     }
 }
 
