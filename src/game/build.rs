@@ -139,10 +139,12 @@ pub enum Action {
     Smoke,
     /// The veteran's own: a burst of fire straight ahead a while.
     Gatling,
+    /// The special agent's own: over the obstacle just ahead.
+    Vault,
 }
 
 impl Action {
-    pub const ALL: [Action; 8] = [
+    pub const ALL: [Action; 9] = [
         Action::Dash,
         Action::Barricade,
         Action::Ram,
@@ -151,6 +153,7 @@ impl Action {
         Action::FireWall,
         Action::Smoke,
         Action::Gatling,
+        Action::Vault,
     ];
 }
 

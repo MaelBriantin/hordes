@@ -517,6 +517,7 @@ pub fn render_map(
     canvas.paint_blow(world);
     canvas.paint_charges(world);
     canvas.paint_dodge(world, view.outfit());
+    canvas.paint_vault(world);
     let covered = canvas.paint_figures(world, view.outfit());
     if let Some(hurt_at) = world.hurt_at {
         let since = world.ticks().saturating_sub(hurt_at);

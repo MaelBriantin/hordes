@@ -177,6 +177,7 @@ fn action_description(action: Action) -> String {
         Action::FireWall => fl!("action-fire-wall-description"),
         Action::Smoke => fl!("action-smoke-description"),
         Action::Gatling => fl!("action-gatling-description"),
+        Action::Vault => fl!("action-vault-description"),
     }
 }
 
@@ -366,6 +367,7 @@ pub fn icon(choice: Choice) -> SpriteId {
         Choice::Action(Action::FireWall) => SpriteId::IconFireWall,
         Choice::Action(Action::Smoke) => SpriteId::IconSmoke,
         Choice::Action(Action::Gatling) => SpriteId::IconGatling,
+        Choice::Action(Action::Vault) => SpriteId::IconVault,
         Choice::Legendary(Legendary::Illumination) => SpriteId::IconIllumination,
         Choice::Heal => SpriteId::IconHeal,
     }
@@ -396,6 +398,7 @@ pub fn name(choice: Choice) -> String {
         Choice::Action(Action::FireWall) => fl!("action-fire-wall"),
         Choice::Action(Action::Smoke) => fl!("action-smoke"),
         Choice::Action(Action::Gatling) => fl!("action-gatling"),
+        Choice::Action(Action::Vault) => fl!("action-vault"),
         Choice::Legendary(Legendary::Illumination) => fl!("legendary-illumination"),
         Choice::Heal => fl!("heal"),
     }
@@ -727,6 +730,14 @@ fn action_gain(action: Action, level: u8) -> String {
             3 => fl!("gain-gatling-3"),
             4 => fl!("gain-gatling-4"),
             _ => fl!("gain-gatling-5"),
+        },
+        // The vault: a kick at 2, over enemies at 3, sooner back at 4, three blocks at 5.
+        Action::Vault => match level {
+            0 | 1 => fl!("gain-vault-1"),
+            2 => fl!("gain-vault-2"),
+            3 => fl!("gain-vault-3"),
+            4 => fl!("gain-vault-4"),
+            _ => fl!("gain-vault-5"),
         },
         // The ram: sooner back at 2, harder at 3, further at 4, a longer stun at 5.
         Action::Ram => match level {

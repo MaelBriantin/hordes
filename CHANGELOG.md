@@ -14,6 +14,8 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
 - The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
+- The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
+- Every hero now has their own action.
 - The veteran's gatling burst, their own action from the run's level 3: 2 s of fire straight ahead, 10 bullets a second, at half pace, the spent cases falling at their feet.
 - The ghost's smoke bomb, their own action from the run's level 3: a cloud at their feet 4 s, the enemies losing track of them in it, even with the torch on.
 

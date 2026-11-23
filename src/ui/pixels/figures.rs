@@ -220,8 +220,10 @@ impl Canvas<'_> {
         // Blinking while nothing can hurt them.
         let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
         if player.dash.is_some() || !blinks_out {
+            // Vaulting, a little off the ground.
+            let lift = player.vault.map_or(0.0, |vault| vault.lift());
             figures.push((
-                player.position,
+                player.position - Vec2::new(0.0, lift),
                 sprites::hero_in(world.hero_facing(), outfit, world.torch_on() == Some(false)),
             ));
         }

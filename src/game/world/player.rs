@@ -31,8 +31,8 @@ impl World {
     }
 
     pub(super) fn move_player(&mut self, input: Input) {
-        // Braced before a charge, the player stands still.
-        if self.ram_windup.is_some() {
+        // Braced before a charge, the player stands still; vaulting, they go where it goes.
+        if self.ram_windup.is_some() || self.carry_vault() {
             return;
         }
         let player = &mut self.player;
@@ -125,7 +125,7 @@ impl World {
     /// The player loses the HP of the hardest-hitting enemy touching them, then nothing hurts
     /// them for half a second.
     pub(super) fn hurt_player(&mut self) {
-        if self.unhurt || self.daybreak() || self.player.dash.is_some() {
+        if self.unhurt || self.daybreak() || self.untouchable() {
             return;
         }
         let player = &mut self.player;
@@ -197,18 +197,15 @@ impl World {
         });
     }
 
-    /// At the run's level 3, the hero's own action, if they have one, at its first level, its
-    /// card shown to the player.
+    /// At the run's level 3, the hero's own action, at its first level, its card shown to the
+    /// player.
     pub(super) fn unlock_action(&mut self) {
         let build = &mut self.player.build;
         if self.player.level < ACTION_LEVEL {
             return;
         }
-        if let Some(action) = build
-            .hero()
-            .action()
-            .filter(|action| build.action_level(*action) == 0)
-        {
+        let action = build.hero().action();
+        if build.action_level(action) == 0 {
             build.take(Choice::Action(action));
             self.unlocked = Some(action);
         }

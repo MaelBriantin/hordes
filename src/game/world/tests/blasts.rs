@@ -534,8 +534,7 @@ fn at_level_5_two_c4_charges_set_down_one_after_the_other_blow_together() {
 
 #[test]
 fn the_demolisher_s_c4_comes_at_the_run_s_level_3_its_card_shown_the_run_standing_still() {
-    assert_eq!(Skin::Demolisher.action(), Some(Action::C4));
-    assert_eq!(Skin::owning_action(Action::C4), Some(Skin::Demolisher));
+    assert_eq!(Skin::Demolisher.action(), Action::C4);
     let mut world = World::with(1, Mode::Standard, false, Progress::everything());
     world.play_as(Skin::Demolisher);
     world.announcement = None;
@@ -575,7 +574,11 @@ fn the_demolisher_s_c4_comes_at_the_run_s_level_3_its_card_shown_the_run_standin
         0,
         "not another hero's"
     );
-    assert_eq!(world.unlocked, None);
+    assert_eq!(
+        world.unlocked,
+        Some(Action::Vault),
+        "the agent's own instead"
+    );
 }
 
 #[test]

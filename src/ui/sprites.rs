@@ -148,6 +148,7 @@ pub enum SpriteId {
     IconFireWall,
     IconSmoke,
     IconGatling,
+    IconVault,
     IconGrenade,
     IconNapalm,
     IconBarricade,
@@ -167,7 +168,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 133] = [
+    const ALL: [SpriteId; 134] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -286,6 +287,7 @@ impl SpriteId {
         SpriteId::IconFireWall,
         SpriteId::IconSmoke,
         SpriteId::IconGatling,
+        SpriteId::IconVault,
         SpriteId::IconGrenade,
         SpriteId::IconNapalm,
         SpriteId::IconBarricade,
@@ -424,6 +426,7 @@ impl SpriteId {
             SpriteId::IconFireWall => "icon_fire_wall",
             SpriteId::IconSmoke => "icon_smoke",
             SpriteId::IconGatling => "icon_gatling",
+            SpriteId::IconVault => "icon_vault",
             SpriteId::IconGrenade => "icon_grenade",
             SpriteId::IconNapalm => "icon_napalm",
             SpriteId::IconBarricade => "icon_barricade",

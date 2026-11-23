@@ -196,7 +196,7 @@ impl World {
             );
         }
         let away = self.player.position - at;
-        let dashing = self.player.dash.is_some();
+        let dashing = self.untouchable();
         if away.length() <= burst::REACH && !dashing {
             if !self.unhurt && !self.daybreak() && self.player.invincible == 0 {
                 self.wound_player(burst::DAMAGE);

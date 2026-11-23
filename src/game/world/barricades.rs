@@ -8,7 +8,7 @@ use super::{PLAYER_HALF_WIDTH, World};
 
 impl World {
     /// The player plays their action: a dash, a barricade set down, a ram, the C4, the kit, the
-    /// wall of fire, the smoke bomb or the gatling.
+    /// wall of fire, the smoke bomb, the gatling or the vault.
     pub fn act(&mut self) {
         let build = &self.player.build;
         if build.action_level(Action::Barricade) > 0 {
@@ -25,6 +25,8 @@ impl World {
             self.throw_smoke();
         } else if build.action_level(Action::Gatling) > 0 {
             self.start_gatling();
+        } else if build.action_level(Action::Vault) > 0 {
+            self.vault();
         } else {
             self.dash();
         }

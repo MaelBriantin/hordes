@@ -42,6 +42,7 @@ mod smoke;
 mod sniper;
 mod spawn;
 mod stain;
+mod vault;
 mod vec2;
 mod weather;
 mod world;
@@ -76,6 +77,11 @@ pub fn c4_recharge(level: u8) -> u32 {
 }
 
 pub use kit::at as kit_at;
+
+/// The ticks the vault takes to come back, by its level, before Haste.
+pub fn vault_recharge(level: u8) -> u32 {
+    vault::at(level).recharge
+}
 
 /// The ticks the gatling burst takes to come back, by its level, before Haste.
 pub fn gatling_recharge(level: u8) -> u32 {

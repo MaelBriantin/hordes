@@ -142,26 +142,19 @@ impl Skin {
         }
     }
 
-    /// The action they start a run with, if any: theirs alone, never dealt to another hero.
-    pub fn action(self) -> Option<Action> {
+    /// Their own action, coming at the run's level 3: theirs alone, never dealt to another hero.
+    pub fn action(self) -> Action {
         match self {
-            Skin::Survivor => Some(Action::Barricade),
-            Skin::Ninja => Some(Action::Dash),
-            Skin::Riot => Some(Action::Ram),
-            Skin::Demolisher => Some(Action::C4),
-            Skin::Medic => Some(Action::Kit),
-            Skin::Exterminator => Some(Action::FireWall),
-            Skin::Infiltrator => Some(Action::Smoke),
-            Skin::Classic => Some(Action::Gatling),
-            Skin::Agent => None,
+            Skin::Survivor => Action::Barricade,
+            Skin::Ninja => Action::Dash,
+            Skin::Riot => Action::Ram,
+            Skin::Demolisher => Action::C4,
+            Skin::Medic => Action::Kit,
+            Skin::Exterminator => Action::FireWall,
+            Skin::Infiltrator => Action::Smoke,
+            Skin::Classic => Action::Gatling,
+            Skin::Agent => Action::Vault,
         }
-    }
-
-    /// The hero an action belongs to, if it is one's own.
-    pub fn owning_action(action: Action) -> Option<Skin> {
-        Skin::ALL
-            .into_iter()
-            .find(|skin| skin.action() == Some(action))
     }
 
     /// Their HP before Vitality.

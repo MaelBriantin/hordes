@@ -40,6 +40,7 @@ use super::score;
 use super::smoke::Cloud;
 use super::sniper::{Impact, Shot};
 use super::stain::Stain;
+use super::vault::Vault;
 use super::weather::{self, Weather};
 use super::{Facing, Map, Skin, TICKS_PER_SECOND, Vec2, tick_seconds};
 
@@ -68,6 +69,7 @@ mod sniping;
 mod stabs;
 mod storm;
 mod torch;
+mod vaults;
 mod weapons;
 
 #[cfg(test)]
@@ -150,6 +152,8 @@ pub struct Player {
     /// The centre of the player's body, in tiles: the tile `(0, 0)` spans from 0.0 to 1.0.
     pub position: Vec2,
     pub facing: Facing,
+    /// A vault under way: nothing hurts the player meanwhile.
+    pub vault: Option<Vault>,
     pub hp: u32,
     /// Ticks left during which nothing hurts the player, after a hit.
     pub invincible: u32,
@@ -238,6 +242,8 @@ pub struct World {
     pub gatling_left: u32,
     pub gatling_wait: u32,
     pub cases: Vec<Case>,
+    /// The ticks before the vault can be made again.
+    pub vault_wait: u32,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -457,6 +463,7 @@ impl World {
                 invincible: 0,
                 dashes: Dashes::new(),
                 dash: None,
+                vault: None,
                 level: 1,
                 xp: 0,
                 build: Build::new(),
@@ -495,6 +502,7 @@ impl World {
             gatling_left: 0,
             gatling_wait: 0,
             cases: Vec::new(),
+            vault_wait: 0,
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -767,6 +775,7 @@ impl World {
         self.follow_fire_wall();
         self.thin_smoke();
         self.fire_gatling();
+        self.vault_wait = self.vault_wait.saturating_sub(1);
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

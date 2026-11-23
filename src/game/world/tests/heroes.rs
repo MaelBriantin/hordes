@@ -464,7 +464,7 @@ fn a_hero_with_an_action_of_their_own_is_dealt_no_other() {
             );
         }
     }
-    // A hero without one is dealt none: every action is a hero's own.
+    // Before their own comes, a hero is dealt none: every action is a hero's own.
     world.play_as(Skin::Agent);
     let dealt: Vec<Choice> = (0..120).flat_map(|_| world.deal_as(25)).collect();
     assert!(
@@ -484,8 +484,9 @@ fn every_hero_with_an_action_of_their_own_gets_it_at_level_3() {
         (Skin::Exterminator, Action::FireWall),
         (Skin::Infiltrator, Action::Smoke),
         (Skin::Classic, Action::Gatling),
+        (Skin::Agent, Action::Vault),
     ] {
-        assert_eq!(hero.action(), Some(action));
+        assert_eq!(hero.action(), action);
         let mut world = World::with(1, Mode::Standard, false, Progress::everything());
         world.play_as(hero);
         world.announcement = None;
@@ -651,4 +652,96 @@ fn the_veteran_s_gatling_fires_ten_bullets_a_second_ahead_2_s_at_half_pace_then_
     wait(&mut world, left);
     world.act();
     assert!(world.firing_gatling(), "ready again");
+}
+
+/// The agent at `x` on row 10.5, facing right, their vault at `level`, on `map`.
+fn agent_vaulting(map: Map, x: f32, level: u8) -> World {
+    let mut world = on(map, Vec2::new(x, 10.5));
+    world.play_as(Skin::Agent);
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    world.player.facing = Facing::Right;
+    for _ in 0..level {
+        world.player.build.take(Choice::Action(Action::Vault));
+    }
+    world
+}
+
+/// Rocks covering the tiles (20, 10) onwards, `count` of them in a row to the right.
+fn rocks(count: i32) -> Map {
+    let mut map = Map::empty();
+    for k in 0..count {
+        map.put((20 + 2 * k, 10), Obstacle::Rock);
+    }
+    map
+}
+
+#[test]
+fn the_agent_vaults_over_the_rock_just_ahead_untouchable_landing_behind_it_then_waits() {
+    let mut world = agent_vaulting(rocks(1), 18.8, 1);
+    world.act();
+    assert!(world.player.vault.is_some());
+    wait(&mut world, 6);
+    assert!(world.untouchable(), "nothing hurts them in the air");
+    wait(&mut world, 6);
+    assert!(world.player.vault.is_none(), "0.4 s");
+    let x = world.player.position.x;
+    assert!(x > 22.4 && x < 23.5, "just behind the rock: {x}");
+    // Not again before its recharge.
+    world.act();
+    assert!(world.player.vault.is_none(), "not ready");
+    let left = world.vault_wait;
+    wait(&mut world, left);
+    world.act();
+    assert!(world.player.vault.is_some(), "ready again");
+}
+
+#[test]
+fn nothing_ahead_the_agent_hops_2_tiles_and_two_rocks_are_too_much_before_level_5() {
+    let mut world = agent_vaulting(Map::empty(), 18.8, 1);
+    world.act();
+    wait(&mut world, 12);
+    assert!(
+        (world.player.position.x - 20.8).abs() < 0.01,
+        "a 2 tile hop"
+    );
+    let mut world = agent_vaulting(rocks(2), 18.8, 4);
+    world.act();
+    assert!(world.player.vault.is_none(), "two blocks: nowhere to land");
+    let mut world = agent_vaulting(rocks(3), 18.8, 5);
+    world.act();
+    wait(&mut world, 12);
+    assert!(world.player.position.x > 26.4, "three blocks at level 5");
+}
+
+#[test]
+fn the_agent_vaults_over_an_enemy_from_level_3_and_kicks_on_landing_from_level_2() {
+    let zombie_ahead = |world: &mut World| {
+        world
+            .enemies
+            .push(enemy(EnemyKind::Zombie, Vec2::new(19.9, 10.5)));
+        world.enemies[0].stunned = u32::MAX;
+    };
+    let mut world = agent_vaulting(Map::empty(), 18.8, 2);
+    zombie_ahead(&mut world);
+    world.act();
+    assert!(world.player.vault.is_none(), "right on it: not over it yet");
+    let mut world = agent_vaulting(Map::empty(), 18.8, 3);
+    zombie_ahead(&mut world);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(22.5, 11.0)));
+    world.enemies[1].stunned = u32::MAX;
+    world.act();
+    wait(&mut world, 12);
+    let x = world.player.position.x;
+    assert!(x > 20.3, "over it: {x}");
+    // Landed, a kick throws the one near back.
+    let before = world.enemies[1].position;
+    wait(&mut world, 6);
+    assert!(
+        (world.enemies[1].position - before).length() > 1.0,
+        "kicked back"
+    );
 }

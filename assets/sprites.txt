@@ -782,6 +782,16 @@ icon_gatling
 .;=.....
 ..;.....
 
+icon_vault
+..jjj...
+.j...j..
+j.....j.
+j.....j.
+..gG.jjj
+.gGGD.j.
+gGGDDD..
+........
+
 icon_grenade
 ....nn..
 ...n.n..

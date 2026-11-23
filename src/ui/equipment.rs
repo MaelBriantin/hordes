@@ -152,6 +152,7 @@ fn action_line(world: &World) -> Option<Line<'static>> {
         Action::FireWall => world.fire_wall_wait == 0,
         Action::Smoke => world.smoke_wait == 0,
         Action::Gatling => world.gatling_wait == 0,
+        Action::Vault => world.vault_wait == 0,
     };
     let (state, colour) = if ready {
         (fl!("equipment-ready"), READY)
