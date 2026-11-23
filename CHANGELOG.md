@@ -9,6 +9,8 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.10.0 · November 23, 2026
+
 ### New
 - The game looks for a newer version as it starts: one out, the title screen says so, and U quits and installs it. The check can be turned off in the options.
 - The grenade, a rare weapon unlocked by Demolisher in place of the C4: thrown at the biggest crowd near, blowing where it lands; two at once at the last level.
@@ -19,26 +21,27 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The Eye-gouger, a rare flashball unlocked by Hold the line: a slow "non-lethal" shot, the enemy thrown back and stunned, one felled bursting, its blood as the settings have it.
 - The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
 - Every hero now has their own action. The heroes' box shows their starting gear: their weapon and their action, a card each, icon and words.
+- The riot officer's second outfit, the CRS: blue, dark blue arms, an orange visor, a blueish shield.
+- The veteran's gatling burst, their own action from the run's level 3: 2 s of fire straight ahead, 10 bullets a second, at half pace, the spent cases falling at their feet.
+- The ghost's smoke bomb, their own action from the run's level 3: a cloud at their feet 4 s, the enemies losing track of them in it, even with the torch on.
+
+### Changed
 - The status line in words and gauges, no Nerd Font any more, its bars as wide as the screen leaves them: the HP in their red bar, on the left; the time and the score in the middle, on white and gold badges, a standard run counting down to the dawn; the weather, on the right, as wide as the HP, as a gauge filling through its stage, its name in capitals, from its colour to the next one's; `TIME:` and `SCORE:` in capitals. The torch's icon gone: the light says it.
 - One legendary a run: none offered once one is found.
 - Balance, from the bot's runs: the machete 15 damage (a zombie at a blow), the truncheon 20 then 28 damage, thrown back a tile rather than 1.5; the C4 set down a tile ahead, the demolisher standing still a quarter of a second as they set it, 20 then 32 damage, back in 7 s then 5; the dash back in 6 s rather than 8; the demolisher's Unshakable no longer takes 10% off the damage, never thrown still; the defibrillator 1 HP for two kills (one a kill at the last level) rather than one a kill.
 - The sledgehammer and the stun baton, the demolisher's and the exterminator's own weapons, common rather than rare, as the other heroes' own.
 - On the pause screen, a card's level on the same pixel rows as in the gear in play.
 - The collection by kind (weapons, passives, legendaries, then the reroll and the arcade), each kind by rarity, the common first.
-- The riot officer's second outfit, the CRS: blue, dark blue arms, an orange visor, a blueish shield.
 - The gear, in play and on the pause screen, in groups: the hero's own weapon and action, the other weapons, the passives, the legendaries; each icon in a frame of its rarity's colour, a group's frames side by side in play, its gauge under its frame, as wide as it.
 - Level 3 brings the hero's own action in place of its cards: one reward a level.
-- The veteran's gatling burst, their own action from the run's level 3: 2 s of fire straight ahead, 10 bullets a second, at half pace, the spent cases falling at their feet.
-- The ghost's smoke bomb, their own action from the run's level 3: a cloud at their feet 4 s, the enemies losing track of them in it, even with the torch on.
-
-### Changed
 - The medic no longer gets HP back of themselves: their first-aid kit instead.
 - The flamethrower's tank no longer leaks at the last level: its cone reaches a tile further instead.
 - The sniper rifle's icon redrawn: a wooden stock, a steel barrel, its scope.
 - The machine gun's icon redrawn.
-- The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down at their feet, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
+- The C4 the demolisher's own action, theirs once the run reaches level 3, its card shown as it comes: Space sets a charge down a tile ahead, Space again blows it from afar, or it blows by itself 3 s later; two charges blowing together at the last level. No longer a card for the other heroes.
 - The dash the ninja's own action, the barricade the survivor's, the shield ram the riot officer's: each theirs once the run reaches level 3, its card shown as it comes; no longer cards in the deal nor in the collection.
 - The Untouchable and Lightning rod achievements gone, their rewards now heroes' own actions.
+- Demolisher asks 15 abominations rather than 10, the sniper rifle's shots counted with the melee blows.
 - Stealth gone; the infiltrator's second outfit named the scout.
 - The infiltrator renamed the ghost, their perk Stealthy.
 
