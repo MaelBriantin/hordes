@@ -6,7 +6,8 @@
 //! ```
 //!
 //! The bot flees the enemies near it, goes for the gems when none is close, keeps the torch lit,
-//! and takes a card at random. With melee weapons alone, it goes at the nearest enemy instead,
+//! takes a card at random, and plays its hero's action every half second once it has come
+//! (unless told not to). With melee weapons alone, it goes at the nearest enemy instead,
 //! backing off once surrounded or low on HP.
 
 #![allow(
@@ -42,6 +43,8 @@ const STRIKE: f32 = 1.3;
 const SURROUNDED: usize = 4;
 const LOW_HP_PERCENT: u32 = 40;
 const CLOSE: f32 = 2.5;
+/// How often the bot plays its hero's action, in ticks: half a second.
+const ACT_EVERY: u32 = 15;
 /// The weapons that strike from afar: with any, the bot keeps away.
 const FROM_AFAR: [Weapon; 10] = [
     Weapon::Pistol,
@@ -68,8 +71,11 @@ enum Setup {
         immortal: bool,
     },
     /// A whole run as a hero: their own weapon, HP, speed and perk to start with, every card
-    /// unlocked, a card at random on each level-up.
-    Hero(Skin),
+    /// unlocked, a card at random on each level-up; their action played, or never.
+    Hero(Skin, bool),
+    /// A hero who can't die, their action theirs from the start, played or never, no card taken:
+    /// what the action adds to their weapon alone.
+    Tried(Skin, bool),
 }
 
 /// How a run ended.
@@ -87,13 +93,17 @@ fn play(seed: u64, setup: Setup, limit: u32) -> Outcome {
     // A whole run as a first one: the cards dealt at first alone.
     let progress = match setup {
         Setup::Free => Progress::default(),
-        Setup::Alone { .. } | Setup::Hero(_) => Progress::everything(),
+        Setup::Alone { .. } | Setup::Hero(..) | Setup::Tried(..) => Progress::everything(),
     };
     let mut world = World::with(seed, Mode::Standard, false, progress);
     world.set_view(VIEW);
-    if let Setup::Hero(hero) = setup {
+    if let Setup::Hero(hero, _) | Setup::Tried(hero, _) = setup {
         world.play_as(hero);
     }
+    if let Setup::Tried(_, true) = setup {
+        world.debug_action_up();
+    }
+    let acts = !matches!(setup, Setup::Hero(_, false) | Setup::Tried(_, false));
     if let Setup::Alone { weapon, level, .. } = setup {
         let mut build = Build::unarmed();
         for _ in 0..level {
@@ -105,21 +115,30 @@ fn play(seed: u64, setup: Setup, limit: u32) -> Outcome {
     while !world.is_over() && world.ticks < limit {
         if world.offer.is_some() {
             match setup {
-                Setup::Free | Setup::Hero(_) => {
+                Setup::Free | Setup::Hero(..) => {
                     let count = world.offer.as_ref().map_or(1, Vec::len);
                     world.choose(bot.pick(count));
                 }
-                Setup::Alone { .. } => {
+                Setup::Alone { .. } | Setup::Tried(..) => {
                     world.offer = None;
                     world.pending_levels = 0;
                 }
             }
             continue;
         }
+        // The hero's action come: its box seen at once.
+        if world.unlocked.is_some() {
+            world.seen_action();
+        }
         bot.keep_torch_lit(&mut world);
         let input = bot.steer(&world);
+        // The action played every half second: what isn't ready yet just waits (the C4 set
+        // down, then blown half a second later).
+        if acts && world.ticks.is_multiple_of(ACT_EVERY) {
+            world.act();
+        }
         world.update(input);
-        if let Setup::Alone { immortal: true, .. } = setup {
+        if let Setup::Alone { immortal: true, .. } | Setup::Tried(..) = setup {
             world.player.hp = world.player.max_hp();
         }
     }
@@ -355,31 +374,76 @@ fn balance_weapons_alone() {
 fn balance_heroes() {
     let limit = weather::dawn() + weather::daybreak();
     println!(
-        "\nWhole runs as each hero, {SEEDS} seeds a line, every card unlocked, a card at random on each level-up.\n"
+        "\nWhole runs as each hero, {SEEDS} seeds a line, every card unlocked, a card at random on each level-up; with their action played, then without.\n"
     );
     println!(
-        "{:<13} {:>10} {:>9} {:>9} {:>6} {:>6}",
-        "hero", "kills/min", "held", "worst", "level", "dawn"
+        "{:<13} {:>10} {:>9} {:>9} {:>6} {:>6}   {:>10} {:>9} {:>6}",
+        "hero", "kills/min", "held", "worst", "level", "dawn", "no action", "held", "dawn"
     );
     for hero in Skin::ALL {
-        let runs = outcomes(Setup::Hero(hero), limit);
-        let kill_rate = mean(
+        let with = summary(&outcomes(Setup::Hero(hero, true), limit));
+        let without = summary(&outcomes(Setup::Hero(hero, false), limit));
+        println!(
+            "{:<13} {:>10.1} {:>9} {:>9} {:>6.1} {:>5}%   {:>10.1} {:>9} {:>5}%",
+            format!("{hero:?}"),
+            with.kill_rate,
+            clock(with.held),
+            clock(with.worst),
+            with.level,
+            with.dawn,
+            without.kill_rate,
+            clock(without.held),
+            without.dawn,
+        );
+    }
+}
+
+/// What each hero's action adds: the hero unable to die, 3 minutes, their own weapon alone, the
+/// action theirs from the start and played, then never.
+#[test]
+#[ignore = "balance, on demand"]
+fn balance_actions() {
+    let limit = (weather::DUSK_SECONDS + 3 * 60) * u32::from(TICKS_PER_SECOND);
+    println!(
+        "\nEach hero unable to die, 3 minutes, their own weapon alone, {SEEDS} seeds a line: kills a minute with their action (at level 1) played, then never.\n"
+    );
+    println!(
+        "{:<13} {:>10} {:>10} {:>8}",
+        "hero", "action", "no action", "gain"
+    );
+    for hero in Skin::ALL {
+        let with = summary(&outcomes(Setup::Tried(hero, true), limit)).kill_rate;
+        let without = summary(&outcomes(Setup::Tried(hero, false), limit)).kill_rate;
+        println!(
+            "{:<13} {:>10.1} {:>10.1} {:>7.0}%",
+            format!("{hero:?} ({:?})", hero.action()),
+            with,
+            without,
+            (with / without.max(0.1) - 1.0) * 100.0
+        );
+    }
+}
+
+/// A line of runs, summed up: kills a minute, time held on average and at worst, level, and the
+/// share reaching the dawn, in percent.
+struct Summary {
+    kill_rate: f32,
+    held: f32,
+    worst: f32,
+    level: f32,
+    dawn: usize,
+}
+
+fn summary(runs: &[Outcome]) -> Summary {
+    Summary {
+        kill_rate: mean(
             runs.iter()
                 .map(|run| run.kills as f32 * 60.0 / run.seconds.max(1) as f32),
-        );
-        let held = mean(runs.iter().map(|run| run.seconds as f32));
-        let worst = runs.iter().map(|run| run.seconds).min().unwrap_or(0);
-        let level = mean(runs.iter().map(|run| run.level as f32));
-        let dawn = runs.iter().filter(|run| run.dawn).count() * 100 / runs.len();
-        println!(
-            "{:<13} {:>10.1} {:>9} {:>9} {:>6.1} {:>5}%",
-            format!("{hero:?}"),
-            kill_rate,
-            clock(held),
-            clock(worst as f32),
-            level,
-            dawn
-        );
+        ),
+        held: mean(runs.iter().map(|run| run.seconds as f32)),
+        worst: runs.iter().map(|run| run.seconds).min().unwrap_or(0) as f32,
+        level: mean(runs.iter().map(|run| run.level as f32)),
+        dawn: runs.iter().filter(|run| run.dawn).count() * 100 / runs.len().max(1),
     }
 }
 

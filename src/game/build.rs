@@ -17,9 +17,9 @@ const CHOICES: usize = 3;
 pub const RARE_PERCENT: u32 = 25;
 /// The survivor's HP before Vitality: the measure of the others'.
 pub const BASE_HP: u32 = 100;
-/// How long a dash takes to come back, in ticks, by the Dash card's level: 8 s, 6 s, 6 s,
-/// 4.5 s, 3 s.
-const DASH_RECHARGES: [u32; 5] = [240, 180, 180, 135, 90];
+/// How long a dash takes to come back, in ticks, by the Dash card's level: 6 s, 5 s, 5 s, 4 s,
+/// 3 s.
+const DASH_RECHARGES: [u32; 5] = [180, 150, 150, 120, 90];
 /// The HP a heal gives back: the choice left when nothing else can be picked.
 pub const HEAL: u32 = 20;
 /// What each level of Vitality adds to the player's HP.
@@ -765,7 +765,7 @@ mod tests {
             build.take(Choice::Action(Action::Dash));
             levels.push((build.dashes(), build.dash_recharge()));
         }
-        assert_eq!(levels, [(1, 240), (1, 180), (2, 180), (2, 135), (2, 90)]);
+        assert_eq!(levels, [(1, 180), (1, 150), (2, 150), (2, 120), (2, 90)]);
     }
 
     #[test]

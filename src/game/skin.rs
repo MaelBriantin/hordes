@@ -41,11 +41,6 @@ impl Perk {
         if self == Perk::Pyromaniac { 2 } else { 1 }
     }
 
-    /// The damage taken, against what it would be, in percent.
-    pub fn hurt_percent(self) -> u32 {
-        if self == Perk::Unshakable { 90 } else { 100 }
-    }
-
     /// Whether a burst throws the hero.
     pub fn thrown(self) -> bool {
         self != Perk::Unshakable

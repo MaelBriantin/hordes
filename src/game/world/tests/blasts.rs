@@ -37,7 +37,7 @@ fn the_machete_slashes_enemies_in_front_not_behind() {
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(98.0, 50.0)));
     wait(&mut world, 1);
-    assert_eq!(world.enemies[0].hp, 40 - 12);
+    assert_eq!(world.enemies[0].hp, 40 - 15);
     assert_eq!(world.enemies[1].hp, 40);
     assert!(world.swing.is_some());
 }
@@ -53,13 +53,13 @@ fn from_level_three_the_second_slash_strikes_behind() {
         .enemies
         .push(enemy(EnemyKind::Abomination, Vec2::new(98.0, 50.0)));
     wait(&mut world, 1);
-    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 12, 40));
+    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 15, 40));
     wait(&mut world, 5);
-    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 12, 40));
+    assert_eq!((world.enemies[0].hp, world.enemies[1].hp), (40 - 15, 40));
     wait(&mut world, 1);
     assert_eq!(
         (world.enemies[0].hp, world.enemies[1].hp),
-        (40 - 12, 40 - 12)
+        (40 - 15, 40 - 15)
     );
     assert_eq!(world.swing.map(|swing| swing.facing), Some(Facing::Left));
 }
@@ -474,15 +474,18 @@ fn at_level_5_the_napalm_drops_two_lines_crossed() {
 }
 
 #[test]
-fn space_sets_a_c4_charge_down_and_space_again_blows_it_from_afar() {
+fn space_sets_a_c4_charge_down_a_tile_ahead_standing_still_and_space_again_blows_it_from_afar() {
     let mut world = charged(1);
+    world.player.facing = Facing::Right;
     world.act();
+    assert!(world.charges.is_empty(), "being set down");
+    // Standing still as they set it, whatever the keys say.
+    for _ in 0..c4::SETTING_TICKS {
+        world.update(moving(0.0, 1.0));
+    }
+    assert_eq!(world.player.position, Vec2::new(100.0, 50.0), "stood still");
     assert_eq!(world.charges.len(), 1);
-    assert_eq!(
-        world.charges[0].at,
-        Vec2::new(100.0, 50.0),
-        "at the player's feet"
-    );
+    assert_eq!(world.charges[0].at, Vec2::new(101.0, 50.0), "a tile ahead");
     // The player walks off; it waits.
     world.player.position = Vec2::new(98.0, 50.0);
     wait(&mut world, 20);
@@ -493,8 +496,8 @@ fn space_sets_a_c4_charge_down_and_space_again_blows_it_from_afar() {
         world.charges.is_empty() && world.c4_blasts.len() == 1,
         "blown"
     );
-    assert_eq!(world.enemies[0].hp, 1_000 - 25);
-    assert_eq!(world.enemies[1].hp, 1_000 - 25);
+    assert_eq!(world.enemies[0].hp, 1_000 - 20);
+    assert_eq!(world.enemies[1].hp, 1_000 - 20);
     assert_eq!(world.enemies[2].hp, 1_000, "beyond its blast");
     wait(&mut world, c4::WAVE_TICKS);
     assert!(world.enemies[1].position.x > 104.5, "thrown back 3 tiles");
@@ -503,25 +506,31 @@ fn space_sets_a_c4_charge_down_and_space_again_blows_it_from_afar() {
 #[test]
 fn a_c4_charge_left_alone_blows_by_itself_then_the_next_waits_its_recharge() {
     let mut world = charged(1);
+    world.player.facing = Facing::Right;
     world.act();
+    wait(&mut world, c4::SETTING_TICKS);
     wait(&mut world, c4::FUSE_TICKS - 1);
     assert_eq!(world.enemies[0].hp, 1_000, "not yet");
     wait(&mut world, 1);
-    assert_eq!(world.enemies[0].hp, 1_000 - 25, "by itself");
+    assert_eq!(world.enemies[0].hp, 1_000 - 20, "by itself");
     // Not again before its recharge.
     world.act();
     assert!(world.charges.is_empty(), "recharging");
     wait(&mut world, c4::at(1).recharge);
     world.act();
+    wait(&mut world, c4::SETTING_TICKS);
     assert_eq!(world.charges.len(), 1, "ready again");
 }
 
 #[test]
 fn at_level_5_two_c4_charges_set_down_one_after_the_other_blow_together() {
     let mut world = charged(5);
+    world.player.facing = Facing::Right;
     world.act();
+    wait(&mut world, c4::SETTING_TICKS);
     world.player.position = Vec2::new(108.0, 50.0);
     world.act();
+    wait(&mut world, c4::SETTING_TICKS);
     assert_eq!(world.charges.len(), 2);
     world.act();
     wait(&mut world, 1);

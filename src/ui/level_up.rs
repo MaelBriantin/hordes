@@ -213,6 +213,8 @@ struct Card {
 
 /// How wide the box telling an action just come is; the room its icon takes, twice as big.
 const UNLOCKED_WIDTH: u16 = 64;
+/// The dash's recharge by its level, in tenths of a second, as its card tells it.
+const DASH_TENTHS: [u32; 5] = [60, 50, 50, 40, 30];
 /// The prompt to go on blinks: every so many frames, shown for so many.
 const PROMPT_BLINK: (u32, u32) = (30, 20);
 const UNLOCKED_ICON: (u16, u16) = (16, 8);
@@ -704,7 +706,7 @@ fn action_gain(action: Action, level: u8) -> String {
     match action {
         // The dash: level 3 brings the second; the others, sooner back, in tenths of a second.
         Action::Dash => {
-            let tenths: u32 = [80, 60, 60, 45, 30][usize::from(level.clamp(1, 5) - 1)];
+            let tenths: u32 = DASH_TENTHS[usize::from(level.clamp(1, 5) - 1)];
             match level {
                 0 | 1 => fl!("gain-dash"),
                 3 => fl!("gain-dash-second"),
@@ -848,5 +850,18 @@ mod tests {
         assert!(turned(Duration::ZERO) < f32::EPSILON);
         assert!((turned(FLIP / 2) - 0.5).abs() < 1e-3);
         assert!((turned(FLIP * 3) - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn the_dash_card_tells_the_dash_s_own_recharge() {
+        let mut world = World::new(1);
+        for tenths in DASH_TENTHS {
+            world.player.build.take(Choice::Action(Action::Dash));
+            assert_eq!(
+                world.player.build.dash_recharge(),
+                tenths * 3,
+                "{tenths} tenths"
+            );
+        }
     }
 }

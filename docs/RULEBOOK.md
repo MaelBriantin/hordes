@@ -117,7 +117,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Survivor | 100 | normal | crowbar | **Versatile**: no weakness, the measure of the others |
 | Veteran | 120 | +5% | machete | **Commando**: every weapon hurts 10% more |
 | Exterminator | 100 | −5% | stun baton | **Pyromaniac**: the enemies set on fire burn twice as long (the flamethrower, the Molotov, the napalm, lightning) |
-| Demolisher | 140 | −15% | sledgehammer, and the C4 as their action | **Unshakable**: 10% less damage taken, and never thrown by a burst |
+| Demolisher | 140 | −15% | sledgehammer, and the C4 as their action | **Unshakable**: never thrown by a burst |
 | Special agent | 80 | +10% | combat knife | **Reflexes**: the guns reload 20% faster |
 | Medic | 90 | normal | defibrillator | **Healer**: herbs and the heal give back half again as much, campfires heal faster (as much in all); the defibrillator, Life drain and Regeneration heal as for anyone. No HP comes back of itself |
 | Ghost (infiltrator) | 90 | +5% | fists | **Stealthy**: the torch out, they see 7 tiles around them all the same, in green, their goggles down over their eyes (blank 4 s once struck by lightning); the torch put out, the enemies further than 2 tiles lose them at once, then notice them within 2 tiles alone, the hordes apart; lightning shows them still, those that saw them following as ever; the Shadows hunt them only after 4 s of dark |
@@ -130,7 +130,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Body | 0.9 × 0.9 tile, smaller than the sprite (2 × 2 tiles): brushing past an obstacle is forgiven |
 | HP | The hero's (+20 per level of Vitality); the HP bar blinks under 30% |
 | Invincibility after a hit | 0.5 s (the player blinks) |
-| Dashes | The ninja's own action, theirs once the run reaches level 3, its card shown alone as it comes (see Passives). One, ready as the card is taken, back 8 s after it is taken (6 s from level 2, 4.5 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
+| Dashes | The ninja's own action, theirs once the run reaches level 3, its card shown alone as it comes (see Passives). One, ready as the card is taken, back 6 s after it is taken (5 s from level 2, 4 s from level 4, 3 s at level 5); a second from level 3, coming back after the first; never more. With the card, they show under its icon in the gear, as a gun's rounds: full when all are ready, filling back as they come back |
 | Dash | Space or Enter: 3 tiles the way the player faces, in 0.27 s, fading silhouettes of the hero behind; nothing hurts them meanwhile, neither enemies nor lightning |
 
 ## Enemies
@@ -182,7 +182,7 @@ The survivor's own weapon, and so the one most runs start with: a heavy blow in 
 
 ### Machete
 
-The veteran's own weapon. A swing in an arc before the player, the way they face, hitting **every enemy in it** for **12 damage**: within reach of the player (plus the enemy's half width) and within the arc. It swings every **0.9 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
+The veteran's own weapon. A swing in an arc before the player, the way they face, hitting **every enemy in it** for **15 damage** (a zombie at a blow): within reach of the player (plus the enemy's half width) and within the arc. It swings every **0.9 s**, once an enemy is within its reach, whichever way. A swing may hold several **slashes**, 0.2 s apart, each hitting anew: ahead, then **behind**, then ahead again.
 
 | Level | Swing |
 |---|---|
@@ -270,9 +270,9 @@ The medic's own **action**, theirs once the run reaches **level 3**, its card sh
 
 ### C4
 
-The demolisher's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes ("Hero skill available", the run standing still until Space or Enter, "PRESS [SPACE] TO GO ON" blinking under it, the key on its cap), played with Space or Enter. A first press sets a **charge** down at their feet: a small dark block, its red light blinking faster and faster, glowing in the dark. A second press **blows it, from afar**, wherever the player stands; left alone, it blows by itself **3 s** later. Its blast: every enemy within **2.5 tiles** takes **25 damage** and is thrown back **3 tiles**; a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. One charge at a time; the next can be set down **5 s** after the blast (less with Haste), its wait under its icon. Its next levels are dealt to the demolisher alone.
+The demolisher's own **action**, theirs once the run reaches **level 3**, its card shown alone as it comes ("Hero skill available", the run standing still until Space or Enter, "PRESS [SPACE] TO GO ON" blinking under it, the key on its cap), played with Space or Enter. A first press sets a **charge** down **a tile ahead**, the way they face (at their feet if that ground isn't free), the demolisher standing still **0.25 s** as they set it: a small dark block, its red light blinking faster and faster, glowing in the dark. A second press **blows it, from afar**, wherever the player stands; left alone, it blows by itself **3 s** later. Its blast: every enemy within **2.5 tiles** takes **20 damage** and is thrown back **3 tiles**; a white flash over the whole blast, then a fireball shrinking, lighting around it, then smoke rising. One charge at a time; the next can be set down **7 s** after the blast (less with Haste), its wait under its icon. Its next levels are dealt to the demolisher alone.
 
-**Levels**: 2: a 3-tile blast · 3: 40 damage · 4: ready 4 s after the blast · 5: **two charges**, set down one after the other, the next press blowing both together.
+**Levels**: 2: a 3-tile blast · 3: 32 damage · 4: ready 5 s after the blast · 5: **two charges**, set down one after the other, the next press blowing both together.
 
 ### Eye-gouger
 
@@ -304,15 +304,15 @@ A gun of a kind, unlocked by Shadow hunter: volleys of **3 stars** thrown at the
 
 ### Defibrillator
 
-The medic's own weapon. Every **1 s** (less with Haste), a **shock** at the nearest enemy within **2 tiles**, leaping on to the nearest to it within 2 tiles, and so on, **3** enemies at most, **12 damage** each; each enemy it fells gives the medic back **1 HP**. In the dark too. It shows as a jagged bolt leaping from the hero through each enemy shocked, white then cyan.
+The medic's own weapon. Every **1 s** (less with Haste), a **shock** at the nearest enemy within **2 tiles**, leaping on to the nearest to it within 2 tiles, and so on, **3** enemies at most, **12 damage** each; every two enemies it fells give the medic back **1 HP** (half an HP each, the halves kept). In the dark too. It shows as a jagged bolt leaping from the hero through each enemy shocked, white then cyan.
 
-**Levels**: 2: 4 enemies · 3: 16 damage · 4: a shock every 0.8 s · 5: 2 HP a kill.
+**Levels**: 2: 4 enemies · 3: 16 damage · 4: a shock every 0.8 s · 5: 1 HP a kill.
 
 ### Truncheon
 
-The riot officer's own weapon. Every **1 s** (less with Haste), once an enemy is within its reach, a **blow** in an arc ahead, the way they face, **2 tiles**, 120° wide: every enemy in it takes **14 damage** and is thrown **1.5 tiles** back. It shows as the crowbar's blow, iron grey.
+The riot officer's own weapon. Every **1 s** (less with Haste), once an enemy is within its reach, a **blow** in an arc ahead, the way they face, **2 tiles**, 120° wide: every enemy in it takes **20 damage** and is thrown **a tile** back. It shows as the crowbar's blow, iron grey.
 
-**Levels**: 2: 2.5 tiles · 3: 20 damage · 4: a wider blow (180°) · 5: the blow **stuns** 0.5 s.
+**Levels**: 2: 2.5 tiles · 3: 28 damage · 4: a wider blow (180°) · 5: the blow **stuns** 0.5 s.
 
 ### Fists
 

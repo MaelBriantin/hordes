@@ -19,8 +19,9 @@ pub struct Defibrillator {
     pub damage: u32,
     /// How many enemies a shock goes through, at most.
     pub chain: usize,
-    /// The HP each enemy it fells gives back.
-    pub heals: u32,
+    /// The share of an HP each enemy it fells gives back, in percent: half an HP, a whole one at
+    /// the last level.
+    pub heal_percent: u32,
 }
 
 /// The defibrillator at a level.
@@ -30,7 +31,7 @@ pub fn at(level: u8) -> Defibrillator {
         every: if level >= 4 { tenths(8) } else { tenths(10) },
         damage: if level >= 3 { 16 } else { 12 },
         chain: if level >= 2 { 4 } else { 3 },
-        heals: if level >= 5 { 2 } else { 1 },
+        heal_percent: if level >= 5 { 100 } else { 50 },
     }
 }
 
@@ -49,12 +50,12 @@ mod tests {
     fn the_defibrillator_grows_with_its_levels() {
         let (first, last) = (at(1), at(5));
         assert_eq!(
-            (first.every, first.damage, first.chain, first.heals),
-            (30, 12, 3, 1)
+            (first.every, first.damage, first.chain, first.heal_percent),
+            (30, 12, 3, 50)
         );
         assert_eq!(
-            (last.every, last.damage, last.chain, last.heals),
-            (24, 16, 4, 2)
+            (last.every, last.damage, last.chain, last.heal_percent),
+            (24, 16, 4, 100)
         );
     }
 }

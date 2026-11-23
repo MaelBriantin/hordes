@@ -68,7 +68,11 @@ impl World {
                 }
             }
         }
-        if felled > 0 && self.heal(felled * stats.heals) > 0 {
+        // Half an HP an enemy felled, the halves kept until they make a whole one.
+        self.shock_hp_percent += felled * stats.heal_percent;
+        let whole = self.shock_hp_percent / 100;
+        self.shock_hp_percent %= 100;
+        if whole > 0 && self.heal(whole) > 0 {
             self.healed_at = Some(self.ticks);
         }
         self.shock = Some(Shock { path, age: 0 });

@@ -1,5 +1,5 @@
-//! The C4, the demolisher's own action: Space sets a charge down at their feet, its light
-//! blinking faster and faster; Space again blows it, from afar, or it blows by itself a while
+//! The C4, the demolisher's own action: Space sets a charge down a tile ahead, the way they
+//! face, standing still a moment as they do, its light blinking faster and faster; Space again blows it, from afar, or it blows by itself a while
 //! later. Its blast hurts every enemy around, throwing them back. At the last level, two charges
 //! set down one after the other, blowing together.
 
@@ -7,6 +7,10 @@ use super::{TICKS_PER_SECOND, Vec2};
 
 /// The ticks a charge waits before it blows by itself: 3 s.
 pub const FUSE_TICKS: u32 = 90;
+/// The ticks the demolisher takes to set a charge down, standing still: a quarter of a second;
+/// and how far ahead of them it goes, in tiles, the way they face.
+pub const SETTING_TICKS: u32 = 8;
+pub const AHEAD: f32 = 1.0;
 /// How far the blast throws the enemies it hits back, away from the charge, in tiles, over how
 /// many ticks.
 pub const KNOCKBACK: f32 = 3.0;
@@ -31,8 +35,8 @@ pub struct C4 {
 pub fn at(level: u8) -> C4 {
     let second = u32::from(TICKS_PER_SECOND);
     C4 {
-        recharge: if level >= 4 { 4 } else { 5 } * second,
-        damage: if level >= 3 { 40 } else { 25 },
+        recharge: if level >= 4 { 5 } else { 7 } * second,
+        damage: if level >= 3 { 32 } else { 20 },
         radius: if level >= 2 { 3.0 } else { 2.5 },
         charges: if level >= 5 { 2 } else { 1 },
     }
@@ -76,11 +80,11 @@ mod tests {
         let (first, last) = (at(1), at(5));
         assert_eq!(
             (first.recharge, first.damage, first.radius, first.charges),
-            (150, 25, 2.5, 1)
+            (210, 20, 2.5, 1)
         );
         assert_eq!(
             (last.recharge, last.damage, last.radius, last.charges),
-            (120, 40, 3.0, 2)
+            (150, 32, 3.0, 2)
         );
     }
 

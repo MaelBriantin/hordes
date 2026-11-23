@@ -233,6 +233,8 @@ pub struct World {
     pub charges: Vec<Charge>,
     pub c4_blasts: Vec<c4::Blast>,
     pub c4_wait: u32,
+    /// The ticks left setting a C4 charge down, the player standing still.
+    pub c4_setting: u32,
     /// The ticks before the first-aid kit can be opened again.
     pub kit_wait: u32,
     /// The ticks the wall of fire still follows the player, and before it can be lit again.
@@ -247,6 +249,8 @@ pub struct World {
     pub cases: Vec<Case>,
     /// The ticks before the vault can be made again.
     pub vault_wait: u32,
+    /// The share of an HP the defibrillator's kills have given back towards the next, in percent.
+    shock_hp_percent: u32,
     /// The tick the run started at: past the dusk, when skipped.
     started_at: u32,
     /// The enemies felled by the flashball, bursting.
@@ -508,6 +512,7 @@ impl World {
             charges: Vec::new(),
             c4_blasts: Vec::new(),
             c4_wait: 0,
+            c4_setting: 0,
             kit_wait: 0,
             fire_wall_left: 0,
             fire_wall_wait: 0,
@@ -517,6 +522,7 @@ impl World {
             gatling_wait: 0,
             cases: Vec::new(),
             vault_wait: 0,
+            shock_hp_percent: 0,
             started_at: 0,
             flash_bursts: Vec::new(),
             revivals: 0,

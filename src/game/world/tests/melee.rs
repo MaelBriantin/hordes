@@ -32,13 +32,13 @@ fn at_level_five_a_swing_strikes_ahead_behind_then_ahead() {
     wait(&mut world, 13);
     assert_eq!(
         (world.enemies[0].hp, world.enemies[1].hp),
-        (40 - 24, 40 - 12)
+        (40 - 30, 40 - 15)
     );
     // The swing is over until the machete is ready again.
     wait(&mut world, machete::cooldown() - 14);
     assert_eq!(
         (world.enemies[0].hp, world.enemies[1].hp),
-        (40 - 24, 40 - 12)
+        (40 - 30, 40 - 15)
     );
 }
 
@@ -182,7 +182,7 @@ fn the_katana_cuts_the_nearest_then_chains_through_the_next_ones_near() {
 }
 
 #[test]
-fn the_defibrillator_leaps_through_the_enemies_near_and_heals_for_each_it_fells() {
+fn the_defibrillator_leaps_through_the_enemies_near_and_heals_a_point_for_two_it_fells() {
     let mut world = armed_with(Weapon::Defibrillator, 1);
     world.next_horde = u32::MAX;
     world.player.hp = 50;
@@ -202,7 +202,7 @@ fn the_defibrillator_leaps_through_the_enemies_near_and_heals_for_each_it_fells(
         .iter()
         .find(|e| (e.position.x - 103.2).abs() < 0.1);
     assert_eq!(between.map(|e| e.hp), Some(1_000 - 12));
-    assert_eq!(world.player.hp, 52, "two felled, a point each");
+    assert_eq!(world.player.hp, 51, "two felled, half a point each");
 }
 
 #[test]
@@ -329,7 +329,7 @@ fn the_truncheon_strikes_ahead_throwing_back_what_it_hits() {
         enemy.stunned = u32::MAX;
     }
     wait(&mut world, 1);
-    assert_eq!(world.enemies[0].hp, 1_000 - 14, "ahead");
+    assert_eq!(world.enemies[0].hp, 1_000 - 20, "ahead");
     assert_eq!(world.enemies[1].hp, 1_000, "not behind");
     wait(&mut world, 10);
     assert!(world.enemies[0].position.x > 102.0, "thrown back");

@@ -1,25 +1,26 @@
 //! The C4 at work, the demolisher's own action: its charges set down, blown from afar or by
 //! themselves, and their blasts.
 
+use super::super::body::fits;
 use super::super::build::Action;
-use super::super::c4::{self, BLAST_TICKS, Blast, Charge, FUSE_TICKS, KNOCKBACK, WAVE_TICKS};
+use super::super::c4::{
+    self, AHEAD, BLAST_TICKS, Blast, Charge, FUSE_TICKS, KNOCKBACK, SETTING_TICKS, WAVE_TICKS,
+};
 use super::super::enemy::EnemyKind;
-use super::World;
 use super::weapons::against;
+use super::{PLAYER_HALF_WIDTH, World};
 
 impl World {
-    /// The player plays the C4: a charge set down at their feet, if one is ready and room is
-    /// left for it; with as many down as can stand, they all blow, from afar.
+    /// The player plays the C4: a charge set down a tile ahead, if one is ready and room is
+    /// left for it, the player standing still a moment as they set it; with as many down as can
+    /// stand, they all blow, from afar.
     pub(super) fn c4(&mut self) {
         let level = self.player.build.action_level(Action::C4);
-        if self.announcement.is_some() || level == 0 {
+        if self.announcement.is_some() || level == 0 || self.c4_setting > 0 {
             return;
         }
         if self.charges.len() < c4::at(level).charges && self.c4_wait == 0 {
-            self.charges.push(Charge {
-                at: self.player.position,
-                left: FUSE_TICKS,
-            });
+            self.c4_setting = SETTING_TICKS;
         } else {
             for charge in &mut self.charges {
                 charge.left = 0;
@@ -43,6 +44,23 @@ impl World {
         }
         for charge in &mut self.charges {
             charge.left = charge.left.saturating_sub(1);
+        }
+        // Set down at the end of the setting, a tile ahead; at the player's feet if that ground
+        // isn't free.
+        if self.c4_setting > 0 {
+            self.c4_setting -= 1;
+            if self.c4_setting == 0 {
+                let ahead = self.player.position + self.player.facing.way() * AHEAD;
+                let at = if fits(&self.map, ahead, PLAYER_HALF_WIDTH, false) {
+                    ahead
+                } else {
+                    self.player.position
+                };
+                self.charges.push(Charge {
+                    at,
+                    left: FUSE_TICKS,
+                });
+            }
         }
         if self.charges.iter().all(|charge| charge.left > 0) {
             return;

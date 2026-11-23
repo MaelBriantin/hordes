@@ -31,8 +31,9 @@ impl World {
     }
 
     pub(super) fn move_player(&mut self, input: Input) {
-        // Braced before a charge, the player stands still; vaulting, they go where it goes.
-        if self.ram_windup.is_some() || self.carry_vault() {
+        // Braced before a charge, or setting a C4 charge down, the player stands still; vaulting,
+        // they go where it goes.
+        if self.ram_windup.is_some() || self.c4_setting > 0 || self.carry_vault() {
             return;
         }
         let player = &mut self.player;
@@ -185,7 +186,6 @@ impl World {
             return;
         }
         let player = &mut self.player;
-        let damage = super::super::percent_of(damage, player.build.hero().perk().hurt_percent());
         player.hp = player.hp.saturating_sub(damage);
         player.invincible = u32::from(TICKS_PER_SECOND) / 2;
         self.hurt_at = Some(self.ticks);

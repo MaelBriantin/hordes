@@ -162,13 +162,13 @@ fn each_hero_plays_with_their_own_hp_speed_and_perk() {
 }
 
 #[test]
-fn the_demolisher_takes_less_damage_and_no_burst_throws_them() {
+fn no_burst_throws_the_demolisher_who_takes_its_damage_whole() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     world.play_as(Skin::Demolisher);
     assert_eq!(world.player.hp, 140);
     let start = world.player.position;
     world.burst(start + Vec2::new(1.0, 0.0));
-    assert_eq!(world.player.hp, 140 - burst::DAMAGE * 90 / 100);
+    assert_eq!(world.player.hp, 140 - burst::DAMAGE, "no damage taken off");
     assert_eq!(world.player.position, start, "not thrown");
 }
 

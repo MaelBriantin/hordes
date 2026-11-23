@@ -10,7 +10,7 @@ use super::build::Weapon;
 use super::{Facing, TICKS_PER_SECOND, Vec2};
 
 /// What a slash takes from each enemy it hits, in HP.
-pub const DAMAGE: u32 = 12;
+pub const DAMAGE: u32 = 15;
 /// How many ticks a slash shows.
 pub const SWING_TICKS: u32 = 6;
 /// The ticks between two slashes of a swing: 0.2 seconds.
@@ -49,11 +49,11 @@ pub fn melee(weapon: Weapon, level: u8) -> Option<Melee> {
         // The truncheon: a blow ahead throwing back what it hits.
         Weapon::Truncheon => Some(Melee {
             cooldown: second,
-            damage: if level >= 3 { 20 } else { 14 },
+            damage: if level >= 3 { 28 } else { 20 },
             reach: if level >= 2 { 2.5 } else { 2.0 },
             half_arc: if level >= 4 { FRAC_PI_2 } else { FRAC_PI_3 },
             slashes: 1,
-            knockback: 1.5,
+            knockback: 1.0,
             stun: if level >= 5 { second / 2 } else { 0 },
         }),
         Weapon::Crowbar => Some(Melee {
