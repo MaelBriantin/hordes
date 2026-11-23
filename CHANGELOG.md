@@ -14,6 +14,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The sniper rifle, a rare weapon unlocked by Shadow in place of Stealth: a red dot on the toughest enemy far off, in the dark too, then a heavy shot; through every enemy on its line at the last level.
 - The medic's first-aid kit, their own action from the run's level 3: HP back at once, then it waits its recharge.
 - The exterminator's wall of fire, their own action from the run's level 3: a line of fire follows them 1.5 s, each stretch burning on 5 s, setting on fire the enemies crossing it.
+- Revival, a rare passive unlocked by a new achievement, Close call (under 5 HP, then the dawn): down to 0 HP, the hero comes back once, part of their HP back, untouchable a while; a wave at level 4, twice at the last.
 - The Eye-gouger, a rare flashball unlocked by Hold the line: a slow "non-lethal" shot, the enemy thrown back and stunned, one felled bursting.
 - The special agent's vault, their own action from the run's level 3: over the obstacle just ahead, untouchable in the air, or a short hop; a kick on landing, then over enemies, then three blocks in a row with the levels.
 - Every hero now has their own action.

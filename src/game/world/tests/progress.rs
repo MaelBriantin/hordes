@@ -277,3 +277,27 @@ fn thirty_seconds_among_a_dozen_enemies_in_a_run_unlock_the_riot_officer_and_the
     assert_eq!(Skin::Riot.achievement(), Some(Achievement::HoldTheLine));
     assert_eq!(Skin::Riot.weapon(), Weapon::Truncheon);
 }
+
+#[test]
+fn under_5_hp_then_the_dawn_reached_is_close_call_and_unlocks_revival() {
+    let mut world = World::with(1, Mode::Standard, false, Progress::default());
+    world.announcement = None;
+    world.ticks = weather::dawn() + weather::daybreak() - 2;
+    world.player.hp = 4;
+    world.update(Input::default());
+    assert!(
+        !world.progress.achieved.contains(&Achievement::CloseCall),
+        "not before the dawn"
+    );
+    world.player.hp = 50;
+    world.update(Input::default());
+    assert!(world.survived());
+    assert!(world.progress.achieved.contains(&Achievement::CloseCall));
+    assert!(world.progress.deals(Choice::Passive(Passive::Revival)));
+    // The dawn reached without falling that low: nothing.
+    let mut world = World::with(1, Mode::Standard, false, Progress::default());
+    world.announcement = None;
+    world.ticks = weather::dawn() + weather::daybreak() - 1;
+    world.update(Input::default());
+    assert!(!world.progress.achieved.contains(&Achievement::CloseCall));
+}

@@ -139,6 +139,7 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Zombie | 15 | 1 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Straight at the player |
 | Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
 | Hold the line | Stand 30 s among 12 enemies within 3 tiles in one run (every tick counted, not in a row) | The Eye-gouger, and the riot officer with their truncheon and their own action from the run's level 3, the shield ram (Space: the player braces 0.3 s, standing still, then charges 5 tiles straight ahead the way they faced (7 from level 4), nothing hurting them, every enemy within a tile of the way hurt, stunned 0.6 s and thrown 4 tiles aside in a V) |
+| Close call | Fall under 5 HP, standing, and reach the dawn in the same run | Revival |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 | Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
 
@@ -360,6 +361,7 @@ Up to **4 passives**, each up to **level 5**.
 | Regeneration | +0.4 HP a second, of itself (tenths kept until they make a whole one) |
 | Horde Hunter | +10% damage from the weapons to an enemy of a horde, per level (+50% at level 5). A horde's last ones targeted in red: its last tenth at level 1, a quarter at 2, seen in the dark too from level 3, a half at 4, the whole horde at 5 |
 | Life drain | **Rare**. Each enemy felled has a chance to give back **1 HP**: 10% at level 1, 5 points more each level (30% at level 5) |
+| Revival | **Rare**. Down to **0 HP**, the hero comes back **once** with **25%** of their HP, untouchable **2 s**: their soul out of their body, up, then back into it, the body grey meanwhile; then a white ring and the green crosses of a heal. Used up, its icon is greyed and crossed out in red in the gear and on the pause screen, its name too in the list. Level 2: 35%; 3: 50%; 4: a **wave** throws the enemies within 4 tiles back 3 tiles as they come back; 5: **twice** a run |
 | Glare | The enemies as far as the torch's light shows, its fading included (15 tiles, and Flashlight's), go 10% slower, while it is lit: every kind, the hordes too |
 | Wisdom | +10% XP from the gems (tenths of a point kept until they make a whole one) |
 
@@ -418,7 +420,7 @@ Cards played with **Space or Enter**, when the player wants. A run holds **one**
 - At most **500 gems** lie around: past that, the oldest go.
 - The next level takes **5 + 3 × (level − 1)** XP: 5 from level 1, 8 from level 2, 11 from level 3. XP beyond it carries over.
 - **Level 3** brings the hero's own action (its card shown alone, "Hero skill available") in place of a choice of cards: one reward a level. Two levels at once, 2 to 4, bring the action and a choice for level 4.
-- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heroes' own actions, the heal. Rare: the flamethrower, the chainsaw, the grenade, the sniper rifle, the Eye-gouger, the napalm, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
+- **Rarity**: each card is **common** (grey frame) or **rare** (blue frame, its word on the bottom border), the legendaries apart (see Legendaries). Common: every other weapon, Vitality, Swiftness, Magnet, Flashlight, Loot, the heroes' own actions, the heal. Rare: the flamethrower, the chainsaw, the grenade, the sniper rifle, the Eye-gouger, Revival, the napalm, the sledgehammer, the stun baton, Might, Haste, Wisdom, Regeneration, Glare, Life drain. A weapon or a passive keeps its rarity at every level.
 - **Level-up**: the game pauses and offers **3 different choices** at random among what can still be picked, each a rare one **25%** of the time (a common one otherwise, or the other if none is left of its rarity): a new weapon or passive (while there is room), or the next level of one owned. At dusk, neither Flashlight nor Glare is offered: the torch isn't lit yet. With nothing left to pick, the one choice is **Heal 20 HP**. Several levels at once offer their choices one after the other.
 - **Kind**: a card's top border says whether it is a weapon or a passive, by its number.
 - **Room and reroll**: under the cards, the room left: weapons and passives the player has, out of 4 each. Once a run, **R** deals the cards on offer again, as rare as they were; the rerolls left show under the cards too.

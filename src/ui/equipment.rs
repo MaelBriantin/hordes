@@ -175,7 +175,12 @@ fn action_line(world: &World) -> Option<Line<'static>> {
 /// A card in `room`: its icon, then its name and level and what it brings, wrapped.
 fn card(frame: &mut Frame, room: Rect, world: &World, sprites: &Sprites, choice: Choice) {
     let picture = Rect::new(room.x, room.y, PICTURE.0, PICTURE.1);
-    pixels::render_sprite(frame.buffer_mut(), picture, sprites, level_up::icon(choice));
+    let icon = level_up::icon(choice);
+    if world.spent(choice) {
+        pixels::render_spent_sprite(frame.buffer_mut(), picture, sprites, icon);
+    } else {
+        pixels::render_sprite(frame.buffer_mut(), picture, sprites, icon);
+    }
     let width = room.width.saturating_sub(PICTURE.0 + GAP);
     let words = Rect::new(room.x + PICTURE.0 + GAP, room.y, width, room.height);
     frame.render_widget(Paragraph::new(card_lines(world, choice, width)), words);

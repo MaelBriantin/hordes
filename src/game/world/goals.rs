@@ -1,9 +1,10 @@
 //! The achievements of a run, reached as it goes.
 
 use super::{
-    Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
-    FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH, HOLD_THE_LINE_SECONDS, LEGEND_KILLS,
-    SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, TICKS_PER_SECOND, VETERAN_LEVEL, Weather, World,
+    Achievement, CARNAGE_KILLS, CLOSE_CALL_HP, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS,
+    DEMOLISHER_ABOMINATIONS, FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH,
+    HOLD_THE_LINE_SECONDS, LEGEND_KILLS, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, TICKS_PER_SECOND,
+    VETERAN_LEVEL, Weather, World,
 };
 
 impl World {
@@ -24,6 +25,9 @@ impl World {
         let (hp, most) = (self.player.hp, self.player.max_hp());
         if hp > 0 && hp * 100 < most * COLD_BLOOD_PERCENT {
             self.low_hp_ticks += 1;
+        }
+        if hp > 0 && hp < CLOSE_CALL_HP {
+            self.close_call = true;
         }
         if self.low_hp_ticks >= COLD_BLOOD_SECONDS * u32::from(TICKS_PER_SECOND) {
             self.progress.reach(Achievement::ColdBlood);

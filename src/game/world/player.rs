@@ -195,6 +195,7 @@ impl World {
             size: 1,
             ash: false,
         });
+        self.revive();
     }
 
     /// At the run's level 3, the hero's own action, at its first level, its card shown to the

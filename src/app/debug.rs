@@ -28,7 +28,10 @@ pub fn handle_key(world: &mut World, code: KeyCode, selected: usize) -> Screen {
                 DebugAction::Horde => world.debug_horde(),
                 DebugAction::Dawn => world.debug_dawn(),
                 DebugAction::LevelUp => world.debug_level_up(),
+                DebugAction::GiveCard => return Screen::DebugCards { selected: 0 },
+                DebugAction::ActionUp => world.debug_action_up(),
                 DebugAction::Heal => world.debug_heal(),
+                DebugAction::OneHp => world.debug_one_hp(),
                 DebugAction::Campfire => world.debug_campfire(),
                 DebugAction::Fire => world.debug_fire(),
                 DebugAction::UnlockAll => world.debug_unlock_all(),
@@ -41,5 +44,32 @@ pub fn handle_key(world: &mut World, code: KeyCode, selected: usize) -> Screen {
         }
         KeyCode::Esc | KeyCode::Tab => Screen::Playing,
         _ => Screen::Debug { selected },
+    }
+}
+
+/// Keys in the list of cards: ↑↓ choose a card, Enter gives it a level (and stays), Esc goes
+/// back to the console, Tab to the run. The screen it leaves the app on.
+pub fn handle_cards_key(world: &mut World, code: KeyCode, selected: usize) -> Screen {
+    let cards = world.debug_cards();
+    let count = cards.len();
+    match code {
+        KeyCode::Up => Screen::DebugCards {
+            selected: (selected + count - 1) % count,
+        },
+        KeyCode::Down => Screen::DebugCards {
+            selected: (selected + 1) % count,
+        },
+        KeyCode::Enter => {
+            world.debug_give(cards[selected]);
+            Screen::DebugCards { selected }
+        }
+        KeyCode::Esc => Screen::Debug {
+            selected: DebugAction::ALL
+                .iter()
+                .position(|action| *action == DebugAction::GiveCard)
+                .unwrap_or(0),
+        },
+        KeyCode::Tab => Screen::Playing,
+        _ => Screen::DebugCards { selected },
     }
 }

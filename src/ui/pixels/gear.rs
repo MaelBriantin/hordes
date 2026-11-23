@@ -20,9 +20,21 @@ const GEAR_MAX: Color = Color::Rgb(255, 200, 60);
 const GEAR_BADGE: Color = Color::Rgb(35, 35, 45);
 /// The gear as a list: the names' colour, and the gauges' width, in cells.
 const GEAR_NAME: Color = Color::Rgb(200, 200, 210);
+/// A spent card's red, crossing it out.
+pub(super) const SPENT: Color = Color::Rgb(220, 50, 50);
 const LIST_GAUGE: i32 = 6;
 
 impl Canvas<'_> {
+    /// A red line across an icon `size` pixels wide at `corner`, from its bottom left to its top
+    /// right, two pixels thick: a spent card.
+    pub(super) fn cross_out(&mut self, (x, y): (i32, i32), size: i32) {
+        for step in 0..size {
+            let (px, py) = (x + step, y + size - 1 - step);
+            self.set((px, py), SPENT);
+            self.set((px, py - 1), SPENT);
+        }
+    }
+
     /// The player's gear as icons, over the top left of what the canvas shows, on a dark veil:
     /// each card's icon, as on the level-up cards, its gauge right under it if it has one. Where
     /// each one's level goes, written over the icon's bottom right corner once the canvas is
@@ -41,7 +53,13 @@ impl Canvas<'_> {
         for (slot, card) in (0..).zip(gear) {
             let x = left + GEAR_GAP + step * slot;
             let y = top + GEAR_PAD;
-            self.paint(Look::plain(level_up::icon(card.choice)), (x, y));
+            let icon = level_up::icon(card.choice);
+            if card.spent {
+                self.paint_greyed(icon, (x, y));
+                self.cross_out((x, y), size);
+            } else {
+                self.paint(Look::plain(icon), (x, y));
+            }
             if let Some((part, whole, colour)) = card.gauge {
                 let lit = share_of(part, whole, size, colour != GEAR_RELOADING);
                 for pixel in 0..size {
@@ -70,6 +88,8 @@ pub(super) struct GearSlot {
     pub(super) choice: Choice,
     pub(super) level: Option<u8>,
     pub(super) gauge: Option<(u32, u32, Color)>,
+    /// Whether it is spent, crossed out in red: Revival, used up.
+    pub(super) spent: bool,
 }
 
 /// An action's gauge: the Dash shows its dashes as a gun its rounds, full when all are ready,
@@ -151,21 +171,25 @@ pub(super) fn gear_slots(world: &World) -> Vec<GearSlot> {
                                 }
                             })
                     }),
+                spent: false,
             },
             Choice::Passive(passive) => GearSlot {
                 choice,
                 level: Some(build.passive_level(passive)),
                 gauge: None,
+                spent: world.spent(choice),
             },
             Choice::Action(action) => GearSlot {
                 choice,
                 level: Some(build.action_level(action)),
                 gauge: Some(action_gauge(world, action)),
+                spent: false,
             },
             Choice::Legendary(_) | Choice::Heal => GearSlot {
                 choice,
                 level: None,
                 gauge: None,
+                spent: false,
             },
         })
         .collect()
@@ -211,7 +235,13 @@ pub(super) fn draw_gear_list(buffer: &mut Buffer, area: Rect, gear: &[GearSlot])
         let y = area.y + row;
         let name = level_up::name(card.choice).to_uppercase();
         let mut x = area.x + 1;
-        buffer.set_string(x, y, &name, ground.fg(GEAR_NAME));
+        // Spent, its name crossed out in red.
+        let name_style = if card.spent {
+            ground.fg(SPENT).add_modifier(Modifier::CROSSED_OUT)
+        } else {
+            ground.fg(GEAR_NAME)
+        };
+        buffer.set_string(x, y, &name, name_style);
         x += u16::try_from(name_width).unwrap_or(0) + 1;
         if let Some(level) = card.level {
             let (text, colour) = level_text(level);

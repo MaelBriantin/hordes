@@ -285,6 +285,9 @@ impl App {
                 Screen::Debug { selected } => {
                     self.screen = debug::handle_key(&mut self.world, key.code, selected);
                 }
+                Screen::DebugCards { selected } => {
+                    self.screen = debug::handle_cards_key(&mut self.world, key.code, selected);
+                }
                 Screen::Options {
                     selected,
                     from_pause,

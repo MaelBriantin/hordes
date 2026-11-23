@@ -37,12 +37,14 @@ pub const SHADOW_HUNTER_SHADOWS: u32 = 25;
 pub const FIRST_AID_HP: u32 = 300;
 /// The enemies to fell in a single run for Legend.
 pub const LEGEND_KILLS: u32 = 700;
+/// Under how many HP the player must fall in a run, standing, for Close call at its dawn.
+pub const CLOSE_CALL_HP: u32 = 5;
 /// The level to reach in a single run for Veteran.
 pub const VETERAN_LEVEL: u32 = 25;
 
 /// Every card but the heroes' own weapons, and the reroll, as the collection shows them: those there from the start, then
 /// those unlocked, from the easiest to the hardest to unlock, those of hidden achievements last. Not the heal, no card of a build.
-pub const COLLECTION: [Unlock; 27] = [
+pub const COLLECTION: [Unlock; 28] = [
     Unlock::Card(Choice::Weapon(Weapon::Pistol)),
     Unlock::Card(Choice::Weapon(Weapon::Shotgun)),
     Unlock::Card(Choice::Passive(Passive::Vitality)),
@@ -68,6 +70,7 @@ pub const COLLECTION: [Unlock; 27] = [
     Unlock::Card(Choice::Weapon(Weapon::Napalm)),
     Unlock::Card(Choice::Weapon(Weapon::Sniper)),
     Unlock::Card(Choice::Weapon(Weapon::Flashball)),
+    Unlock::Card(Choice::Passive(Passive::Revival)),
     Unlock::Card(Choice::Legendary(Legendary::Illumination)),
     Unlock::Arcade,
 ];
@@ -109,6 +112,8 @@ pub enum Achievement {
     Shadow,
     /// Hold the line: thirty seconds surrounded by a dozen enemies in a single run, all counted.
     HoldTheLine,
+    /// Close call: under 5 HP in a run, and its dawn reached.
+    CloseCall,
     /// A regular: 25 runs played.
     Regular,
     /// Veteran: level 25 reached in a single run.
@@ -127,7 +132,7 @@ pub enum Unlock {
 }
 
 impl Achievement {
-    pub const ALL: [Achievement; 19] = [
+    pub const ALL: [Achievement; 20] = [
         Achievement::Hunter,
         Achievement::Drizzle,
         Achievement::Carnage,
@@ -144,6 +149,7 @@ impl Achievement {
         Achievement::FirstAid,
         Achievement::Shadow,
         Achievement::HoldTheLine,
+        Achievement::CloseCall,
         Achievement::Regular,
         Achievement::Veteran,
         Achievement::Dawn,
@@ -169,6 +175,7 @@ impl Achievement {
             Achievement::FirstAid => Unlock::Card(Choice::Passive(Passive::Drain)),
             Achievement::Shadow => Unlock::Card(Choice::Weapon(Weapon::Sniper)),
             Achievement::HoldTheLine => Unlock::Card(Choice::Weapon(Weapon::Flashball)),
+            Achievement::CloseCall => Unlock::Card(Choice::Passive(Passive::Revival)),
             Achievement::Regular => Unlock::Reroll,
             Achievement::Veteran => Unlock::Card(Choice::Legendary(Legendary::Illumination)),
         }

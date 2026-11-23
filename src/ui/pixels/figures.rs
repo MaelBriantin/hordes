@@ -6,7 +6,7 @@ use ratatui::style::Color;
 use super::super::sprites::{self, Look, Outfit};
 use super::super::{ViewState, night};
 use super::{Arrow, Canvas, FLAME_COLOURS, FLAMES, burst_pixels, pixel};
-use crate::game::{BURST_REACH, Blast, EnemyKind, Vec2, Veil, World};
+use crate::game::{BURST_REACH, Blast, EnemyKind, REVIVAL_SOUL_TICKS, Vec2, Veil, World};
 
 /// The Shadows' eyes, the red of the sprites' palette, and the darker red they shine with in the
 /// dark.
@@ -220,11 +220,17 @@ impl Canvas<'_> {
         // Blinking while nothing can hurt them.
         let blinks_out = player.invincible > 0 && (world.ticks() / 3).is_multiple_of(2);
         if player.dash.is_some() || !blinks_out {
-            // Vaulting, a little off the ground.
+            // Vaulting, a little off the ground; their soul out of them, grey.
             let lift = player.vault.map_or(0.0, |vault| vault.lift());
+            let look =
+                sprites::hero_in(world.hero_facing(), outfit, world.torch_on() == Some(false));
+            let lifeless = world.revived.is_some_and(|age| age < REVIVAL_SOUL_TICKS);
             figures.push((
                 player.position - Vec2::new(0.0, lift),
-                sprites::hero_in(world.hero_facing(), outfit, world.torch_on() == Some(false)),
+                Look {
+                    tint: lifeless.then_some(super::revival::LIFELESS),
+                    ..look
+                },
             ));
         }
         let mut figures: Vec<(f32, Look, (i32, i32))> = figures

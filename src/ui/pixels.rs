@@ -13,6 +13,7 @@ mod grenade;
 mod napalm;
 mod ninja;
 mod ram;
+mod revival;
 mod saw;
 mod smoke;
 mod sniper;
@@ -254,6 +255,17 @@ impl<'a> Canvas<'a> {
         for (x, y, color) in sprite.pixels(look.mirrored) {
             if let Some(index) = self.index((left + x, top + y)) {
                 self.pixels[index] = Some(look.tint.unwrap_or(color));
+            }
+        }
+    }
+
+    /// A sprite at its top left `corner`, greyed as a locked card in the collection: a spent
+    /// card's icon.
+    fn paint_greyed(&mut self, sprite: SpriteId, (left, top): (i32, i32)) {
+        let picture = self.sprites.get(sprite);
+        for (x, y, color) in picture.pixels(false) {
+            if let Some(index) = self.index((left + x, top + y)) {
+                self.pixels[index] = Some(super::collection::grey(color));
             }
         }
     }
@@ -537,6 +549,7 @@ pub fn render_map(
     }
     canvas.paint_gatling(world, frame);
     canvas.paint_flashball(world);
+    canvas.paint_revival(world, view.outfit());
     // The scout's smoke over what stands in it.
     canvas.paint_smoke(world, view.outfit(), frame);
 
@@ -717,6 +730,16 @@ pub fn render_sprite(buffer: &mut Buffer, area: Rect, sprites: &Sprites, sprite:
         Look::plain(sprite),
         (-picture.width() / 2, -picture.height() / 2),
     );
+    canvas.draw(buffer, area);
+}
+
+/// A card's icon alone, in the middle of `area`, greyed and crossed out in red: a spent card.
+pub fn render_spent_sprite(buffer: &mut Buffer, area: Rect, sprites: &Sprites, sprite: SpriteId) {
+    let mut canvas = Canvas::new(sprites, area, (0, 0));
+    let picture = sprites.get(sprite);
+    let corner = (-picture.width() / 2, -picture.height() / 2);
+    canvas.paint_greyed(sprite, corner);
+    canvas.cross_out(corner, picture.width());
     canvas.draw(buffer, area);
 }
 

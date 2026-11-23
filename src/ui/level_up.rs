@@ -358,6 +358,7 @@ pub fn icon(choice: Choice) -> SpriteId {
             Passive::Regeneration => SpriteId::IconRegeneration,
             Passive::Glare => SpriteId::IconGlare,
             Passive::Drain => SpriteId::IconDrain,
+            Passive::Revival => SpriteId::IconRevival,
             Passive::HordeHunter => SpriteId::IconHordeHunter,
         },
         Choice::Action(Action::Dash) => SpriteId::IconDash,
@@ -389,6 +390,7 @@ pub fn name(choice: Choice) -> String {
             Passive::Regeneration => fl!("passive-regeneration"),
             Passive::Glare => fl!("passive-glare"),
             Passive::Drain => fl!("passive-drain"),
+            Passive::Revival => fl!("passive-revival"),
             Passive::HordeHunter => fl!("passive-horde-hunter"),
         },
         Choice::Action(Action::Dash) => fl!("passive-dash"),
@@ -508,6 +510,7 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         // In tenths of HP a second.
         Passive::Regeneration => 4 * level,
         Passive::Drain => 5 + 5 * level,
+        Passive::Revival => crate::game::revival_percent(u8::try_from(level).unwrap_or(1)),
         Passive::Flashlight => 9 + 2 * level,
     };
     match passive {
@@ -534,6 +537,12 @@ fn passive_gain(passive: Passive, level: u8, hero: Skin) -> String {
         }
         Passive::Glare => fl!("gain-glare", total = total),
         Passive::Drain => fl!("gain-drain", total = total),
+        // The share of HP back; once, then twice at the last level, a wave from level 4.
+        Passive::Revival => match level {
+            0..=3 => fl!("gain-revival", total = total),
+            4 => fl!("gain-revival-wave", total = total),
+            _ => fl!("gain-revival-twice", total = total),
+        },
         Passive::HordeHunter => match level {
             1 => fl!("gain-horde-hunter-1"),
             2 => fl!("gain-horde-hunter-2", total = total),

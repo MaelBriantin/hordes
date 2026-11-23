@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn the_rows_fit_the_room_or_only_the_picked_one_shows() {
-        assert_eq!(in_a_row(108), 9, "three rows of 9");
+        assert_eq!(in_a_row(108), 10, "three rows of 10, 10 and 8");
         assert_eq!(in_a_row(63), 5);
         assert_eq!(height(108, 40), height_of(3));
         assert_eq!(height(108, 20), height_of(1));

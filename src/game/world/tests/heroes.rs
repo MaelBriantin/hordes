@@ -772,3 +772,61 @@ fn the_hero_s_own_action_is_level_3_s_reward_in_place_of_its_cards() {
     world.choose(0);
     assert!(world.offer.is_none(), "and no more");
 }
+
+/// A run on an empty map with Revival at `level`, the player hit by a zombie for all their HP.
+fn felled_with_revival(level: u8) -> World {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.announcement = None;
+    for _ in 0..level {
+        world.player.build.take(Choice::Passive(Passive::Revival));
+    }
+    world
+}
+
+#[test]
+fn revival_brings_the_hero_back_once_at_0_hp_untouchable_then_no_more() {
+    let mut world = felled_with_revival(1);
+    let revival = Choice::Passive(Passive::Revival);
+    assert!(!world.spent(revival));
+    let most = world.player.max_hp();
+    world.wound_player(most);
+    assert!(world.spent(revival), "used up: crossed out in red");
+    assert_eq!(world.player.hp, most / 4, "a quarter of their HP");
+    assert!(!world.is_over());
+    assert!(world.player.invincible >= 30, "untouchable a while");
+    assert!(world.revived.is_some(), "their soul shows");
+    world.player.invincible = 0;
+    world.wound_player(most);
+    assert_eq!(world.player.hp, 0, "once only");
+    assert!(world.is_over());
+}
+
+#[test]
+fn at_level_4_revival_s_wave_throws_the_enemies_back_and_at_5_it_brings_the_hero_back_twice() {
+    let mut world = felled_with_revival(4);
+    world
+        .enemies
+        .push(enemy(EnemyKind::Zombie, Vec2::new(102.0, 50.5)));
+    world.enemies[0].stunned = u32::MAX;
+    world.wound_player(1_000);
+    assert_eq!(world.player.hp, world.player.max_hp() / 2, "half their HP");
+    let from = world.enemies[0].position.x;
+    wait(&mut world, 12 + 8);
+    assert!(world.enemies[0].position.x - from > 2.0, "thrown back");
+    let mut world = felled_with_revival(5);
+    for time in 0..2 {
+        assert!(
+            !world.spent(Choice::Passive(Passive::Revival)),
+            "time {time} left"
+        );
+        world.player.invincible = 0;
+        world.wound_player(1_000);
+        assert!(world.player.hp > 0);
+    }
+    assert!(world.spent(Choice::Passive(Passive::Revival)));
+    world.player.invincible = 0;
+    world.wound_player(1_000);
+    assert!(world.is_over(), "twice, no more");
+}

@@ -33,9 +33,10 @@ use super::mode::Mode;
 use super::molotov::{Bottle, Puddle};
 use super::napalm::Bomb;
 use super::progress::{
-    Achievement, CARNAGE_KILLS, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS, DEMOLISHER_ABOMINATIONS,
-    FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH, HOLD_THE_LINE_SECONDS, LEGEND_KILLS,
-    Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS, VETERAN_LEVEL,
+    Achievement, CARNAGE_KILLS, CLOSE_CALL_HP, COLD_BLOOD_PERCENT, COLD_BLOOD_SECONDS,
+    DEMOLISHER_ABOMINATIONS, FIRST_AID_HP, HOLD_THE_LINE_ENEMIES, HOLD_THE_LINE_REACH,
+    HOLD_THE_LINE_SECONDS, LEGEND_KILLS, Progress, SHADOW_HUNTER_SHADOWS, SHADOW_SECONDS,
+    VETERAN_LEVEL,
 };
 use super::score;
 use super::smoke::Cloud;
@@ -63,6 +64,7 @@ mod kits;
 mod player;
 mod punches;
 mod rams;
+mod revivals;
 mod saws;
 mod shocks;
 mod smoke_bombs;
@@ -247,6 +249,12 @@ pub struct World {
     pub vault_wait: u32,
     /// The enemies felled by the flashball, bursting.
     pub flash_bursts: Vec<Burst>,
+    /// How many times Revival has brought the player back this run; the ticks since the last,
+    /// while it shows.
+    pub revivals: u8,
+    pub revived: Option<u32>,
+    /// Whether the player has fallen under Close call's HP this run, standing.
+    close_call: bool,
     /// The sniper rifle: the enemy it aims at and the ticks left before the shot, and the ticks
     /// before it can aim again.
     aim: Option<(u32, u32)>,
@@ -507,6 +515,9 @@ impl World {
             cases: Vec::new(),
             vault_wait: 0,
             flash_bursts: Vec::new(),
+            revivals: 0,
+            revived: None,
+            close_call: false,
             aim: None,
             sniper_wait: 0,
             shot: None,
@@ -748,6 +759,9 @@ impl World {
             self.score += bonus;
             self.dawn_bonus = Some(bonus);
             self.progress.reach(Achievement::Dawn);
+            if self.close_call {
+                self.progress.reach(Achievement::CloseCall);
+            }
             self.progress.dawns.insert(self.player.build.hero());
             return;
         }
@@ -785,6 +799,7 @@ impl World {
         }
         self.flash_bursts
             .retain(|burst| burst.age < flashball::BURST_TICKS);
+        self.come_back();
         self.throw_grenades();
         self.drop_napalm();
         self.throw_molotovs();

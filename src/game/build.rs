@@ -103,10 +103,12 @@ pub enum Passive {
     /// +10% damage to the hordes per level; their last ones targeted in red, more with the
     /// levels.
     HordeHunter,
+    /// Down to 0 HP, back once, part of the HP back.
+    Revival,
 }
 
 impl Passive {
-    pub const ALL: [Passive; 12] = [
+    pub const ALL: [Passive; 13] = [
         Passive::Vitality,
         Passive::Swiftness,
         Passive::Magnet,
@@ -119,6 +121,7 @@ impl Passive {
         Passive::Glare,
         Passive::Drain,
         Passive::HordeHunter,
+        Passive::Revival,
     ];
 }
 
@@ -191,7 +194,8 @@ impl Choice {
                 | Passive::Wisdom
                 | Passive::Regeneration
                 | Passive::Glare
-                | Passive::Drain,
+                | Passive::Drain
+                | Passive::Revival,
             ) => Rarity::Rare,
             Choice::Legendary(_) => Rarity::Legendary,
             Choice::Weapon(_) | Choice::Passive(_) | Choice::Action(_) | Choice::Heal => {
@@ -283,6 +287,18 @@ impl Build {
     /// Whether the player has found a legendary.
     pub fn has(&self, legendary: Legendary) -> bool {
         self.legendaries.contains(&legendary)
+    }
+
+    /// Whether a card can be taken: a new one if there is room for it, or its next level if
+    /// not at its last; a legendary not yet found.
+    pub fn can_take(&self, choice: Choice) -> bool {
+        match choice {
+            Choice::Weapon(weapon) => can_pick(&self.weapons, weapon, MAX_WEAPONS),
+            Choice::Passive(passive) => can_pick(&self.passives, passive, MAX_PASSIVES),
+            Choice::Action(action) => can_pick(&self.actions, action, MAX_ACTIONS),
+            Choice::Legendary(legendary) => !self.has(legendary),
+            Choice::Heal => true,
+        }
     }
 
     /// A weapon's level, 0 without it.

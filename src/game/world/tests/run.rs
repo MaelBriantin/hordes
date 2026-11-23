@@ -571,3 +571,34 @@ fn regeneration_gives_hp_back_of_itself() {
     wait(&mut world, 30 * 3);
     assert_eq!(world.player.hp, 56);
 }
+
+#[test]
+fn the_debug_console_gives_a_card_s_next_level_within_the_room_the_action_and_1_hp() {
+    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
+    let revival = Choice::Passive(Passive::Revival);
+    assert!(world.debug_cards().contains(&revival), "locked cards too");
+    assert!(world.debug_give(revival));
+    assert!(world.debug_give(revival));
+    assert_eq!(world.player.build.passive_level(Passive::Revival), 2);
+    // Four weapons at most: the hero's own and three more.
+    let more: Vec<Choice> = world
+        .debug_cards()
+        .into_iter()
+        .filter(|choice| match choice {
+            Choice::Weapon(weapon) => world.player.build.weapon_level(*weapon) == 0,
+            _ => false,
+        })
+        .collect();
+    let given = more
+        .iter()
+        .filter(|choice| world.debug_give(**choice))
+        .count();
+    assert_eq!(given, 3, "room for three more");
+    // The hero's own action at once, then its next level.
+    world.debug_action_up();
+    world.debug_action_up();
+    let action = world.player.build.hero().action();
+    assert_eq!(world.player.build.action_level(action), 2);
+    world.debug_one_hp();
+    assert_eq!(world.player.hp, 1);
+}

@@ -57,6 +57,10 @@ pub enum Screen {
     Debug {
         selected: usize,
     },
+    /// The debug console's list of cards to give, open on the card `selected`.
+    DebugCards {
+        selected: usize,
+    },
     /// The run stands still, every key told.
     Keys,
     /// The options menu open on its item `selected`: over the run, opened from the pause menu, or
@@ -259,7 +263,11 @@ pub fn render(
     let dead = world.is_over()
         && !matches!(
             screen,
-            Screen::Paused { .. } | Screen::Debug { .. } | Screen::Keys | Screen::Options { .. }
+            Screen::Paused { .. }
+                | Screen::Debug { .. }
+                | Screen::DebugCards { .. }
+                | Screen::Keys
+                | Screen::Options { .. }
         );
     let on_title = matches!(
         screen,
@@ -325,6 +333,11 @@ pub fn render(
             debug::render(frame, map, selected, world.unhurt);
             return;
         }
+        Screen::DebugCards { selected } => {
+            announce::dim(frame.buffer_mut(), map);
+            debug::render_cards(frame, map, world, selected);
+            return;
+        }
         Screen::Keys => {
             announce::dim(frame.buffer_mut(), map);
             menu::render_keys(frame, map);
@@ -361,7 +374,7 @@ fn help_line(screen: Screen, world: &World, view: ViewState) -> Option<String> {
         // The hero's action just come: its own box tells how to go on.
         Screen::Playing if world.unlocked.is_some() => None,
         Screen::Playing if world.offer.is_some() => Some(fl!("help-level-up")),
-        Screen::Playing | Screen::Debug { .. } | Screen::Keys => None,
+        Screen::Playing | Screen::Debug { .. } | Screen::DebugCards { .. } | Screen::Keys => None,
     }
 }
 

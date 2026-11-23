@@ -37,6 +37,7 @@ mod molotov;
 mod napalm;
 mod progress;
 pub mod ram;
+mod revival;
 mod score;
 mod skin;
 mod smoke;
@@ -70,6 +71,7 @@ pub use map::{Feature, Map, OBSTACLE_SIZE, Obstacle};
 pub use mode::Mode;
 pub use molotov::Puddle;
 pub use progress::{Achievement, COLLECTION, Progress, Unlock};
+pub use revival::{SOUL_TICKS as REVIVAL_SOUL_TICKS, percent as revival_percent};
 pub use smoke::{CLEAR_TICKS as SMOKE_CLEAR_TICKS, SPREAD_TICKS as SMOKE_SPREAD_TICKS};
 pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
 

@@ -61,7 +61,7 @@ Ideas for later, not scheduled yet. What is in the game, or planned for the curr
 
 - **Herbs** to pick up on the map, as in survival horror: a green one heals a little; maybe mixed with others for more.
 - **Campfires**: standing next to one heals little by little, but staying put is dangerous with the horde around, and the fire dies out on its own after a while.
-- **Revival** (decided 2026-11-23, unlocked by Close call): a rare passive. At 0 HP, the hero comes back once with 25% of their HP and 2 s untouchable. Levels: 2, 35%; 3, 50%; 4, a wave throws the enemies back on coming back; 5, a second revival.
+- **Revival** (decided 2026-11-23, unlocked by Close call; done: looks R3 + R4, icon H4): a rare passive. At 0 HP, the hero comes back once with 25% of their HP and 2 s untouchable. Levels: 2, 35%; 3, 50%; 4, a wave throws the enemies back on coming back; 5, a second revival.
 
 ## Gold
 

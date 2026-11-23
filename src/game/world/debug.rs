@@ -1,10 +1,12 @@
 //! Debug tools, for the console of debug builds: what comes late in a run, at once.
 
 use super::super::TICKS_PER_SECOND;
+use super::super::build::{Choice, Legendary, Passive, VITALITY_HP, Weapon};
 use super::super::horde;
 use super::super::level::xp_to_next;
 use super::super::map::Feature;
 use super::super::progress::Achievement;
+use super::super::skin::Skin;
 use super::super::weather;
 use super::World;
 
@@ -77,5 +79,42 @@ impl World {
     /// A debug tool: the player's HP all back.
     pub fn debug_heal(&mut self) {
         self.player.hp = self.player.max_hp();
+    }
+
+    /// A debug tool: the player down to 1 HP, for Revival and Close call.
+    pub fn debug_one_hp(&mut self) {
+        self.player.hp = 1;
+    }
+
+    /// The cards the debug console can give: every weapon but the other heroes' own, every
+    /// passive, the legendaries; locked or not.
+    pub fn debug_cards(&self) -> Vec<Choice> {
+        let hero = self.player.build.hero();
+        Weapon::ALL
+            .into_iter()
+            .filter(|weapon| Skin::owning(*weapon).is_none_or(|owner| owner == hero))
+            .map(Choice::Weapon)
+            .chain(Passive::ALL.into_iter().map(Choice::Passive))
+            .chain(Legendary::ALL.into_iter().map(Choice::Legendary))
+            .collect()
+    }
+
+    /// A debug tool: a card's next level, as if picked, if there is room for it. Whether it was
+    /// given.
+    pub fn debug_give(&mut self, choice: Choice) -> bool {
+        if !self.player.build.can_take(choice) {
+            return false;
+        }
+        self.player.build.take(choice);
+        if choice == Choice::Passive(Passive::Vitality) {
+            self.player.hp += VITALITY_HP;
+        }
+        true
+    }
+
+    /// A debug tool: the hero's own action, or its next level, at once.
+    pub fn debug_action_up(&mut self) {
+        let action = self.player.build.hero().action();
+        self.debug_give(Choice::Action(action));
     }
 }
