@@ -737,10 +737,11 @@ pub fn swelling(swelling: &Swelling) -> Look {
 /// An enemy as it shows, `ticks` into the run: turned the way it faces, white when just hit.
 pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
     let look = match enemy.kind {
-        // A zombie come with a horde shows as a ghoul; a kamikaze passes for a zombie, its skin
-        // glowing once its fuse is lit.
+        // A zombie come with a horde shows as a ghoul; a kamikaze passes for one as the others,
+        // its fuse lit a zombie, its skin glowing.
         EnemyKind::Zombie | EnemyKind::Kamikaze => {
-            let (side, front) = if enemy.horde.is_some() {
+            let lit = enemy.kind == EnemyKind::Kamikaze && kamikaze_lit(enemy.fuse);
+            let (side, front) = if enemy.horde.is_some() && !lit {
                 (SpriteId::GhoulSide, SpriteId::GhoulFront)
             } else {
                 (SpriteId::ZombieSide, SpriteId::ZombieFront)
@@ -1018,6 +1019,17 @@ mod tests {
         assert!(kamikaze_glow(&kamikaze, 1).is_some_and(|glow| glow != GLOW_FLASH));
         kamikaze.fuse = KAMIKAZE_LAST_TICKS;
         assert_eq!(kamikaze_glow(&kamikaze, 0), Some(GLOW_FLASH));
+    }
+
+    #[test]
+    fn a_kamikaze_come_with_a_horde_shows_as_a_ghoul_until_lit_then_its_skin_glows() {
+        let mut kamikaze = Enemy::new(0, EnemyKind::Kamikaze, Vec2::ZERO, 0.0);
+        kamikaze.facing = Facing::Right;
+        kamikaze.horde = Some(0);
+        assert_eq!(enemy(&kamikaze, 0).sprite, SpriteId::GhoulSide);
+        kamikaze.fuse = KAMIKAZE_LAST_TICKS + 10;
+        assert_eq!(enemy(&kamikaze, 0).sprite, SpriteId::ZombieSide);
+        assert!(kamikaze_glow(&kamikaze, 0).is_some());
     }
 
     #[test]

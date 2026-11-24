@@ -15,6 +15,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The charger, from the storm: a stocky zombie in a football player's pads and helmet. Near the player, it scrapes the ground a second, its eyes glowing red in the dark, then charges straight the way they were, fast, turning no more: 20 HP and thrown back if it runs into them. It smashes a wooden barricade in its way; into a tree, a rock or a metal barricade, it is stunned 2 s.
 
 ### Changed
+- The hordes bring kamikazes from the drizzle, spitters from the rain and chargers from the storm, and no more Shadows: they keep to the dark, shunning the torch.
 - The first time lightning puts the torch out, F is shown again until it is lit.
 - Passing behind a tree or a rock, the hero and the enemies have their lower part hidden by it.
 

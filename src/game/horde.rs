@@ -118,16 +118,17 @@ pub fn rings(weather: Weather) -> bool {
     weather >= Weather::Storm
 }
 
-/// The kind of one of a horde's enemies, in that weather: zombies; a Shadow in ten from the rain
-/// on; an abomination in ten in the tempest.
+/// The kind of one of a horde's enemies, in that weather: zombies; a kamikaze in ten from the
+/// drizzle on; a spitter in twenty from the rain on; a charger in twenty from the storm on; an
+/// abomination in ten in the tempest. No Shadow: they keep to the dark.
 pub fn kind(rng: &mut impl Rng, weather: Weather) -> EnemyKind {
     let roll = rng.random_range(0..100);
-    if weather == Weather::Tempest && roll < 10 {
-        EnemyKind::Abomination
-    } else if weather >= Weather::Rain && roll >= 90 {
-        EnemyKind::Shadow
-    } else {
-        EnemyKind::Zombie
+    match roll {
+        0..10 if weather >= Weather::Drizzle => EnemyKind::Kamikaze,
+        10..15 if weather >= Weather::Rain => EnemyKind::Spitter,
+        15..20 if weather >= Weather::Storm => EnemyKind::Charger,
+        20..30 if weather == Weather::Tempest => EnemyKind::Abomination,
+        _ => EnemyKind::Zombie,
     }
 }
 
@@ -241,6 +242,30 @@ mod tests {
         assert!(!tally(5, 2).last(LAST_PERCENT));
         assert!(tally(5, 1).last(LAST_PERCENT));
         assert!(tally(30, 30).last(100));
+    }
+
+    #[test]
+    fn a_horde_brings_the_kinds_of_its_weather_and_never_a_shadow() {
+        let mut rng = StdRng::seed_from_u64(9);
+        let kinds = |weather, rng: &mut StdRng| -> Vec<EnemyKind> {
+            (0..1_000).map(|_| kind(rng, weather)).collect()
+        };
+        let night = kinds(Weather::Clear, &mut rng);
+        assert!(night.iter().all(|kind| *kind == EnemyKind::Zombie));
+        let rain = kinds(Weather::Rain, &mut rng);
+        assert!(rain.contains(&EnemyKind::Kamikaze) && rain.contains(&EnemyKind::Spitter));
+        assert!(!rain.contains(&EnemyKind::Charger));
+        let tempest = kinds(Weather::Tempest, &mut rng);
+        for wanted in [
+            EnemyKind::Zombie,
+            EnemyKind::Kamikaze,
+            EnemyKind::Spitter,
+            EnemyKind::Charger,
+            EnemyKind::Abomination,
+        ] {
+            assert!(tempest.contains(&wanted), "no {wanted:?}");
+        }
+        assert!(!tempest.contains(&EnemyKind::Shadow));
     }
 
     #[test]

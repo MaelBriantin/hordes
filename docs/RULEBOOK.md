@@ -59,10 +59,10 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 - A **horde** comes in the middle of each stage of weather, once the night has fallen: at **1:30**, then every **2 minutes** (3:30, 5:30…). It brings **30** enemies, and **10** more for each horde before it.
 - It is **announced 3 s before**: told in big letters (see The run), then a red glow on the edge it comes from, pulsing slowly, reddest on the edge's middle (on every edge for a ring).
 - Until the storm, it comes as a dense **pack** out of one side (a band 16 tiles wide, 5 deep, just beyond the screen); from the storm on, as a **ring** out of every side, announced on every edge.
-- Its enemies: zombies; a Shadow in ten from the rain on; an abomination in ten in the tempest. Their HP follow the weather, as every enemy's.
+- Its enemies: zombies; a **kamikaze** in ten from the drizzle on; a **spitter** in twenty from the rain on; a **charger** in twenty from the storm on; an **abomination** in ten in the tempest. **No Shadow**: they keep to the dark. Their HP follow the weather, as every enemy's.
 - While some of a horde still stands, a count shows on the top of the map, white on red: how many are left. While several hordes stand, each its own count, by its number, side by side (HORDE 3 · 1, HORDE 4 · 20); one of them wiped out is told with its number under the big letters.
 - **Wiped out** to the last, a horde brings **a level**, 2 s on (once told), its cards rarer (**60%** of rare ones); in arcade, it **doubles** the points its kills were worth too. It is told in big gold letters, what it brought under them, the run going on.
-- Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest.
+- Its zombies show as **ghouls**, pale, in darker rags: a horde stands out from the rest. Its kamikazes too, until lit.
 - With **Horde Hunter**, its last ones still standing are targeted in red: the very last tenth (the last one at least) pulsing once a second, the others of the share veiled faint and steady (see Passives).
 
 ## Score
