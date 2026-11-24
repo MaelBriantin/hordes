@@ -477,7 +477,10 @@ fn hordes_standing_together_are_counted_apart_and_told_apart_once_wiped_out() {
     }
     let hordes = world.hordes_left();
     assert_eq!(
-        hordes.iter().map(|&(number, _)| number).collect::<Vec<_>>(),
+        hordes
+            .iter()
+            .map(|&(number, _, _)| number)
+            .collect::<Vec<_>>(),
         [0, 1]
     );
     for enemy in world

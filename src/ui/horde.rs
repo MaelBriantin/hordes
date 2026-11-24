@@ -23,6 +23,10 @@ const GLOW_LEAST: f32 = 0.35;
 const GLOW_PULSE: u32 = 45;
 /// The cells between two hordes' counts, the map showing there.
 const COUNT_GAP: u16 = 1;
+/// A horde's count, a bar: how wide at least, in cells; its red where its enemies have fallen,
+/// darker.
+const BAR_WIDTH: u16 = 20;
+const BAR_FALLEN: Color = Color::Rgb(90, 20, 25);
 /// How long news told on a banner stays on the top row, in seconds.
 const BANNER_SECONDS: u32 = 3;
 
@@ -93,26 +97,30 @@ fn banner(frame: &mut Frame, map: Rect, words: &str, colour: Color) {
     );
 }
 
-/// How many of the hordes still stand, on the top row of the map, white on red: they are told
-/// from the other enemies at a glance. Each horde its own count, by its number, while several
-/// stand. Under the time's badge `under` wide, as wide as it, or as far from the middle each
+/// How many of the hordes still stand, on the top row of the map, white on a red bar that
+/// shrinks as they fall, darker red where they have: they are told from the other enemies at a
+/// glance. Each horde its own count, by its number, while several stand. Under the time's badge `under` wide, as wide as it, or as far from the middle each
 /// side.
-fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)], under: Option<u16>) {
+fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32, u32)], under: Option<u16>) {
     let counts: Vec<String> = match hordes {
-        &[(_, left)] => vec![fl!("horde-left", left = left)],
+        &[(_, left, _)] => vec![fl!("horde-left", left = left)],
         _ => hordes
             .iter()
-            .map(|&(number, left)| {
+            .map(|&(number, left, _)| {
                 let shown = number + 1;
                 fl!("horde-left-of", number = shown, left = left)
             })
             .collect(),
     };
-    // Each count a label of its own, the map showing between them.
+    // Each count a bar of its own, the map showing between them.
     let labels: Vec<String> = counts.iter().map(|count| format!(" {count} ")).collect();
     let mut widths: Vec<u16> = labels
         .iter()
-        .map(|label| u16::try_from(label.chars().count()).unwrap_or(map.width))
+        .map(|label| {
+            u16::try_from(label.chars().count())
+                .unwrap_or(map.width)
+                .max(BAR_WIDTH)
+        })
         .collect();
     let gaps = u16::try_from(labels.len().saturating_sub(1)).unwrap_or(0) * COUNT_GAP;
     let own = widths.iter().sum::<u16>() + gaps;
@@ -125,16 +133,30 @@ fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)], under: Option<u16>
         .flex(Flex::Center)
         .areas(row);
     let mut x = ground.x;
-    for (label, width) in labels.into_iter().zip(widths) {
+    let words = Style::new()
+        .fg(Color::Rgb(255, 255, 255))
+        .add_modifier(Modifier::BOLD);
+    for ((label, width), &(_, left, size)) in labels.into_iter().zip(widths).zip(hordes) {
         let area = Rect::new(x, ground.y, width, 1).intersection(ground);
-        let style = Style::new()
-            .fg(Color::Rgb(255, 255, 255))
-            .bg(DANGER)
-            .add_modifier(Modifier::BOLD);
-        frame.render_widget(Block::new().style(style), area);
-        frame.render_widget(Line::styled(label, style).centered(), area);
+        let standing = Rect {
+            width: filled(area.width, left, size),
+            ..area
+        };
+        frame.render_widget(Block::new().style(Style::new().bg(BAR_FALLEN)), area);
+        frame.render_widget(Block::new().style(Style::new().bg(DANGER)), standing);
+        frame.render_widget(Line::styled(label, words).centered(), area);
         x = x.saturating_add(width + COUNT_GAP);
     }
+}
+
+/// How many of a bar's `width` cells show a horde's enemies still standing, `left` of `size`:
+/// one at least while any stands.
+fn filled(width: u16, left: u32, size: u32) -> u16 {
+    if left == 0 || size == 0 {
+        return 0;
+    }
+    let cells = (u32::from(width) * left).div_ceil(size);
+    u16::try_from(cells).unwrap_or(width).min(width)
 }
 
 /// A red glow on the middle of the `sides` of the map a horde comes from, reddest on the edge,
@@ -194,5 +216,13 @@ mod tests {
         assert_eq!(widened(13, 13), 13);
         assert_eq!(widened(14, 13), 15);
         assert_eq!(widened(15, 13), 15);
+    }
+
+    #[test]
+    fn a_horde_s_bar_shrinks_as_its_enemies_fall_a_cell_showing_while_one_stands() {
+        assert_eq!(filled(20, 30, 30), 20);
+        assert_eq!(filled(20, 15, 30), 10);
+        assert_eq!(filled(20, 1, 60), 1);
+        assert_eq!(filled(20, 0, 30), 0);
     }
 }

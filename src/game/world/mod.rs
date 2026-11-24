@@ -728,13 +728,13 @@ impl World {
         self.tallies.values().map(|tally| tally.left).sum()
     }
 
-    /// The hordes come and still standing, in the order they came: each one's number, and how
-    /// many of it still stand.
-    pub fn hordes_left(&self) -> Vec<(u32, u32)> {
-        let mut hordes: Vec<(u32, u32)> = self
+    /// The hordes come and still standing, in the order they came: each one's number, how many
+    /// of it still stand, and how many came.
+    pub fn hordes_left(&self) -> Vec<(u32, u32, u32)> {
+        let mut hordes: Vec<(u32, u32, u32)> = self
             .tallies
             .iter()
-            .map(|(&number, tally)| (number, tally.left))
+            .map(|(&number, tally)| (number, tally.left, tally.size))
             .collect();
         hordes.sort_unstable();
         hordes
