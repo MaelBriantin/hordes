@@ -54,12 +54,11 @@ fn a_storms_strike_shows_its_ring_before_it_falls_on_the_player() {
     wait(&mut world, weather::STRIKE_WARNING_TICKS - 1);
     assert_eq!(world.player.hp, BASE_HP);
     assert!(world.lightning.is_none());
-    // Half a second on, it falls: the player, still in the ring, unhurt, their torch out.
+    // Half a second on, it falls: the player, still in the ring, unhurt.
     wait(&mut world, 1);
     assert!(world.lightning.is_some());
     assert_eq!(world.strikes_coming, []);
     assert_eq!(world.player.hp, BASE_HP);
-    assert_eq!(world.torch_on(), Some(false));
 }
 
 #[test]
@@ -456,6 +455,24 @@ fn with_life_drain_some_enemies_felled_give_a_hp_back() {
 }
 
 #[test]
+fn a_strike_with_the_player_in_its_ring_puts_their_torch_out_a_time_in_three() {
+    let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
+    disarm(&mut world);
+    world.next_horde = u32::MAX;
+    world.ticks = 30 * 40;
+    world.torch_steady_at = 0;
+    let mut out = 0;
+    for _ in 0..300 {
+        world.strike(world.player.position, false);
+        if world.torch_on() == Some(false) {
+            out += 1;
+            world.torch_switch = true;
+        }
+    }
+    assert!((70..=130).contains(&out), "about a third: {out}");
+}
+
+#[test]
 fn a_strike_with_the_player_in_its_ring_puts_their_torch_out_up_to_them_to_light_it_again() {
     let mut world = on(Map::empty(), Vec2::new(100.5, 50.5));
     disarm(&mut world);
@@ -463,9 +480,16 @@ fn a_strike_with_the_player_in_its_ring_puts_their_torch_out_up_to_them_to_light
     world.ticks = 30 * 40;
     world.torch_steady_at = 0;
     assert!(world.torch_lit());
-    world.strike(world.player.position + Vec2::new(3.0, 0.0), false);
+    for _ in 0..50 {
+        world.strike(world.player.position + Vec2::new(3.0, 0.0), false);
+    }
     assert!(world.torch_lit(), "out of its ring");
-    world.strike(world.player.position + Vec2::new(2.0, 0.0), false);
+    for _ in 0..50 {
+        world.strike(world.player.position + Vec2::new(2.0, 0.0), false);
+        if world.torch_on() == Some(false) {
+            break;
+        }
+    }
     assert_eq!(world.torch_on(), Some(false), "out");
     wait(&mut world, 30 * 5);
     assert_eq!(world.torch_on(), Some(false), "not back of itself");

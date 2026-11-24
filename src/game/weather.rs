@@ -31,6 +31,8 @@ const DAYBREAK_SECONDS: u32 = 4;
 pub const STRIKE_DAMAGE: u32 = 30;
 /// How near where it falls a strike hurts enemies, and the player, in tiles.
 pub const STRIKE_RADIUS: f32 = 2.5;
+/// The chance a strike puts out the torch of the player in its ring, in percent.
+pub const STRIKE_CUT_PERCENT: u32 = 33;
 /// How long a strike's ring shows where it will fall before it does, in ticks: half a second,
 /// time enough to run out of it from its middle.
 pub const STRIKE_WARNING_TICKS: u32 = 15;

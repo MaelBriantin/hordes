@@ -56,6 +56,11 @@ impl World {
             self.relight_hint = !self.torch_cut_once;
             self.torch_cut_once = true;
         }
+        self.blank_goggles();
+    }
+
+    /// Lightning blanks the infiltrator's goggles a while.
+    pub(super) fn blank_goggles(&mut self) {
         self.goggles_out = GOGGLES_OUT_TICKS;
     }
 

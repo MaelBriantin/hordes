@@ -56,7 +56,8 @@ impl World {
     }
 
     /// A strike of lightning falls at `at`, hurting the enemies around it and setting them on
-    /// fire, if `hurts`; never the player, whose torch it puts out if they are in its ring.
+    /// fire, if `hurts`; never the player, whose torch it puts out now and then if they are in
+    /// its ring.
     pub(super) fn strike(&mut self, at: Vec2, hurts: bool) {
         self.lightning = Some(Lightning {
             tick: self.ticks,
@@ -64,9 +65,13 @@ impl World {
         });
         // The whole map lit: every enemy on screen sees the player.
         self.give_away(self.view.x.max(self.view.y));
-        // In its ring, the player's torch goes out.
+        // In its ring, the player's torch goes out, now and then; their goggles blank always.
         if (self.player.position - at).length() <= weather::STRIKE_RADIUS {
-            self.cut_torch();
+            if self.rng.random_range(0..100) < weather::STRIKE_CUT_PERCENT {
+                self.cut_torch();
+            } else {
+                self.blank_goggles();
+            }
         }
         if !hurts {
             return;
