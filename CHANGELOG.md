@@ -12,6 +12,9 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 ### New
 - The kamikaze, from the drizzle: a zombie as any in the crowd, until it comes into the torch's light: its head catches fire, a green flame lighting the dark around it, and it rushes at them, faster than they go; on them, it stands still a last moment, blinking and swelling, time to get away, then blows in green flames: 20 HP off everything around, enemies included, and green fires left burning that burn the player standing in them. Felled before, it blows at once where it falls, setting off the other kamikazes near.
 
+### Changed
+- Passing behind a tree or a rock, the hero and the enemies have their lower part hidden by it.
+
 ### Fixed
 - The horde's count, on the top of the map, half a cell off the middle of the time over it.
 

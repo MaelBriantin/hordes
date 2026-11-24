@@ -388,6 +388,29 @@ impl<'a> Canvas<'a> {
         }
     }
 
+    /// The trees and rocks on screen as figures, each with how low its middle stands: painted
+    /// again over what stands behind them, the top of a rock hides the feet of who passes
+    /// behind it. The map has them already, for what passes in front.
+    fn obstacle_figures(&self, world: &World) -> Vec<(f32, Look, (i32, i32))> {
+        let (columns, rows) = self.tiles();
+        let middle = f32::from(u8::try_from(OBSTACLE_SIZE).unwrap_or(2)) / 2.0;
+        rows.flat_map(|y| columns.clone().map(move |x| (x, y)))
+            .filter(|(x, y)| x.rem_euclid(OBSTACLE_SIZE) == 0 && y.rem_euclid(OBSTACLE_SIZE) == 0)
+            .filter_map(|(x, y)| {
+                let sprite = match world.map.obstacle_at((x, y))? {
+                    Obstacle::Tree => SpriteId::Tree,
+                    Obstacle::Rock => SpriteId::Rock,
+                };
+                let row = f32::from(i16::try_from(y).unwrap_or(i16::MAX));
+                Some((
+                    row + middle,
+                    Look::plain(sprite),
+                    (x * TILE_PIXELS, y * TILE_PIXELS),
+                ))
+            })
+            .collect()
+    }
+
     /// The barricades standing as figures, each with how low it stands; white a moment once
     /// hit.
     fn barricade_figures(&self, world: &World) -> Vec<(f32, Look, (i32, i32))> {
@@ -865,6 +888,52 @@ fn decor((x, y): (i32, i32)) -> Option<SpriteId> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::{Map, Skin};
+
+    /// The colours, by pixel of the map, where a rock covering the tiles (100, 50) to (101, 51)
+    /// and the hero standing at `at` overlap: the hero's own, and the canvas's once painted.
+    fn overlap(at: Vec2) -> Vec<(Color, Color)> {
+        let sprites = Sprites::load().expect("sprites");
+        let mut world = World::new(1);
+        world.map = Map::empty();
+        world.map.put((100, 50), Obstacle::Rock);
+        world.enemies.clear();
+        world.player.position = at;
+        let outfit = sprites::Outfit {
+            skin: Skin::Survivor,
+            colours: 0,
+        };
+        let mut canvas = Canvas::new(&sprites, Rect::new(0, 0, 40, 20), pixel(at));
+        canvas.paint_map(&world, false);
+        canvas.paint_figures(&world, outfit);
+        let hero = sprites::hero_in(world.hero_facing(), outfit, false);
+        let (left, top) = canvas.corner_of(hero, at);
+        let rock: Vec<(i32, i32)> = sprites
+            .get(SpriteId::Rock)
+            .pixels(false)
+            .map(|(x, y, _)| (200 + x, 100 + y))
+            .collect();
+        sprites
+            .get(hero.sprite)
+            .pixels(hero.mirrored)
+            .map(|(x, y, colour)| ((left + x, top + y), colour))
+            .filter(|(spot, _)| rock.contains(spot))
+            .filter_map(|(spot, colour)| {
+                let index = canvas.index(spot)?;
+                Some((colour, canvas.pixels[index]?))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_top_of_a_rock_hides_the_feet_of_the_hero_behind_it_and_not_of_one_in_front() {
+        let behind = overlap(Vec2::new(101.0, 49.5));
+        assert!(!behind.is_empty(), "they overlap");
+        assert!(behind.iter().all(|(hero, shown)| hero != shown), "{behind:?}");
+        let in_front = overlap(Vec2::new(101.0, 52.5));
+        assert!(!in_front.is_empty(), "they overlap");
+        assert!(in_front.iter().all(|(hero, shown)| hero == shown), "{in_front:?}");
+    }
 
     #[test]
     fn a_share_lights_its_pixels_one_round_left_showing() {

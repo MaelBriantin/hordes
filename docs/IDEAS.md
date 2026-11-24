@@ -89,6 +89,7 @@ The game's strength: a black night, lit here and there. The rule: **a light make
 - **Shooting in the dark**: the guns fire on with the torch out, each shot flashing at the gun's mouth, a small halo of light a blink, which the enemies see and come to. Better in Godot, with finer lights and shadows.
 - Tried, and dropped: **muzzle flashes** in the terminal, a few pixels at the gun's mouth, with a light and a halo, then without: too many lights, and ugly at this size.
 - Tried, and dropped: **glowing bullets**, a light and a halo each: the torch lights enough, and they aren't lights.
+- Tried, and dropped (2026-11-24): **shadows** in the terminal, a blob under the feet or the figure's shape laid on the ground away from the torch (or the campfire): ugly at this size. Kept for Godot, its 2D lights casting them.
 - Tried, and dropped: **glowing ghouls**, the horde's skin lit green with a halo. Together, their halos melt into a green fog, harder to read than before.
 
 ## Interface

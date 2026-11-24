@@ -44,7 +44,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 - **Endless**, in every direction. A tile shows as 2 × 2 pixels of pixel art.
 - Each run draws a new map from a **seed**, chunk by chunk (32 × 32 tiles) as the player nears them: the same place always looks the same.
-- **Obstacles** block the way: trees and rocks, each covering **2 × 2 tiles**. They come in clumps of up to **8**: groves (70% of clumps) and heaps of rocks (30%). Together they cover **8%** of each chunk.
+- **Obstacles** block the way: trees and rocks, each covering **2 × 2 tiles**. They come in clumps of up to **8**: groves (70% of clumps) and heaps of rocks (30%). Together they cover **8%** of each chunk. Drawn among the figures: one passing behind a tree or a rock (higher than its middle) has its lower part hidden by it; one in front shows over it.
 - The player starts with no obstacle within **8 tiles**.
 - Healing is **rare**: about one chunk in 33 holds a **herb** on its free ground, one in 100 a **campfire** in a clearing (no obstacle of the chunk within 2 tiles). The same place always holds the same.
 

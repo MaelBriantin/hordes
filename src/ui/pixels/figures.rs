@@ -296,6 +296,7 @@ impl Canvas<'_> {
             .into_iter()
             .map(|(position, look)| (position.y, look, self.corner_of(look, position)))
             .chain(self.barricade_figures(world))
+            .chain(self.obstacle_figures(world))
             .collect();
         figures.sort_by(|a, b| a.0.total_cmp(&b.0));
         // Dashing, the player leaves fading silhouettes of themselves behind.
