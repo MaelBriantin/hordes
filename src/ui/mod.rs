@@ -604,14 +604,8 @@ fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
     let bold = Style::new().add_modifier(Modifier::BOLD);
     // The time as a badge, dark on white, as the score's on gold: in a standard run, the time
     // left to the dawn, counting down; in arcade, endless, the time survived.
-    let seconds = if world.mode == Mode::Standard {
-        DAWN_SECONDS.saturating_sub(world.seconds())
-    } else {
-        world.played_seconds()
-    };
-    let time = fl!("hud-time", time = clock(seconds));
     let mut spans = vec![Span::styled(
-        format!(" {time} "),
+        time_badge(world),
         bold.fg(BADGE_TEXT).bg(TIME_COLOR),
     )];
     // A standard run keeps no score: the time alone.
@@ -638,6 +632,24 @@ fn run(world: &World, leaderboard: &Leaderboard, frames: u32) -> Line<'static> {
         Span::raw(" "),
     ]);
     Line::from(spans)
+}
+
+/// The time's badge, a space each side: in a standard run, the time left to the dawn, counting
+/// down; in arcade, endless, the time survived.
+fn time_badge(world: &World) -> String {
+    let seconds = if world.mode == Mode::Standard {
+        DAWN_SECONDS.saturating_sub(world.seconds())
+    } else {
+        world.played_seconds()
+    };
+    format!(" {} ", fl!("hud-time", time = clock(seconds)))
+}
+
+/// How wide the time's badge is, in cells, alone in the middle of the status line: in a
+/// standard run; none in arcade, the score beside it.
+fn time_badge_width(world: &World) -> Option<u16> {
+    (world.mode == Mode::Standard)
+        .then(|| u16::try_from(time_badge(world).chars().count()).unwrap_or(0))
 }
 
 /// A share of a whole as a bar, `cells` wide inside its ends: `▕████░░░░░░░░▏`. Rounded down,

@@ -7,6 +7,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
+use ratatui::widgets::Block;
 
 use crate::game::{Facing, News, TICKS_PER_SECOND, WeatherNews, World};
 
@@ -29,7 +30,12 @@ const BANNER_SECONDS: u32 = 3;
 pub fn render(frame: &mut Frame, map: Rect, world: &World, frames: u32) {
     let left = world.horde_left();
     if left > 0 && world.announcement.is_none() {
-        count(frame, map, &world.hordes_left());
+        count(
+            frame,
+            map,
+            &world.hordes_left(),
+            super::time_badge_width(world),
+        );
     }
     // News told on a banner: a new weather's name on the top row a while, the horde's count
     // over it; a horde on its way, in red.
@@ -89,8 +95,9 @@ fn banner(frame: &mut Frame, map: Rect, words: &str, colour: Color) {
 
 /// How many of the hordes still stand, on the top row of the map, white on red: they are told
 /// from the other enemies at a glance. Each horde its own count, by its number, while several
-/// stand.
-fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)]) {
+/// stand. Under the time's badge `under` wide, as wide as it, or as far from the middle each
+/// side.
+fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)], under: Option<u16>) {
     let counts: Vec<String> = match hordes {
         &[(_, left)] => vec![fl!("horde-left", left = left)],
         _ => hordes
@@ -103,12 +110,16 @@ fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)]) {
     };
     // Each count a label of its own, the map showing between them.
     let labels: Vec<String> = counts.iter().map(|count| format!(" {count} ")).collect();
-    let widths: Vec<u16> = labels
+    let mut widths: Vec<u16> = labels
         .iter()
         .map(|label| u16::try_from(label.chars().count()).unwrap_or(map.width))
         .collect();
     let gaps = u16::try_from(labels.len().saturating_sub(1)).unwrap_or(0) * COUNT_GAP;
-    let width = widths.iter().sum::<u16>() + gaps;
+    let own = widths.iter().sum::<u16>() + gaps;
+    let width = under.map_or(own, |under| widened(own, under));
+    if let Some(last) = widths.last_mut() {
+        *last += width - own;
+    }
     let [row] = Layout::vertical([Constraint::Length(1)]).areas(map);
     let [ground] = Layout::horizontal([Constraint::Length(width)])
         .flex(Flex::Center)
@@ -116,16 +127,12 @@ fn count(frame: &mut Frame, map: Rect, hordes: &[(u32, u32)]) {
     let mut x = ground.x;
     for (label, width) in labels.into_iter().zip(widths) {
         let area = Rect::new(x, ground.y, width, 1).intersection(ground);
-        frame.render_widget(
-            Line::styled(
-                label,
-                Style::new()
-                    .fg(Color::Rgb(255, 255, 255))
-                    .bg(DANGER)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            area,
-        );
+        let style = Style::new()
+            .fg(Color::Rgb(255, 255, 255))
+            .bg(DANGER)
+            .add_modifier(Modifier::BOLD);
+        frame.render_widget(Block::new().style(style), area);
+        frame.render_widget(Line::styled(label, style).centered(), area);
         x = x.saturating_add(width + COUNT_GAP);
     }
 }
@@ -163,5 +170,29 @@ fn glow(buffer: &mut Buffer, map: Rect, sides: &[Facing], frames: u32) {
             cell.fg = super::redden(cell.fg, GLOW_RED, strength * reach);
             cell.bg = super::redden(cell.bg, GLOW_RED, strength * reach);
         }
+    }
+}
+
+/// How wide the hordes' counts, `own` cells wide, show under the time's badge `under` wide: as
+/// wide as it if they fit; wider, a cell more if need be, so that both lie as far from the
+/// middle each side.
+fn widened(own: u16, under: u16) -> u16 {
+    if own <= under {
+        under
+    } else {
+        own + (own - under) % 2
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_hordes_count_lies_as_far_from_the_middle_as_the_time_over_it() {
+        assert_eq!(widened(12, 13), 13);
+        assert_eq!(widened(13, 13), 13);
+        assert_eq!(widened(14, 13), 15);
+        assert_eq!(widened(15, 13), 15);
     }
 }
