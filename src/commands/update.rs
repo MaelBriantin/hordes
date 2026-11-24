@@ -16,26 +16,13 @@ use super::{APP, receipt_path};
 /// of anonymous requests.
 const TOKEN_VARIABLE: &str = "HORDES_GITHUB_TOKEN";
 
-/// Where the update goes, against where the game is.
-#[derive(Debug, PartialEq, Eq)]
-enum Target {
-    /// Where it is, as the updater finds it.
-    Same,
-    /// Where it is, told the updater in so many words: a game the installer put straight in a
-    /// `bin` folder, which the updater would otherwise put in a `bin` folder within it.
-    Root(PathBuf),
-}
-
-/// Where the update of a game installed under `prefix` goes, the installer's layout `flat` or
-/// not. The updater installs under a root, in its `bin` folder.
-fn target(prefix: &Path, flat: bool) -> Target {
-    if flat && prefix.ends_with("bin") {
-        prefix
-            .parent()
-            .map_or(Target::Same, |root| Target::Root(root.to_path_buf()))
-    } else {
-        Target::Same
-    }
+/// Where the update of the game at `binary` goes, the installer's layout `flat` or not: a flat
+/// layout, in the binary's own folder, whatever the receipt says, since the installer puts the
+/// update exactly in the folder it is given; any other, where the receipt says, as the updater
+/// finds it.
+fn target(binary: &Path, flat: bool) -> Option<PathBuf> {
+    flat.then(|| binary.parent().map(Path::to_path_buf))
+        .flatten()
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
@@ -49,12 +36,12 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         );
         return Ok(());
     }
-    let prefix = PathBuf::from(updater.install_prefix_root()?.as_str());
     let flat = receipt_path()
         .and_then(|path| fs::read_to_string(path).ok())
         .is_some_and(|receipt| receipt.contains(r#""install_layout":"flat""#));
-    if let Target::Root(root) = target(&prefix, flat) {
-        updater.set_install_dir(root.to_string_lossy().as_ref());
+    let binary = std::env::current_exe()?.canonicalize()?;
+    if let Some(folder) = target(&binary, flat) {
+        updater.set_install_dir(folder.to_string_lossy().as_ref());
     }
     match updater.run_sync()? {
         Some(update) => println!("{APP} is now version {}.", update.new_version),
@@ -71,13 +58,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_flat_layout_is_given_its_root_the_others_stay_where_they_are() {
+    fn a_flat_layout_is_updated_in_the_binary_s_folder() {
         let home = Path::new("/home/player");
         assert_eq!(
-            target(&home.join(".local/bin"), true),
-            Target::Root(home.join(".local"))
+            target(&home.join(".local/bin/hordes"), true),
+            Some(home.join(".local/bin"))
         );
-        assert_eq!(target(&home.join(".cargo"), false), Target::Same);
-        assert_eq!(target(&home.join(".local"), false), Target::Same);
+    }
+
+    #[test]
+    fn another_layout_is_updated_where_the_receipt_says() {
+        assert_eq!(
+            target(Path::new("/home/player/.cargo/bin/hordes"), false),
+            None
+        );
     }
 }
