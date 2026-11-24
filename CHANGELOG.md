@@ -20,6 +20,11 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 ### Fixed
 - The horde's count, on the top of the map, half a cell off the middle of the time over it.
 
+## v0.10.1 · November 24, 2026
+
+### Fixed
+- `hordes update` installs the new version where the game is, in `~/.local/bin`, no more in `~/.local/hordes`, where the game installed before was left as it was. A game updated wrong is put right by installing it once more with the installer.
+
 ## v0.10.0 · November 23, 2026
 
 ### New
