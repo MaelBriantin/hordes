@@ -55,6 +55,10 @@ impl Bottle {
 
 /// A puddle of fire on the ground.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "what a puddle is, each a yes or a no: burst, a wall's, the player's foe's, acid"
+)]
 pub struct Puddle {
     pub centre: Vec2,
     pub radius: f32,
@@ -66,8 +70,10 @@ pub struct Puddle {
     /// Whether it is a stretch of the exterminator's wall of fire: flames licking up from it,
     /// then embers as it goes out.
     pub wall: bool,
-    /// Whether it burns the player, and not the enemies: a kamikaze's.
+    /// Whether it burns the player, and not the enemies: a kamikaze's, a spitter's.
     pub hostile: bool,
+    /// Whether it is acid, a spitter's, rather than fire.
+    pub acid: bool,
 }
 
 impl Puddle {

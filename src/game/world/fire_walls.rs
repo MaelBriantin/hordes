@@ -46,6 +46,7 @@ impl World {
             burst: false,
             wall: true,
             hostile: false,
+            acid: false,
         });
     }
 }

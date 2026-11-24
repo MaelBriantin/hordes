@@ -55,6 +55,7 @@ impl World {
                 burst: false,
                 wall: false,
                 hostile: false,
+                acid: false,
             });
         }
         self.bombs.retain(|bomb| bomb.left > 0);

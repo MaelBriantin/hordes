@@ -417,15 +417,7 @@ impl World {
             let stats = enemy.kind.stats();
             let apart = (target - enemy.position).length();
             notice(enemy, apart, sight);
-            let fire = fires
-                .iter()
-                .copied()
-                .filter(|fire| (*fire - enemy.position).length() <= LURE_REACH)
-                .min_by(|a, b| {
-                    (*a - enemy.position)
-                        .length()
-                        .total_cmp(&(*b - enemy.position).length())
-                });
+            let fire = nearest_fire(&fires, enemy.position);
             let (heading, pace) = if enemy.stunned > 0 {
                 enemy.stunned -= 1;
                 (Vec2::ZERO, 0.0)
@@ -465,12 +457,18 @@ impl World {
                         )
                     }
                 }
+            } else if let Some(keeping) =
+                super::spitters::keep_off(enemy, apart, enemy.heading(target))
+            {
+                keeping
             } else if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
                 (Vec2::ZERO, 1.0)
             } else {
                 (enemy.heading(target), enemy.hunt_pace())
             };
-            enemy.facing = enemy.facing.after(heading);
+            // A spitter faces the player, backing off or standing.
+            let facing = super::spitters::facing(enemy, heading, target, flee);
+            enemy.facing = enemy.facing.after(facing);
             let slowed = match glare {
                 Some((reach, percent)) if apart <= reach => percent,
                 _ => 0,
@@ -600,6 +598,15 @@ impl World {
 pub(super) fn shove(map: &Map, from: Vec2, by: Vec2, half_width: f32, flies: bool) -> Vec2 {
     let step = by * (1.0 / f32::from(PUSH_STEPS));
     (0..PUSH_STEPS).fold(from, |at, _| slide(map, at, step, half_width, flies))
+}
+
+/// The nearest of the campfires `fires` to `at`, within its lure.
+fn nearest_fire(fires: &[Vec2], at: Vec2) -> Option<Vec2> {
+    fires
+        .iter()
+        .copied()
+        .filter(|fire| (*fire - at).length() <= LURE_REACH)
+        .min_by(|a, b| (*a - at).length().total_cmp(&(*b - at).length()))
 }
 
 /// What the enemies can tell of the player this tick: whether the scout is in their smoke;

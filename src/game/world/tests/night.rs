@@ -246,6 +246,21 @@ fn the_night_fallen_the_torch_waits_for_the_player_to_light_it_f_shown_till_then
 }
 
 #[test]
+fn the_first_time_lightning_puts_the_torch_out_f_is_shown_again_till_it_is_lit() {
+    let mut world = in_the_dark();
+    world.switch_torch();
+    wait(&mut world, 46);
+    assert!(world.torch_lit() && !world.torch_hint());
+    world.cut_torch();
+    assert!(world.torch_hint(), "put out by lightning: F again");
+    world.switch_torch();
+    assert!(!world.torch_hint());
+    wait(&mut world, 46);
+    world.cut_torch();
+    assert!(!world.torch_hint(), "the second time, no more");
+}
+
+#[test]
 fn a_flickering_torch_lights_nothing_for_the_run() {
     let mut world = in_the_dark();
     // Lit again, flickering as long as it may.

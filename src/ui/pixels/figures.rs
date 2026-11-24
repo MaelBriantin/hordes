@@ -256,7 +256,11 @@ impl Canvas<'_> {
             .iter()
             .flat_map(|enemy| {
                 let lift = sprites::lift(enemy, world.ticks());
-                let at = enemy.position - Vec2::new(0.0, lift);
+                let mut at = enemy.position - Vec2::new(0.0, lift);
+                // A spitter pulls back a pixel to spit.
+                if super::acid::pulling_back(enemy) {
+                    at -= enemy.facing.way() * super::acid::PULL_BACK;
+                }
                 let look = sprites::enemy(enemy, world.ticks());
                 // A kamikaze about to blow swells a pixel each side.
                 let swell = if sprites::fuse_last(enemy) {
@@ -318,6 +322,7 @@ impl Canvas<'_> {
         for (_, look, corner) in figures {
             self.paint(look, corner);
         }
+        self.paint_spit_glints(world);
         // The hordes' veiled, under the night but in the dark: as far as the light shows.
         if !world.player.build.horde_veil_in_dark() {
             self.paint_veils(world);

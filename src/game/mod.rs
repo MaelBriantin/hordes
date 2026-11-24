@@ -44,6 +44,7 @@ mod skin;
 mod smoke;
 mod sniper;
 mod spawn;
+mod spitter;
 mod stain;
 mod vault;
 mod vec2;
@@ -64,9 +65,9 @@ pub use flashball::{BURST_TICKS as FLASH_BURST_TICKS, Burst as FlashBurst};
 pub use gatling::CASE_TICKS;
 pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;
-pub use kamikaze::LAST_TICKS as KAMIKAZE_LAST_TICKS;
 pub use hammer::{Blow, WAVE_TICKS as HAMMER_WAVE_TICKS};
 pub use heal::light as campfire_light;
+pub use kamikaze::LAST_TICKS as KAMIKAZE_LAST_TICKS;
 pub use leaderboard::{Entry, Leaderboard};
 pub use level::xp_to_next;
 pub use machete::{SWING_TICKS, Swing};
@@ -77,6 +78,7 @@ pub use progress::{Achievement, COLLECTION, Progress, Unlock};
 pub use revival::SOUL_TICKS as REVIVAL_SOUL_TICKS;
 pub use smoke::{CLEAR_TICKS as SMOKE_CLEAR_TICKS, SPREAD_TICKS as SMOKE_SPREAD_TICKS};
 pub use sniper::IMPACT_TICKS as SNIPER_IMPACT_TICKS;
+pub use spitter::WIND_TICKS as SPIT_WIND_TICKS;
 
 /// The ticks the C4 takes to come back after a blast, by its level, before Haste.
 pub fn c4_recharge(level: u8) -> u32 {

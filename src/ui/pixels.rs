@@ -1,6 +1,7 @@
 //! The map in pixels: a tile is 2 × 2 pixels, a cell holds 2 pixels one above the other. The
 //! scene is painted in pixels first, then each cell shows its two as a half block.
 
+mod acid;
 mod blows;
 mod c4;
 mod figures;
@@ -527,6 +528,9 @@ impl Canvas<'_> {
         let (blasting, blast_halos) = Canvas::blast_lights(world);
         lights.extend(blasting);
         halos.extend(blast_halos);
+        let (acid, acid_halos) = Canvas::acid_lights(world);
+        lights.extend(acid);
+        halos.extend(acid_halos);
         let mut glows = self.glows(world);
         glows.extend(Canvas::charge_glows(world));
         glows.extend(Canvas::sniper_glows(world));
@@ -929,10 +933,16 @@ mod tests {
     fn the_top_of_a_rock_hides_the_feet_of_the_hero_behind_it_and_not_of_one_in_front() {
         let behind = overlap(Vec2::new(101.0, 49.5));
         assert!(!behind.is_empty(), "they overlap");
-        assert!(behind.iter().all(|(hero, shown)| hero != shown), "{behind:?}");
+        assert!(
+            behind.iter().all(|(hero, shown)| hero != shown),
+            "{behind:?}"
+        );
         let in_front = overlap(Vec2::new(101.0, 52.5));
         assert!(!in_front.is_empty(), "they overlap");
-        assert!(in_front.iter().all(|(hero, shown)| hero == shown), "{in_front:?}");
+        assert!(
+            in_front.iter().all(|(hero, shown)| hero == shown),
+            "{in_front:?}"
+        );
     }
 
     #[test]

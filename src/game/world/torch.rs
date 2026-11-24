@@ -48,10 +48,13 @@ impl World {
     }
 
     /// A strike of lightning with the player in its ring puts their torch out: up to them to light
-    /// it again, quick, flickering as it does; the infiltrator's goggles go blank a while too.
+    /// it again, quick, flickering as it does, F shown to them again the first time; the
+    /// infiltrator's goggles go blank a while too.
     pub(super) fn cut_torch(&mut self) {
         if self.torch_on() == Some(true) {
             self.torch_switch = false;
+            self.relight_hint = !self.torch_cut_once;
+            self.torch_cut_once = true;
         }
         self.goggles_out = GOGGLES_OUT_TICKS;
     }
@@ -65,10 +68,11 @@ impl World {
     }
 
     /// Whether F is shown to the player under them: the night fallen, their torch never lit yet
-    /// this run; never to the infiltrator, at home in the dark.
+    /// this run, or put out by lightning the first time and not lit again; never to the
+    /// infiltrator, at home in the dark.
     pub fn torch_hint(&self) -> bool {
         self.torch_on() == Some(false)
-            && !self.torch_lit_once
+            && (!self.torch_lit_once || self.relight_hint)
             && !self.player.build.hero().perk().ghost()
     }
 
@@ -85,6 +89,7 @@ impl World {
             Some(false) => {
                 self.torch_switch = true;
                 self.torch_lit_once = true;
+                self.relight_hint = false;
                 self.light_up_torch();
             }
         }

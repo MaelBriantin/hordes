@@ -69,11 +69,11 @@ fn a_kamikaze_lights_its_fuse_within_four_tiles_the_torch_not_lit_and_rushes_fas
         .push(enemy(EnemyKind::Kamikaze, Vec2::new(100.0, 56.0)));
     wait(&mut world, 1);
     let (lit, unlit) = (&world.enemies[0], &world.enemies[1]);
-    assert_eq!(
-        (lit.fuse, unlit.fuse),
-        (RUSH_TICKS + LAST_TICKS - 1, 0)
+    assert_eq!((lit.fuse, unlit.fuse), (RUSH_TICKS + LAST_TICKS - 1, 0));
+    assert_near(
+        103.9 - lit.position.x,
+        (56.0 - unlit.position.y) * RUSH_PACE,
     );
-    assert_near(103.9 - lit.position.x, (56.0 - unlit.position.y) * RUSH_PACE);
 }
 
 #[test]
@@ -87,12 +87,14 @@ fn a_kamikaze_lights_its_fuse_coming_into_the_torchs_light() {
     // Its 9 tiles of light, and the 6 it fades over.
     let reach = world.light_radius() + TORCH_FADE;
     assert_near(reach, 15.0);
-    world
-        .enemies
-        .push(enemy(EnemyKind::Kamikaze, Vec2::new(100.0 + reach - 0.5, 50.0)));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Kamikaze, Vec2::new(100.0, 50.0 + reach + 1.0)));
+    world.enemies.push(enemy(
+        EnemyKind::Kamikaze,
+        Vec2::new(100.0 + reach - 0.5, 50.0),
+    ));
+    world.enemies.push(enemy(
+        EnemyKind::Kamikaze,
+        Vec2::new(100.0, 50.0 + reach + 1.0),
+    ));
     for kamikaze in &mut world.enemies {
         kamikaze.noticed = true;
     }
@@ -179,6 +181,7 @@ fn a_kamikazes_fire_burns_the_player_standing_in_it_not_the_enemies() {
             burst: false,
             wall: false,
             hostile: true,
+            acid: false,
         });
     }
     let hp = world.player.hp;

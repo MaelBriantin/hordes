@@ -31,6 +31,8 @@ pub enum EnemyKind {
     Parasite,
     /// A zombie as any, until near the player its head catches fire and it blows.
     Kamikaze,
+    /// A zombie, its skin acid, keeping off the player and spitting at them.
+    Spitter,
 }
 
 /// What a kind of enemy is like.
@@ -55,11 +57,12 @@ pub struct Stats {
 
 impl EnemyKind {
     /// The kinds that appear of themselves: parasites come out of abominations alone.
-    pub const ALL: [EnemyKind; 4] = [
+    pub const ALL: [EnemyKind; 5] = [
         EnemyKind::Zombie,
         EnemyKind::Shadow,
         EnemyKind::Abomination,
         EnemyKind::Kamikaze,
+        EnemyKind::Spitter,
     ];
 
     pub fn stats(self) -> Stats {
@@ -102,6 +105,16 @@ impl EnemyKind {
                 speed: 4.5,
                 damage: 3,
                 half_width: 0.3,
+                flies: false,
+            },
+            EnemyKind::Spitter => Stats {
+                hp: 25,
+                xp: 2,
+                drop_percent: 75,
+                stain: 3,
+                speed: 2.5,
+                damage: 5,
+                half_width: 0.45,
                 flies: false,
             },
             EnemyKind::Kamikaze => Stats {
@@ -158,6 +171,9 @@ pub struct Enemy {
     pub fuse: u32,
     /// Whether it blew of itself, its fuse out: a kamikaze's, worth nothing then.
     pub blew: bool,
+    /// Ticks left before it spits, the player in its reach: a spitter's; the last ones, it
+    /// pulls back.
+    pub spit_wait: u32,
 }
 
 impl Enemy {
@@ -184,6 +200,7 @@ impl Enemy {
             bolting: 0,
             fuse: 0,
             blew: false,
+            spit_wait: super::spitter::EVERY_TICKS,
         }
     }
 

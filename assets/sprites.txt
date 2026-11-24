@@ -93,6 +93,8 @@ _ 30 50 110     the riot officer's dark blue arms, their second outfit's
 ; 255 255 0     the gatling's belt, its rounds
 = 255 133 2     the gatling's belt, its links
 h 50 150 40     the kamikaze's green flame, at its root
+} 225 205 40    the spitter's acid
+, 255 240 120   the spitter's acid, glinting
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -528,6 +530,45 @@ kamikaze_side
 kamikaze_front
 .hh.
 ZZZZ
+.CC.
+.NN.
+
+# The spitter, 4 × 4: a zombie, its skin acid, moving: three frames, sideways (facing right),
+# and up or down.
+
+spitter_side_0
+.}}.
+.C,}
+.CC.
+.NN.
+
+spitter_side_1
+.},.
+.C}}
+.CC.
+.NN.
+
+spitter_side_2
+.,}.
+.C},
+.CC.
+.NN.
+
+spitter_front_0
+.}}.
+}CC}
+.CC.
+.NN.
+
+spitter_front_1
+.},.
+}CC}
+.CC.
+.NN.
+
+spitter_front_2
+.,}.
+,CC,
 .CC.
 .NN.
 

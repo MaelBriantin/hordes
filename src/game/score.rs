@@ -14,7 +14,7 @@ const MAX_COMBO: u32 = 10;
 pub fn points(kind: EnemyKind) -> u64 {
     match kind {
         EnemyKind::Zombie => 10,
-        EnemyKind::Shadow | EnemyKind::Kamikaze => 30,
+        EnemyKind::Shadow | EnemyKind::Kamikaze | EnemyKind::Spitter => 30,
         EnemyKind::Abomination => 100,
         EnemyKind::Parasite => 1,
     }

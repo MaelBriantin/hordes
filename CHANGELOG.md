@@ -11,8 +11,10 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 
 ### New
 - The kamikaze, from the drizzle: a zombie as any in the crowd, until it comes into the torch's light: its head catches fire, a green flame lighting the dark around it, and it rushes at them, faster than they go; on them, it stands still a last moment, blinking and swelling, time to get away, then blows in green flames: 20 HP off everything around, enemies included, and green fires left burning that burn the player standing in them. Felled before, it blows at once where it falls, setting off the other kamikazes near.
+- The spitter, from the rain: a zombie, its skin yellow acid, keeping 8 tiles off the player and spitting at them every 2.5 s, a glob lobbed over everything to where they stood, landing a second later where it blinks on the ground: 10 HP if they are still there, and a puddle of acid left 3 s that burns them standing in it.
 
 ### Changed
+- The first time lightning puts the torch out, F is shown again until it is lit.
 - Passing behind a tree or a rock, the hero and the enemies have their lower part hidden by it.
 
 ### Fixed

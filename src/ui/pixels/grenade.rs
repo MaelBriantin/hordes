@@ -9,8 +9,10 @@ const BODY: Color = Color::Rgb(60, 80, 50);
 const SPARK: [Color; 2] = [Color::Rgb(255, 225, 100), Color::Rgb(245, 130, 40)];
 
 impl Canvas<'_> {
-    /// The grenades in the air, each arcing up then down to where it blows, its fuse sparking.
+    /// The grenades in the air, each arcing up then down to where it blows, its fuse sparking;
+    /// the spitters' globs of acid too, lobbed as they are.
     pub(super) fn paint_grenades(&mut self, world: &World, frame: u32) {
+        self.paint_globs(world);
         for thrown in &world.grenades {
             let progress = thrown.progress();
             let along = thrown.from + (thrown.to - thrown.from) * progress;

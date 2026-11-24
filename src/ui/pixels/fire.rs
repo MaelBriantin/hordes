@@ -84,7 +84,8 @@ impl Canvas<'_> {
         };
         let mut lights = Vec::new();
         let mut halos = Vec::new();
-        for puddle in &world.puddles {
+        // A spitter's acid apart: see its own lights.
+        for puddle in world.puddles.iter().filter(|puddle| !puddle.acid) {
             let centre = pixel(puddle.centre);
             let age = puddle.age();
             if puddle.burst && age < BURST_TICKS {
@@ -95,7 +96,10 @@ impl Canvas<'_> {
             }
             // It lights around it, warm; a kamikaze's, green.
             let (colour, strength, reach) = if puddle.hostile {
-                lights.push(night::Light::cold_fire(centre, puddle.radius * PUDDLE_LIGHT));
+                lights.push(night::Light::cold_fire(
+                    centre,
+                    puddle.radius * PUDDLE_LIGHT,
+                ));
                 KAMIKAZE_HALO
             } else {
                 lights.push(night::Light::fire(centre, puddle.radius * PUDDLE_LIGHT));
@@ -163,12 +167,17 @@ impl Canvas<'_> {
             .collect()
     }
 
-    /// The Molotov's puddles of fire, flames flickering over them (a kamikaze's green), and its bottles in the air,
+    /// The Molotov's puddles of fire, flames flickering over them (a kamikaze's green; a
+    /// spitter's acid), and its bottles in the air,
     /// arcing to where they burst.
     pub(super) fn paint_molotovs(&mut self, world: &World, frame: u32) {
         for puddle in &world.puddles {
             if puddle.wall {
                 self.paint_wall_stretch(puddle, frame);
+                continue;
+            }
+            if puddle.acid {
+                self.paint_acid_puddle(puddle, frame);
                 continue;
             }
             let (cx, cy) = pixel(puddle.centre);

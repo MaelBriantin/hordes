@@ -1,12 +1,12 @@
 //! The kamikazes: their fuses lit near the player, their blasts, the fires they leave burning.
 
+use super::super::Vec2;
 use super::super::c4::{BLAST_TICKS, Blast};
 use super::super::enemy::{Enemy, EnemyKind};
 use super::super::kamikaze::{
     self, DAMAGE, DARK_REACH, FIRE_RADIUS, FIRES, LAST_TICKS, PUSH, RADIUS, RUSH_PACE, RUSH_TICKS,
 };
 use super::super::molotov::Puddle;
-use super::super::Vec2;
 use super::enemies::shove;
 use super::{PLAYER_HALF_WIDTH, TORCH_FADE, World};
 
@@ -73,6 +73,7 @@ impl World {
                 burst: false,
                 wall: false,
                 hostile: true,
+                acid: false,
             });
         }
         let away = self.player.position - at;
@@ -140,5 +141,9 @@ pub(super) fn fuse(
         enemy.hp = 0;
         enemy.blew = true;
     }
-    Some(if enemy.fuse > LAST_TICKS { RUSH_PACE } else { 0.0 })
+    Some(if enemy.fuse > LAST_TICKS {
+        RUSH_PACE
+    } else {
+        0.0
+    })
 }

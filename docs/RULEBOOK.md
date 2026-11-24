@@ -69,7 +69,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 In arcade, every run is played for its score.
 
-- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**, parasite **1**, kamikaze **30**.
+- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**, parasite **1**, kamikaze **30**, spitter **30**.
 - Times the **weather's multiplier**: ×1 at dusk and in the night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows, in its middle after the time (on a white badge: in a standard run, the time left to the dawn, counting down; in arcade, the time survived), the score and the multiplier of the moment (the weather's times the combo's) on a gold badge, `SCORE:` in capitals before it, the score's thousands apart. While the run is ahead of the best one kept, its score gleams.
@@ -79,7 +79,7 @@ In arcade, every run is played for its score.
 
 - Runs start at **dusk**, for half a minute, just enough to look around: for its first 24 s, the setting sun lights the whole map, warm, less and less, down to half its light; then the night falls all of a sudden, in **6 s**, dimmer and bluer, until only the lights below show anything. Before the dawn, the sun rises the other way round, over the tempest's last minute.
 - Then runs take place at night. Everything is dimmer and bluer.
-- The player carries a **light**, a torch, out at dusk. It no longer lights up of itself: as the night falls, at **0:26**, it is **for the player to light it**, **F** shown under them, blinking ("[F] light the torch"), until they first do in the run; an Endless Night run, skipping the dusk, opens on it lit. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
+- The player carries a **light**, a torch, out at dusk. It no longer lights up of itself: as the night falls, at **0:26**, it is **for the player to light it**, **F** shown under them, blinking ("[F] light the torch"), until they first do in the run, and again the first time lightning puts it out, until they light it again; an Endless Night run, skipping the dusk, opens on it lit. **F** puts it out at once, or lights it again. Lighting up, it **flickers** for as long as luck has it, from not at all to a second and a half, before it holds; flickering, it lights nothing for the run (the enemies don't see the player by it, the guns hold their fire).
 - **No battery**: the torch stays lit as long as the player wants, and lights again whenever they want. Lit, everything within **9 tiles** (2 more per level of Flashlight) is lit, fading into the dark over 6 more tiles. Beyond, the map and the enemies are barely seen (10% of their brightness).
 - **The torch out**, the player is barely seen, as all the rest; the gems, the campfires and the lightning still show. The enemies no longer see them from afar: an enemy finds the player within **6 tiles**, and loses them again past **8**. One that hasn't found them goes for the nearest burning campfire within **20 tiles**, or wanders, at half its speed. In the dark, the **guns hold their fire**: nothing to aim at (the crowbar and the machete still strike what comes near). A **strike of lightning** gives the player away to every enemy on screen. The hordes always find the player. Lit, or by daylight, every enemy sees the player.
 - **Shadows** go the other way round, at night: they hunt the player in the dark, wherever they are, their eyes shining red, faster the longer they hunt (up to **50%** faster after 5 s; back to their speed once lit). The torch lit, they keep away from it: caught in its light, a Shadow **bolts** out of it, 2.5 times its speed for a third of a second.
@@ -142,11 +142,13 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 | Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
 | Kamikaze | 20 | 2 (3 times in 4) | 3 tiles/s | 5 (to a barricade; on the player, it blows) | 0.9 tile | Straight at the player, then rushes and **blows** (see below); a **zombie as any** in the crowd until then, the same look; its fuse lit, bare-chested, its head a **green flame** flickering, lighting 4 tiles around it in the dark, green |
+| Spitter | 25 | 2 (3 times in 4) | 2.5 tiles/s | 5 | 0.9 tile | Keeps **8 tiles** off the player, backing off nearer than 6, and **spits** acid at them (see below); a zombie, its skin **acid**, yellow, glinting, moving over it |
 
 - Every enemy is slower than the player: they can always be outrun; but a kamikaze rushing, its fuse lit.
 - A felled abomination **swells**, blinking white, for **0.6 s**, then **bursts**: a disc of green bile, out to **3 tiles**, that costs everything it reaches **10 HP**, the player and the enemies alike, and pushes it back **2 tiles**. Out of it, **4 parasites** are thrown, 2.5 tiles away each its own way, as tough as the weather makes every enemy.
 - A **kamikaze** coming into the player's **light** (as far as the torch's light shows, fading included: where Glare slows; the torch not lit, within **4 tiles**, middle to middle), having found them, lights its **fuse**, its head catching fire, and **rushes** at them, two and a half times as fast (**7.5 tiles/s**, faster than the player), blinking green, **3 s** at most. On them (it never strikes them), or its rush over, it **stands still** its last **0.6 s**, blinking faster, pale green, swelling a pixel each side: the player's last chance to get away (2 tiles off, a third of a second's run). Then it **blows**, where it stands: a fireball as the C4's but **green**, **2.5 tiles** round, costing everything it reaches **20 HP**, the player and the enemies alike, and throwing it back **half a tile** (the demolisher, Unshakable, not at all); **4 fires**, green, left burning **3 s** on the ground around, each 0.6 tile round, lighting the dark green: they cost the player standing in them **2 HP** each time they can be hurt again, and burn no enemy. Blown of itself, it is worth nothing, neither points nor gem; **felled** before, it blows at once where it falls, worth its points and its gem, a kamikaze its blast fells blowing in turn.
-- **Obstacles** stop zombies, abominations, parasites and kamikazes, which slide along them; Shadows pass through.
+- A **spitter** that has found the player, within **10 tiles** of them, spits every **2.5 s**: its last 0.4 s it stands, pulled back a pixel, its acid glinting at its mouth; then a **glob** of acid flies, lobbed over everything (trees, rocks, barricades), to where the player stood as it spat, landing **1 s** later, where it lands blinking on the ground meanwhile, over the night. Landing, it costs the player within a tile of it **10 HP**, and leaves a **puddle** of acid **3 s**, a tile round, glowing a little in the dark: it costs the player standing in it **2 HP** each time they can be hurt again, and harms no enemy. Out of its reach, the player lost, it holds its spit and starts again.
+- **Obstacles** stop zombies, abominations, parasites, kamikazes and spitters, which slide along them; Shadows pass through.
 - **Touching** the player costs them the damage of the hardest-hitting enemy touching them; then nothing hurts them for 0.5 s.
 - Enemies that overlap **push each other apart**; one touching the player stops there.
 - A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and Shadows 3 times in 4, abominations always, parasites never.
@@ -156,14 +158,14 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 - Enemies appear just beyond what the player sees (3 tiles past the edge of the screen), never on an obstacle (Shadows excepted).
 - How many, and which kinds, follow the weather: each stage starts at its own rate, and over the stage the rate grows little by little to the next one's.
 
-| Weather | Enemies a second | Zombie / Shadow / abomination / kamikaze, by weight |
+| Weather | Enemies a second | Zombie / Shadow / abomination / kamikaze / spitter, by weight |
 |---|---|---|
-| Dusk | 1 | 10 / 0 / 0 / 0 |
-| Night | 1.5 | 9 / 1 / 0 / 0 |
-| Drizzle | 3 | 8 / 1 / 1 / 1 |
-| Rain | 4.5 | 7 / 2 / 1 / 1 |
-| Storm | 6 | 6 / 2 / 2 / 2 |
-| Tempest | 7.5 | 5 / 2 / 3 / 2 |
+| Dusk | 1 | 10 / 0 / 0 / 0 / 0 |
+| Night | 1.5 | 9 / 1 / 0 / 0 / 0 |
+| Drizzle | 3 | 8 / 1 / 1 / 1 / 0 |
+| Rain | 4.5 | 7 / 2 / 1 / 1 / 1 |
+| Storm | 6 | 6 / 2 / 2 / 2 / 1 |
+| Tempest | 7.5 | 5 / 2 / 3 / 2 / 2 |
 
 - At most **300** enemies at once (600 while a horde is about).
 - An enemy left far behind (twice as far as the edge of the screen) appears again just beyond the side the player faces.

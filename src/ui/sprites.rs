@@ -101,6 +101,13 @@ pub enum SpriteId {
     /// Sideways (facing right), and up or down.
     KamikazeSide,
     KamikazeFront,
+    /// Three frames each, its acid moving: sideways (facing right), and up or down.
+    SpitterSide0,
+    SpitterSide1,
+    SpitterSide2,
+    SpitterFront0,
+    SpitterFront1,
+    SpitterFront2,
     Bullet,
     Drone,
     Gem,
@@ -176,7 +183,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 141] = [
+    const ALL: [SpriteId; 147] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -247,6 +254,12 @@ impl SpriteId {
         SpriteId::ParasiteLanded,
         SpriteId::KamikazeSide,
         SpriteId::KamikazeFront,
+        SpriteId::SpitterSide0,
+        SpriteId::SpitterSide1,
+        SpriteId::SpitterSide2,
+        SpriteId::SpitterFront0,
+        SpriteId::SpitterFront1,
+        SpriteId::SpitterFront2,
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
@@ -393,6 +406,12 @@ impl SpriteId {
             SpriteId::ParasiteLanded => "parasite_landed",
             SpriteId::KamikazeSide => "kamikaze_side",
             SpriteId::KamikazeFront => "kamikaze_front",
+            SpriteId::SpitterSide0 => "spitter_side_0",
+            SpriteId::SpitterSide1 => "spitter_side_1",
+            SpriteId::SpitterSide2 => "spitter_side_2",
+            SpriteId::SpitterFront0 => "spitter_front_0",
+            SpriteId::SpitterFront1 => "spitter_front_1",
+            SpriteId::SpitterFront2 => "spitter_front_2",
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
@@ -720,6 +739,14 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
             };
             Look::sideways(shape, enemy.facing)
         }
+        // A spitter's acid moves over it, each its own way.
+        EnemyKind::Spitter => {
+            let frame = usize::try_from((ticks / SPITTER_FRAME + enemy.id) % 3).unwrap_or(0);
+            match enemy.facing {
+                Facing::Left | Facing::Right => Look::sideways(SPITTER_SIDE[frame], enemy.facing),
+                Facing::Up | Facing::Down => Look::plain(SPITTER_FRONT[frame]),
+            }
+        }
         // A kamikaze passes for a zombie in the crowd, until its head catches fire.
         EnemyKind::Kamikaze => {
             let (side, front) = if enemy.fuse > 0 {
@@ -764,6 +791,19 @@ fn fuse_blink(enemy: &Enemy, ticks: u32) -> Option<Color> {
 pub fn fuse_last(enemy: &Enemy) -> bool {
     enemy.fuse > 0 && enemy.fuse <= KAMIKAZE_LAST_TICKS
 }
+
+/// A spitter's frames, its acid moving, and the ticks each shows.
+const SPITTER_SIDE: [SpriteId; 3] = [
+    SpriteId::SpitterSide0,
+    SpriteId::SpitterSide1,
+    SpriteId::SpitterSide2,
+];
+const SPITTER_FRONT: [SpriteId; 3] = [
+    SpriteId::SpitterFront0,
+    SpriteId::SpitterFront1,
+    SpriteId::SpitterFront2,
+];
+const SPITTER_FRAME: u32 = 8;
 
 /// The colours a kamikaze blinks in as its fuse burns, its flame's: its middle's green as it
 /// rushes, then its tip's pale green.

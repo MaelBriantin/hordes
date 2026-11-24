@@ -36,15 +36,15 @@ pub fn rate(weather: Weather, progress: f32) -> f32 {
 }
 
 /// How often each kind of enemy appears in a weather, against the others: zombie, Shadow,
-/// abomination, kamikaze.
-fn weights(weather: Weather) -> [u32; 4] {
+/// abomination, kamikaze, spitter.
+fn weights(weather: Weather) -> [u32; 5] {
     match weather {
-        Weather::Dusk => [10, 0, 0, 0],
-        Weather::Clear => [9, 1, 0, 0],
-        Weather::Drizzle => [8, 1, 1, 1],
-        Weather::Rain => [7, 2, 1, 1],
-        Weather::Storm => [6, 2, 2, 2],
-        Weather::Tempest => [5, 2, 3, 2],
+        Weather::Dusk => [10, 0, 0, 0, 0],
+        Weather::Clear => [9, 1, 0, 0, 0],
+        Weather::Drizzle => [8, 1, 1, 1, 0],
+        Weather::Rain => [7, 2, 1, 1, 1],
+        Weather::Storm => [6, 2, 2, 2, 1],
+        Weather::Tempest => [5, 2, 3, 2, 2],
     }
 }
 
@@ -124,6 +124,19 @@ mod tests {
             .map(|_| pick_kind(&mut rng, Weather::Drizzle))
             .collect();
         assert!(drizzle.contains(&EnemyKind::Kamikaze));
+    }
+
+    #[test]
+    fn the_spitters_come_with_the_rain() {
+        let mut rng = StdRng::seed_from_u64(7);
+        let drizzle: Vec<_> = (0..500)
+            .map(|_| pick_kind(&mut rng, Weather::Drizzle))
+            .collect();
+        assert!(!drizzle.contains(&EnemyKind::Spitter));
+        let rain: Vec<_> = (0..500)
+            .map(|_| pick_kind(&mut rng, Weather::Rain))
+            .collect();
+        assert!(rain.contains(&EnemyKind::Spitter));
     }
 
     #[test]

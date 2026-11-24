@@ -41,6 +41,7 @@ use super::progress::{
 use super::score;
 use super::smoke::Cloud;
 use super::sniper::{Impact, Shot};
+use super::spitter::Glob;
 use super::stain::Stain;
 use super::vault::Vault;
 use super::weather::{self, Weather};
@@ -70,6 +71,7 @@ mod saws;
 mod shocks;
 mod smoke_bombs;
 mod sniping;
+mod spitters;
 mod stabs;
 mod storm;
 mod torch;
@@ -276,6 +278,8 @@ pub struct World {
     grenade_wait: u32,
     /// The kamikazes' blasts while they show.
     pub kamikaze_blasts: Vec<c4::Blast>,
+    /// The spitters' globs of acid in the air.
+    pub globs: Vec<Glob>,
     /// The napalm's bombs falling, its blasts while they show, and the ticks before its next
     /// strike.
     pub bombs: Vec<Bomb>,
@@ -389,6 +393,10 @@ pub struct World {
     torch_switch: bool,
     /// Whether the player has lit their torch this run: until they do, F is shown to them.
     torch_lit_once: bool,
+    /// Whether lightning has put the torch out this run; whether F is shown to them again for
+    /// it, the first time, until they light it again.
+    torch_cut_once: bool,
+    relight_hint: bool,
     pub(super) torch_steady_at: u32,
     torch_luck: u32,
     /// Nothing hurts the player: a debug tool.
@@ -539,6 +547,7 @@ impl World {
             grenade_blasts: Vec::new(),
             grenade_wait: 0,
             kamikaze_blasts: Vec::new(),
+            globs: Vec::new(),
             bombs: Vec::new(),
             napalm_blasts: Vec::new(),
             napalm_wait: 0,
@@ -597,6 +606,8 @@ impl World {
             dodged_at: None,
             torch_switch: true,
             torch_lit_once: true,
+            torch_cut_once: false,
+            relight_hint: false,
             torch_steady_at: 0,
             torch_luck: 0,
             unhurt: false,
@@ -792,6 +803,7 @@ impl World {
         self.spawn();
         self.hordes();
         self.move_enemies();
+        self.spit_acid();
         self.batter_barricades();
         for enemy in &mut self.enemies {
             enemy.scorch();

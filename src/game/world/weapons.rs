@@ -45,6 +45,7 @@ impl World {
                     burst: true,
                     wall: false,
                     hostile: false,
+                    acid: false,
                 });
             }
             bottle.left > 0
