@@ -51,6 +51,7 @@ mod barricades;
 mod blows;
 mod bombs;
 mod cards;
+mod chargers;
 mod charges;
 mod cuts;
 mod debug;
@@ -803,6 +804,7 @@ impl World {
         self.spawn();
         self.hordes();
         self.move_enemies();
+        self.ram_chargers();
         self.spit_acid();
         self.batter_barricades();
         for enemy in &mut self.enemies {

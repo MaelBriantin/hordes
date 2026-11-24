@@ -246,6 +246,7 @@ fn ram_throw_ticks() -> u32 {
 }
 
 mod blasts;
+mod chargers;
 mod heroes;
 mod kamikazes;
 mod melee;

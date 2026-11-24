@@ -12,6 +12,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 ### New
 - The kamikaze, from the drizzle: a zombie as any in the crowd, until it comes near the torch's light: it stops half a second, then its skin glows green, lighting the dark around it, and it rushes at them, faster than they go; on them, it stands still a last moment, flashing, time to get away, then blows in green flames: 20 HP off everything around, enemies included, and green fires left burning that burn the player standing in them. Felled before, it blows at once where it falls, setting off the other kamikazes near.
 - The spitter, from the rain: a zombie, its skin yellow acid, keeping 8 tiles off the player and spitting at them every 2.5 s, showing in the dark as it is about to, a glob lobbed over everything to where they stood, landing a second later where it blinks on the ground: 10 HP if they are still there, and a puddle of acid left 3 s that burns them standing in it.
+- The charger, from the storm: a stocky zombie in a football player's pads and helmet. Near the player, it scrapes the ground a second, its eyes glowing red in the dark, then charges straight the way they were, fast, turning no more: 20 HP and thrown back if it runs into them. It smashes a wooden barricade in its way; into a tree, a rock or a metal barricade, it is stunned 2 s.
 
 ### Changed
 - The first time lightning puts the torch out, F is shown again until it is lit.

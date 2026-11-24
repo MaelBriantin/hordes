@@ -113,6 +113,14 @@ impl World {
         self.raze(|barricade| barricade.metal || (barricade.centre() - at).length() > reach);
     }
 
+    /// The wooden barricades a body centred on `at` runs into are smashed: a charger's. Whether
+    /// one was.
+    pub(super) fn smash_barricades(&mut self, at: Vec2, half: f32) -> bool {
+        let before = self.barricades.len();
+        self.raze(|barricade| barricade.metal || !barricade.overlaps(at, half));
+        self.barricades.len() < before
+    }
+
     /// Keeps the barricades `stays` says, the others taken away, their ground free again.
     fn raze(&mut self, stays: impl Fn(&Barricade) -> bool) {
         let map = &mut self.map;

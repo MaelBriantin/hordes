@@ -7,7 +7,10 @@ use ratatui::style::Color;
 use thiserror::Error;
 
 pub use crate::game::Skin;
-use crate::game::{Enemy, EnemyKind, Facing, KAMIKAZE_LAST_TICKS, Swelling, kamikaze_lit};
+use crate::game::{
+    CHARGER_SCRAPE_TICKS, Charge, Enemy, EnemyKind, Facing, KAMIKAZE_LAST_TICKS, Swelling,
+    kamikaze_lit,
+};
 
 const SOURCE: &str = include_str!("../../assets/sprites.txt");
 const PALETTE: &str = "palette";
@@ -106,6 +109,15 @@ pub enum SpriteId {
     SpitterFront0,
     SpitterFront1,
     SpitterFront2,
+    /// Crouched, sideways (facing right): standing, a step, scraping (bobbing a pixel); up or
+    /// down: standing, a step of each foot, scraping.
+    ChargerSide,
+    ChargerSideStep,
+    ChargerSideScrape,
+    ChargerFront,
+    ChargerFrontLeft,
+    ChargerFrontRight,
+    ChargerFrontScrape,
     Bullet,
     Drone,
     Gem,
@@ -181,7 +193,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 145] = [
+    const ALL: [SpriteId; 152] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -256,6 +268,13 @@ impl SpriteId {
         SpriteId::SpitterFront0,
         SpriteId::SpitterFront1,
         SpriteId::SpitterFront2,
+        SpriteId::ChargerSide,
+        SpriteId::ChargerSideStep,
+        SpriteId::ChargerSideScrape,
+        SpriteId::ChargerFront,
+        SpriteId::ChargerFrontLeft,
+        SpriteId::ChargerFrontRight,
+        SpriteId::ChargerFrontScrape,
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
@@ -406,6 +425,13 @@ impl SpriteId {
             SpriteId::SpitterFront0 => "spitter_front_0",
             SpriteId::SpitterFront1 => "spitter_front_1",
             SpriteId::SpitterFront2 => "spitter_front_2",
+            SpriteId::ChargerSide => "charger_side",
+            SpriteId::ChargerSideStep => "charger_side_step",
+            SpriteId::ChargerSideScrape => "charger_side_scrape",
+            SpriteId::ChargerFront => "charger_front",
+            SpriteId::ChargerFrontLeft => "charger_front_left",
+            SpriteId::ChargerFrontRight => "charger_front_right",
+            SpriteId::ChargerFrontScrape => "charger_front_scrape",
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
@@ -742,6 +768,13 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
                 Facing::Up | Facing::Down => Look::plain(SPITTER_FRONT[frame]),
             }
         }
+        EnemyKind::Charger => {
+            let sprite = charger_frame(enemy, ticks);
+            match enemy.facing {
+                Facing::Left | Facing::Right => Look::sideways(sprite, enemy.facing),
+                Facing::Up | Facing::Down => Look::plain(sprite),
+            }
+        }
     };
     // Paralysed by a shock, it blinks blue; hit, it flashes white over that.
     let shocked = enemy.shocked > 0 && (ticks / SHOCK_BLINK + enemy.id).is_multiple_of(2);
@@ -773,6 +806,40 @@ pub fn kamikaze_glow(enemy: &Enemy, ticks: u32) -> Option<Color> {
 pub fn fuse_last(enemy: &Enemy) -> bool {
     enemy.fuse > 0 && enemy.fuse <= KAMIKAZE_LAST_TICKS
 }
+
+/// A charger's frame, `ticks` into the run, the way it faces: scraping, a foot then the other,
+/// bobbing on the second; charging, stepping fast; walking, stepping; stunned, standing.
+fn charger_frame(enemy: &Enemy, ticks: u32) -> SpriteId {
+    let side = matches!(enemy.facing, Facing::Left | Facing::Right);
+    let step = match enemy.charge {
+        _ if enemy.stunned > 0 => None,
+        Charge::Scraping(left) => {
+            let scraped = CHARGER_SCRAPE_TICKS.saturating_sub(left);
+            return match ((scraped / CHARGER_SCRAPE_STEP).is_multiple_of(2), side) {
+                (true, true) => SpriteId::ChargerSide,
+                (false, true) => SpriteId::ChargerSideScrape,
+                (true, false) => SpriteId::ChargerFrontLeft,
+                (false, false) => SpriteId::ChargerFrontScrape,
+            };
+        }
+        Charge::Charging { .. } => Some((ticks / CHARGER_RUN_STEP).is_multiple_of(2)),
+        Charge::Ready | Charge::Resting(_) => {
+            Some((ticks / CHARGER_WALK_STEP + enemy.id).is_multiple_of(2))
+        }
+    };
+    match (step, side) {
+        (None | Some(true), true) => SpriteId::ChargerSide,
+        (Some(false), true) => SpriteId::ChargerSideStep,
+        (None, false) => SpriteId::ChargerFront,
+        (Some(true), false) => SpriteId::ChargerFrontLeft,
+        (Some(false), false) => SpriteId::ChargerFrontRight,
+    }
+}
+
+/// The ticks each of a charger's feet shows: scraping, charging, walking.
+const CHARGER_SCRAPE_STEP: u32 = 5;
+const CHARGER_RUN_STEP: u32 = 2;
+const CHARGER_WALK_STEP: u32 = 6;
 
 /// A spitter's frames, its acid moving, and the ticks each shows.
 const SPITTER_SIDE: [SpriteId; 3] = [
@@ -951,6 +1018,21 @@ mod tests {
         assert!(kamikaze_glow(&kamikaze, 1).is_some_and(|glow| glow != GLOW_FLASH));
         kamikaze.fuse = KAMIKAZE_LAST_TICKS;
         assert_eq!(kamikaze_glow(&kamikaze, 0), Some(GLOW_FLASH));
+    }
+
+    #[test]
+    fn a_charger_scraping_bobs_on_its_second_foot_and_stunned_stands() {
+        let mut charger = Enemy::new(0, EnemyKind::Charger, Vec2::ZERO, 0.0);
+        charger.facing = Facing::Left;
+        charger.charge = Charge::Scraping(CHARGER_SCRAPE_TICKS);
+        assert_eq!(enemy(&charger, 0).sprite, SpriteId::ChargerSide);
+        assert!(enemy(&charger, 0).mirrored);
+        charger.charge = Charge::Scraping(CHARGER_SCRAPE_TICKS - CHARGER_SCRAPE_STEP);
+        assert_eq!(enemy(&charger, 0).sprite, SpriteId::ChargerSideScrape);
+        charger.facing = Facing::Down;
+        assert_eq!(enemy(&charger, 0).sprite, SpriteId::ChargerFrontScrape);
+        charger.stunned = 1;
+        assert_eq!(enemy(&charger, 0).sprite, SpriteId::ChargerFront);
     }
 
     #[test]

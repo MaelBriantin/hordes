@@ -4,6 +4,7 @@
 mod acid;
 mod blows;
 mod c4;
+mod charger;
 mod figures;
 mod fire;
 mod fists;

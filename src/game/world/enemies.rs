@@ -418,16 +418,17 @@ impl World {
             let apart = (target - enemy.position).length();
             notice(enemy, apart, sight);
             let fire = nearest_fire(&fires, enemy.position);
+            let hunts = enemy.noticed && !flee;
+            let touching = touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH);
             let (heading, pace) = if enemy.stunned > 0 {
                 enemy.stunned -= 1;
                 (Vec2::ZERO, 0.0)
-            } else if let Some(pace) = super::kamikazes::fuse(
-                enemy,
-                (apart, kamikaze_reach),
-                enemy.noticed && !flee,
-                touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH),
-            ) {
+            } else if let Some(pace) =
+                super::kamikazes::fuse(enemy, (apart, kamikaze_reach), hunts, touching)
+            {
                 (enemy.heading(target), pace)
+            } else if let Some(going) = super::chargers::charge(enemy, apart, target, hunts) {
+                going
             } else if flee {
                 ((enemy.position - target).normalized(), 1.0)
             } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)
@@ -461,7 +462,7 @@ impl World {
                 super::spitters::keep_off(enemy, apart, enemy.heading(target))
             {
                 keeping
-            } else if touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH) {
+            } else if touching {
                 (Vec2::ZERO, 1.0)
             } else {
                 (enemy.heading(target), enemy.hunt_pace())

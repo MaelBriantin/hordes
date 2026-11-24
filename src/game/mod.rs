@@ -9,6 +9,7 @@ mod build;
 mod burst;
 mod c4;
 mod chainsaw;
+mod charger;
 mod dash;
 mod defibrillator;
 mod drones;
@@ -59,6 +60,9 @@ pub use build::{
 };
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
 pub use c4::Blast as Fireball;
+pub use charger::{
+    CHARGE_TICKS as CHARGER_CHARGE_TICKS, Charge, SCRAPE_TICKS as CHARGER_SCRAPE_TICKS,
+};
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use flashball::{BURST_TICKS as FLASH_BURST_TICKS, Burst as FlashBurst};
