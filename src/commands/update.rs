@@ -25,7 +25,8 @@ fn target(binary: &Path, flat: bool) -> Option<PathBuf> {
         .flatten()
 }
 
-pub fn run() -> Result<(), Box<dyn Error>> {
+/// Installs the latest release, if newer; whether it did.
+pub fn run() -> Result<bool, Box<dyn Error>> {
     let mut updater = AxoUpdater::new_for(APP);
     if let Ok(token) = std::env::var(TOKEN_VARIABLE) {
         updater.set_github_token(&token);
@@ -34,7 +35,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         println!(
             "This copy of {APP} wasn't installed by its installer: update it the way you got it."
         );
-        return Ok(());
+        return Ok(false);
     }
     let flat = receipt_path()
         .and_then(|path| fs::read_to_string(path).ok())
@@ -43,14 +44,16 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     if let Some(folder) = target(&binary, flat) {
         updater.set_install_dir(folder.to_string_lossy().as_ref());
     }
-    match updater.run_sync()? {
-        Some(update) => println!("{APP} is now version {}.", update.new_version),
-        None => println!(
+    if let Some(update) = updater.run_sync()? {
+        println!("{APP} is now version {}.", update.new_version);
+        Ok(true)
+    } else {
+        println!(
             "{APP} is up to date (version {}).",
             env!("CARGO_PKG_VERSION")
-        ),
+        );
+        Ok(false)
     }
-    Ok(())
 }
 
 #[cfg(test)]
