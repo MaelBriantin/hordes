@@ -29,6 +29,8 @@ pub enum EnemyKind {
     Abomination,
     /// Out of a felled abomination: small, fast, frail; it always finds the player.
     Parasite,
+    /// A zombie as any, until near the player its head catches fire and it blows.
+    Kamikaze,
 }
 
 /// What a kind of enemy is like.
@@ -53,7 +55,12 @@ pub struct Stats {
 
 impl EnemyKind {
     /// The kinds that appear of themselves: parasites come out of abominations alone.
-    pub const ALL: [EnemyKind; 3] = [EnemyKind::Zombie, EnemyKind::Shadow, EnemyKind::Abomination];
+    pub const ALL: [EnemyKind; 4] = [
+        EnemyKind::Zombie,
+        EnemyKind::Shadow,
+        EnemyKind::Abomination,
+        EnemyKind::Kamikaze,
+    ];
 
     pub fn stats(self) -> Stats {
         match self {
@@ -97,6 +104,16 @@ impl EnemyKind {
                 half_width: 0.3,
                 flies: false,
             },
+            EnemyKind::Kamikaze => Stats {
+                hp: 20,
+                xp: 2,
+                drop_percent: 75,
+                stain: 3,
+                speed: 3.0,
+                damage: 5,
+                half_width: 0.45,
+                flies: false,
+            },
         }
     }
 }
@@ -137,6 +154,10 @@ pub struct Enemy {
     pub hunting: u32,
     /// Ticks left it bolts out of the torch's light: a Shadow's.
     pub bolting: u32,
+    /// Ticks left its fuse burns, standing still, before it blows: a kamikaze's; 0 while unlit.
+    pub fuse: u32,
+    /// Whether it blew of itself, its fuse out: a kamikaze's, worth nothing then.
+    pub blew: bool,
 }
 
 impl Enemy {
@@ -161,6 +182,8 @@ impl Enemy {
             slowed: 0,
             hunting: 0,
             bolting: 0,
+            fuse: 0,
+            blew: false,
         }
     }
 

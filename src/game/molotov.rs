@@ -66,6 +66,8 @@ pub struct Puddle {
     /// Whether it is a stretch of the exterminator's wall of fire: flames licking up from it,
     /// then embers as it goes out.
     pub wall: bool,
+    /// Whether it burns the player, and not the enemies: a kamikaze's.
+    pub hostile: bool,
 }
 
 impl Puddle {

@@ -44,6 +44,7 @@ impl World {
                     lasts: bottle.lasts,
                     burst: true,
                     wall: false,
+                    hostile: false,
                 });
             }
             bottle.left > 0
@@ -52,6 +53,10 @@ impl World {
         let burns = self.player.build.burn_ticks();
         for puddle in &mut self.puddles {
             puddle.left = puddle.left.saturating_sub(1);
+            // A kamikaze's fire burns the player alone.
+            if puddle.hostile {
+                continue;
+            }
             for enemy in &mut self.enemies {
                 if (enemy.position - puddle.centre).length() <= puddle.radius {
                     enemy.ignite_for(burns);

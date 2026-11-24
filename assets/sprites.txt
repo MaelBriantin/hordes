@@ -92,6 +92,7 @@ _ 30 50 110     the riot officer's dark blue arms, their second outfit's
 ! 48 48 48      the gatling's body
 ; 255 255 0     the gatling's belt, its rounds
 = 255 133 2     the gatling's belt, its links
+h 50 150 40     the kamikaze's green flame, at its root
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -513,6 +514,22 @@ ZZ
 
 parasite_landed
 ZZ4
+
+# The kamikaze its fuse lit (unlit, it shows as a zombie), 4 × 4, bare-chested, its head a
+# green flame (the flame's tongues flicker over it, drawn by the game); sideways (facing
+# right), and up or down.
+
+kamikaze_side
+.hh.
+.ZZZ
+.CC.
+.NN.
+
+kamikaze_front
+.hh.
+ZZZZ
+.CC.
+.NN.
 
 # A bullet, a pixel; a drone, 5 × 4, its rotors at the corners; an XP gem, 2 × 2: one tile.
 

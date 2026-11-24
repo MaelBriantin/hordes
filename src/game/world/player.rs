@@ -1,6 +1,7 @@
 //! The player as a run goes: moving and dashing, hurt and healed, their XP.
 
 use super::super::build::Choice;
+use super::super::enemy::EnemyKind;
 use super::super::gatling;
 use super::{
     ACTION_LEVEL, CAMPFIRE_LIGHT, Dash, Feature, HERB_HP, HERB_REACH, Input, PLAYER_HALF_WIDTH,
@@ -137,13 +138,15 @@ impl World {
         let hit = self
             .enemies
             .iter()
+            // A kamikaze doesn't strike: on the player, it blows.
             .filter(|enemy| {
-                touch(
-                    enemy.position,
-                    enemy.kind.stats().half_width,
-                    player.position,
-                    PLAYER_HALF_WIDTH,
-                )
+                enemy.kind != EnemyKind::Kamikaze
+                    && touch(
+                        enemy.position,
+                        enemy.kind.stats().half_width,
+                        player.position,
+                        PLAYER_HALF_WIDTH,
+                    )
             })
             .map(|enemy| (enemy.kind.stats().damage, enemy.position))
             .max_by_key(|(damage, _)| *damage);
@@ -159,6 +162,8 @@ impl World {
                 100
             };
             self.wound_player(super::super::percent_of(damage, percent));
+        } else if self.in_hostile_fire() {
+            self.wound_player(super::super::kamikaze::FIRE_DAMAGE);
         }
     }
 

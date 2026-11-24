@@ -69,7 +69,7 @@ What every rule of a run does, with its numbers. Rules not in the game yet are m
 
 In arcade, every run is played for its score.
 
-- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**, parasite **1**.
+- Every enemy felled is worth **points**: zombie **10**, Shadow **30**, abomination **100**, parasite **1**, kamikaze **30**.
 - Times the **weather's multiplier**: ×1 at dusk and in the night, ×1.5 in the drizzle, ×2 in the rain, ×3 in the storm, ×5 in the tempest.
 - Times the **combo**: every kill within **2 s** of the last adds ×0.1, up to ×2; 2 s without a kill and it is gone. Rounded down.
 - The status line shows, in its middle after the time (on a white badge: in a standard run, the time left to the dawn, counting down; in arcade, the time survived), the score and the multiplier of the moment (the weather's times the combo's) on a gold badge, `SCORE:` in capitals before it, the score's thousands apart. While the run is ahead of the best one kept, its score gleams.
@@ -141,10 +141,12 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 | Shadow | 40 | 2 (3 times in 4) | 5.7 tiles/s | 8 | 0.7 tile | Straight, **through obstacles**; hunched, barely seen in the dark but for its red eyes |
 | Abomination | 40 | 5 (always) | 2 tiles/s | 15 | 1.6 tile | Straight at the player |
 | Parasite | 12 | none | 4.5 tiles/s | 3 | 0.6 tile | Straight at the player, **always finding them**, dark or not; a green worm of zombie flesh, hopping |
+| Kamikaze | 20 | 2 (3 times in 4) | 3 tiles/s | 5 (to a barricade; on the player, it blows) | 0.9 tile | Straight at the player, then rushes and **blows** (see below); a **zombie as any** in the crowd until then, the same look; its fuse lit, bare-chested, its head a **green flame** flickering, lighting 4 tiles around it in the dark, green |
 
-- Every enemy is slower than the player: they can always be outrun.
+- Every enemy is slower than the player: they can always be outrun; but a kamikaze rushing, its fuse lit.
 - A felled abomination **swells**, blinking white, for **0.6 s**, then **bursts**: a disc of green bile, out to **3 tiles**, that costs everything it reaches **10 HP**, the player and the enemies alike, and pushes it back **2 tiles**. Out of it, **4 parasites** are thrown, 2.5 tiles away each its own way, as tough as the weather makes every enemy.
-- **Obstacles** stop zombies, abominations and parasites, which slide along them; Shadows pass through.
+- A **kamikaze** coming into the player's **light** (as far as the torch's light shows, fading included: where Glare slows; the torch not lit, within **4 tiles**, middle to middle), having found them, lights its **fuse**, its head catching fire, and **rushes** at them, two and a half times as fast (**7.5 tiles/s**, faster than the player), blinking green, **3 s** at most. On them (it never strikes them), or its rush over, it **stands still** its last **0.6 s**, blinking faster, pale green, swelling a pixel each side: the player's last chance to get away (2 tiles off, a third of a second's run). Then it **blows**, where it stands: a fireball as the C4's but **green**, **2.5 tiles** round, costing everything it reaches **20 HP**, the player and the enemies alike, and throwing it back **half a tile** (the demolisher, Unshakable, not at all); **4 fires**, green, left burning **3 s** on the ground around, each 0.6 tile round, lighting the dark green: they cost the player standing in them **2 HP** each time they can be hurt again, and burn no enemy. Blown of itself, it is worth nothing, neither points nor gem; **felled** before, it blows at once where it falls, worth its points and its gem, a kamikaze its blast fells blowing in turn.
+- **Obstacles** stop zombies, abominations, parasites and kamikazes, which slide along them; Shadows pass through.
 - **Touching** the player costs them the damage of the hardest-hitting enemy touching them; then nothing hurts them for 0.5 s.
 - Enemies that overlap **push each other apart**; one touching the player stops there.
 - A hit enemy **flashes white**. At 0 HP it falls, and may leave an **XP gem** worth its XP: zombies and Shadows 3 times in 4, abominations always, parasites never.
@@ -154,14 +156,14 @@ The player plays a **hero**, as the skin worn has it (see Progress): each their 
 - Enemies appear just beyond what the player sees (3 tiles past the edge of the screen), never on an obstacle (Shadows excepted).
 - How many, and which kinds, follow the weather: each stage starts at its own rate, and over the stage the rate grows little by little to the next one's.
 
-| Weather | Enemies a second | Zombie / Shadow / abomination, by weight |
+| Weather | Enemies a second | Zombie / Shadow / abomination / kamikaze, by weight |
 |---|---|---|
-| Dusk | 1 | 10 / 0 / 0 |
-| Night | 1.5 | 9 / 1 / 0 |
-| Drizzle | 3 | 8 / 1 / 1 |
-| Rain | 4.5 | 7 / 2 / 1 |
-| Storm | 6 | 6 / 2 / 2 |
-| Tempest | 7.5 | 5 / 2 / 3 |
+| Dusk | 1 | 10 / 0 / 0 / 0 |
+| Night | 1.5 | 9 / 1 / 0 / 0 |
+| Drizzle | 3 | 8 / 1 / 1 / 1 |
+| Rain | 4.5 | 7 / 2 / 1 / 1 |
+| Storm | 6 | 6 / 2 / 2 / 2 |
+| Tempest | 7.5 | 5 / 2 / 3 / 2 |
 
 - At most **300** enemies at once (600 while a horde is about).
 - An enemy left far behind (twice as far as the edge of the screen) appears again just beyond the side the player faces.

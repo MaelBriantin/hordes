@@ -9,6 +9,9 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+### New
+- The kamikaze, from the drizzle: a zombie as any in the crowd, until it comes into the torch's light: its head catches fire, a green flame lighting the dark around it, and it rushes at them, faster than they go; on them, it stands still a last moment, blinking and swelling, time to get away, then blows in green flames: 20 HP off everything around, enemies included, and green fires left burning that burn the player standing in them. Felled before, it blows at once where it falls, setting off the other kamikazes near.
+
 ## v0.10.0 · November 23, 2026
 
 ### New

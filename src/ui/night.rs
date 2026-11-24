@@ -472,6 +472,19 @@ impl Light {
         }
     }
 
+    /// A kamikaze's green flame, lighting `radius` tiles around it, its light not warm: its halo
+    /// gives its colour.
+    pub fn cold_fire(centre: (i32, i32), radius: f32) -> Self {
+        Self {
+            centre,
+            radius,
+            fade: radius,
+            warmth: 0.0,
+            vision: 0.0,
+            goggles: GOGGLES,
+        }
+    }
+
     /// What the infiltrator sees, their torch out: `radius` tiles around them, through their
     /// `goggles`' colour.
     pub fn night_vision(centre: (i32, i32), radius: f32, goggles: (f32, f32, f32)) -> Self {

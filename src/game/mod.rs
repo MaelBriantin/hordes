@@ -25,6 +25,7 @@ mod guns;
 mod hammer;
 mod heal;
 mod horde;
+mod kamikaze;
 mod katana;
 mod kit;
 mod knife;
@@ -56,12 +57,14 @@ pub use build::{
     percent_of,
 };
 pub use burst::{Blast, REACH as BURST_REACH, Swelling};
+pub use c4::Blast as Fireball;
 pub use enemy::{Enemy, EnemyKind};
 pub use facing::Facing;
 pub use flashball::{BURST_TICKS as FLASH_BURST_TICKS, Burst as FlashBurst};
 pub use gatling::CASE_TICKS;
 pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;
+pub use kamikaze::LAST_TICKS as KAMIKAZE_LAST_TICKS;
 pub use hammer::{Blow, WAVE_TICKS as HAMMER_WAVE_TICKS};
 pub use heal::light as campfire_light;
 pub use leaderboard::{Entry, Leaderboard};

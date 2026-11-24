@@ -133,6 +133,12 @@ fn there_are_never_more_than_the_most_enemies() {
     for _ in 0..30 * 60 {
         world.update(Input::default());
         world.player.hp = BASE_HP;
+        // No kamikaze blows: each turned to a zombie as it comes.
+        for enemy in &mut world.enemies {
+            if enemy.kind == EnemyKind::Kamikaze {
+                enemy.kind = EnemyKind::Zombie;
+            }
+        }
     }
     assert_eq!(world.enemies.len(), MAX_ENEMIES);
 }

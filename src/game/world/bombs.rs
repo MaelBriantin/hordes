@@ -54,6 +54,7 @@ impl World {
                 lasts,
                 burst: false,
                 wall: false,
+                hostile: false,
             });
         }
         self.bombs.retain(|bomb| bomb.left > 0);
@@ -75,7 +76,8 @@ impl World {
         self.bombs.iter().filter(|bomb| bomb.left <= FALL_TICKS)
     }
 
-    /// The fireballs showing: the C4's blasts, the napalm's and the grenade's.
+    /// The fireballs showing: the C4's blasts, the napalm's and the grenade's; the kamikazes'
+    /// apart, green.
     pub fn fireballs(&self) -> impl Iterator<Item = &Blast> {
         self.c4_blasts
             .iter()

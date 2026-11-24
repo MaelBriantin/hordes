@@ -66,6 +66,16 @@ impl World {
         let drain = self.player.build.drain_percent();
         let weather = self.weather();
         for enemy in self.enemies.iter().filter(|enemy| enemy.hp == 0) {
+            // A kamikaze blown of itself is worth nothing: only its scorch mark stays.
+            if enemy.blew {
+                self.stains.push(Stain {
+                    position: enemy.position,
+                    tick: self.ticks,
+                    size: enemy.kind.stats().stain,
+                    ash: true,
+                });
+                continue;
+            }
             // Worth the combo as it stood before this kill.
             let worth = score::worth(enemy.kind, weather, self.combo);
             self.progress.kills += 1;
@@ -397,6 +407,8 @@ impl World {
         let smoke = self.smoke.filter(|cloud| cloud.slows);
         // With Glare, those in the torch's light go slower.
         let glare = self.glare();
+        // Coming into it, a kamikaze lights its fuse.
+        let kamikaze_reach = self.kamikaze_reach();
         let ticks = self.ticks;
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
@@ -417,6 +429,13 @@ impl World {
             let (heading, pace) = if enemy.stunned > 0 {
                 enemy.stunned -= 1;
                 (Vec2::ZERO, 0.0)
+            } else if let Some(pace) = super::kamikazes::fuse(
+                enemy,
+                (apart, kamikaze_reach),
+                enemy.noticed && !flee,
+                touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH),
+            ) {
+                (enemy.heading(target), pace)
             } else if flee {
                 ((enemy.position - target).normalized(), 1.0)
             } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)

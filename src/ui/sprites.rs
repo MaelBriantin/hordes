@@ -7,7 +7,7 @@ use ratatui::style::Color;
 use thiserror::Error;
 
 pub use crate::game::Skin;
-use crate::game::{Enemy, EnemyKind, Facing, Swelling};
+use crate::game::{Enemy, EnemyKind, Facing, KAMIKAZE_LAST_TICKS, Swelling};
 
 const SOURCE: &str = include_str!("../../assets/sprites.txt");
 const PALETTE: &str = "palette";
@@ -98,6 +98,9 @@ pub enum SpriteId {
     /// Facing right: in the air, and squashed as it lands.
     Parasite,
     ParasiteLanded,
+    /// Sideways (facing right), and up or down.
+    KamikazeSide,
+    KamikazeFront,
     Bullet,
     Drone,
     Gem,
@@ -173,7 +176,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 139] = [
+    const ALL: [SpriteId; 141] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -242,6 +245,8 @@ impl SpriteId {
         SpriteId::Abomination,
         SpriteId::Parasite,
         SpriteId::ParasiteLanded,
+        SpriteId::KamikazeSide,
+        SpriteId::KamikazeFront,
         SpriteId::Bullet,
         SpriteId::Drone,
         SpriteId::Gem,
@@ -386,6 +391,8 @@ impl SpriteId {
             SpriteId::Abomination => "abomination",
             SpriteId::Parasite => "parasite",
             SpriteId::ParasiteLanded => "parasite_landed",
+            SpriteId::KamikazeSide => "kamikaze_side",
+            SpriteId::KamikazeFront => "kamikaze_front",
             SpriteId::Bullet => "bullet",
             SpriteId::Drone => "drone",
             SpriteId::Gem => "gem",
@@ -713,16 +720,55 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
             };
             Look::sideways(shape, enemy.facing)
         }
+        // A kamikaze passes for a zombie in the crowd, until its head catches fire.
+        EnemyKind::Kamikaze => {
+            let (side, front) = if enemy.fuse > 0 {
+                (SpriteId::KamikazeSide, SpriteId::KamikazeFront)
+            } else {
+                (SpriteId::ZombieSide, SpriteId::ZombieFront)
+            };
+            match enemy.facing {
+                Facing::Left | Facing::Right => Look::sideways(side, enemy.facing),
+                Facing::Up | Facing::Down => Look::plain(front),
+            }
+        }
     };
     // Paralysed by a shock, it blinks blue; hit, it flashes white over that.
     let shocked = enemy.shocked > 0 && (ticks / SHOCK_BLINK + enemy.id).is_multiple_of(2);
     let tint = if enemy.flash > 0 {
         Some(FLASH)
+    } else if shocked {
+        Some(SHOCK)
     } else {
-        shocked.then_some(SHOCK)
+        fuse_blink(enemy, ticks)
     };
     Look { tint, ..look }
 }
+
+/// A kamikaze's fuse burning: blinking green as it rushes; standing still its last moment,
+/// faster, pale green.
+fn fuse_blink(enemy: &Enemy, ticks: u32) -> Option<Color> {
+    if enemy.fuse == 0 {
+        return None;
+    }
+    let (every, colour) = if fuse_last(enemy) {
+        (2, FUSE_LAST)
+    } else {
+        (4, FUSE_RUSH)
+    };
+    (ticks / every).is_multiple_of(2).then_some(colour)
+}
+
+/// Whether a kamikaze stands still its last moment before it blows: it swells a pixel each
+/// side.
+pub fn fuse_last(enemy: &Enemy) -> bool {
+    enemy.fuse > 0 && enemy.fuse <= KAMIKAZE_LAST_TICKS
+}
+
+/// The colours a kamikaze blinks in as its fuse burns, its flame's: its middle's green as it
+/// rushes, then its tip's pale green.
+const FUSE_RUSH: Color = Color::Rgb(120, 220, 70);
+const FUSE_LAST: Color = Color::Rgb(210, 255, 150);
 
 /// The blue an enemy paralysed by a shock blinks in, every so many ticks.
 pub const SHOCK: Color = Color::Rgb(70, 140, 255);
@@ -863,6 +909,16 @@ impl Sprite {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::Vec2;
+
+    #[test]
+    fn a_kamikaze_shows_as_a_zombie_until_its_fuse_is_lit() {
+        let mut kamikaze = Enemy::new(0, EnemyKind::Kamikaze, Vec2::ZERO, 0.0);
+        kamikaze.facing = Facing::Right;
+        assert_eq!(enemy(&kamikaze, 0).sprite, SpriteId::ZombieSide);
+        kamikaze.fuse = 10;
+        assert_eq!(enemy(&kamikaze, 1).sprite, SpriteId::KamikazeSide);
+    }
 
     #[test]
     fn every_hero_comes_in_two_outfits_each_its_own_sprites_every_way() {

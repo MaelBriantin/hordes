@@ -5,8 +5,9 @@ use ratatui::style::Color;
 
 use super::super::night;
 use super::super::sprites::{Look, SpriteId};
+use super::figures::KAMIKAZE_FLAME;
 use super::{BURNING_LIGHT, Canvas, FLAME_COLOURS, gem_glow, pixel, sway};
-use crate::game::{Feature, Puddle, Vec2, World, campfire_light};
+use crate::game::{EnemyKind, Feature, Puddle, Vec2, World, campfire_light};
 
 /// How far the flamethrower's nozzle sweeps each side, in degrees, and in how many steps (two
 /// frames each) it goes from side to side and back.
@@ -31,6 +32,10 @@ const EMBER: Color = Color::Rgb(150, 40, 25);
 /// Fire, a puddle's, a campfire's or an enemy's, and a bottle bursting into flames.
 const FIRE_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.35, 10);
 const BURNING_HALO: ((u8, u8, u8), f32, i32) = ((245, 130, 40), 0.28, 8);
+/// A kamikaze's head: how far its light reaches before it fades, as far again, in tiles; its
+/// halo, green.
+const KAMIKAZE_LIGHT: f32 = 2.0;
+const KAMIKAZE_HALO: ((u8, u8, u8), f32, i32) = ((120, 220, 70), 0.3, 8);
 const BURST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.56, 16);
 /// How dim a fire's halo gets as it flickers, every other look of its flame.
 const FIRE_FLICKER: f32 = 0.85;
@@ -88,9 +93,14 @@ impl Canvas<'_> {
                 let (colour, strength, reach) = BURST_HALO;
                 halos.push(halo(centre, (colour, strength * left, reach)));
             }
-            // It lights around it, warm.
-            lights.push(night::Light::fire(centre, puddle.radius * PUDDLE_LIGHT));
-            let (colour, strength, reach) = FIRE_HALO;
+            // It lights around it, warm; a kamikaze's, green.
+            let (colour, strength, reach) = if puddle.hostile {
+                lights.push(night::Light::cold_fire(centre, puddle.radius * PUDDLE_LIGHT));
+                KAMIKAZE_HALO
+            } else {
+                lights.push(night::Light::fire(centre, puddle.radius * PUDDLE_LIGHT));
+                FIRE_HALO
+            };
             halos.push(halo(centre, (colour, strength * flicker, reach)));
         }
         for light in campfires {
@@ -103,6 +113,16 @@ impl Canvas<'_> {
             lights.push(night::Light::fire(middle, range * FLAME_LIGHT));
             let (colour, strength, reach) = FIRE_HALO;
             halos.push(halo(middle, (colour, strength * flicker, reach)));
+        }
+        // A kamikaze's head on fire lights around it, green.
+        for enemy in world
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.kind == EnemyKind::Kamikaze && enemy.fuse > 0)
+        {
+            let (x, y) = pixel(enemy.position);
+            lights.push(night::Light::cold_fire((x, y - 2), KAMIKAZE_LIGHT));
+            halos.push(halo((x, y - 2), KAMIKAZE_HALO));
         }
         // An enemy on fire lights a little around it, warm.
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
@@ -143,7 +163,7 @@ impl Canvas<'_> {
             .collect()
     }
 
-    /// The Molotov's puddles of fire, flames flickering over them, and its bottles in the air,
+    /// The Molotov's puddles of fire, flames flickering over them (a kamikaze's green), and its bottles in the air,
     /// arcing to where they burst.
     pub(super) fn paint_molotovs(&mut self, world: &World, frame: u32) {
         for puddle in &world.puddles {
@@ -169,7 +189,12 @@ impl Canvas<'_> {
                         continue;
                     }
                     let shade = usize::try_from(luck % 3).unwrap_or(0);
-                    self.set((cx + dx, cy + dy), FLAME_COLOURS[shade]);
+                    let colours = if puddle.hostile {
+                        KAMIKAZE_FLAME
+                    } else {
+                        FLAME_COLOURS
+                    };
+                    self.set((cx + dx, cy + dy), colours[shade]);
                 }
             }
         }

@@ -36,15 +36,15 @@ pub fn rate(weather: Weather, progress: f32) -> f32 {
 }
 
 /// How often each kind of enemy appears in a weather, against the others: zombie, Shadow,
-/// abomination.
-fn weights(weather: Weather) -> [u32; 3] {
+/// abomination, kamikaze.
+fn weights(weather: Weather) -> [u32; 4] {
     match weather {
-        Weather::Dusk => [10, 0, 0],
-        Weather::Clear => [9, 1, 0],
-        Weather::Drizzle => [8, 1, 1],
-        Weather::Rain => [7, 2, 1],
-        Weather::Storm => [6, 2, 2],
-        Weather::Tempest => [5, 2, 3],
+        Weather::Dusk => [10, 0, 0, 0],
+        Weather::Clear => [9, 1, 0, 0],
+        Weather::Drizzle => [8, 1, 1, 1],
+        Weather::Rain => [7, 2, 1, 1],
+        Weather::Storm => [6, 2, 2, 2],
+        Weather::Tempest => [5, 2, 3, 2],
     }
 }
 
@@ -111,6 +111,19 @@ mod tests {
         for kind in EnemyKind::ALL {
             assert!(late.contains(&kind), "no {kind:?}");
         }
+    }
+
+    #[test]
+    fn the_kamikazes_come_with_the_drizzle() {
+        let mut rng = StdRng::seed_from_u64(6);
+        let clear: Vec<_> = (0..500)
+            .map(|_| pick_kind(&mut rng, Weather::Clear))
+            .collect();
+        assert!(!clear.contains(&EnemyKind::Kamikaze));
+        let drizzle: Vec<_> = (0..500)
+            .map(|_| pick_kind(&mut rng, Weather::Drizzle))
+            .collect();
+        assert!(drizzle.contains(&EnemyKind::Kamikaze));
     }
 
     #[test]

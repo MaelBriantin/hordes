@@ -6,7 +6,7 @@ use ratatui::style::Color;
 
 use super::super::night;
 use super::{Canvas, pixel};
-use crate::game::World;
+use crate::game::{Fireball, World};
 
 const BODY: Color = Color::Rgb(90, 95, 105);
 const LIGHT_ON: Color = Color::Rgb(255, 60, 60);
@@ -30,6 +30,13 @@ const PUFFS: u32 = 14;
 /// A blast's light and halo while its fireball burns: its colour, how strong at its middle,
 /// how far it reaches in pixels.
 const BLAST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.6, 18);
+/// A kamikaze's blast, its fire green: its fireball, from its edge to its heart, and its halo.
+const KAMIKAZE_FIREBALL: [Color; 3] = [
+    Color::Rgb(50, 150, 40),
+    Color::Rgb(120, 220, 70),
+    Color::Rgb(210, 255, 150),
+];
+const KAMIKAZE_BLAST_HALO: ((u8, u8, u8), f32, i32) = ((120, 220, 70), 0.6, 18);
 
 impl Canvas<'_> {
     /// The charges on the ground, under the figures: a dark block, its light on top, dark red
@@ -64,13 +71,19 @@ impl Canvas<'_> {
         }
     }
 
-    /// The blasts lighting around them while their fireball burns, warm.
+    /// The blasts lighting around them while their fireball burns, warm; the kamikazes', green.
     pub(super) fn blast_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
-        let (colour, strength, reach) = BLAST_HALO;
         world
             .fireballs()
-            .filter(|blast| blast.age < FIREBALL_TICKS)
-            .map(|blast| {
+            .map(|blast| (blast, BLAST_HALO))
+            .chain(
+                world
+                    .kamikaze_blasts
+                    .iter()
+                    .map(|blast| (blast, KAMIKAZE_BLAST_HALO)),
+            )
+            .filter(|(blast, _)| blast.age < FIREBALL_TICKS)
+            .map(|(blast, (colour, strength, reach))| {
                 let centre = pixel(blast.at);
                 let left = 1.0 - night::share(blast.age, FIREBALL_TICKS);
                 (
@@ -87,24 +100,31 @@ impl Canvas<'_> {
     }
 
     /// The blasts: a white flash over the whole blast, then a fireball shrinking, red, orange,
-    /// a yellow heart; smoke rising from it, thinning out.
+    /// a yellow heart (the kamikazes', green); smoke rising from it, thinning out.
     pub(super) fn paint_fireballs(&mut self, world: &World) {
         for blast in world.fireballs() {
-            let centre = pixel(blast.at);
-            let reach = blast.radius * 2.0;
-            if blast.age < FLASH_TICKS {
-                self.disc(centre, reach, FLASH);
-            } else if blast.age < FIREBALL_TICKS {
-                let size = reach
-                    * (1.0
-                        - night::share(blast.age - FLASH_TICKS, FIREBALL_TICKS - FLASH_TICKS + 2));
-                for (colour, share) in FIREBALL.into_iter().zip([1.0, 0.75, 0.4]) {
-                    self.disc(centre, size * share, colour);
-                }
+            self.paint_fireball(blast, FIREBALL);
+        }
+        for blast in &world.kamikaze_blasts {
+            self.paint_fireball(blast, KAMIKAZE_FIREBALL);
+        }
+    }
+
+    /// A blast, its fireball in `colours`, from its edge to its heart.
+    fn paint_fireball(&mut self, blast: &Fireball, colours: [Color; 3]) {
+        let centre = pixel(blast.at);
+        let reach = blast.radius * 2.0;
+        if blast.age < FLASH_TICKS {
+            self.disc(centre, reach, FLASH);
+        } else if blast.age < FIREBALL_TICKS {
+            let size = reach
+                * (1.0 - night::share(blast.age - FLASH_TICKS, FIREBALL_TICKS - FLASH_TICKS + 2));
+            for (colour, share) in colours.into_iter().zip([1.0, 0.75, 0.4]) {
+                self.disc(centre, size * share, colour);
             }
-            if blast.age >= SMOKE_FROM {
-                self.smoke(centre, blast.age - SMOKE_FROM);
-            }
+        }
+        if blast.age >= SMOKE_FROM {
+            self.smoke(centre, blast.age - SMOKE_FROM);
         }
     }
 

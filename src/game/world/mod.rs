@@ -60,6 +60,7 @@ mod gatlings;
 mod goals;
 mod grenades;
 mod jabs;
+mod kamikazes;
 mod kits;
 mod player;
 mod punches;
@@ -273,6 +274,8 @@ pub struct World {
     pub grenades: Vec<Thrown>,
     pub grenade_blasts: Vec<c4::Blast>,
     grenade_wait: u32,
+    /// The kamikazes' blasts while they show.
+    pub kamikaze_blasts: Vec<c4::Blast>,
     /// The napalm's bombs falling, its blasts while they show, and the ticks before its next
     /// strike.
     pub bombs: Vec<Bomb>,
@@ -535,6 +538,7 @@ impl World {
             grenades: Vec::new(),
             grenade_blasts: Vec::new(),
             grenade_wait: 0,
+            kamikaze_blasts: Vec::new(),
             bombs: Vec::new(),
             napalm_blasts: Vec::new(),
             napalm_wait: 0,
@@ -824,6 +828,7 @@ impl World {
         self.move_bullets();
         self.turn_drones();
         self.burst_abominations();
+        self.blow_kamikazes();
         self.fell_enemies();
         self.gather_gems();
         self.give_horde_levels();

@@ -40,6 +40,23 @@ const MINI_BAR_GAP: i32 = 1;
 
 /// The ticks the mini bar shows, then hides, low on HP.
 const MINI_BAR_BLINK: u32 = 6;
+/// How far a kamikaze about to blow swells each side, in tiles: a pixel.
+const SWELL: f32 = 0.5;
+/// A kamikaze's flame, from its tip to its root.
+pub(super) const KAMIKAZE_FLAME: [Color; 3] = [
+    Color::Rgb(210, 255, 150),
+    Color::Rgb(120, 220, 70),
+    Color::Rgb(50, 150, 40),
+];
+/// Its pixels, facing right, from the sprite's top left: its head and the two rows over it;
+/// whether each is a tongue, there or not.
+const KAMIKAZE_TONGUES: [(i32, i32, bool); 5] = [
+    (2, -2, true),
+    (1, -1, true),
+    (2, -1, false),
+    (1, 0, false),
+    (2, 0, false),
+];
 
 impl Canvas<'_> {
     /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
@@ -115,8 +132,10 @@ impl Canvas<'_> {
         }
     }
 
-    /// Flames over each enemy on fire: a few pixels above its head, flickering.
+    /// Flames over each enemy on fire: a few pixels above its head, flickering; the kamikazes'
+    /// heads.
     pub(super) fn paint_flames(&mut self, world: &World, frame: u32) {
+        self.paint_kamikaze_flames(world, frame);
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
             let look = sprites::enemy(enemy, world.ticks());
             let height = self.sprites.get(look.sprite).height();
@@ -131,6 +150,38 @@ impl Canvas<'_> {
                 }
                 let shade = usize::try_from((index + luck) % 3).unwrap_or(0);
                 self.set((x + dx, top + dy), FLAME_COLOURS[shade]);
+            }
+        }
+    }
+
+    /// The kamikazes' heads once their fuse is lit, a green flame, over the night: its root on
+    /// the head, its tongues flickering over it; in the colour the kamikaze blinks in, if it
+    /// does.
+    fn paint_kamikaze_flames(&mut self, world: &World, frame: u32) {
+        let [tip, middle, root] = KAMIKAZE_FLAME;
+        for enemy in world
+            .enemies
+            .iter()
+            .filter(|enemy| enemy.kind == EnemyKind::Kamikaze && enemy.fuse > 0)
+        {
+            let look = sprites::enemy(enemy, world.ticks());
+            let (left, top) = self.corner_of(look, enemy.position);
+            for (index, &(x, y, tongue)) in (0_u32..).zip(KAMIKAZE_TONGUES.iter()) {
+                // Its own flicker, never quite the same as a neighbour's.
+                let luck = (frame / 2)
+                    .wrapping_add(enemy.id.wrapping_mul(13))
+                    .wrapping_mul(2_654_435_761)
+                    >> (index * 3 + 7);
+                if tongue && luck & 1 == 0 {
+                    continue;
+                }
+                let colour = look.tint.unwrap_or(if tongue || y < -1 {
+                    tip
+                } else {
+                    [tip, middle, middle, root][usize::try_from(luck >> 1 & 3).unwrap_or(0)]
+                });
+                let x = if look.mirrored { 3 - x } else { x };
+                self.set((left + x, top + y), colour);
             }
         }
     }
@@ -203,12 +254,20 @@ impl Canvas<'_> {
         let mut figures: Vec<(Vec2, Look)> = world
             .enemies
             .iter()
-            .map(|enemy| {
+            .flat_map(|enemy| {
                 let lift = sprites::lift(enemy, world.ticks());
-                (
-                    enemy.position - Vec2::new(0.0, lift),
-                    sprites::enemy(enemy, world.ticks()),
-                )
+                let at = enemy.position - Vec2::new(0.0, lift);
+                let look = sprites::enemy(enemy, world.ticks());
+                // A kamikaze about to blow swells a pixel each side.
+                let swell = if sprites::fuse_last(enemy) {
+                    vec![
+                        (at - Vec2::new(SWELL, 0.0), look),
+                        (at + Vec2::new(SWELL, 0.0), look),
+                    ]
+                } else {
+                    Vec::new()
+                };
+                swell.into_iter().chain([(at, look)])
             })
             .chain(
                 world
