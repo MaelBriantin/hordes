@@ -9,6 +9,8 @@ Numbers: a minor version (0.2.0) for new things to play with; a patch (0.1.1) fo
 ## Unreleased
 Written as the work goes, under the same New, Changed and Fixed; it becomes the next version's section when it is released.
 
+## v0.10.1 · November 24, 2026
+
 ### Fixed
 - `hordes update` installs the new version where the game is, in `~/.local/bin`, no more in `~/.local/hordes`, where the game installed before was left as it was. A game updated wrong is put right by installing it once more with the installer.
 
