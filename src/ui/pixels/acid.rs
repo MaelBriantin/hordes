@@ -5,6 +5,7 @@ use ratatui::style::Color;
 
 use super::super::night;
 use super::super::sprites;
+use super::figures::ZOMBIE_LEGS;
 use super::{Canvas, pixel};
 use crate::game::{EnemyKind, Facing, Puddle, SPIT_WIND_TICKS, Vec2, World};
 
@@ -30,6 +31,12 @@ const TARGET_RING: [(i32, i32); 8] = [
 const TARGET_BLINK: u32 = 5;
 /// How far a spitter pulls back to spit, in tiles: a pixel.
 pub(super) const PULL_BACK: f32 = 0.5;
+/// A spitter about to spit, in the dark: its acid pulsing up to near white, how fast (radians
+/// a tick); its light, in tiles, and its halo, as a lit kamikaze's.
+const SPIT_BRIGHT: Color = Color::Rgb(255, 250, 200);
+const SPIT_PACE: f32 = 0.8;
+const SPIT_LIGHT: f32 = 2.0;
+const SPIT_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.3, 8);
 /// A puddle of acid's glow in the dark: its light, in tiles, and its halo.
 pub(super) const PUDDLE_LIGHT: f32 = 1.0;
 pub(super) const PUDDLE_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.25, 5);
@@ -40,22 +47,40 @@ pub(super) fn pulling_back(enemy: &crate::game::Enemy) -> bool {
 }
 
 impl Canvas<'_> {
-    /// The spitters pulling back to spit, sideways: their acid glinting at their mouth, on and
-    /// off.
-    pub(super) fn paint_spit_glints(&mut self, world: &World) {
-        if !(world.ticks() / 2).is_multiple_of(2) {
-            return;
-        }
+    /// The spitters pulling back to spit, over the night, so that they show in the dark about
+    /// to spit: their acid pulsing bright, their clothes as they are, not their legs; sideways,
+    /// their acid glinting at their mouth, on and off.
+    pub(super) fn paint_spit_glow(&mut self, world: &World) {
+        let glint = (world.ticks() / 2).is_multiple_of(2);
+        let time = f32::from(u16::try_from(world.ticks() % 10_000).unwrap_or(0));
+        let bright =
+            super::super::blend(ACID[0], SPIT_BRIGHT, 0.5 + 0.5 * (time * SPIT_PACE).sin());
         for enemy in world.enemies.iter().filter(|enemy| pulling_back(enemy)) {
+            let look = sprites::enemy(enemy, world.ticks());
+            let at = enemy.position - enemy.facing.way() * PULL_BACK;
+            let (left, top) = self.corner_of(look, at);
+            let pixels: Vec<_> = self
+                .sprites
+                .get(look.sprite)
+                .pixels(look.mirrored)
+                .filter(|&(_, _, colour)| colour != ZOMBIE_LEGS)
+                .collect();
+            for (x, y, colour) in pixels {
+                let colour = if colour == ACID[0] || colour == ACID[1] {
+                    bright
+                } else {
+                    colour
+                };
+                self.set((left + x, top + y), colour);
+            }
             let ahead = match enemy.facing {
                 Facing::Right => 4,
                 Facing::Left => -1,
                 Facing::Up | Facing::Down => continue,
             };
-            let look = sprites::enemy(enemy, world.ticks());
-            let at = enemy.position - enemy.facing.way() * PULL_BACK;
-            let (left, top) = self.corner_of(look, at);
-            self.set((left + ahead, top + 1), ACID[0]);
+            if glint {
+                self.set((left + ahead, top + 1), ACID[0]);
+            }
         }
     }
 
@@ -81,9 +106,16 @@ impl Canvas<'_> {
         }
     }
 
+    /// The puddles of acid on the ground, under the figures.
+    pub(super) fn paint_acid_puddles(&mut self, world: &World, frame: u32) {
+        for puddle in world.puddles.iter().filter(|puddle| puddle.acid) {
+            self.paint_acid_puddle(puddle, frame);
+        }
+    }
+
     /// A puddle of acid on the ground: its edge darker, its middle glinting here and there, a
     /// bubble now and then; its last moment, breaking up.
-    pub(super) fn paint_acid_puddle(&mut self, puddle: &Puddle, frame: u32) {
+    fn paint_acid_puddle(&mut self, puddle: &Puddle, frame: u32) {
         let (cx, cy) = pixel(puddle.centre);
         #[allow(clippy::cast_possible_truncation, reason = "a puddle of a few tiles")]
         let reach = (puddle.radius * 2.0).ceil() as i32;
@@ -117,8 +149,26 @@ impl Canvas<'_> {
         }
     }
 
-    /// The puddles of acid glowing a little in the dark, so that they are seen.
+    /// The puddles of acid glowing a little in the dark, so that they are seen; the spitters
+    /// about to spit, more.
     pub(super) fn acid_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
+        let spitting = world
+            .enemies
+            .iter()
+            .filter(|enemy| pulling_back(enemy))
+            .map(|enemy| {
+                let centre = pixel(enemy.position);
+                let (colour, strength, reach) = SPIT_HALO;
+                (
+                    night::Light::cold_fire(centre, SPIT_LIGHT),
+                    night::Halo {
+                        centre,
+                        colour,
+                        strength,
+                        reach,
+                    },
+                )
+            });
         let (colour, strength, reach) = PUDDLE_HALO;
         world
             .puddles
@@ -136,6 +186,7 @@ impl Canvas<'_> {
                     },
                 )
             })
+            .chain(spitting)
             .unzip()
     }
 }

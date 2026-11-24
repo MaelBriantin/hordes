@@ -250,6 +250,14 @@ impl<'a> Canvas<'a> {
         self.paint_brace(world);
     }
 
+    /// The abominations' bile, the spitters' acid: on the ground, under the figures.
+    fn paint_spills(&mut self, world: &World, frame: u32) {
+        for blast in &world.blasts {
+            self.paint_blast(blast);
+        }
+        self.paint_acid_puddles(world, frame);
+    }
+
     /// A sprite with its top-left pixel at a pixel of the map.
     fn paint(&mut self, look: Look, (left, top): (i32, i32)) {
         let sprite = self.sprites.get(look.sprite);
@@ -555,9 +563,7 @@ pub fn render_map(
     let mut canvas = Canvas::new(sprites, area, centre);
     canvas.paint_map(world, view.ground);
     night::paint_stains(&mut canvas, &world.stains, world.ticks(), blood);
-    for blast in &world.blasts {
-        canvas.paint_blast(blast);
-    }
+    canvas.paint_spills(world, frame);
 
     // The hammer's wave on the ground, under the enemies it throws out; a dodge's ghost, under
     // the hero.
@@ -892,7 +898,7 @@ fn decor((x, y): (i32, i32)) -> Option<SpriteId> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::{Map, Skin};
+    use crate::game::{Map, Puddle, Skin};
 
     /// The colours, by pixel of the map, where a rock covering the tiles (100, 50) to (101, 51)
     /// and the hero standing at `at` overlap: the hero's own, and the canvas's once painted.
@@ -943,6 +949,41 @@ mod tests {
             in_front.iter().all(|(hero, shown)| hero == shown),
             "{in_front:?}"
         );
+    }
+
+    #[test]
+    fn a_puddle_of_acid_lies_under_the_hero_standing_in_it() {
+        let sprites = Sprites::load().expect("sprites");
+        let at = Vec2::new(100.0, 50.0);
+        let mut world = World::new(1);
+        world.map = Map::empty();
+        world.enemies.clear();
+        world.player.position = at;
+        world.puddles.push(Puddle {
+            centre: at,
+            radius: 1.0,
+            left: 90,
+            lasts: 90,
+            burst: false,
+            wall: false,
+            hostile: true,
+            acid: true,
+        });
+        let outfit = sprites::Outfit {
+            skin: Skin::Survivor,
+            colours: 0,
+        };
+        let mut canvas = Canvas::new(&sprites, Rect::new(0, 0, 40, 20), pixel(at));
+        canvas.paint_map(&world, false);
+        canvas.paint_acid_puddles(&world, 0);
+        canvas.paint_figures(&world, outfit);
+        canvas.paint_molotovs(&world, 0);
+        let hero = sprites::hero_in(world.hero_facing(), outfit, false);
+        let (left, top) = canvas.corner_of(hero, at);
+        for (x, y, colour) in sprites.get(hero.sprite).pixels(hero.mirrored) {
+            let index = canvas.index((left + x, top + y)).expect("on the canvas");
+            assert_eq!(canvas.pixels[index], Some(colour), "({x}, {y})");
+        }
     }
 
     #[test]

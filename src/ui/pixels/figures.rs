@@ -40,23 +40,16 @@ const MINI_BAR_GAP: i32 = 1;
 
 /// The ticks the mini bar shows, then hides, low on HP.
 const MINI_BAR_BLINK: u32 = 6;
-/// How far a kamikaze about to blow swells each side, in tiles: a pixel.
-const SWELL: f32 = 0.5;
-/// A kamikaze's flame, from its tip to its root.
+/// A kamikaze's green fire, from its flames' tip to their root.
 pub(super) const KAMIKAZE_FLAME: [Color; 3] = [
     Color::Rgb(210, 255, 150),
     Color::Rgb(120, 220, 70),
     Color::Rgb(50, 150, 40),
 ];
-/// Its pixels, facing right, from the sprite's top left: its head and the two rows over it;
-/// whether each is a tongue, there or not.
-const KAMIKAZE_TONGUES: [(i32, i32, bool); 5] = [
-    (2, -2, true),
-    (1, -1, true),
-    (2, -1, false),
-    (1, 0, false),
-    (2, 0, false),
-];
+/// A zombie's skin and legs, as its sprite has them: a kamikaze's skin glows once its fuse is
+/// lit, over the night, its clothes with it, not its legs.
+const ZOMBIE_SKIN: Color = Color::Rgb(110, 170, 90);
+pub(super) const ZOMBIE_LEGS: Color = Color::Rgb(60, 55, 65);
 
 impl Canvas<'_> {
     /// The player picked out of the crowd as `view` says: an arrow over their head, always or a
@@ -133,9 +126,10 @@ impl Canvas<'_> {
     }
 
     /// Flames over each enemy on fire: a few pixels above its head, flickering; the kamikazes'
-    /// heads.
+    /// skins glowing.
     pub(super) fn paint_flames(&mut self, world: &World, frame: u32) {
-        self.paint_kamikaze_flames(world, frame);
+        self.paint_kamikaze_glow(world);
+        self.paint_spit_glow(world);
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
             let look = sprites::enemy(enemy, world.ticks());
             let height = self.sprites.get(look.sprite).height();
@@ -154,33 +148,26 @@ impl Canvas<'_> {
         }
     }
 
-    /// The kamikazes' heads once their fuse is lit, a green flame, over the night: its root on
-    /// the head, its tongues flickering over it; in the colour the kamikaze blinks in, if it
-    /// does.
-    fn paint_kamikaze_flames(&mut self, world: &World, frame: u32) {
-        let [tip, middle, root] = KAMIKAZE_FLAME;
-        for enemy in world
-            .enemies
-            .iter()
-            .filter(|enemy| enemy.kind == EnemyKind::Kamikaze && enemy.fuse > 0)
-        {
+    /// The kamikazes once lit, over the night: their skin glowing green, their clothes as they
+    /// are.
+    fn paint_kamikaze_glow(&mut self, world: &World) {
+        for enemy in &world.enemies {
+            let Some(glow) = sprites::kamikaze_glow(enemy, world.ticks()) else {
+                continue;
+            };
             let look = sprites::enemy(enemy, world.ticks());
             let (left, top) = self.corner_of(look, enemy.position);
-            for (index, &(x, y, tongue)) in (0_u32..).zip(KAMIKAZE_TONGUES.iter()) {
-                // Its own flicker, never quite the same as a neighbour's.
-                let luck = (frame / 2)
-                    .wrapping_add(enemy.id.wrapping_mul(13))
-                    .wrapping_mul(2_654_435_761)
-                    >> (index * 3 + 7);
-                if tongue && luck & 1 == 0 {
-                    continue;
-                }
-                let colour = look.tint.unwrap_or(if tongue || y < -1 {
-                    tip
-                } else {
-                    [tip, middle, middle, root][usize::try_from(luck >> 1 & 3).unwrap_or(0)]
-                });
-                let x = if look.mirrored { 3 - x } else { x };
+            let pixels: Vec<_> = self
+                .sprites
+                .get(look.sprite)
+                .pixels(look.mirrored)
+                .collect();
+            for (x, y, colour) in pixels {
+                let colour = match colour {
+                    ZOMBIE_LEGS => continue,
+                    ZOMBIE_SKIN => glow,
+                    clothes => clothes,
+                };
                 self.set((left + x, top + y), colour);
             }
         }
@@ -254,24 +241,14 @@ impl Canvas<'_> {
         let mut figures: Vec<(Vec2, Look)> = world
             .enemies
             .iter()
-            .flat_map(|enemy| {
+            .map(|enemy| {
                 let lift = sprites::lift(enemy, world.ticks());
                 let mut at = enemy.position - Vec2::new(0.0, lift);
                 // A spitter pulls back a pixel to spit.
                 if super::acid::pulling_back(enemy) {
                     at -= enemy.facing.way() * super::acid::PULL_BACK;
                 }
-                let look = sprites::enemy(enemy, world.ticks());
-                // A kamikaze about to blow swells a pixel each side.
-                let swell = if sprites::fuse_last(enemy) {
-                    vec![
-                        (at - Vec2::new(SWELL, 0.0), look),
-                        (at + Vec2::new(SWELL, 0.0), look),
-                    ]
-                } else {
-                    Vec::new()
-                };
-                swell.into_iter().chain([(at, look)])
+                (at, sprites::enemy(enemy, world.ticks()))
             })
             .chain(
                 world
@@ -322,7 +299,6 @@ impl Canvas<'_> {
         for (_, look, corner) in figures {
             self.paint(look, corner);
         }
-        self.paint_spit_glints(world);
         // The hordes' veiled, under the night but in the dark: as far as the light shows.
         if !world.player.build.horde_veil_in_dark() {
             self.paint_veils(world);

@@ -7,7 +7,7 @@ use ratatui::style::Color;
 use thiserror::Error;
 
 pub use crate::game::Skin;
-use crate::game::{Enemy, EnemyKind, Facing, KAMIKAZE_LAST_TICKS, Swelling};
+use crate::game::{Enemy, EnemyKind, Facing, KAMIKAZE_LAST_TICKS, Swelling, kamikaze_lit};
 
 const SOURCE: &str = include_str!("../../assets/sprites.txt");
 const PALETTE: &str = "palette";
@@ -99,8 +99,6 @@ pub enum SpriteId {
     Parasite,
     ParasiteLanded,
     /// Sideways (facing right), and up or down.
-    KamikazeSide,
-    KamikazeFront,
     /// Three frames each, its acid moving: sideways (facing right), and up or down.
     SpitterSide0,
     SpitterSide1,
@@ -183,7 +181,7 @@ pub enum SpriteId {
 }
 
 impl SpriteId {
-    const ALL: [SpriteId; 147] = [
+    const ALL: [SpriteId; 145] = [
         SpriteId::HeroFront,
         SpriteId::HeroBack,
         SpriteId::HeroSide,
@@ -252,8 +250,6 @@ impl SpriteId {
         SpriteId::Abomination,
         SpriteId::Parasite,
         SpriteId::ParasiteLanded,
-        SpriteId::KamikazeSide,
-        SpriteId::KamikazeFront,
         SpriteId::SpitterSide0,
         SpriteId::SpitterSide1,
         SpriteId::SpitterSide2,
@@ -404,8 +400,6 @@ impl SpriteId {
             SpriteId::Abomination => "abomination",
             SpriteId::Parasite => "parasite",
             SpriteId::ParasiteLanded => "parasite_landed",
-            SpriteId::KamikazeSide => "kamikaze_side",
-            SpriteId::KamikazeFront => "kamikaze_front",
             SpriteId::SpitterSide0 => "spitter_side_0",
             SpriteId::SpitterSide1 => "spitter_side_1",
             SpriteId::SpitterSide2 => "spitter_side_2",
@@ -717,8 +711,9 @@ pub fn swelling(swelling: &Swelling) -> Look {
 /// An enemy as it shows, `ticks` into the run: turned the way it faces, white when just hit.
 pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
     let look = match enemy.kind {
-        // A zombie come with a horde shows as a ghoul.
-        EnemyKind::Zombie => {
+        // A zombie come with a horde shows as a ghoul; a kamikaze passes for a zombie, its skin
+        // glowing once its fuse is lit.
+        EnemyKind::Zombie | EnemyKind::Kamikaze => {
             let (side, front) = if enemy.horde.is_some() {
                 (SpriteId::GhoulSide, SpriteId::GhoulFront)
             } else {
@@ -747,47 +742,34 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
                 Facing::Up | Facing::Down => Look::plain(SPITTER_FRONT[frame]),
             }
         }
-        // A kamikaze passes for a zombie in the crowd, until its head catches fire.
-        EnemyKind::Kamikaze => {
-            let (side, front) = if enemy.fuse > 0 {
-                (SpriteId::KamikazeSide, SpriteId::KamikazeFront)
-            } else {
-                (SpriteId::ZombieSide, SpriteId::ZombieFront)
-            };
-            match enemy.facing {
-                Facing::Left | Facing::Right => Look::sideways(side, enemy.facing),
-                Facing::Up | Facing::Down => Look::plain(front),
-            }
-        }
     };
     // Paralysed by a shock, it blinks blue; hit, it flashes white over that.
     let shocked = enemy.shocked > 0 && (ticks / SHOCK_BLINK + enemy.id).is_multiple_of(2);
     let tint = if enemy.flash > 0 {
         Some(FLASH)
-    } else if shocked {
-        Some(SHOCK)
     } else {
-        fuse_blink(enemy, ticks)
+        shocked.then_some(SHOCK)
     };
     Look { tint, ..look }
 }
 
-/// A kamikaze's fuse burning: blinking green as it rushes; standing still its last moment,
-/// faster, pale green.
-fn fuse_blink(enemy: &Enemy, ticks: u32) -> Option<Color> {
-    if enemy.fuse == 0 {
+/// A kamikaze's skin once its fuse is lit, `ticks` into the run: pulsing from one green to a
+/// brighter one as it rushes; its last moment, faster, flashing pale green every other look.
+pub fn kamikaze_glow(enemy: &Enemy, ticks: u32) -> Option<Color> {
+    if enemy.kind != EnemyKind::Kamikaze || !kamikaze_lit(enemy.fuse) {
         return None;
     }
-    let (every, colour) = if fuse_last(enemy) {
-        (2, FUSE_LAST)
-    } else {
-        (4, FUSE_RUSH)
-    };
-    (ticks / every).is_multiple_of(2).then_some(colour)
+    let last = fuse_last(enemy);
+    if last && (ticks / GLOW_FLASH_TICKS).is_multiple_of(2) {
+        return Some(GLOW_FLASH);
+    }
+    let pace = if last { GLOW_PACE_LAST } else { GLOW_PACE };
+    let time = f32::from(u16::try_from(ticks % 10_000).unwrap_or(0));
+    let pulse = 0.5 + 0.5 * (time * pace).sin();
+    Some(super::blend(GLOW_DIM, GLOW_BRIGHT, pulse))
 }
 
-/// Whether a kamikaze stands still its last moment before it blows: it swells a pixel each
-/// side.
+/// Whether a kamikaze stands still its last moment before it blows: it flashes.
 pub fn fuse_last(enemy: &Enemy) -> bool {
     enemy.fuse > 0 && enemy.fuse <= KAMIKAZE_LAST_TICKS
 }
@@ -805,10 +787,14 @@ const SPITTER_FRONT: [SpriteId; 3] = [
 ];
 const SPITTER_FRAME: u32 = 8;
 
-/// The colours a kamikaze blinks in as its fuse burns, its flame's: its middle's green as it
-/// rushes, then its tip's pale green.
-const FUSE_RUSH: Color = Color::Rgb(120, 220, 70);
-const FUSE_LAST: Color = Color::Rgb(210, 255, 150);
+/// A kamikaze's skin glowing: the greens it pulses between, how fast (radians a tick) as it
+/// rushes and its last moment; the pale green it flashes then, every so many ticks.
+const GLOW_DIM: Color = Color::Rgb(120, 220, 70);
+const GLOW_BRIGHT: Color = Color::Rgb(170, 255, 110);
+const GLOW_PACE: f32 = 0.35;
+const GLOW_PACE_LAST: f32 = 0.8;
+const GLOW_FLASH: Color = Color::Rgb(210, 255, 150);
+const GLOW_FLASH_TICKS: u32 = 2;
 
 /// The blue an enemy paralysed by a shock blinks in, every so many ticks.
 pub const SHOCK: Color = Color::Rgb(70, 140, 255);
@@ -952,12 +938,19 @@ mod tests {
     use crate::game::Vec2;
 
     #[test]
-    fn a_kamikaze_shows_as_a_zombie_until_its_fuse_is_lit() {
+    fn a_kamikaze_shows_as_a_zombie_its_skin_glowing_once_its_fuse_is_lit() {
         let mut kamikaze = Enemy::new(0, EnemyKind::Kamikaze, Vec2::ZERO, 0.0);
         kamikaze.facing = Facing::Right;
         assert_eq!(enemy(&kamikaze, 0).sprite, SpriteId::ZombieSide);
-        kamikaze.fuse = 10;
-        assert_eq!(enemy(&kamikaze, 1).sprite, SpriteId::KamikazeSide);
+        assert_eq!(kamikaze_glow(&kamikaze, 0), None);
+        kamikaze.fuse = u32::MAX;
+        assert_eq!(kamikaze_glow(&kamikaze, 1), None, "halted, unlit yet");
+        kamikaze.fuse = KAMIKAZE_LAST_TICKS + 10;
+        assert_eq!(enemy(&kamikaze, 1).sprite, SpriteId::ZombieSide);
+        assert_eq!(enemy(&kamikaze, 1).tint, None);
+        assert!(kamikaze_glow(&kamikaze, 1).is_some_and(|glow| glow != GLOW_FLASH));
+        kamikaze.fuse = KAMIKAZE_LAST_TICKS;
+        assert_eq!(kamikaze_glow(&kamikaze, 0), Some(GLOW_FLASH));
     }
 
     #[test]

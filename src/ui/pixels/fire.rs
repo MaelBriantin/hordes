@@ -7,7 +7,7 @@ use super::super::night;
 use super::super::sprites::{Look, SpriteId};
 use super::figures::KAMIKAZE_FLAME;
 use super::{BURNING_LIGHT, Canvas, FLAME_COLOURS, gem_glow, pixel, sway};
-use crate::game::{EnemyKind, Feature, Puddle, Vec2, World, campfire_light};
+use crate::game::{EnemyKind, Feature, Puddle, Vec2, World, campfire_light, kamikaze_lit};
 
 /// How far the flamethrower's nozzle sweeps each side, in degrees, and in how many steps (two
 /// frames each) it goes from side to side and back.
@@ -118,11 +118,11 @@ impl Canvas<'_> {
             let (colour, strength, reach) = FIRE_HALO;
             halos.push(halo(middle, (colour, strength * flicker, reach)));
         }
-        // A kamikaze's head on fire lights around it, green.
+        // A kamikaze, its fuse lit, lights around it, green.
         for enemy in world
             .enemies
             .iter()
-            .filter(|enemy| enemy.kind == EnemyKind::Kamikaze && enemy.fuse > 0)
+            .filter(|enemy| enemy.kind == EnemyKind::Kamikaze && kamikaze_lit(enemy.fuse))
         {
             let (x, y) = pixel(enemy.position);
             lights.push(night::Light::cold_fire((x, y - 2), KAMIKAZE_LIGHT));
@@ -167,9 +167,9 @@ impl Canvas<'_> {
             .collect()
     }
 
-    /// The Molotov's puddles of fire, flames flickering over them (a kamikaze's green; a
-    /// spitter's acid), and its bottles in the air,
-    /// arcing to where they burst.
+    /// The Molotov's puddles of fire, flames flickering over them (a kamikaze's green), and its
+    /// bottles in the air, arcing to where they burst. A spitter's acid apart: on the ground,
+    /// under the figures.
     pub(super) fn paint_molotovs(&mut self, world: &World, frame: u32) {
         for puddle in &world.puddles {
             if puddle.wall {
@@ -177,7 +177,6 @@ impl Canvas<'_> {
                 continue;
             }
             if puddle.acid {
-                self.paint_acid_puddle(puddle, frame);
                 continue;
             }
             let (cx, cy) = pixel(puddle.centre);

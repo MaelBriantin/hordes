@@ -1,17 +1,21 @@
-//! The kamikaze: a zombie in the crowd as any, until it comes into the player's light (near
-//! them, the torch not lit): then its head catches fire, a green flame, and it rushes at them, faster than they go; on them, or its
-//! rush over, it stops a moment, the player's last chance to get away, then it blows: a
-//! fireball that hurts everything around, the player and the enemies alike, and fires left
-//! burning on the ground that burn the player standing in them, not the enemies. Felled
-//! before, it blows at once where it falls.
+//! The kamikaze: a zombie in the crowd as any, until it comes near the player's light (near
+//! them, the torch not lit): then it stops a moment, its skin lights up green and it
+//! rushes at them, faster than they go; on them, or its rush over, it stops a moment, the
+//! player's last chance to get away, then it blows: a fireball that hurts everything around, the player and the enemies alike, and
+//! fires left burning on the ground that burn the player standing in them, not the enemies.
+//! Felled before, it blows at once where it falls.
 
 use super::{TICKS_PER_SECOND, Vec2};
 
 /// How near the player it lights its fuse, the torch not lit, in tiles, from its middle to
-/// theirs; lit, as far as its light shows.
+/// theirs; lit, this far before its light, from where it fades out: it lights up in the dark,
+/// where it shows.
 pub const DARK_REACH: f32 = 4.0;
-/// The ticks it rushes at most, its fuse lit: 3 s; then the ticks it stands still before it
-/// blows, once on the player or its rush over: 0.6 s.
+pub const BEFORE_LIGHT: f32 = 3.0;
+/// The ticks it stands still once its fuse is lit, unlit yet: 0.5 s; then the ticks it rushes
+/// at most, lit: 3 s; then the ticks it stands still before it blows, once on the player or its
+/// rush over: 0.6 s.
+pub const HALT_TICKS: u32 = 15;
 pub const RUSH_TICKS: u32 = 90;
 pub const LAST_TICKS: u32 = 18;
 /// How much faster it rushes at the player: 7.5 tiles a second, faster than them.
@@ -33,6 +37,11 @@ pub const FIRE_RADIUS: f32 = 0.6;
 const FIRE_SECONDS: u32 = 3;
 /// What standing in its fire costs the player, in HP, each time they can be hurt again.
 pub const FIRE_DAMAGE: u32 = 2;
+
+/// Whether a kamikaze, its fuse `fuse` ticks from blowing, shows lit: its halt over.
+pub fn lit(fuse: u32) -> bool {
+    fuse > 0 && fuse < RUSH_TICKS + LAST_TICKS
+}
 
 /// The ticks its fires burn.
 pub fn fire_lasts() -> u32 {

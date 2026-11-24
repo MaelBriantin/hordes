@@ -10,9 +10,9 @@ pub const KEEP: f32 = 8.0;
 pub const BACK: f32 = 6.0;
 /// How near the player it spits, in tiles.
 pub const REACH: f32 = 10.0;
-/// The ticks between two spits: 2.5 s; the last of them, it pulls back: 0.4 s.
+/// The ticks between two spits: 2.5 s; the last of them, it pulls back: 0.6 s.
 pub const EVERY_TICKS: u32 = 75;
-pub const WIND_TICKS: u32 = 12;
+pub const WIND_TICKS: u32 = 18;
 /// The ticks a glob flies: 1 s.
 pub const FLY_TICKS: u32 = 30;
 /// How near where it lands a glob hurts the player, in tiles, and what it takes from them.

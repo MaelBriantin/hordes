@@ -1,7 +1,7 @@
 //! The kamikazes: their fuse, their blast, their fire.
 
 use super::super::super::kamikaze::{
-    DAMAGE, FIRE_DAMAGE, FIRES, LAST_TICKS, PUSH, RUSH_PACE, RUSH_TICKS,
+    BEFORE_LIGHT, DAMAGE, FIRE_DAMAGE, FIRES, HALT_TICKS, LAST_TICKS, PUSH, RUSH_PACE, RUSH_TICKS,
 };
 use super::super::super::molotov::Puddle;
 use super::*;
@@ -24,8 +24,8 @@ fn lit() -> World {
 fn a_kamikaze_on_the_player_stands_still_a_last_moment_then_blows_on_everything_around() {
     let mut world = lit();
     let hp = world.player.hp;
-    // A tick rushing in, then on them: its last moment, without striking them.
-    wait(&mut world, 1 + LAST_TICKS - 1);
+    // Its halt, a tick rushing in, then on them: its last moment, without striking them.
+    wait(&mut world, HALT_TICKS + 1 + LAST_TICKS - 1);
     let kamikaze = &world.enemies[0];
     assert_eq!((kamikaze.kind, kamikaze.fuse), (EnemyKind::Kamikaze, 1));
     let standing = kamikaze.position;
@@ -47,7 +47,7 @@ fn a_kamikaze_on_the_player_stands_still_a_last_moment_then_blows_on_everything_
 fn the_player_fleeing_at_once_gets_away_from_a_kamikaze_standing_its_last_moment() {
     let mut world = lit();
     let hp = world.player.hp;
-    wait(&mut world, 2);
+    wait(&mut world, HALT_TICKS + 2);
     assert!(world.enemies[0].fuse < LAST_TICKS);
     for _ in 0..LAST_TICKS {
         world.spawn_debt = 0.0;
@@ -58,7 +58,7 @@ fn the_player_fleeing_at_once_gets_away_from_a_kamikaze_standing_its_last_moment
 }
 
 #[test]
-fn a_kamikaze_lights_its_fuse_within_four_tiles_the_torch_not_lit_and_rushes_faster() {
+fn a_kamikaze_lights_its_fuse_within_four_tiles_the_torch_not_lit_stands_then_rushes_faster() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world
@@ -67,17 +67,18 @@ fn a_kamikaze_lights_its_fuse_within_four_tiles_the_torch_not_lit_and_rushes_fas
     world
         .enemies
         .push(enemy(EnemyKind::Kamikaze, Vec2::new(100.0, 56.0)));
+    wait(&mut world, HALT_TICKS);
+    let (lit, unlit) = (&world.enemies[0], &world.enemies[1]);
+    assert_eq!((lit.fuse, unlit.fuse), (RUSH_TICKS + LAST_TICKS, 0));
+    assert_near(lit.position.x, 103.9);
+    let (x, y) = (lit.position.x, unlit.position.y);
     wait(&mut world, 1);
     let (lit, unlit) = (&world.enemies[0], &world.enemies[1]);
-    assert_eq!((lit.fuse, unlit.fuse), (RUSH_TICKS + LAST_TICKS - 1, 0));
-    assert_near(
-        103.9 - lit.position.x,
-        (56.0 - unlit.position.y) * RUSH_PACE,
-    );
+    assert_near(x - lit.position.x, (y - unlit.position.y) * RUSH_PACE);
 }
 
 #[test]
-fn a_kamikaze_lights_its_fuse_coming_into_the_torchs_light() {
+fn a_kamikaze_lights_its_fuse_three_tiles_before_the_torchs_light() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     world.next_strike_in = Some(u32::MAX);
@@ -89,18 +90,18 @@ fn a_kamikaze_lights_its_fuse_coming_into_the_torchs_light() {
     assert_near(reach, 15.0);
     world.enemies.push(enemy(
         EnemyKind::Kamikaze,
-        Vec2::new(100.0 + reach - 0.5, 50.0),
+        Vec2::new(100.0 + reach + BEFORE_LIGHT - 0.5, 50.0),
     ));
     world.enemies.push(enemy(
         EnemyKind::Kamikaze,
-        Vec2::new(100.0, 50.0 + reach + 1.0),
+        Vec2::new(100.0, 50.0 + reach + BEFORE_LIGHT + 0.5),
     ));
     for kamikaze in &mut world.enemies {
         kamikaze.noticed = true;
     }
     wait(&mut world, 1);
-    assert!(world.enemies[0].fuse > 0, "in the light");
-    assert_eq!(world.enemies[1].fuse, 0, "beyond it");
+    assert!(world.enemies[0].fuse > 0, "near enough the light");
+    assert_eq!(world.enemies[1].fuse, 0, "too far from it");
 }
 
 #[test]

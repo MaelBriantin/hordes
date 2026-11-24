@@ -4,7 +4,8 @@ use super::super::Vec2;
 use super::super::c4::{BLAST_TICKS, Blast};
 use super::super::enemy::{Enemy, EnemyKind};
 use super::super::kamikaze::{
-    self, DAMAGE, DARK_REACH, FIRE_RADIUS, FIRES, LAST_TICKS, PUSH, RADIUS, RUSH_PACE, RUSH_TICKS,
+    self, BEFORE_LIGHT, DAMAGE, DARK_REACH, FIRE_RADIUS, FIRES, HALT_TICKS, LAST_TICKS, PUSH,
+    RADIUS, RUSH_PACE, RUSH_TICKS,
 };
 use super::super::molotov::Puddle;
 use super::enemies::shove;
@@ -97,11 +98,11 @@ impl World {
         );
     }
 
-    /// How near the player a kamikaze lights its fuse, in tiles: as far as the torch's light
-    /// shows, fading included, as Glare slows; the torch not lit, a few tiles.
+    /// How near the player a kamikaze lights its fuse, in tiles: a little before the torch's
+    /// light, from where it fades out (where Glare slows); the torch not lit, a few tiles.
     pub(super) fn kamikaze_reach(&self) -> f32 {
         if self.torch_lit() {
-            self.light_radius() + TORCH_FADE
+            self.light_radius() + TORCH_FADE + BEFORE_LIGHT
         } else {
             DARK_REACH
         }
@@ -115,9 +116,9 @@ impl World {
     }
 }
 
-/// A kamikaze within `reach` of the player lights its fuse and rushes at them; `touching` them,
-/// or its rush over, it stands still its last moment, then blows. Its pace this tick against
-/// its speed, while its fuse burns.
+/// A kamikaze within `reach` of the player lights its fuse: it stands still a moment, then
+/// rushes at them; `touching` them, or its rush over, it stands still its last moment, then
+/// blows. Its pace this tick against its speed, while its fuse burns.
 pub(super) fn fuse(
     enemy: &mut Enemy,
     (apart, reach): (f32, f32),
@@ -128,7 +129,7 @@ pub(super) fn fuse(
         return None;
     }
     if enemy.fuse == 0 && lights && apart <= reach {
-        enemy.fuse = RUSH_TICKS + LAST_TICKS;
+        enemy.fuse = HALT_TICKS + RUSH_TICKS + LAST_TICKS;
     }
     if enemy.fuse == 0 {
         return None;
@@ -141,7 +142,7 @@ pub(super) fn fuse(
         enemy.hp = 0;
         enemy.blew = true;
     }
-    Some(if enemy.fuse > LAST_TICKS {
+    Some(if enemy.fuse > LAST_TICKS && kamikaze::lit(enemy.fuse) {
         RUSH_PACE
     } else {
         0.0
