@@ -20,6 +20,11 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 ### Fixed
 - The horde's count, on the top of the map, half a cell off the middle of the time over it.
 
+## v0.10.2 · November 24, 2026
+
+### Changed
+- U on the title screen installs the newer version, then opens the game again in it.
+
 ## v0.10.1 · November 24, 2026
 
 ### Fixed
