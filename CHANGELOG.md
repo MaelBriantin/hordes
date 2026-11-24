@@ -18,6 +18,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 - The hordes bring kamikazes from the drizzle, spitters from the rain and chargers from the storm, and no more Shadows: they keep to the dark, shunning the torch.
 - The horde's count, on the top of the map, is a bar too, its red shrinking as the horde falls.
 - Lightning falling on the player puts their torch out a time in three, no longer every time.
+- The riot officer's second outfit, the horde slayer, in dark green armour, a black visor, a light green shield.
 - The first time lightning puts the torch out, F is shown again until it is lit.
 - Passing behind a tree or a rock, the hero and the enemies have their lower part hidden by it.
 

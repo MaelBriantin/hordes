@@ -85,10 +85,10 @@ $ 240 190 40    the infiltrator's jungle amber goggles
 & 84 84 84      the sniper rifle's steel, the gatling's frame
 * 161 161 161   the sniper rifle's scope mount, the gatling's barrels
 ~ 97 55 46      the sniper rifle's stock
-- 45 85 175     the riot officer's blue, their second outfit's
-_ 30 50 110     the riot officer's dark blue arms, their second outfit's
-/ 245 140 40    the riot officer's orange visor, their second outfit's
-| 150 180 220   the riot officer's blueish shield, their second outfit's
+- 80 97 47      the riot officer's dark green armour, their second outfit's
+_ 119 142 75    the riot officer's light green shield, their second outfit's
+/ 48 48 48      the riot officer's black visor, their second outfit's
+| 82 62 42      the riot officer's brown legs, their second outfit's
 ! 48 48 48      the gatling's body
 ; 255 255 0     the gatling's belt, its rounds
 = 255 133 2     the gatling's belt, its links
@@ -441,23 +441,23 @@ riot_side
 .[[{
 .(({
 
-riot_blue_front
+riot_green_front
 .--.
-||/.
-||]_
-||-.
+.//.
+__-(
+__|.
 
-riot_blue_back
+riot_green_back
 .--.
-.]]|
-_]]_
-.--|
+.--.
+(--(
+.||_
 
-riot_blue_side
+riot_green_side
 .--.
-.]/|
-.__|
-.--|
+.-/.
+.-(_
+.||_
 
 # Enemies. The zombie, 4 × 4: sideways (facing right, its arms out), and up or down.
 
