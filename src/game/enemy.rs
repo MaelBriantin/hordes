@@ -1,4 +1,3 @@
-use super::charger::Charge;
 use super::{Facing, Vec2};
 
 /// How long an enemy burns once on fire, in seconds; the ticks between two of its losses, and
@@ -34,8 +33,6 @@ pub enum EnemyKind {
     Kamikaze,
     /// A zombie, its skin acid, keeping off the player and spitting at them.
     Spitter,
-    /// A stocky zombie in a football player's pads: it scrapes the ground, then charges.
-    Charger,
 }
 
 /// What a kind of enemy is like.
@@ -60,13 +57,12 @@ pub struct Stats {
 
 impl EnemyKind {
     /// The kinds that appear of themselves: parasites come out of abominations alone.
-    pub const ALL: [EnemyKind; 6] = [
+    pub const ALL: [EnemyKind; 5] = [
         EnemyKind::Zombie,
         EnemyKind::Shadow,
         EnemyKind::Abomination,
         EnemyKind::Kamikaze,
         EnemyKind::Spitter,
-        EnemyKind::Charger,
     ];
 
     pub fn stats(self) -> Stats {
@@ -119,16 +115,6 @@ impl EnemyKind {
                 speed: 2.5,
                 damage: 5,
                 half_width: 0.45,
-                flies: false,
-            },
-            EnemyKind::Charger => Stats {
-                hp: 60,
-                xp: 4,
-                drop_percent: 75,
-                stain: 4,
-                speed: 2.0,
-                damage: 10,
-                half_width: 0.65,
                 flies: false,
             },
             EnemyKind::Kamikaze => Stats {
@@ -188,8 +174,6 @@ pub struct Enemy {
     /// Ticks left before it spits, the player in its reach: a spitter's; the last ones, it
     /// pulls back.
     pub spit_wait: u32,
-    /// What it is about, scraping or charging: a charger's.
-    pub charge: Charge,
 }
 
 impl Enemy {
@@ -217,7 +201,6 @@ impl Enemy {
             fuse: 0,
             blew: false,
             spit_wait: super::spitter::EVERY_TICKS,
-            charge: Charge::Ready,
         }
     }
 

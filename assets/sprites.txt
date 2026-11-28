@@ -94,8 +94,6 @@ _ 119 142 75    the riot officer's light green shield, their second outfit's
 = 255 133 2     the gatling's belt, its links
 } 120 220 70    the spitter's acid
 , 170 255 110   the spitter's acid, glinting
-h 55 55 62      the charger's helmet
-' 150 60 45     the charger's jersey, a dull red
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -556,66 +554,6 @@ spitter_front_2
 ,CC,
 .CC.
 .NN.
-
-# The charger, 6 × 6: a stocky zombie in a football player's pads and helmet, crouched.
-# Sideways (facing right): standing, a step, scraping (bobbing a pixel down, its foot back); up
-# or down: standing, a step of each foot, scraping.
-
-charger_side
-......
-'''hh.
-'''hE.
-.'''Z.
-.CCC..
-.NN.N.
-
-charger_side_step
-......
-'''hh.
-'''hE.
-.'''Z.
-.CCC..
-.N.NN.
-
-charger_side_scrape
-......
-......
-'''hh.
-'''hE.
-.'''Z.
-NNCCN.
-
-charger_front
-......
-''hh''
-''EE''
-Z''''Z
-.CCCC.
-.N..N.
-
-charger_front_left
-......
-''hh''
-''EE''
-Z''''Z
-.CCCC.
-.N....
-
-charger_front_right
-......
-''hh''
-''EE''
-Z''''Z
-.CCCC.
-....N.
-
-charger_front_scrape
-......
-......
-''hh''
-''EE''
-Z''''Z
-.CCCN.
 
 # A bullet, a pixel; a drone, 5 × 4, its rotors at the corners; an XP gem, 2 × 2: one tile.
 

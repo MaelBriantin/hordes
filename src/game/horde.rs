@@ -119,14 +119,12 @@ pub fn rings(weather: Weather) -> bool {
 }
 
 /// The kind of one of a horde's enemies, in that weather: zombies; a kamikaze in ten from the
-/// drizzle on; a spitter in twenty from the rain on; a charger in twenty from the storm on; an
-/// abomination in ten in the tempest. No Shadow: they keep to the dark.
+/// drizzle on; a spitter in twenty from the rain on; an abomination in ten in the tempest. No Shadow: they keep to the dark.
 pub fn kind(rng: &mut impl Rng, weather: Weather) -> EnemyKind {
     let roll = rng.random_range(0..100);
     match roll {
         0..10 if weather >= Weather::Drizzle => EnemyKind::Kamikaze,
         10..15 if weather >= Weather::Rain => EnemyKind::Spitter,
-        15..20 if weather >= Weather::Storm => EnemyKind::Charger,
         20..30 if weather == Weather::Tempest => EnemyKind::Abomination,
         _ => EnemyKind::Zombie,
     }
@@ -254,13 +252,11 @@ mod tests {
         assert!(night.iter().all(|kind| *kind == EnemyKind::Zombie));
         let rain = kinds(Weather::Rain, &mut rng);
         assert!(rain.contains(&EnemyKind::Kamikaze) && rain.contains(&EnemyKind::Spitter));
-        assert!(!rain.contains(&EnemyKind::Charger));
         let tempest = kinds(Weather::Tempest, &mut rng);
         for wanted in [
             EnemyKind::Zombie,
             EnemyKind::Kamikaze,
             EnemyKind::Spitter,
-            EnemyKind::Charger,
             EnemyKind::Abomination,
         ] {
             assert!(tempest.contains(&wanted), "no {wanted:?}");

@@ -427,8 +427,6 @@ impl World {
                 super::kamikazes::fuse(enemy, (apart, kamikaze_reach), hunts, touching)
             {
                 (enemy.heading(target), pace)
-            } else if let Some(going) = super::chargers::charge(enemy, apart, target, hunts) {
-                going
             } else if flee {
                 ((enemy.position - target).normalized(), 1.0)
             } else if !enemy.noticed && enemy.kind == EnemyKind::Shadow && dark_hunt == Some(false)
