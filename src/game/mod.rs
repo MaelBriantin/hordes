@@ -67,7 +67,7 @@ pub use grenade::ARC as GRENADE_ARC;
 pub use guns::Bullet;
 pub use hammer::{Blow, WAVE_TICKS as HAMMER_WAVE_TICKS};
 pub use heal::light as campfire_light;
-pub use kamikaze::{LAST_TICKS as KAMIKAZE_LAST_TICKS, lit as kamikaze_lit};
+pub use kamikaze::lit as kamikaze_lit;
 pub use leaderboard::{Entry, Leaderboard};
 pub use level::xp_to_next;
 pub use machete::{SWING_TICKS, Swing};

@@ -94,6 +94,7 @@ _ 119 142 75    the riot officer's light green shield, their second outfit's
 = 255 133 2     the gatling's belt, its links
 } 120 220 70    the spitter's acid
 , 170 255 110   the spitter's acid, glinting
+` 240 140 30    the kamikaze's skin, orange
 
 # The hero, 4 × 4: facing down, up, and right (mirrored for left).
 
@@ -552,6 +553,20 @@ spitter_front_1
 spitter_front_2
 .,}.
 ,CC,
+.CC.
+.NN.
+
+# The kamikaze, 4 × 4: a zombie, its skin orange; sideways (facing right), and up or down.
+
+kamikaze_side
+.``.
+.C``
+.CC.
+.NN.
+
+kamikaze_front
+.``.
+`CC`
 .CC.
 .NN.
 

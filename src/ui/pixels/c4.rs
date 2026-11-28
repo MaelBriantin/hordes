@@ -30,13 +30,6 @@ const PUFFS: u32 = 14;
 /// A blast's light and halo while its fireball burns: its colour, how strong at its middle,
 /// how far it reaches in pixels.
 const BLAST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.6, 18);
-/// A kamikaze's blast, its fire yellow: its fireball, from its edge to its heart, and its halo.
-const KAMIKAZE_FIREBALL: [Color; 3] = [
-    Color::Rgb(150, 130, 20),
-    Color::Rgb(225, 205, 40),
-    Color::Rgb(255, 240, 120),
-];
-const KAMIKAZE_BLAST_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.6, 18);
 
 impl Canvas<'_> {
     /// The charges on the ground, under the figures: a dark block, its light on top, dark red
@@ -71,19 +64,14 @@ impl Canvas<'_> {
         }
     }
 
-    /// The blasts lighting around them while their fireball burns, warm; the kamikazes', yellow.
+    /// The blasts lighting around them while their fireball burns, warm, the kamikazes' too.
     pub(super) fn blast_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
         world
             .fireballs()
-            .map(|blast| (blast, BLAST_HALO))
-            .chain(
-                world
-                    .kamikaze_blasts
-                    .iter()
-                    .map(|blast| (blast, KAMIKAZE_BLAST_HALO)),
-            )
-            .filter(|(blast, _)| blast.age < FIREBALL_TICKS)
-            .map(|(blast, (colour, strength, reach))| {
+            .chain(&world.kamikaze_blasts)
+            .filter(|blast| blast.age < FIREBALL_TICKS)
+            .map(|blast| {
+                let (colour, strength, reach) = BLAST_HALO;
                 let centre = pixel(blast.at);
                 let left = 1.0 - night::share(blast.age, FIREBALL_TICKS);
                 (
@@ -100,13 +88,10 @@ impl Canvas<'_> {
     }
 
     /// The blasts: a white flash over the whole blast, then a fireball shrinking, red, orange,
-    /// a yellow heart (the kamikazes', yellow); smoke rising from it, thinning out.
+    /// a yellow heart, the kamikazes' too; smoke rising from it, thinning out.
     pub(super) fn paint_fireballs(&mut self, world: &World) {
-        for blast in world.fireballs() {
+        for blast in world.fireballs().chain(&world.kamikaze_blasts) {
             self.paint_fireball(blast, FIREBALL);
-        }
-        for blast in &world.kamikaze_blasts {
-            self.paint_fireball(blast, KAMIKAZE_FIREBALL);
         }
     }
 

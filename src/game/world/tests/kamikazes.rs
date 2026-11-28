@@ -1,8 +1,6 @@
 //! The kamikazes: their fuse, their blast, their fire.
 
-use super::super::super::kamikaze::{
-    BEFORE_LIGHT, DAMAGE, FIRE_DAMAGE, FIRES, HALT_TICKS, LAST_TICKS, PUSH, RUSH_PACE, RUSH_TICKS,
-};
+use super::super::super::kamikaze::{DAMAGE, FIRE_DAMAGE, FIRES, LAST_TICKS, PUSH};
 use super::super::super::molotov::Puddle;
 use super::*;
 
@@ -24,8 +22,8 @@ fn lit() -> World {
 fn a_kamikaze_on_the_player_stands_still_a_last_moment_then_blows_on_everything_around() {
     let mut world = lit();
     let hp = world.player.hp;
-    // Its halt, a tick rushing in, then on them: its last moment, without striking them.
-    wait(&mut world, HALT_TICKS + 1 + LAST_TICKS - 1);
+    // A tick walking in, then on them: its last moment, without striking them.
+    wait(&mut world, 1 + LAST_TICKS - 1);
     let kamikaze = &world.enemies[0];
     assert_eq!((kamikaze.kind, kamikaze.fuse), (EnemyKind::Kamikaze, 1));
     let standing = kamikaze.position;
@@ -47,8 +45,8 @@ fn a_kamikaze_on_the_player_stands_still_a_last_moment_then_blows_on_everything_
 fn the_player_fleeing_at_once_gets_away_from_a_kamikaze_standing_its_last_moment() {
     let mut world = lit();
     let hp = world.player.hp;
-    wait(&mut world, HALT_TICKS + 2);
-    assert!(world.enemies[0].fuse < LAST_TICKS);
+    wait(&mut world, 2);
+    assert!(world.enemies[0].fuse > 0 && world.enemies[0].fuse < LAST_TICKS);
     for _ in 0..LAST_TICKS {
         world.spawn_debt = 0.0;
         world.update(moving(-1.0, 0.0));
@@ -58,54 +56,25 @@ fn the_player_fleeing_at_once_gets_away_from_a_kamikaze_standing_its_last_moment
 }
 
 #[test]
-fn a_kamikaze_lights_its_fuse_within_four_tiles_the_torch_not_lit_stands_then_rushes_faster() {
+fn a_kamikaze_comes_at_its_own_speed_unlit_until_it_touches_the_player() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
+    world.next_horde = u32::MAX;
     world
         .enemies
-        .push(enemy(EnemyKind::Kamikaze, Vec2::new(103.9, 50.0)));
-    world
-        .enemies
-        .push(enemy(EnemyKind::Kamikaze, Vec2::new(100.0, 56.0)));
-    wait(&mut world, HALT_TICKS);
-    let (lit, unlit) = (&world.enemies[0], &world.enemies[1]);
-    assert_eq!((lit.fuse, unlit.fuse), (RUSH_TICKS + LAST_TICKS, 0));
-    assert_near(lit.position.x, 103.9);
-    let (x, y) = (lit.position.x, unlit.position.y);
+        .push(enemy(EnemyKind::Kamikaze, Vec2::new(103.0, 50.0)));
     wait(&mut world, 1);
-    let (lit, unlit) = (&world.enemies[0], &world.enemies[1]);
-    assert_near(x - lit.position.x, (y - unlit.position.y) * RUSH_PACE);
+    let x = world.enemies[0].position.x;
+    wait(&mut world, 1);
+    let speed = EnemyKind::Kamikaze.stats().speed;
+    assert_near(x - world.enemies[0].position.x, speed / 30.0);
+    assert_eq!(world.enemies[0].fuse, 0, "near, not on them");
+    wait(&mut world, 30);
+    assert!(world.enemies[0].fuse > 0, "on them, lit");
 }
 
 #[test]
-fn a_kamikaze_lights_its_fuse_three_tiles_before_the_torchs_light() {
-    let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
-    disarm(&mut world);
-    world.next_strike_in = Some(u32::MAX);
-    world.ticks = 30 * 40;
-    world.torch_steady_at = 0;
-    assert!(world.torch_lit());
-    // Its 9 tiles of light, and the 6 it fades over.
-    let reach = world.light_radius() + TORCH_FADE;
-    assert_near(reach, 15.0);
-    world.enemies.push(enemy(
-        EnemyKind::Kamikaze,
-        Vec2::new(100.0 + reach + BEFORE_LIGHT - 0.5, 50.0),
-    ));
-    world.enemies.push(enemy(
-        EnemyKind::Kamikaze,
-        Vec2::new(100.0, 50.0 + reach + BEFORE_LIGHT + 0.5),
-    ));
-    for kamikaze in &mut world.enemies {
-        kamikaze.noticed = true;
-    }
-    wait(&mut world, 1);
-    assert!(world.enemies[0].fuse > 0, "near enough the light");
-    assert_eq!(world.enemies[1].fuse, 0, "too far from it");
-}
-
-#[test]
-fn a_kamikaze_short_of_the_player_its_rush_over_stands_still_then_blows() {
+fn a_kamikaze_thrown_off_the_player_its_fuse_lit_stands_still_then_blows() {
     let mut world = on(Map::empty(), Vec2::new(100.0, 50.0));
     disarm(&mut world);
     let mut kamikaze = enemy(EnemyKind::Kamikaze, Vec2::new(110.0, 50.0));

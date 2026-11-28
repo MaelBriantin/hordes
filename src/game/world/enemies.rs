@@ -407,8 +407,6 @@ impl World {
         let smoke = self.smoke.filter(|cloud| cloud.slows);
         // With Glare, those in the torch's light go slower.
         let glare = self.glare();
-        // Coming into it, a kamikaze lights its fuse.
-        let kamikaze_reach = self.kamikaze_reach();
         let ticks = self.ticks;
         for (enemy, push) in self.enemies.iter_mut().zip(pushes) {
             enemy.flash = enemy.flash.saturating_sub(1);
@@ -418,14 +416,11 @@ impl World {
             let apart = (target - enemy.position).length();
             notice(enemy, apart, sight);
             let fire = nearest_fire(&fires, enemy.position);
-            let hunts = enemy.noticed && !flee;
             let touching = touch(enemy.position, stats.half_width, target, PLAYER_HALF_WIDTH);
             let (heading, pace) = if enemy.stunned > 0 {
                 enemy.stunned -= 1;
                 (Vec2::ZERO, 0.0)
-            } else if let Some(pace) =
-                super::kamikazes::fuse(enemy, (apart, kamikaze_reach), hunts, touching)
-            {
+            } else if let Some(pace) = super::kamikazes::fuse(enemy, touching) {
                 (enemy.heading(target), pace)
             } else if flee {
                 ((enemy.position - target).normalized(), 1.0)
