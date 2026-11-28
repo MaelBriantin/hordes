@@ -30,13 +30,13 @@ const PUFFS: u32 = 14;
 /// A blast's light and halo while its fireball burns: its colour, how strong at its middle,
 /// how far it reaches in pixels.
 const BLAST_HALO: ((u8, u8, u8), f32, i32) = ((255, 170, 60), 0.6, 18);
-/// A kamikaze's blast, its fire green: its fireball, from its edge to its heart, and its halo.
+/// A kamikaze's blast, its fire yellow: its fireball, from its edge to its heart, and its halo.
 const KAMIKAZE_FIREBALL: [Color; 3] = [
-    Color::Rgb(50, 150, 40),
-    Color::Rgb(120, 220, 70),
-    Color::Rgb(210, 255, 150),
+    Color::Rgb(150, 130, 20),
+    Color::Rgb(225, 205, 40),
+    Color::Rgb(255, 240, 120),
 ];
-const KAMIKAZE_BLAST_HALO: ((u8, u8, u8), f32, i32) = ((120, 220, 70), 0.6, 18);
+const KAMIKAZE_BLAST_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.6, 18);
 
 impl Canvas<'_> {
     /// The charges on the ground, under the figures: a dark block, its light on top, dark red
@@ -71,7 +71,7 @@ impl Canvas<'_> {
         }
     }
 
-    /// The blasts lighting around them while their fireball burns, warm; the kamikazes', green.
+    /// The blasts lighting around them while their fireball burns, warm; the kamikazes', yellow.
     pub(super) fn blast_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
         world
             .fireballs()
@@ -100,7 +100,7 @@ impl Canvas<'_> {
     }
 
     /// The blasts: a white flash over the whole blast, then a fireball shrinking, red, orange,
-    /// a yellow heart (the kamikazes', green); smoke rising from it, thinning out.
+    /// a yellow heart (the kamikazes', yellow); smoke rising from it, thinning out.
     pub(super) fn paint_fireballs(&mut self, world: &World) {
         for blast in world.fireballs() {
             self.paint_fireball(blast, FIREBALL);

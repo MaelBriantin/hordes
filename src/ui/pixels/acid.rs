@@ -11,9 +11,9 @@ use crate::game::{EnemyKind, Facing, Puddle, SPIT_WIND_TICKS, Vec2, World};
 
 /// The acid, glinting, then its middle, then its darker edge: the spitter's own colours.
 pub(super) const ACID: [Color; 3] = [
-    Color::Rgb(255, 240, 120),
-    Color::Rgb(225, 205, 40),
-    Color::Rgb(150, 130, 20),
+    Color::Rgb(170, 255, 110),
+    Color::Rgb(120, 220, 70),
+    Color::Rgb(50, 150, 40),
 ];
 /// How high a glob flies at most, in pixels.
 const GLOB_ARC: f32 = 8.0;
@@ -32,14 +32,12 @@ const TARGET_BLINK: u32 = 5;
 /// How far a spitter pulls back to spit, in tiles: a pixel.
 pub(super) const PULL_BACK: f32 = 0.5;
 /// A spitter about to spit, in the dark: its acid pulsing up to near white, how fast (radians
-/// a tick); its light, in tiles, and its halo, as a lit kamikaze's.
-const SPIT_BRIGHT: Color = Color::Rgb(255, 250, 200);
+/// a tick).
+const SPIT_BRIGHT: Color = Color::Rgb(225, 255, 200);
 const SPIT_PACE: f32 = 0.8;
-const SPIT_LIGHT: f32 = 2.0;
-const SPIT_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.3, 8);
 /// A puddle of acid's glow in the dark: its light, in tiles, and its halo.
 pub(super) const PUDDLE_LIGHT: f32 = 1.0;
-pub(super) const PUDDLE_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.25, 5);
+pub(super) const PUDDLE_HALO: ((u8, u8, u8), f32, i32) = ((120, 220, 70), 0.25, 5);
 
 /// Whether a spitter pulls back to spit: the last of its wait.
 pub(super) fn pulling_back(enemy: &crate::game::Enemy) -> bool {
@@ -149,26 +147,8 @@ impl Canvas<'_> {
         }
     }
 
-    /// The puddles of acid glowing a little in the dark, so that they are seen; the spitters
-    /// about to spit, more.
+    /// The puddles of acid glowing a little in the dark, so that they are seen.
     pub(super) fn acid_lights(world: &World) -> (Vec<night::Light>, Vec<night::Halo>) {
-        let spitting = world
-            .enemies
-            .iter()
-            .filter(|enemy| pulling_back(enemy))
-            .map(|enemy| {
-                let centre = pixel(enemy.position);
-                let (colour, strength, reach) = SPIT_HALO;
-                (
-                    night::Light::cold_fire(centre, SPIT_LIGHT),
-                    night::Halo {
-                        centre,
-                        colour,
-                        strength,
-                        reach,
-                    },
-                )
-            });
         let (colour, strength, reach) = PUDDLE_HALO;
         world
             .puddles
@@ -186,7 +166,6 @@ impl Canvas<'_> {
                     },
                 )
             })
-            .chain(spitting)
             .unzip()
     }
 }

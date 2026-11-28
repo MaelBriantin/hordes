@@ -787,20 +787,21 @@ pub fn enemy(enemy: &Enemy, ticks: u32) -> Look {
     Look { tint, ..look }
 }
 
-/// A kamikaze's skin once its fuse is lit, `ticks` into the run: pulsing from one green to a
-/// brighter one as it rushes; its last moment, faster, flashing pale green every other look.
+/// A kamikaze's skin once its fuse is lit, `ticks` into the run: pulsing softly from one yellow
+/// to a brighter one as it rushes; its last moment, faster, up to near white, as a spitter about
+/// to spit.
 pub fn kamikaze_glow(enemy: &Enemy, ticks: u32) -> Option<Color> {
     if enemy.kind != EnemyKind::Kamikaze || !kamikaze_lit(enemy.fuse) {
         return None;
     }
-    let last = fuse_last(enemy);
-    if last && (ticks / GLOW_FLASH_TICKS).is_multiple_of(2) {
-        return Some(GLOW_FLASH);
-    }
-    let pace = if last { GLOW_PACE_LAST } else { GLOW_PACE };
+    let (from, to, pace) = if fuse_last(enemy) {
+        (GLOW_BRIGHT, GLOW_WHITE, GLOW_PACE_LAST)
+    } else {
+        (GLOW_DIM, GLOW_BRIGHT, GLOW_PACE)
+    };
     let time = f32::from(u16::try_from(ticks % 10_000).unwrap_or(0));
     let pulse = 0.5 + 0.5 * (time * pace).sin();
-    Some(super::blend(GLOW_DIM, GLOW_BRIGHT, pulse))
+    Some(super::blend(from, to, pulse))
 }
 
 /// Whether a kamikaze stands still its last moment before it blows: it flashes.
@@ -855,14 +856,13 @@ const SPITTER_FRONT: [SpriteId; 3] = [
 ];
 const SPITTER_FRAME: u32 = 8;
 
-/// A kamikaze's skin glowing: the greens it pulses between, how fast (radians a tick) as it
-/// rushes and its last moment; the pale green it flashes then, every so many ticks.
-const GLOW_DIM: Color = Color::Rgb(120, 220, 70);
-const GLOW_BRIGHT: Color = Color::Rgb(170, 255, 110);
+/// A kamikaze's skin glowing: the yellows it pulses between as it rushes, slowly; its last
+/// moment, faster, up to near white; how fast (radians a tick).
+const GLOW_DIM: Color = Color::Rgb(225, 205, 40);
+const GLOW_BRIGHT: Color = Color::Rgb(255, 240, 120);
+const GLOW_WHITE: Color = Color::Rgb(255, 250, 200);
 const GLOW_PACE: f32 = 0.35;
 const GLOW_PACE_LAST: f32 = 0.8;
-const GLOW_FLASH: Color = Color::Rgb(210, 255, 150);
-const GLOW_FLASH_TICKS: u32 = 2;
 
 /// The blue an enemy paralysed by a shock blinks in, every so many ticks.
 pub const SHOCK: Color = Color::Rgb(70, 140, 255);
@@ -1016,9 +1016,9 @@ mod tests {
         kamikaze.fuse = KAMIKAZE_LAST_TICKS + 10;
         assert_eq!(enemy(&kamikaze, 1).sprite, SpriteId::ZombieSide);
         assert_eq!(enemy(&kamikaze, 1).tint, None);
-        assert!(kamikaze_glow(&kamikaze, 1).is_some_and(|glow| glow != GLOW_FLASH));
+        assert!(kamikaze_glow(&kamikaze, 1).is_some());
         kamikaze.fuse = KAMIKAZE_LAST_TICKS;
-        assert_eq!(kamikaze_glow(&kamikaze, 0), Some(GLOW_FLASH));
+        assert!(kamikaze_glow(&kamikaze, 0).is_some());
     }
 
     #[test]

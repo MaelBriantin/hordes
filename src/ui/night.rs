@@ -472,7 +472,7 @@ impl Light {
         }
     }
 
-    /// A kamikaze's green flame, lighting `radius` tiles around it, its light not warm: its halo
+    /// A kamikaze's yellow flame, lighting `radius` tiles around it, its light not warm: its halo
     /// gives its colour.
     pub fn cold_fire(centre: (i32, i32), radius: f32) -> Self {
         Self {

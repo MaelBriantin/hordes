@@ -92,8 +92,8 @@ _ 119 142 75    the riot officer's light green shield, their second outfit's
 ! 48 48 48      the gatling's body
 ; 255 255 0     the gatling's belt, its rounds
 = 255 133 2     the gatling's belt, its links
-} 225 205 40    the spitter's acid
-, 255 240 120   the spitter's acid, glinting
+} 120 220 70    the spitter's acid
+, 170 255 110   the spitter's acid, glinting
 h 55 55 62      the charger's helmet
 ' 150 60 45     the charger's jersey, a dull red
 

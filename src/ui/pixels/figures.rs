@@ -40,11 +40,11 @@ const MINI_BAR_GAP: i32 = 1;
 
 /// The ticks the mini bar shows, then hides, low on HP.
 const MINI_BAR_BLINK: u32 = 6;
-/// A kamikaze's green fire, from its flames' tip to their root.
+/// A kamikaze's yellow fire, from its flames' tip to their root.
 pub(super) const KAMIKAZE_FLAME: [Color; 3] = [
-    Color::Rgb(210, 255, 150),
-    Color::Rgb(120, 220, 70),
-    Color::Rgb(50, 150, 40),
+    Color::Rgb(255, 240, 120),
+    Color::Rgb(225, 205, 40),
+    Color::Rgb(150, 130, 20),
 ];
 /// A zombie's skin and legs, as its sprite has them: a kamikaze's skin glows once its fuse is
 /// lit, over the night, its clothes with it, not its legs.
@@ -149,7 +149,7 @@ impl Canvas<'_> {
         }
     }
 
-    /// The kamikazes once lit, over the night: their skin glowing green, their clothes as they
+    /// The kamikazes once lit, over the night: their skin glowing yellow, their clothes as they
     /// are.
     fn paint_kamikaze_glow(&mut self, world: &World) {
         for enemy in &world.enemies {

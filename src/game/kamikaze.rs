@@ -1,5 +1,5 @@
 //! The kamikaze: a zombie in the crowd as any, until it comes near the player's light (near
-//! them, the torch not lit): then it stops a moment, its skin lights up green and it
+//! them, the torch not lit): then it stops a moment, its skin lights up yellow and it
 //! rushes at them, faster than they go; on them, or its rush over, it stops a moment, the
 //! player's last chance to get away, then it blows: a fireball that hurts everything around, the player and the enemies alike, and
 //! fires left burning on the ground that burn the player standing in them, not the enemies.
