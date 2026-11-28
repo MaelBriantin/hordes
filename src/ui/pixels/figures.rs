@@ -123,7 +123,6 @@ impl Canvas<'_> {
     /// skins glowing.
     pub(super) fn paint_flames(&mut self, world: &World, frame: u32) {
         self.paint_kamikaze_glow(world);
-        self.paint_spit_glow(world);
         for enemy in world.enemies.iter().filter(|enemy| enemy.burning > 0) {
             let look = sprites::enemy(enemy, world.ticks());
             let height = self.sprites.get(look.sprite).height();

@@ -1,19 +1,17 @@
-//! The spitters' acid: a spitter pulling back to spit, its acid glinting at its mouth; its
-//! globs lobbed through the air, where they will land blinking on the ground; their puddles.
+//! The spitters' acid: a spitter pulling back to spit; its globs lobbed through the air, where
+//! they will land blinking on the ground; their puddles.
 
 use ratatui::style::Color;
 
 use super::super::night;
-use super::super::sprites;
-use super::figures::ZOMBIE_LEGS;
 use super::{Canvas, pixel};
-use crate::game::{EnemyKind, Facing, Puddle, SPIT_WIND_TICKS, Vec2, World};
+use crate::game::{EnemyKind, Puddle, SPIT_WIND_TICKS, Vec2, World};
 
 /// The acid, glinting, then its middle, then its darker edge: the spitter's own colours.
 pub(super) const ACID: [Color; 3] = [
-    Color::Rgb(170, 255, 110),
-    Color::Rgb(120, 220, 70),
-    Color::Rgb(50, 150, 40),
+    Color::Rgb(255, 240, 120),
+    Color::Rgb(225, 205, 40),
+    Color::Rgb(150, 130, 20),
 ];
 /// How high a glob flies at most, in pixels.
 const GLOB_ARC: f32 = 8.0;
@@ -31,13 +29,9 @@ const TARGET_RING: [(i32, i32); 8] = [
 const TARGET_BLINK: u32 = 5;
 /// How far a spitter pulls back to spit, in tiles: a pixel.
 pub(super) const PULL_BACK: f32 = 0.5;
-/// A spitter about to spit, in the dark: its acid pulsing up to near white, how fast (radians
-/// a tick).
-const SPIT_BRIGHT: Color = Color::Rgb(225, 255, 200);
-const SPIT_PACE: f32 = 0.8;
 /// A puddle of acid's glow in the dark: its light, in tiles, and its halo.
 pub(super) const PUDDLE_LIGHT: f32 = 1.0;
-pub(super) const PUDDLE_HALO: ((u8, u8, u8), f32, i32) = ((120, 220, 70), 0.25, 5);
+pub(super) const PUDDLE_HALO: ((u8, u8, u8), f32, i32) = ((225, 205, 40), 0.25, 5);
 
 /// Whether a spitter pulls back to spit: the last of its wait.
 pub(super) fn pulling_back(enemy: &crate::game::Enemy) -> bool {
@@ -45,43 +39,6 @@ pub(super) fn pulling_back(enemy: &crate::game::Enemy) -> bool {
 }
 
 impl Canvas<'_> {
-    /// The spitters pulling back to spit, over the night, so that they show in the dark about
-    /// to spit: their acid pulsing bright, their clothes as they are, not their legs; sideways,
-    /// their acid glinting at their mouth, on and off.
-    pub(super) fn paint_spit_glow(&mut self, world: &World) {
-        let glint = (world.ticks() / 2).is_multiple_of(2);
-        let time = f32::from(u16::try_from(world.ticks() % 10_000).unwrap_or(0));
-        let bright =
-            super::super::blend(ACID[0], SPIT_BRIGHT, 0.5 + 0.5 * (time * SPIT_PACE).sin());
-        for enemy in world.enemies.iter().filter(|enemy| pulling_back(enemy)) {
-            let look = sprites::enemy(enemy, world.ticks());
-            let at = enemy.position - enemy.facing.way() * PULL_BACK;
-            let (left, top) = self.corner_of(look, at);
-            let pixels: Vec<_> = self
-                .sprites
-                .get(look.sprite)
-                .pixels(look.mirrored)
-                .filter(|&(_, _, colour)| colour != ZOMBIE_LEGS)
-                .collect();
-            for (x, y, colour) in pixels {
-                let colour = if colour == ACID[0] || colour == ACID[1] {
-                    bright
-                } else {
-                    colour
-                };
-                self.set((left + x, top + y), colour);
-            }
-            let ahead = match enemy.facing {
-                Facing::Right => 4,
-                Facing::Left => -1,
-                Facing::Up | Facing::Down => continue,
-            };
-            if glint {
-                self.set((left + ahead, top + 1), ACID[0]);
-            }
-        }
-    }
-
     /// The globs in the air, over the night: where each will land blinking on the ground, and
     /// the glob itself, high on its arc.
     pub(super) fn paint_globs(&mut self, world: &World) {

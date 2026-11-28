@@ -11,7 +11,7 @@ Written as the work goes, under the same New, Changed and Fixed; it becomes the 
 
 ### New
 - The kamikaze, from the drizzle: a zombie, its skin orange, coming at the player as any; on them, it stands still a last moment, its skin pulsing over the dark, time to get away, then blows in flames: 20 HP off everything around, enemies included, and fires left burning that burn the player standing in them. Felled before, it blows at once where it falls, setting off the other kamikazes near.
-- The spitter, from the rain: a zombie, its skin green acid, keeping 8 tiles off the player and spitting at them every 2.5 s, showing in the dark as it is about to, a glob lobbed over everything to where they stood, landing a second later where it blinks on the ground: 10 HP if they are still there, and a puddle of acid left 3 s that burns them standing in it.
+- The spitter, from the rain: a zombie, its skin yellow acid, keeping 8 tiles off the player and spitting at them every 2.5 s, pulling back a pixel as it is about to, a glob lobbed over everything to where they stood, landing a second later where it blinks on the ground: 10 HP if they are still there, and a puddle of acid left 3 s that burns them standing in it.
 
 ### Changed
 - The hordes bring kamikazes from the drizzle and spitters from the rain, and no more Shadows: they keep to the dark, shunning the torch.
